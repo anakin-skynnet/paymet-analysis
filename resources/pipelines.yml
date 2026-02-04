@@ -1,0 +1,74 @@
+# Delta Live Tables Pipelines for Payment Analysis
+# Includes batch and real-time streaming pipelines
+
+resources:
+  pipelines:
+    # Batch ETL Pipeline (Bronze -> Silver -> Gold)
+    payment_analysis_etl:
+      name: "[${var.environment}] Payment Analysis ETL Pipeline"
+      
+      catalog: ${var.catalog}
+      target: payment_analysis_${var.environment}
+      
+      channel: CURRENT
+      
+      configuration:
+        catalog_name: ${var.catalog}
+        schema_name: payment_analysis_${var.environment}
+      
+      libraries:
+        - notebook:
+            path: ${workspace.file_path}/src/payment_analysis/streaming/bronze_ingest.py
+        - notebook:
+            path: ${workspace.file_path}/src/payment_analysis/transform/silver_transform.py
+        - notebook:
+            path: ${workspace.file_path}/src/payment_analysis/transform/gold_views.py
+      
+      clusters:
+        - label: default
+          autoscale:
+            min_workers: 1
+            max_workers: 3
+            mode: ENHANCED
+      
+      # Run continuously for near real-time processing
+      continuous: false  # Set to true for streaming mode
+      
+      development: true
+      
+      photon: true  # Enable Photon for faster processing
+      
+    # Real-Time Streaming Pipeline (Always-On)
+    payment_realtime_pipeline:
+      name: "[${var.environment}] Payment Real-Time Streaming Pipeline"
+      
+      catalog: ${var.catalog}
+      target: payment_analysis_${var.environment}
+      
+      channel: CURRENT
+      
+      configuration:
+        catalog_name: ${var.catalog}
+        schema_name: payment_analysis_${var.environment}
+        # Streaming configuration
+        spark.databricks.delta.optimizeWrite.enabled: "true"
+        spark.databricks.delta.autoCompact.enabled: "true"
+        pipelines.enableAutoOptimize: "true"
+      
+      libraries:
+        - notebook:
+            path: ${workspace.file_path}/src/payment_analysis/streaming/realtime_pipeline.py
+      
+      clusters:
+        - label: default
+          num_workers: 2
+          node_type_id: "Standard_DS3_v2"
+          spark_conf:
+            "spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled": "true"
+      
+      # CONTINUOUS MODE for real-time streaming
+      continuous: true
+      
+      development: true
+      
+      photon: true

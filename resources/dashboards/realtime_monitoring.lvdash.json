@@ -1,0 +1,214 @@
+{
+  "version": "1.0",
+  "name": "Real-Time Monitoring Dashboard",
+  "displayName": "Real-Time Payment Monitoring",
+  "description": "Live monitoring of payment system health and alerts",
+  "tags": ["realtime", "monitoring", "alerts"],
+  "pages": [
+    {
+      "name": "Real-Time Monitoring",
+      "displayName": "Real-Time Monitoring",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "textbox_spec": "## Real-Time Payment Monitoring\n\nLive system health and active alerts"
+          },
+          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+        },
+        {
+          "widget": {
+            "name": "last_hour_transactions",
+            "queries": [
+              {
+                "name": "kpi_query",
+                "query": {
+                  "query_text": "SELECT transactions_last_hour FROM v_last_hour_performance",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": { "fieldName": "transactions_last_hour", "displayName": "Transactions (Last Hour)" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 2, "width": 3, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "last_hour_approval",
+            "queries": [
+              {
+                "name": "kpi_query",
+                "query": {
+                  "query_text": "SELECT approval_rate_pct FROM v_last_hour_performance",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": { "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }
+              },
+              "format": { "suffix": "%" }
+            }
+          },
+          "position": { "x": 3, "y": 2, "width": 3, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "last_hour_declines",
+            "queries": [
+              {
+                "name": "kpi_query",
+                "query": {
+                  "query_text": "SELECT declines_last_hour FROM v_last_hour_performance",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": { "fieldName": "declines_last_hour", "displayName": "Declines (Last Hour)" }
+              }
+            }
+          },
+          "position": { "x": 6, "y": 2, "width": 3, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "high_risk_count",
+            "queries": [
+              {
+                "name": "kpi_query",
+                "query": {
+                  "query_text": "SELECT high_risk_transactions FROM v_last_hour_performance",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": { "fieldName": "high_risk_transactions", "displayName": "High Risk Txns" }
+              }
+            }
+          },
+          "position": { "x": 9, "y": 2, "width": 3, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "active_alerts",
+            "queries": [
+              {
+                "name": "alerts_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_active_alerts ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 ELSE 3 END",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "severity", "displayName": "Severity" },
+                  { "fieldName": "alert_type", "displayName": "Type" },
+                  { "fieldName": "alert_message", "displayName": "Message" },
+                  { "fieldName": "current_value", "displayName": "Current" },
+                  { "fieldName": "threshold_value", "displayName": "Threshold" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 6, "width": 12, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "solution_performance",
+            "queries": [
+              {
+                "name": "solution_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_solution_performance ORDER BY transaction_count DESC",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "payment_solution", "displayName": "Solution" },
+                "y": [{ "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 12, "width": 6, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "network_performance",
+            "queries": [
+              {
+                "name": "network_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_card_network_performance ORDER BY transaction_count DESC",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "card_network", "displayName": "Network" },
+                "y": [{ "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }]
+              }
+            }
+          },
+          "position": { "x": 6, "y": 12, "width": 6, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "segment_performance",
+            "queries": [
+              {
+                "name": "segment_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_merchant_segment_performance ORDER BY transaction_count DESC",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "merchant_segment", "displayName": "Segment" },
+                  { "fieldName": "transaction_count", "displayName": "Transactions" },
+                  { "fieldName": "approval_rate_pct", "displayName": "Approval %" },
+                  { "fieldName": "avg_fraud_score", "displayName": "Avg Fraud Score" },
+                  { "fieldName": "total_value", "displayName": "Total Value" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 18, "width": 12, "height": 6 }
+        }
+      ]
+    }
+  ],
+  "datasets": []
+}

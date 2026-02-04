@@ -1,0 +1,127 @@
+{
+  "version": "1.0",
+  "name": "Decline Analysis Dashboard",
+  "displayName": "Decline Analysis & Recovery",
+  "description": "Deep dive into decline patterns and recovery opportunities",
+  "tags": ["decline", "analysis", "recovery"],
+  "pages": [
+    {
+      "name": "Decline Analysis",
+      "displayName": "Decline Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "textbox_spec": "## Decline Analysis & Recovery Opportunities\n\nIdentify patterns and optimize recovery strategies"
+          },
+          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+        },
+        {
+          "widget": {
+            "name": "decline_by_reason",
+            "queries": [
+              {
+                "name": "decline_query",
+                "query": {
+                  "query_text": "SELECT decline_reason, decline_count, pct_of_declines, total_declined_value FROM v_top_decline_reasons ORDER BY decline_count DESC",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "pie-chart",
+              "encodings": {
+                "angle": { "fieldName": "decline_count", "displayName": "Declines" },
+                "color": { "fieldName": "decline_reason", "displayName": "Reason" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 2, "width": 6, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "recovery_opportunities",
+            "queries": [
+              {
+                "name": "recovery_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "decline_reason", "displayName": "Reason" },
+                  { "fieldName": "merchant_segment", "displayName": "Segment" },
+                  { "fieldName": "decline_count", "displayName": "Declines" },
+                  { "fieldName": "potential_recovery_value", "displayName": "Recovery Value" },
+                  { "fieldName": "recovery_likelihood", "displayName": "Likelihood" },
+                  { "fieldName": "recommended_action", "displayName": "Action" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 6, "y": 2, "width": 6, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "decline_trend",
+            "queries": [
+              {
+                "name": "trend_query",
+                "query": {
+                  "query_text": "SELECT hour, SUM(transaction_count) - SUM(CASE WHEN approval_rate_pct >= 50 THEN transaction_count ELSE 0 END) as decline_count FROM v_approval_trends_hourly GROUP BY hour ORDER BY hour",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "area-chart",
+              "encodings": {
+                "x": { "fieldName": "hour", "displayName": "Time" },
+                "y": [{ "fieldName": "decline_count", "displayName": "Declines" }]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 10, "width": 12, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "retry_performance",
+            "queries": [
+              {
+                "name": "retry_query",
+                "query": {
+                  "query_text": "SELECT * FROM v_retry_performance ORDER BY retry_success_rate_pct DESC",
+                  "warehouse_id": "{{ warehouse_id }}"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "decline_reason", "displayName": "Original Decline" },
+                  { "fieldName": "retry_count", "displayName": "Retry #" },
+                  { "fieldName": "retry_attempts", "displayName": "Attempts" },
+                  { "fieldName": "retry_success_rate_pct", "displayName": "Success Rate %" },
+                  { "fieldName": "recovered_value", "displayName": "Recovered Value" },
+                  { "fieldName": "effectiveness", "displayName": "Effectiveness" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 16, "width": 12, "height": 6 }
+        }
+      ]
+    }
+  ],
+  "datasets": []
+}

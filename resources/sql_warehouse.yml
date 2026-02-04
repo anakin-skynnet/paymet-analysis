@@ -1,0 +1,22 @@
+resources:
+  sql_warehouses:
+    payment_analysis_warehouse:
+      name: "[${var.environment}] Payment Analysis Warehouse"
+      
+      cluster_size: "2X-Small"
+      
+      auto_stop_mins: 10
+      
+      enable_serverless_compute: true
+      
+      warehouse_type: "PRO"
+      
+      tags:
+        custom_tags:
+          - key: environment
+            value: ${var.environment}
+          - key: project
+            value: payment-analysis
+
+# Note: Permissions for SQL Warehouses are managed via the Databricks workspace UI
+# or can be set programmatically using the Databricks SDK after deployment

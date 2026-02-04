@@ -1,0 +1,78 @@
+# Transaction Stream Simulator
+# Generates 1000 payment events per second for testing real-time pipelines
+
+resources:
+  jobs:
+    # High-volume transaction simulator
+    transaction_stream_simulator:
+      name: "[${var.environment}] Transaction Stream Simulator"
+      description: "Generates 1000 payment events per second for real-time pipeline testing"
+      
+      tasks:
+        - task_key: "generate_transactions"
+          description: "Generate synthetic payment events at high volume"
+          
+          notebook_task:
+            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/transaction_simulator.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: payment_analysis_${var.environment}
+              events_per_second: "1000"
+              duration_minutes: "60"
+              output_mode: "kafka"  # or "delta" for Delta table streaming
+          
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS4_v2"
+            num_workers: 2
+            spark_conf:
+              "spark.databricks.delta.optimizeWrite.enabled": "true"
+              "spark.databricks.delta.autoCompact.enabled": "true"
+            spark_env_vars:
+              EVENTS_PER_SECOND: "1000"
+          
+          timeout_seconds: 7200  # 2 hours max
+      
+      # Run on-demand (not scheduled)
+      tags:
+        environment: ${var.environment}
+        component: simulator
+        type: streaming
+
+    # Continuous streaming job (always-on)
+    continuous_stream_processor:
+      name: "[${var.environment}] Continuous Stream Processor"
+      description: "Always-on job that processes streaming events in real-time"
+      
+      tasks:
+        - task_key: "process_stream"
+          description: "Process incoming payment events continuously"
+          
+          notebook_task:
+            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/continuous_processor.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: payment_analysis_${var.environment}
+              checkpoint_location: "/Volumes/${var.catalog}/payment_analysis_${var.environment}/checkpoints/stream_processor"
+              trigger_interval: "1 second"
+          
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 1
+            spark_conf:
+              "spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled": "true"
+              "spark.sql.streaming.stateStore.providerClass": "com.databricks.sql.streaming.state.RocksDBStateStoreProvider"
+          
+          timeout_seconds: 0  # No timeout - runs continuously
+      
+      # Continuous trigger
+      continuous:
+        pause_status: "PAUSED"  # Start paused, enable manually
+      
+      max_concurrent_runs: 1
+      
+      tags:
+        environment: ${var.environment}
+        component: streaming
+        type: continuous

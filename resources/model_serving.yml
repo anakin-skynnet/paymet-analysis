@@ -1,0 +1,124 @@
+resources:
+  model_serving_endpoints:
+    # Approval Propensity Model Endpoint
+    approval_propensity_endpoint:
+      name: "approval-propensity-${var.environment}"
+      
+      config:
+        served_entities:
+          - entity_name: "${var.catalog}.payment_analysis_${var.environment}.approval_propensity_model"
+            entity_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+            workload_type: "CPU"
+            environment_vars:
+              ENABLE_MLFLOW_TRACING: "true"
+        
+        traffic_config:
+          routes:
+            - served_model_name: "approval_propensity_model-1"
+              traffic_percentage: 100
+        
+        auto_capture_config:
+          catalog_name: ${var.catalog}
+          schema_name: payment_analysis_${var.environment}
+          table_name_prefix: "approval_propensity_inference"
+          enabled: true
+      
+      ai_gateway:
+        rate_limits:
+          - key: "user"
+            renewal_period: "minute"
+            calls: 100
+        
+        usage_tracking_config:
+          enabled: true
+    
+    # Risk Scoring Model Endpoint
+    risk_scoring_endpoint:
+      name: "risk-scoring-${var.environment}"
+      
+      config:
+        served_entities:
+          - entity_name: "${var.catalog}.payment_analysis_${var.environment}.risk_scoring_model"
+            entity_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+            workload_type: "CPU"
+            environment_vars:
+              ENABLE_MLFLOW_TRACING: "true"
+        
+        traffic_config:
+          routes:
+            - served_model_name: "risk_scoring_model-1"
+              traffic_percentage: 100
+      
+      ai_gateway:
+        rate_limits:
+          - key: "user"
+            renewal_period: "minute"
+            calls: 100
+        
+        guardrails:
+          input:
+            pii:
+              behavior: "BLOCK"
+          output:
+            safety: true
+            pii:
+              behavior: "REDACT"
+        
+        usage_tracking_config:
+          enabled: true
+    
+    # Smart Routing Model Endpoint
+    smart_routing_endpoint:
+      name: "smart-routing-${var.environment}"
+      
+      config:
+        served_entities:
+          - entity_name: "${var.catalog}.payment_analysis_${var.environment}.smart_routing_policy"
+            entity_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+            workload_type: "CPU"
+        
+        traffic_config:
+          routes:
+            - served_model_name: "smart_routing_policy-1"
+              traffic_percentage: 100
+      
+      ai_gateway:
+        rate_limits:
+          - key: "user"
+            renewal_period: "minute"
+            calls: 200
+        
+        usage_tracking_config:
+          enabled: true
+    
+    # Smart Retry Model Endpoint
+    smart_retry_endpoint:
+      name: "smart-retry-${var.environment}"
+      
+      config:
+        served_entities:
+          - entity_name: "${var.catalog}.payment_analysis_${var.environment}.smart_retry_policy"
+            entity_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+            workload_type: "CPU"
+        
+        traffic_config:
+          routes:
+            - served_model_name: "smart_retry_policy-1"
+              traffic_percentage: 100
+      
+      ai_gateway:
+        rate_limits:
+          - key: "user"
+            renewal_period: "minute"
+            calls: 200
+        
+        usage_tracking_config:
+          enabled: true

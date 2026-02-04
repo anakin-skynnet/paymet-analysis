@@ -1,0 +1,67 @@
+bundle:
+  name: "payment-analysis"
+
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/getnet_approval_rates_v2
+
+# Include external resource definitions
+include:
+  - resources/unity_catalog.yml
+  - resources/pipelines.yml
+  - resources/sql_warehouse.yml
+  - resources/ml_jobs.yml
+  - resources/ai_gateway.yml
+  - resources/streaming_simulator.yml
+  - resources/genie_spaces.yml
+  # Dashboards need Unity Catalog tables to exist first:
+  # - resources/dashboards.yml
+  # Uncomment when models are trained:
+  # - resources/model_serving.yml
+
+# Variables for environment-specific configuration
+variables:
+  catalog:
+    description: Unity Catalog name for payment analysis data
+    default: main
+  environment:
+    description: Deployment environment (dev/prod)
+    default: dev
+
+sync:
+  include:
+    - .build
+    - src/payment_analysis/ml
+    - src/payment_analysis/streaming
+    - src/payment_analysis/transform
+    - src/payment_analysis/agents
+    - src/payment_analysis/genie
+
+artifacts:
+  default:
+    build: uv run apx build
+
+# Note: App deployment disabled - workspace has reached 200 app limit
+# Delete some apps first, then uncomment to deploy:
+# resources:
+#   database_instances:
+#     payment-analysis-db:
+#       name: "payment-analysis-${var.environment}"
+#       capacity: "CU_1"
+#   apps:
+#     payment-analysis-app:
+#       name: "payment-analysis-${var.environment}"
+#       description: "Payment Approval Analysis Platform with ML and AI Agents"
+#       source_code_path: ./.build
+#       resources:
+#         - name: "db"
+#           database:
+#             database_name: "databricks_postgres"
+#             instance_name: ${resources.database_instances.payment-analysis-db.name}
+#             permission: "CAN_CONNECT_AND_CREATE"
+
+
+
+targets:
+  dev:
+    mode: development
+    default: true

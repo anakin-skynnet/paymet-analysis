@@ -1,0 +1,116 @@
+---
+name: apx
+description: Quick reference for apx toolkit commands and MCP tools for building Databricks Apps
+---
+
+# 🚀 apx Toolkit
+
+apx is the toolkit for building full-stack Databricks Apps with React + FastAPI.
+
+## 📦 Project Structure
+
+```
+src/payment-analysis/
+├── ui/                    # React + Vite frontend
+│   ├── components/        # UI components (shadcn/ui)
+│   ├── routes/            # @tanstack/react-router pages
+│   ├── lib/               # Utilities (api client, selector)
+│   └── styles/            # CSS styles
+└── backend/               # FastAPI backend
+    ├── app.py             # Main FastAPI app
+    ├── router.py          # API routes
+    ├── models.py          # Pydantic models
+    └── config.py          # Configuration
+```
+
+## 🔧 CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `uv run apx dev start` | 🟢 Start all dev servers (backend + frontend + OpenAPI watcher) |
+| `uv run apx dev stop` | 🔴 Stop all dev servers |
+| `uv run apx dev status` | 📊 Check status of running servers |
+| `uv run apx dev check` | ✅ Check for TypeScript/Python errors |
+| `uv run apx dev logs` | 📜 View recent logs (default: last 10m) |
+| `uv run apx dev logs -f` | 📡 Follow/stream logs in real-time |
+| `uv run apx build` | 📦 Build for production |
+| `uv run apx bun <args>` | 🍞 Run bun commands (install, add, etc.) |
+| `uv run apx components add <name>` | 🧩 Add a shadcn/ui component |
+
+## 🔌 MCP Tools
+
+When the apx MCP server is running, these tools are available:
+
+| Tool | Description |
+|------|-------------|
+| `start` | 🟢 Start development server and return the URL |
+| `stop` | 🔴 Stop the development server |
+| `restart` | 🔄 Restart development server (preserves port if possible) |
+| `logs` | 📜 Fetch recent dev server logs |
+| `check` | ✅ Check project code for errors (tsc + ty in parallel) |
+| `search_registry_components` | 🔍 Search shadcn registry components (semantic search) |
+| `add_component` | ➕ Add a component to the project |
+| `docs` | 📚 Search Databricks SDK docs for code examples |
+| `databricks_apps_logs` | 📊 Fetch logs from deployed app via Databricks CLI |
+| `get_route_info` | 🛣️ Get code example for using a specific API route |
+| `refresh_openapi` | 🔄 Regenerate OpenAPI schema and API client |
+
+## 💡 Development Workflow
+
+### Starting Development
+```bash
+uv run apx dev start      # Starts everything in background
+uv run apx dev status     # Verify servers are running
+```
+
+### Adding UI Components
+```bash
+# Search for components first
+uv run apx components add button --yes
+uv run apx components add card --yes
+```
+
+### Installing Frontend Dependencies
+```bash
+uv run apx bun add lucide-react     # Add a package
+uv run apx bun install              # Install all deps
+```
+
+### Checking for Errors
+```bash
+uv run apx dev check      # TypeScript + Python linting
+```
+
+### Viewing Logs
+```bash
+uv run apx dev logs                  # Recent logs (last 10m)
+uv run apx dev logs -d 1h            # Logs from last hour
+uv run apx dev logs -f               # Follow/stream logs live
+```
+
+## ⚡ Key Patterns
+
+### API Models (3-model pattern)
+- `Entity` - Database/internal model
+- `EntityIn` - Input/request model  
+- `EntityOut` - Output/response model
+
+### Frontend Data Fetching
+```tsx
+// Use Suspense hooks with selector()
+const { data } = useGetItemsSuspense(selector());
+```
+
+### API Routes
+```python
+@router.get("/items", response_model=list[ItemOut], operation_id="getItems")
+async def get_items():
+    ...
+```
+
+## 🔗 Resources
+
+- OpenAPI client: `src/payment-analysis/ui/lib/api/` (auto-generated)
+- Routes: `src/payment-analysis/ui/routes/`
+- Components: `src/payment-analysis/ui/components/`
+- Backend: `src/payment-analysis/backend/`

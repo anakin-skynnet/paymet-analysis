@@ -1,0 +1,1 @@
+command: ["uvicorn", "payment_analysis.backend.app:app", "--workers", "2"]
