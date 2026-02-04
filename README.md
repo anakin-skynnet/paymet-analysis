@@ -1,68 +1,63 @@
-# payment-analysis ✨
+# Payment Approval Analysis Platform
 
-> A modern full-stack application built with [`apx`](https://github.com/databricks-solutions/apx) 🚀
+A Databricks-native platform for optimizing payment approval rates using real-time analytics, machine learning, and AI agents.
 
-## 🛠️ Tech Stack
+## Documentation
 
-This application leverages a powerful, modern tech stack:
+| Document | Audience | Description |
+|----------|----------|-------------|
+| [Executive Summary](EXECUTIVE_SUMMARY.md) | Business Leaders | Project objectives, ROI, and Databricks capabilities |
+| [Technical Documentation](TECHNICAL_DOCUMENTATION.md) | Engineers | Architecture, resources, code structure, best practices |
 
-- **Backend** 🐍 Python + [FastAPI](https://fastapi.tiangolo.com/)
-- **Frontend** ⚛️ React + [shadcn/ui](https://ui.shadcn.com/)
-- **API Client** 🔄 Auto-generated TypeScript client from OpenAPI schema
-
-## 🚀 Quick Start
-
-### Development Mode
-
-Start all development servers (backend, frontend, and OpenAPI watcher) in detached mode:
+## Quick Start
 
 ```bash
-uv run apx dev start
-```
+# Install dependencies
+uv sync && bun install
 
-This will start an apx development server, which in it's turn runs backend, frontend and OpenAPI watcher. 
-All servers run in the background, with logs kept in-memory of the apx dev server.
-
-### 📊 Monitoring & Logs
-
-```bash
-# View all logs
-uv run apx dev logs
-
-# Stream logs in real-time
-uv run apx dev logs -f
-
-# Check server status
-uv run apx dev status
-
-# Stop all servers
-uv run apx dev stop
-```
-
-## ✅ Code Quality
-
-Run type checking and linting for both TypeScript and Python:
-
-```bash
-uv run apx dev check
-```
-
-## 📦 Build
-
-Create a production-ready build:
-
-```bash
+# Build the application
 uv run apx build
+
+# Deploy to Databricks
+databricks bundle deploy --target dev
+
+# View deployed resources
+databricks bundle summary
 ```
 
-## 🚢 Deployment
-
-Deploy to Databricks:
+## Development
 
 ```bash
-databricks bundle deploy -p <your-profile>
+# Start development servers
+uv run apx dev start
+
+# Run type checks
+uv run apx dev check
+
+# View logs
+uv run apx dev logs -f
 ```
+
+## Deployed Resources
+
+- **12 Jobs**: AI agents, ML training, stream processing
+- **2 DLT Pipelines**: Batch ETL and real-time streaming
+- **SQL Warehouse**: Analytics compute
+- **Unity Catalog Schema**: Tables, views, and volumes
+- **3 Dashboards**: Executive, Decline Analysis, Real-Time Monitoring
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Data | Delta Lake, Unity Catalog |
+| Streaming | Structured Streaming, Delta Live Tables |
+| ML | MLflow, Model Serving |
+| AI | LLM Agents (6 specialized) |
+| Backend | Python, FastAPI |
+| Frontend | React, TypeScript, shadcn/ui |
+| Deployment | Databricks Asset Bundles |
 
 ---
 
-<p align="center">Built with ❤️ using <a href="https://github.com/databricks-solutions/apx">apx</a></p>
+Built with [APX](https://github.com/databricks-solutions/apx) on Databricks
