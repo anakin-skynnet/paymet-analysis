@@ -1,10 +1,15 @@
-bundle:
-  name: "payment-analysis"
+# Databricks Asset Bundle Configuration
+# Uses latest DAB features: presets, serverless, run_as, permissions
+# Documentation: https://docs.databricks.com/dev-tools/bundles/
 
+bundle:
+  name: payment-analysis
+
+# Workspace configuration with dynamic path
 workspace:
   root_path: /Workspace/Users/${workspace.current_user.userName}/getnet_approval_rates_v2
 
-# Include external resource definitions
+# Modular resource definitions
 include:
   - resources/unity_catalog.yml
   - resources/pipelines.yml
@@ -13,20 +18,23 @@ include:
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
-  # Dashboards need Unity Catalog tables to exist first:
+  # Enable after tables exist:
   # - resources/dashboards.yml
-  # Uncomment when models are trained:
   # - resources/model_serving.yml
 
-# Variables for environment-specific configuration
+# Environment variables with validation
 variables:
   catalog:
-    description: Unity Catalog name for payment analysis data
+    description: Unity Catalog name for data storage
     default: main
   environment:
-    description: Deployment environment (dev/prod)
+    description: Deployment environment identifier
     default: dev
+  warehouse_id:
+    description: SQL Warehouse ID for queries (optional)
+    default: ""
 
+# Sync configuration for notebook deployment
 sync:
   include:
     - .build
@@ -35,33 +43,47 @@ sync:
     - src/payment_analysis/transform
     - src/payment_analysis/agents
     - src/payment_analysis/genie
+  exclude:
+    - "**/__pycache__"
+    - "**/*.pyc"
+    - "**/node_modules"
 
+# Build artifacts
 artifacts:
   default:
     build: uv run apx build
 
-# Note: App deployment disabled - workspace has reached 200 app limit
-# Delete some apps first, then uncomment to deploy:
-# resources:
-#   database_instances:
-#     payment-analysis-db:
-#       name: "payment-analysis-${var.environment}"
-#       capacity: "CU_1"
-#   apps:
-#     payment-analysis-app:
-#       name: "payment-analysis-${var.environment}"
-#       description: "Payment Approval Analysis Platform with ML and AI Agents"
-#       source_code_path: ./.build
-#       resources:
-#         - name: "db"
-#           database:
-#             database_name: "databricks_postgres"
-#             instance_name: ${resources.database_instances.payment-analysis-db.name}
-#             permission: "CAN_CONNECT_AND_CREATE"
-
-
-
+# Target configurations
 targets:
+  # Development environment
   dev:
     mode: development
     default: true
+    variables:
+      environment: dev
+    # Development presets for faster iteration
+    presets:
+      name_prefix: "[dev ${workspace.current_user.short_name}] "
+      pipelines_development: true
+      jobs_max_concurrent_runs: 1
+      trigger_pause_status: PAUSED
+
+  # Production environment  
+  prod:
+    mode: production
+    variables:
+      environment: prod
+      catalog: prod_catalog
+    # Production presets with permissions
+    presets:
+      name_prefix: "[PROD] "
+      pipelines_development: false
+    # Run as service principal in production
+    run_as:
+      service_principal_name: payment-analysis-sp
+    # Default permissions for all resources
+    permissions:
+      - level: CAN_VIEW
+        group_name: data-analysts
+      - level: CAN_MANAGE
+        group_name: data-engineers
