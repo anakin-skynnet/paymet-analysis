@@ -18,7 +18,7 @@ resources:
       tasks:
         - task_key: "run_smart_routing"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -48,7 +48,7 @@ resources:
       tasks:
         - task_key: "run_smart_retry"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -78,7 +78,7 @@ resources:
       tasks:
         - task_key: "run_decline_analysis"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -108,7 +108,7 @@ resources:
       tasks:
         - task_key: "run_risk_assessment"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -138,7 +138,7 @@ resources:
       tasks:
         - task_key: "run_performance_analysis"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -168,7 +168,7 @@ resources:
       tasks:
         - task_key: "run_orchestrator"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}

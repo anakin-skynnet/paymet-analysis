@@ -1,14 +1,16 @@
-"""
-AI Agent Framework for Payment Analysis Platform.
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # AI Agent Framework for Payment Analysis Platform
+# MAGIC 
+# MAGIC Multi-agent system for automated payment optimization:
+# MAGIC - Smart Routing & Cascading Agent
+# MAGIC - Smart Retry Agent
+# MAGIC - Decline Analysis Agent
+# MAGIC - Risk Assessment Agent
+# MAGIC - Performance Recommender Agent
+# MAGIC - Orchestrator Agent
 
-Multi-agent system for automated payment optimization:
-- Smart Routing & Cascading Agent
-- Smart Retry Agent
-- Decline Analysis Agent
-- Risk Assessment Agent
-- Performance Recommender Agent
-- Orchestrator Agent
-"""
+# COMMAND ----------
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Callable, Any
