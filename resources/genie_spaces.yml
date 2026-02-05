@@ -54,7 +54,7 @@ resources:
       tasks:
         - task_key: "sync_genie_config"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/genie/sync_genie_space.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/genie/sync_genie_space
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}

@@ -13,7 +13,7 @@ resources:
           description: "Generate synthetic payment events at high volume"
           
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/transaction_simulator.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/transaction_simulator
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -49,7 +49,7 @@ resources:
           description: "Process incoming payment events continuously"
           
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/continuous_processor.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/continuous_processor
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}

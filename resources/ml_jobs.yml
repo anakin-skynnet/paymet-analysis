@@ -10,7 +10,7 @@ resources:
           description: "Train all ML models with MLflow tracking"
           
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/ml/train_models.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/ml/train_models
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
@@ -70,7 +70,7 @@ resources:
           description: "Test decline analyst, risk assessor, and routing optimizer agents"
           
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
