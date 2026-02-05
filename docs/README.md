@@ -6,6 +6,34 @@ Welcome to the Payment Analysis Platform documentation. This folder contains com
 
 ## 📖 Documentation Overview
 
+### 🚀 Getting Started
+
+#### [Deployment Guide](./DEPLOYMENT_GUIDE.md) ⭐ START HERE
+**Audience:** All users deploying the solution  
+**Purpose:** Step-by-step instructions to deploy and run the platform  
+**Read Time:** 15-20 minutes
+
+**Key Topics:**
+- Prerequisites and setup
+- 9-step deployment process
+- Job execution order
+- Dashboard import instructions
+- Verification and troubleshooting
+- Ongoing operations
+
+**Quick Steps:**
+1. Deploy infrastructure with Databricks bundles
+2. Start transaction simulator
+3. Start DLT pipeline
+4. Create gold views
+5. Train ML models
+6. Import dashboards
+7. Set up AI agents
+8. Deploy web application
+9. Verify end-to-end flow
+
+---
+
 ### 👔 For Business Leaders
 
 #### [Executive Summary](./EXECUTIVE_SUMMARY.md)
@@ -95,6 +123,7 @@ Welcome to the Payment Analysis Platform documentation. This folder contains com
 ```
 docs/
 ├── README.md                      ← You are here
+├── DEPLOYMENT_GUIDE.md            ← ⭐ Step-by-step deployment instructions
 ├── EXECUTIVE_SUMMARY.md           ← Business value & objectives
 ├── AI_AGENTS_GUIDE.md             ← 7 AI agents for approval optimization
 ├── TECHNICAL_DOCUMENTATION.md     ← Architecture & deployment
@@ -106,25 +135,29 @@ docs/
 
 ## 🎯 Quick Navigation by Role
 
+### I'm New to This Project
+**Start with:** [Deployment Guide](./DEPLOYMENT_GUIDE.md)  
+**Then read:** [Executive Summary](./EXECUTIVE_SUMMARY.md)
+
 ### I'm a CEO / Business Leader
 **Start with:** [Executive Summary](./EXECUTIVE_SUMMARY.md)  
 **Then read:** [AI Agents Guide](./AI_AGENTS_GUIDE.md) (Business Impact section)
 
 ### I'm a Product Manager
-**Start with:** [AI Agents Guide](./AI_AGENTS_GUIDE.md)  
-**Then read:** [Data Flow](./DATA_FLOW.md)
+**Start with:** [Deployment Guide](./DEPLOYMENT_GUIDE.md)  
+**Then read:** [AI Agents Guide](./AI_AGENTS_GUIDE.md)
 
 ### I'm a Data Engineer
-**Start with:** [Data Flow](./DATA_FLOW.md)  
-**Then read:** [Technical Documentation](./TECHNICAL_DOCUMENTATION.md)
+**Start with:** [Deployment Guide](./DEPLOYMENT_GUIDE.md)  
+**Then read:** [Data Flow](./DATA_FLOW.md), [Technical Documentation](./TECHNICAL_DOCUMENTATION.md)
 
 ### I'm a Software Engineer
-**Start with:** [Technical Documentation](./TECHNICAL_DOCUMENTATION.md)  
-**Then read:** [UI/UX Validation](./UI_UX_VALIDATION.md)
+**Start with:** [Deployment Guide](./DEPLOYMENT_GUIDE.md)  
+**Then read:** [Technical Documentation](./TECHNICAL_DOCUMENTATION.md), [UI/UX Validation](./UI_UX_VALIDATION.md)
 
 ### I'm a Data Scientist / ML Engineer
-**Start with:** [AI Agents Guide](./AI_AGENTS_GUIDE.md)  
-**Then read:** [Data Flow](./DATA_FLOW.md)
+**Start with:** [Deployment Guide](./DEPLOYMENT_GUIDE.md)  
+**Then read:** [AI Agents Guide](./AI_AGENTS_GUIDE.md), [Data Flow](./DATA_FLOW.md)
 
 ### I'm an Analyst
 **Start with:** [Data Flow](./DATA_FLOW.md)  

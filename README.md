@@ -8,10 +8,11 @@ A Databricks-powered solution that maximizes payment approval rates through real
 
 | Document | Audience | Description |
 |----------|----------|-------------|
+| [🚀 Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | **All** | **Step-by-step deployment instructions** (START HERE) |
 | [Executive Summary](docs/EXECUTIVE_SUMMARY.md) | CEO / Business | Project objectives, business value, and Databricks technology overview |
+| [AI Agents Guide](docs/AI_AGENTS_GUIDE.md) | Product / Engineering | 7 AI agents for approval rate optimization with ROI analysis |
 | [Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md) | Engineers | Architecture, resource definitions, deployment, and best practices |
 | [Data Flow](docs/DATA_FLOW.md) | All | End-to-end journey from transaction ingestion to user-facing insights |
-| [AI Agents Guide](docs/AI_AGENTS_GUIDE.md) | Product / Engineering | 7 AI agents for approval rate optimization with ROI analysis |
 | [UI/UX Validation](docs/UI_UX_VALIDATION.md) | Engineering | Complete component-to-notebook mapping and validation report |
 
 ---
