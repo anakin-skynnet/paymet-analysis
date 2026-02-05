@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "name": "Routing & Optimization Dashboard",
+  "displayName": "Smart Routing & Optimization",
+  "description": "Payment routing performance and optimization recommendations",
+  "tags": ["routing", "optimization", "smart-retry", "performance"],
+  "pages": [
+    {
+      "name": "routing_optimization",
+      "displayName": "Routing & Optimization",
+      "layout": [
+        {
+          "widget": {
+            "name": "header",
+            "textbox_spec": "## Smart Routing & Optimization Dashboard\n\nPerformance analysis by solution and network with retry strategies"
+          },
+          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+        },
+        {
+          "widget": {
+            "name": "solution_comparison",
+            "queries": [
+              {
+                "name": "solution_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_solution_performance",
+                  "query_text": "SELECT payment_solution, approval_rate_pct, transaction_count FROM v_solution_performance ORDER BY approval_rate_pct DESC",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "payment_solution", "displayName": "Solution" },
+                "y": [
+                  { "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 2, "width": 6, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "network_comparison",
+            "queries": [
+              {
+                "name": "network_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_card_network_performance",
+                  "query_text": "SELECT card_network, approval_rate_pct, transaction_count FROM v_card_network_performance ORDER BY approval_rate_pct DESC",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "card_network", "displayName": "Network" },
+                "y": [
+                  { "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 6, "y": 2, "width": 6, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "solution_performance_details",
+            "queries": [
+              {
+                "name": "solution_detail_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_solution_performance",
+                  "query_text": "SELECT payment_solution, transaction_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM v_solution_performance ORDER BY transaction_count DESC",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "payment_solution", "displayName": "Solution" },
+                  { "fieldName": "transaction_count", "displayName": "Transactions" },
+                  { "fieldName": "approval_rate_pct", "displayName": "Approval %" },
+                  { "fieldName": "avg_fraud_score", "displayName": "Fraud Score" },
+                  { "fieldName": "avg_amount", "displayName": "Avg Amount" },
+                  { "fieldName": "total_value", "displayName": "Total Value" },
+                  { "fieldName": "avg_latency_ms", "displayName": "Latency (ms)" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 10, "width": 12, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "network_performance_details",
+            "queries": [
+              {
+                "name": "network_detail_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_card_network_performance",
+                  "query_text": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM v_card_network_performance ORDER BY transaction_count DESC",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "card_network", "displayName": "Card Network" },
+                  { "fieldName": "transaction_count", "displayName": "Transactions" },
+                  { "fieldName": "approval_rate_pct", "displayName": "Approval %" },
+                  { "fieldName": "avg_amount", "displayName": "Avg Amount" },
+                  { "fieldName": "avg_fraud_score", "displayName": "Fraud Score" },
+                  { "fieldName": "avg_latency_ms", "displayName": "Latency (ms)" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 16, "width": 12, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "retry_effectiveness",
+            "queries": [
+              {
+                "name": "retry_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT decline_reason, retry_count, retry_success_rate_pct, retry_attempts FROM v_retry_performance WHERE retry_success_rate_pct > 0 ORDER BY retry_success_rate_pct DESC LIMIT 15",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "decline_reason", "displayName": "Decline Reason" },
+                "y": [
+                  { "fieldName": "retry_success_rate_pct", "displayName": "Success Rate %" }
+                ],
+                "color": { "fieldName": "effectiveness", "displayName": "Effectiveness" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 22, "width": 12, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "retry_details",
+            "queries": [
+              {
+                "name": "retry_detail_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, avg_fraud_score, recovered_value, effectiveness FROM v_retry_performance ORDER BY recovered_value DESC",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "decline_reason", "displayName": "Decline Reason" },
+                  { "fieldName": "retry_count", "displayName": "Retry #" },
+                  { "fieldName": "retry_attempts", "displayName": "Attempts" },
+                  { "fieldName": "retry_success_rate_pct", "displayName": "Success %" },
+                  { "fieldName": "avg_fraud_score", "displayName": "Fraud Score" },
+                  { "fieldName": "recovered_value", "displayName": "Recovered $" },
+                  { "fieldName": "effectiveness", "displayName": "Effectiveness" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 30, "width": 12, "height": 8 }
+        },
+        {
+          "widget": {
+            "name": "recovery_opportunities",
+            "queries": [
+              {
+                "name": "recovery_query",
+                "query": {
+                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "query_text": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 25",
+                  "warehouse_id": "3fef3d3419b56344"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "decline_reason", "displayName": "Decline" },
+                  { "fieldName": "merchant_segment", "displayName": "Segment" },
+                  { "fieldName": "card_network", "displayName": "Network" },
+                  { "fieldName": "decline_count", "displayName": "Count" },
+                  { "fieldName": "potential_recovery_value", "displayName": "Recovery $" },
+                  { "fieldName": "recovery_likelihood", "displayName": "Likelihood" },
+                  { "fieldName": "recommended_action", "displayName": "Action" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 38, "width": 12, "height": 8 }
+        }
+      ]
+    }
+  ],
+  "datasets": []
+}

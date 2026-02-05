@@ -18,8 +18,9 @@ include:
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
-  # Enable after tables exist:
+  # Enable dashboards after views are created and data exists:
   # - resources/dashboards.yml
+  # Enable after tables exist:
   # - resources/model_serving.yml
 
 # Environment variables with validation
@@ -32,7 +33,7 @@ variables:
     default: dev
   warehouse_id:
     description: SQL Warehouse ID for queries (optional)
-    default: ""
+    default: "3fef3d3419b56344"
 
 # Sync configuration for notebook deployment
 sync:

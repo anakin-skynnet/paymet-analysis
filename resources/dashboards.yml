@@ -1,31 +1,60 @@
+# Lakeview Dashboards Configuration
+# All dashboards use Unity Catalog views from the gold layer
+
 resources:
   dashboards:
-    # Executive Overview Dashboard
-    executive_overview_dashboard:
+    # Dashboard 1: Executive Overview
+    executive_overview:
       display_name: "[${var.environment}] Executive Overview - Payment Analysis"
-      warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
-      
-      file_path: ../resources/dashboards/executive_overview.lvdash.json
-      
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-    
-    # Decline Analysis Dashboard
-    decline_analysis_dashboard:
-      display_name: "[${var.environment}] Decline Analysis & Recovery"
-      warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
-      
-      file_path: ../resources/dashboards/decline_analysis.lvdash.json
-      
-      embed_credentials: true
-    
-    # Real-Time Monitoring Dashboard
-    realtime_monitoring_dashboard:
-      display_name: "[${var.environment}] Real-Time Payment Monitoring"
-      warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
-      
-      file_path: ../resources/dashboards/realtime_monitoring.lvdash.json
-      
-      embed_credentials: true
+      file_path: ./dashboards/executive_overview.lvdash.json
 
-# Note: Dashboard permissions are managed via the Databricks workspace UI
-# or can be set programmatically using the Databricks SDK after deployment
+    # Dashboard 2: Decline Analysis
+    decline_analysis:
+      display_name: "[${var.environment}] Decline Analysis & Recovery"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/decline_analysis.lvdash.json
+
+    # Dashboard 3: Real-Time Monitoring
+    realtime_monitoring:
+      display_name: "[${var.environment}] Real-Time Payment Monitoring"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/realtime_monitoring.lvdash.json
+
+    # Dashboard 4: Fraud & Risk Analysis (NEW)
+    fraud_risk_analysis:
+      display_name: "[${var.environment}] Fraud & Risk Analysis"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/fraud_risk_analysis.lvdash.json
+
+    # Dashboard 5: Merchant Performance (NEW)
+    merchant_performance:
+      display_name: "[${var.environment}] Merchant Performance & Segmentation"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/merchant_performance.lvdash.json
+
+    # Dashboard 6: Routing & Optimization (NEW)
+    routing_optimization:
+      display_name: "[${var.environment}] Smart Routing & Optimization"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/routing_optimization.lvdash.json
+
+    # Dashboard 7: Daily Trends (NEW)
+    daily_trends:
+      display_name: "[${var.environment}] Daily Trends & Historical Analysis"
+      warehouse_id: ${var.warehouse_id}
+      parent_path: ${workspace.root_path}/dashboards
+      embed_credentials: true
+      file_path: ./dashboards/daily_trends.lvdash.json
