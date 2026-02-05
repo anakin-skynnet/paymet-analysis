@@ -13,7 +13,7 @@ resources:
             notebook_path: ${workspace.file_path}/src/payment_analysis/ml/train_models
             base_parameters:
               catalog: ${var.catalog}
-              schema: payment_analysis_${var.environment}
+              schema: ${var.schema}
           
           new_cluster:
             spark_version: "14.3.x-cpu-ml-scala2.12"

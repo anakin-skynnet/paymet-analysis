@@ -30,11 +30,11 @@ resources:
       # Pipeline libraries (notebooks)
       libraries:
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/streaming/bronze_ingest.py
+            path: ${workspace.file_path}/src/payment_analysis/streaming/bronze_ingest
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/transform/silver_transform.py
+            path: ${workspace.file_path}/src/payment_analysis/transform/silver_transform
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/transform/gold_views.py
+            path: ${workspace.file_path}/src/payment_analysis/transform/gold_views
       
       # Serverless compute (recommended for cost optimization)
       serverless: true
@@ -74,7 +74,7 @@ resources:
       
       libraries:
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/streaming/realtime_pipeline.py
+            path: ${workspace.file_path}/src/payment_analysis/streaming/realtime_pipeline
       
       # Use dedicated cluster for streaming (serverless not supported for continuous)
       clusters:

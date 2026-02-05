@@ -16,7 +16,7 @@ resources:
             notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/transaction_simulator
             base_parameters:
               catalog: ${var.catalog}
-              schema: payment_analysis_${var.environment}
+              schema: ${var.schema}
               events_per_second: "1000"
               duration_minutes: "60"
               output_mode: "kafka"  # or "delta" for Delta table streaming
@@ -52,8 +52,8 @@ resources:
             notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/continuous_processor
             base_parameters:
               catalog: ${var.catalog}
-              schema: payment_analysis_${var.environment}
-              checkpoint_location: "/Volumes/${var.catalog}/payment_analysis_${var.environment}/checkpoints/stream_processor"
+              schema: ${var.schema}
+              checkpoint_location: "/Volumes/${var.catalog}/${var.schema}/checkpoints/stream_processor"
               trigger_interval: "1 second"
           
           new_cluster:

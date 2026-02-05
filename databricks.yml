@@ -37,8 +37,8 @@ variables:
     # The warehouse is created by the bundle deployment
     default: "placeholder_warehouse"
   schema:
-    description: Unity Catalog schema name (computed from environment and user)
-    default: payment_analysis_${var.environment}
+    description: Unity Catalog schema name (matches DLT target with dev mode prefix)
+    default: dev_ariel_hdez_payment_analysis_dev
 
 # Sync configuration for notebook deployment
 sync:

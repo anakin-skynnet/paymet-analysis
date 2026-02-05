@@ -9,10 +9,14 @@
 import time
 import random
 import uuid
+import builtins
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+
+# Save Python's built-in round before PySpark functions shadow it
+python_round = builtins.round
 
 # COMMAND ----------
 
@@ -62,7 +66,7 @@ def generate_event():
         "transaction_id": f"txn_{uuid.uuid4().hex[:16]}",
         "merchant_id": random.choice(MERCHANTS),
         "cardholder_id": f"ch_{random.randint(1, 10000)}",
-        "amount": round(amount, 2),
+        "amount": python_round(amount, 2),
         "currency": "USD" if random.random() > 0.2 else random.choice(["EUR", "GBP", "CAD"]),
         "card_network": random.choice(CARD_NETWORKS),
         "card_bin": f"4{random.randint(10000, 99999)}",
@@ -79,9 +83,9 @@ def generate_event():
         "is_recurring": random.random() > 0.6,
         "is_retry": random.random() > 0.9,
         "retry_count": random.randint(0, 3) if random.random() > 0.9 else 0,
-        "fraud_score": round(fraud_score, 4),
-        "aml_risk_score": round(random.betavariate(2, 10), 4),
-        "device_trust_score": round(random.betavariate(8, 2), 4),
+        "fraud_score": python_round(fraud_score, 4),
+        "aml_risk_score": python_round(random.betavariate(2, 10), 4),
+        "device_trust_score": python_round(random.betavariate(8, 2), 4),
         "is_approved": is_approved,
         "decline_reason": None if is_approved else random.choice(DECLINE_REASONS),
         "decline_code_raw": None if is_approved else f"RC{random.randint(1, 99):02d}",
@@ -172,7 +176,7 @@ CREATE TABLE IF NOT EXISTS {target_table} (
     decline_code_raw STRING,
     processing_time_ms INT,
     event_timestamp TIMESTAMP NOT NULL,
-    _ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+    _ingested_at TIMESTAMP
 )
 USING DELTA
 TBLPROPERTIES (
