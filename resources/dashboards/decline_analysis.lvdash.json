@@ -75,7 +75,7 @@
               {
                 "name": "trend_query",
                 "query": {
-                  "query_text": "SELECT hour, SUM(transaction_count) - SUM(CASE WHEN approval_rate_pct >= 50 THEN transaction_count ELSE 0 END) as decline_count FROM v_approval_trends_hourly GROUP BY hour ORDER BY hour",
+                  "query_text": "SELECT hour, SUM(transaction_count * (100 - approval_rate_pct) / 100) as decline_count FROM v_approval_trends_hourly GROUP BY hour ORDER BY hour",
                   "warehouse_id": "{{ warehouse_id }}"
                 }
               }
