@@ -70,7 +70,7 @@ resources:
           description: "Test decline analyst, risk assessor, and routing optimizer agents"
           
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework.py
             base_parameters:
               catalog: ${var.catalog}
               schema: payment_analysis_${var.environment}
