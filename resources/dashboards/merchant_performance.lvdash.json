@@ -23,9 +23,9 @@
               {
                 "name": "merchant_kpi",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
                   "query_text": "SELECT unique_merchants FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -49,9 +49,9 @@
               {
                 "name": "country_kpi",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
                   "query_text": "SELECT unique_countries FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -75,9 +75,9 @@
               {
                 "name": "amount_kpi",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
                   "query_text": "SELECT avg_transaction_amount FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -102,9 +102,9 @@
               {
                 "name": "segment_query",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, transaction_count, approval_rate_pct, total_value FROM v_merchant_segment_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -128,9 +128,9 @@
               {
                 "name": "approval_by_segment",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, approval_rate_pct, avg_fraud_score FROM v_merchant_segment_performance ORDER BY approval_rate_pct DESC",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -154,9 +154,9 @@
               {
                 "name": "segment_detail_query",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM v_merchant_segment_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],
@@ -186,9 +186,9 @@
               {
                 "name": "geo_breakdown_query",
                 "query": {
-                  "datasetName": "main.dev_ariel_hdez_payment_analysis_dev.v_performance_by_geography",
+                  "datasetName": "${var.catalog}.${var.schema}.v_performance_by_geography",
                   "query_text": "SELECT country, transaction_count, approval_rate_pct, unique_merchants, total_transaction_value, avg_fraud_score FROM v_performance_by_geography ORDER BY transaction_count DESC LIMIT 20",
-                  "warehouse_id": "3fef3d3419b56344"
+                  "warehouse_id": "${var.warehouse_id}"
                 }
               }
             ],

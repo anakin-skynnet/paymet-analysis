@@ -34,6 +34,9 @@ variables:
   warehouse_id:
     description: SQL Warehouse ID for queries (optional)
     default: "3fef3d3419b56344"
+  schema:
+    description: Unity Catalog schema name (computed from environment and user)
+    default: payment_analysis_${var.environment}
 
 # Sync configuration for notebook deployment
 sync:
