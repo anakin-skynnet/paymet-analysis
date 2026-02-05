@@ -12,6 +12,7 @@ A Databricks-powered solution that maximizes payment approval rates through real
 |----------|----------|-------------|
 | [0. Executive Overview](docs/0_EXECUTIVE_OVERVIEW.md) | **C-Suite / Business** | Business challenge, solution, platform capabilities, ROI, and implementation |
 | [1. Deployment Guide](docs/1_DEPLOYMENT_GUIDE.md) | **DevOps / Engineering** | **Step-by-step deployment instructions** (START HERE) |
+| [DEMO_SETUP](docs/DEMO_SETUP.md) | **Everyone** | **One-click links and steps to run the solution end-to-end** |
 | [2. Data Flow Summary](docs/2_DATA_FLOW_SUMMARY.md) | **Data Engineers** | 5-stage data flow from ingestion to insight with lineage |
 | [3. AI Agents Guide](docs/3_AI_AGENTS_GUIDE.md) | **ML Engineers / Data Scientists** | 7 Databricks AI agents with capabilities and deployment |
 | [4. Technical Details](docs/4_TECHNICAL_DETAILS.md) | **Software Engineers / Architects** | Architecture, implementation, security, monitoring, and troubleshooting |

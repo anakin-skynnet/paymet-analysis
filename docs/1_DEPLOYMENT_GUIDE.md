@@ -2,6 +2,8 @@
 
 Step-by-step instructions to deploy and run the Payment Approval Optimization Platform.
 
+**→ To run the solution end-to-end with one-click links:** see [DEMO_SETUP.md](DEMO_SETUP.md).
+
 ---
 
 ## 📋 Prerequisites

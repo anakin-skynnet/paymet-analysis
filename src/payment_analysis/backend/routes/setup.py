@@ -20,7 +20,7 @@ router = APIRouter(prefix="/setup", tags=["setup"])
 
 
 # =============================================================================
-# Default resource IDs (from bundle deployment / DEPLOYMENT_GUIDE)
+# Default resource IDs (from bundle deployment / docs/DEMO_SETUP)
 # =============================================================================
 
 def _get_workspace_host() -> str:
