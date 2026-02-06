@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..services.databricks_service import get_databricks_service
@@ -62,9 +62,9 @@ def _rule_row_to_out(row: dict) -> ApprovalRuleOut:
 
 @router.get("", response_model=list[ApprovalRuleOut], operation_id="listApprovalRules")
 async def list_approval_rules(
-    rule_type: Optional[str] = None,
-    active_only: bool = False,
-    limit: int = 200,
+    rule_type: Optional[str] = Query(None, description="Filter by rule_type: authentication, retry, or routing"),
+    active_only: bool = Query(False, description="Return only active rules"),
+    limit: int = Query(200, ge=1, le=500, description="Max number of rules to return"),
 ) -> list[ApprovalRuleOut]:
     """List approval rules from the Lakehouse. ML and AI agents read these to accelerate approval rates."""
     service = get_databricks_service()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import desc, func
 from sqlmodel import select
 from pydantic import BaseModel
@@ -202,7 +202,10 @@ class OnlineFeatureOut(BaseModel):
 
 
 @router.get("/online-features", response_model=list[OnlineFeatureOut], operation_id="getOnlineFeatures")
-async def get_online_features(source: Optional[str] = None, limit: int = 100) -> list[OnlineFeatureOut]:
+async def get_online_features(
+    source: Optional[str] = Query(None, description="Filter by source: ml or agent"),
+    limit: int = Query(100, ge=1, le=500, description="Max number of features to return"),
+) -> list[OnlineFeatureOut]:
     """Get online features from the Lakehouse (ML and AI processes). Presented in the UI."""
     service = get_databricks_service()
     rows = await service.get_online_features(source=source, limit=limit)
@@ -222,7 +225,9 @@ async def get_online_features(source: Optional[str] = None, limit: int = 100) ->
 
 
 @router.get("/recommendations", response_model=list[RecommendationOut], operation_id="getRecommendations")
-async def get_recommendations(limit: int = 20) -> list[RecommendationOut]:
+async def get_recommendations(
+    limit: int = Query(20, ge=1, le=100, description="Max number of recommendations to return"),
+) -> list[RecommendationOut]:
     """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases."""
     service = get_databricks_service()
     rows = await service.get_recommendations_from_lakehouse(limit=limit)

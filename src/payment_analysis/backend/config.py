@@ -13,8 +13,8 @@ except Exception:
     app_name = "payment-analysis"
     app_slug = "payment_analysis"
 
-# project root is the parent of the src folder
-project_root = Path(__file__).parent.parent.parent.parent
+# Project root is the parent of the src folder; resolve for consistent paths.
+project_root = Path(__file__).resolve().parent.parent.parent.parent
 env_file = project_root / ".env"
 
 if env_file.exists():
@@ -55,6 +55,8 @@ class DatabricksConfig(BaseSettings):
 
 
 class DatabaseConfig(BaseSettings):
+    """Postgres / Databricks SQL warehouse database configuration."""
+
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         extra="ignore",
     )

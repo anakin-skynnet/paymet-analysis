@@ -22,7 +22,10 @@ except Exception:
 async def lifespan(app: FastAPI):
     # Initialize config and runtime, store in app.state for dependency injection
     config = AppConfig()
-    logger.info(f"Starting app with configuration:\n{config}")
+    logger.info(
+        "Application starting: name=%s; DB and runtime will be initialized.",
+        config.app_name,
+    )
 
     runtime = Runtime(config)
     runtime.validate_db()

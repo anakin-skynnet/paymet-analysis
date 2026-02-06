@@ -26,7 +26,8 @@ def add_not_found_handler(app: FastAPI):
             is_get_page_nav = request.method == "GET" and "text/html" in accept
 
             # Heuristic: if the last path segment looks like a file (has a dot), don't SPA-fallback
-            looks_like_asset = "." in path.split("/")[-1]
+            last_segment = path.rstrip("/").split("/")[-1] if path else ""
+            looks_like_asset = "." in last_segment
 
             if (not is_api) and is_get_page_nav and (not looks_like_asset):
                 index_html = _dist_dir / "index.html"

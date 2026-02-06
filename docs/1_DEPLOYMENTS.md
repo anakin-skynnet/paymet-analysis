@@ -49,6 +49,25 @@ For prod with different catalog/schema in dashboards, run `./scripts/validate_bu
 
 Use one catalog/schema everywhere (defaults: `ahs_demos_catalog`, `ahs_demo_payment_analysis_dev`). Bundle: `var.catalog`, `var.schema`; backend: `DATABRICKS_CATALOG`, `DATABRICKS_SCHEMA`.
 
+## Will I see all resources in my workspace?
+
+**Yes, if you follow the steps and deploy succeeds.** The bundle deploys:
+
+- **Workspace** folder and synced files (notebooks, transform SQL, etc.)
+- **Workflow (Jobs):** 11 jobs (simulator, gold views, ML training, test agent, 6 AI agents, stream processor)
+- **Lakeflow:** 2 pipelines (ETL, real-time)
+- **SQL** warehouse, **Catalog** (schema + volumes), **11 dashboards**
+- **Vector Search** (endpoint + index) and **Model serving** (4 endpoints) when their prerequisites are met
+
+**Two resources can fail until you complete prerequisites:**
+
+| Resource | Prerequisite | If it fails |
+|----------|--------------|-------------|
+| **Model serving** | Run **Step 6** (Train Payment Approval ML Models) so 4 models exist in Unity Catalog | Comment out `resources/model_serving.yml` in `databricks.yml`, run `databricks bundle deploy -t dev` again. You’ll see all other resources. After training, uncomment and redeploy to add model serving. |
+| **Vector Search** | Run **Step 5** (Lakehouse SQL) so `transaction_summaries_for_search` exists; embedding model `databricks-bge-large-en` available | Comment out `resources/vector_search.yml` in `databricks.yml` and redeploy to see everything else. Optionally run Step 5 first, then include Vector Search and redeploy. |
+
+So: **follow the instructions in order.** If deploy fails at model serving or Vector Search, use the table above so the rest of the resources still appear; then fix the prerequisite and redeploy to add the missing one.
+
 ## Where to find resources in the workspace
 
 After a **successful** `databricks bundle deploy -t dev`, look for:

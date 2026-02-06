@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import desc
 from sqlmodel import select
@@ -27,7 +27,11 @@ class TaskIn(BaseModel):
 
 
 @router.get("", response_model=list[Incident], operation_id="listIncidents")
-def list_incidents(session: SessionDep, limit: int = 100, status: Optional[str] = None):
+def list_incidents(
+    session: SessionDep,
+    limit: int = Query(100, ge=1, le=200, description="Max number of incidents"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+):
     limit = max(1, min(limit, 200))
     stmt = select(Incident).order_by(desc(cast(Any, Incident.created_at))).limit(limit)
     if status:
@@ -89,7 +93,11 @@ def create_task(incident_id: str, payload: TaskIn, session: SessionDep) -> Remed
     response_model=list[RemediationTask],
     operation_id="listRemediationTasks",
 )
-def list_tasks(incident_id: str, session: SessionDep, limit: int = 200):
+def list_tasks(
+    incident_id: str,
+    session: SessionDep,
+    limit: int = Query(200, ge=1, le=500, description="Max number of tasks"),
+):
     limit = max(1, min(limit, 500))
     stmt = (
         select(RemediationTask)

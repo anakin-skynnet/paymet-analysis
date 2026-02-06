@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import desc
 from sqlmodel import select
@@ -33,7 +33,10 @@ def create_experiment(payload: ExperimentIn, session: SessionDep) -> Experiment:
 
 
 @router.get("", response_model=list[Experiment], operation_id="listExperiments")
-def list_experiments(session: SessionDep, limit: int = 100) -> list[Experiment]:
+def list_experiments(
+    session: SessionDep,
+    limit: int = Query(100, ge=1, le=200, description="Max number of experiments"),
+) -> list[Experiment]:
     limit = max(1, min(limit, 200))
     stmt = select(Experiment).order_by(desc(cast(Any, Experiment.created_at))).limit(
         limit
