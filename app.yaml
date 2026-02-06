@@ -1,4 +1,4 @@
-# Databricks App runtime. Dependencies: requirements.txt (pydantic-settings, sqlmodel, psycopg-binary).
+# Databricks App runtime. Python deps: requirements.txt (fastapi, uvicorn, databricks-sdk are pre-installed).
 # Optional: set PGAPPNAME to Lakebase instance name for rules/experiments/incidents DB.
 command:
   - uvicorn

@@ -13,13 +13,14 @@ bundle:
 workspace:
   root_path: /Workspace/Users/${workspace.current_user.userName}/${var.workspace_folder}
 
-# Resource modules. Order: UC/Lakebase → warehouse → pipelines → jobs → dashboards → app.
-# Expected: unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, ai_gateway,
-#           streaming_simulator, genie_spaces, dashboards, model_serving, app.
-# Vector Search (vector_search.yml): not in bundle schema; create endpoint/index manually from that spec.
+# Resource modules. Order: UC → warehouse → pipelines → jobs → dashboards → app.
+# Optional (uncomment when prerequisites are met):
+#   lakebase.yml — set a unique var (e.g. --var lakebase_instance_name=payment-analysis-db-YOURNAME) to avoid "Instance name is not unique".
+#   model_serving.yml — run "[dev] Train Payment Approval ML Models" (Step 6) first so 4 models exist in UC.
+# Vector Search: create manually from resources/vector_search.yml.
 include:
   - resources/unity_catalog.yml
-  - resources/lakebase.yml
+  # - resources/lakebase.yml   # Uncomment + use unique lakebase_instance_name (e.g. payment-analysis-db-<you>) to avoid name conflict
   - resources/pipelines.yml
   - resources/sql_warehouse.yml
   - resources/ml_jobs.yml
@@ -28,7 +29,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  - resources/model_serving.yml
+  # - resources/model_serving.yml   # Uncomment after Step 6 (Train ML Models) so 4 models exist in UC
   - resources/app.yml
 
 # -----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-# Databricks App: only add packages not pre-installed (fastapi, uvicorn, databricks-sdk are already there).
-# Keep minimal and use names that resolve to wheels to avoid "error installing packages".
-# psycopg[binary] = main psycopg package + C binary; required for postgresql+psycopg:// (do not use psycopg-binary alone).
-pydantic-settings
-sqlmodel
-psycopg[binary]
+# Databricks App: add only packages NOT pre-installed (fastapi, uvicorn, databricks-sdk are pre-installed).
+# Use wheel-friendly names; avoid source-only builds (no C compiler in container).
+# Lower bounds only; do not pin upper versions to allow compatible security updates.
+pydantic-settings>=2.0
+sqlmodel>=0.0.27
+psycopg[binary]>=3.2

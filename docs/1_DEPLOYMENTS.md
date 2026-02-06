@@ -70,18 +70,21 @@ Use one catalog/schema everywhere (defaults: `ahs_demos_catalog`, `ahs_demo_paym
 
 ## Will I see all resources in my workspace?
 
-**Yes, if you follow the steps and deploy succeeds.** The bundle deploys:
+**Yes.** By default the bundle deploys (without Lakebase and model serving so deploy always succeeds):
 
-- **Workspace** folder and synced files (notebooks, transform SQL) under **Workspace → Users → &lt;you&gt; → payment-analysis** (`var.workspace_folder`)
-- **Lakebase** (managed Postgres) instance + UC catalog for app rules/experiments/incidents; set app env **PGAPPNAME** to the instance name (e.g. `payment-analysis-db`)
+- **Workspace** folder and synced files under **Workspace → Users → &lt;you&gt; → payment-analysis** (`var.workspace_folder`)
 - **Workflow (Jobs):** simulator, gold views, ML training, test agent, 6 AI agents, stream processor, Genie sync
 - **Lakeflow:** 2 pipelines (ETL, real-time)
 - **SQL** warehouse, **Unity Catalog** (schema + volumes), **12 dashboards**, **Databricks App**
-- **Model serving** (4 endpoints) when models exist in UC (run Step 6 first)
 
-**Model serving** can fail until you run **Step 6** (Train Payment Approval ML Models) so the 4 models exist in Unity Catalog. If deploy fails at model serving, comment out `resources/model_serving.yml` in `databricks.yml`, run `./scripts/deploy.sh dev` again, then run Step 6 and redeploy to add model serving.
+**Optional — enable after deploy:**
 
-**Vector Search** is not in the bundle schema; create the endpoint and index manually from `resources/vector_search.yml` (Vector Search UI or API) after running `vector_search_and_recommendations.sql`.
+| Resource | How to enable |
+|----------|----------------|
+| **Lakebase** (Postgres for rules/experiments/incidents) | In `databricks.yml`, uncomment `resources/lakebase.yml`. Use a **unique** instance name to avoid "Instance name is not unique" (e.g. `--var lakebase_instance_name=payment-analysis-db-YOURNAME` or set in target variables). Then set app env **PGAPPNAME** to that name. |
+| **Model serving** (4 endpoints) | Run **Step 6** (Train Payment Approval ML Models) so the 4 models exist in UC. Then in `databricks.yml`, uncomment `resources/model_serving.yml` and run `./scripts/deploy.sh dev` again. |
+
+**Vector Search** is not in the bundle schema; create the endpoint and index manually from `resources/vector_search.yml` after running `vector_search_and_recommendations.sql`.
 
 ## Where to find resources in the workspace
 
@@ -95,7 +98,7 @@ After a **successful** `./scripts/deploy.sh dev` (or equivalent deploy), look fo
 - **Catalog (Lakehouse database):** **Data** (Catalog Explorer) → **Catalogs** → `ahs_demos_catalog` → schema `ahs_demo_payment_analysis_dev`. Tables, views, and volumes appear under the schema.
 - **Dashboards:** **SQL** → **Dashboards** (or under the workspace folder above). After deploy, run `uv run python scripts/publish_dashboards.py` to publish all 12 dashboards (embed credentials).
 
-If deploy **failed** (e.g. at model serving), some resources will be missing. Comment out `model_serving.yml` in `databricks.yml` and run `./scripts/deploy.sh dev` again. Confirm workspace path with `./scripts/validate_bundle.sh dev`.
+If deploy failed, confirm workspace path with `./scripts/validate_bundle.sh dev`. By default, Lakebase and model serving are commented out in `databricks.yml` so deploy succeeds; enable them as in the table above when prerequisites are met.
 
 **Dashboard TABLE_OR_VIEW_NOT_FOUND:** Dashboards use tables/views in the catalog.schema chosen when you ran `prepare_dashboards.py`. Run **Create Payment Analysis Gold Views** in that same catalog.schema (the job uses `.build/transform/gold_views.sql`, which sets `USE CATALOG`/`USE SCHEMA`). List required assets: `uv run python scripts/validate_dashboard_assets.py --catalog X --schema Y`.
 
@@ -104,7 +107,7 @@ If deploy **failed** (e.g. at model serving), some resources will be missing. Co
 | Issue | Actions |
 |-------|---------|
 | Don't see resources | Redeploy after commenting out `model_serving.yml` if deploy failed; check workspace path with `./scripts/validate_bundle.sh dev`. |
-| Lakebase "Instance name is not unique" | A Lakebase instance with that name already exists in the workspace, or one is still starting. Use a different instance name in bundle vars or wait and retry. |
+| Lakebase "Instance name is not unique" | Use a unique `lakebase_instance_name` (e.g. `payment-analysis-db-<yourname>`) via `--var lakebase_instance_name=...` or target variables. Or leave Lakebase commented out in `databricks.yml`. |
 | Lakeflow fails | Pipeline logs; confirm `raw_payment_events`; UC permissions; `pipelines reset` if needed |
 | Dashboards empty | Gold views + data; warehouse running; warehouse_id in config |
 | ML training fails | Silver data; ML runtime; UC model registry; MLflow logs |

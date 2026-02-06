@@ -58,20 +58,19 @@ Variables (in `databricks.yml`): `lakebase_instance_name`, `lakebase_capacity` (
 
 ## Databricks App (deploy)
 
-The app is deployed as a **Databricks App** (FastAPI + React). The platform pre-installs `fastapi`, `uvicorn`, and `databricks-sdk`. Extra Python deps are in **`requirements.txt`** at the project root (minimal to avoid "error installing packages"): `pydantic-settings`, `sqlmodel`, `psycopg-binary`. Do not add version pins or source-only packages; use only wheel-friendly names.
+The app is deployed as a **Databricks App** (FastAPI + React). **Pre-installed** (do not add to requirements.txt): `fastapi`, `uvicorn[standard]`, `databricks-sdk`. **requirements.txt** adds only: `pydantic-settings>=2.0`, `sqlmodel>=0.0.27`, `psycopg[binary]>=3.2`. Use lower bounds only; avoid upper pins and source-only packages so install succeeds in the App container (no C compiler).
 
-**Lakebase database:** The bundle deploys a Lakebase instance (see above). Set **`PGAPPNAME`** in the app’s environment to the instance name (e.g. `payment-analysis-db`); if unset, the app starts without DB and rules/experiments/incidents endpoints return 503. Local dev uses `APX_DEV_DB_PORT` instead.
+**Lakebase database:** Optional. Uncomment resources/lakebase.yml and use a unique lakebase_instance_name; then set **`PGAPPNAME`** in the app environment to that name. If unset, the app starts without DB and rules/experiments/incidents endpoints return 503. Local dev uses `APX_DEV_DB_PORT` instead.
 
 **Runtime:** `app.yaml` sets `command` (uvicorn), `PYTHONPATH=src`, and one worker. After deploy, open the app from Workspace → Apps.
 
 ## Bundle & Deploy
 
-**Included resources (all expected):**
+**Included by default (deploy succeeds without optional resources):**
 
 | Resource file | Contents |
 |---------------|----------|
 | `unity_catalog.yml` | UC schema + 4 volumes (raw_data, checkpoints, ml_artifacts, reports) |
-| `lakebase.yml` | Lakebase instance + database_catalog (Postgres for app rules/experiments/incidents) |
 | `pipelines.yml` | Payment Analysis ETL, Real-Time Stream (Lakeflow) |
 | `sql_warehouse.yml` | Payment Analysis Warehouse (PRO, serverless) |
 | `ml_jobs.yml` | Train ML Models, Create Gold Views, Test Agent Framework |
@@ -80,8 +79,9 @@ The app is deployed as a **Databricks App** (FastAPI + React). The platform pre-
 | `streaming_simulator.yml` | Transaction Stream Simulator job, Continuous Stream Processor job |
 | `genie_spaces.yml` | Genie Space Sync job |
 | `dashboards.yml` | 12 AI/BI dashboards |
-| `model_serving.yml` | 4 serving endpoints (approval propensity, risk scoring, smart routing, smart retry). **Run “[dev] Train Payment Approval ML Models” once** so models exist in UC before deploy, or deploy will fail on these endpoints. |
 | `app.yml` | Databricks App (payment-analysis) |
+
+**Optional (commented out in databricks.yml):** `lakebase.yml` — use a unique `lakebase_instance_name` (e.g. `--var lakebase_instance_name=payment-analysis-db-YOURNAME`) to avoid "Instance name is not unique"; then set app **PGAPPNAME**. `model_serving.yml` — run Step 6 (Train ML Models) first so 4 models exist in UC, then uncomment and redeploy.
 
 **Not in bundle (create manually if needed):** Vector Search endpoint and index are not in the Asset Bundle schema yet. See `resources/vector_search.yml` for the spec and create the endpoint/index in the Vector Search UI, or via API, after running `vector_search_and_recommendations.sql`.
 
