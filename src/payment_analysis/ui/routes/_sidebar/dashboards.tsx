@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,14 +26,14 @@ interface DashboardList {
   categories: Record<string, number>;
 }
 
-const categoryIcons: Record<string, any> = {
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   executive: Award,
   operations: Zap,
   analytics: BarChart3,
   technical: Gauge,
 };
 
-const dashboardIcons: Record<string, any> = {
+const dashboardIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   executive_overview: BarChart3,
   decline_analysis: TrendingUp,
   realtime_monitoring: Gauge,

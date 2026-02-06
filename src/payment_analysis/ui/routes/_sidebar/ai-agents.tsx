@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ interface AgentList {
   by_type: Record<string, number>;
 }
 
-const agentTypeIcons: Record<string, any> = {
+const agentTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   genie: Sparkles,
   model_serving: Brain,
   custom_llm: Bot,
@@ -43,7 +43,7 @@ const agentTypeColors: Record<string, string> = {
   ai_gateway: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
 };
 
-const agentIcons: Record<string, any> = {
+const agentIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   approval_optimizer_genie: TrendingUp,
   decline_insights_genie: BarChart3,
   approval_propensity_predictor: Brain,

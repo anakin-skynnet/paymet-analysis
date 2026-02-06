@@ -26,6 +26,7 @@ from sklearn.model_selection import train_test_split  # type: ignore[import-unty
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score  # type: ignore[import-untyped]
 from sklearn.preprocessing import LabelEncoder  # type: ignore[import-untyped]
 from mlflow.models.signature import infer_signature  # type: ignore[import-untyped]
+import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -84,11 +85,12 @@ SELECT
     processing_time_ms
 FROM {CATALOG}.{SCHEMA}.payments_enriched_silver
 WHERE event_date >= CURRENT_DATE() - INTERVAL 30 DAYS
+LIMIT 500000
 """
 
 try:
-    df = spark.sql(data_query).toPandas()
-    print(f"✓ Loaded {len(df)} transactions from Silver table")
+    df = spark.sql(data_query).toPandas()  # type: ignore[name-defined]
+    print(f"✓ Loaded {len(df)} transactions from Silver table (capped at 500k)")
     print(f"  Approval rate: {df['is_approved'].mean()*100:.1f}%")
 except Exception as e:
     print(f"⚠ Table not found, creating synthetic data for training...")
@@ -303,7 +305,6 @@ with mlflow.start_run(run_name="smart_routing_policy") as run:
     })
     mlflow.log_metrics({"accuracy": accuracy, "n_classes": len(le.classes_)})
     
-    import pickle
     with open("/tmp/label_encoder.pkl", "wb") as f:
         pickle.dump(le, f)
     mlflow.log_artifact("/tmp/label_encoder.pkl")

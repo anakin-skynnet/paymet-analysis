@@ -412,7 +412,7 @@ finally:
 # COMMAND ----------
 
 # Check row count
-row_count = spark.sql(f"SELECT COUNT(*) as cnt FROM {target_table}").collect()[0]["cnt"]
+row_count = spark.sql(f"SELECT COUNT(*) as cnt FROM {target_table}").first()["cnt"]  # type: ignore[name-defined]
 print(f"Total rows in {target_table}: {row_count:,}")
 
 # Sample recent events

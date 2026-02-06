@@ -39,6 +39,14 @@ export const AgentType = {
 
 export type AgentType = (typeof AgentType)[keyof typeof AgentType];
 
+export interface AgentUrlOut {
+  agent_id: string;
+  agent_type: string;
+  databricks_resource?: string | null;
+  name: string;
+  url: string;
+}
+
 export interface ApprovalPredictionOut {
   approval_probability: number;
   model_version: string;
@@ -214,6 +222,12 @@ export interface FalseInsightsMetricOut {
   reviewed_insights: number;
 }
 
+export interface FolderUrlOut {
+  folder_id: string;
+  url: string;
+  workspace_path: string;
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -296,6 +310,14 @@ export interface NotebookList {
   by_category: Record<string, number>;
   notebooks: NotebookInfo[];
   total: number;
+}
+
+export interface NotebookUrlOut {
+  category: string;
+  name: string;
+  notebook_id: string;
+  url: string;
+  workspace_path: string;
 }
 
 export interface ReasonCodeInsightOut {
@@ -720,7 +742,7 @@ export function useGetAgentSuspense<TData = { data: AgentInfo }>(options: { para
   return useSuspenseQuery({ queryKey: getAgentKey(options.params), queryFn: () => getAgent(options.params), ...options?.query });
 }
 
-export const getAgentUrl = async (params: GetAgentUrlParams, options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
+export const getAgentUrl = async (params: GetAgentUrlParams, options?: RequestInit): Promise<{ data: AgentUrlOut }> => {
   const res = await fetch(`/api/agents/agents/${params.agent_id}/url`, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -735,11 +757,11 @@ export const getAgentUrlKey = (params?: GetAgentUrlParams) => {
   return ["/api/agents/agents/{agent_id}/url", params] as const;
 };
 
-export function useGetAgentUrl<TData = { data: Record<string, unknown> }>(options: { params: GetAgentUrlParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetAgentUrl<TData = { data: AgentUrlOut }>(options: { params: GetAgentUrlParams; query?: Omit<UseQueryOptions<{ data: AgentUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useQuery({ queryKey: getAgentUrlKey(options.params), queryFn: () => getAgentUrl(options.params), ...options?.query });
 }
 
-export function useGetAgentUrlSuspense<TData = { data: Record<string, unknown> }>(options: { params: GetAgentUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetAgentUrlSuspense<TData = { data: AgentUrlOut }>(options: { params: GetAgentUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: AgentUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getAgentUrlKey(options.params), queryFn: () => getAgentUrl(options.params), ...options?.query });
 }
 
@@ -1683,7 +1705,7 @@ export function useGetNotebookCategorySummarySuspense<TData = { data: Record<str
   return useSuspenseQuery({ queryKey: getNotebookCategorySummaryKey(), queryFn: () => getNotebookCategorySummary(), ...options?.query });
 }
 
-export const getNotebookFolderUrl = async (params: GetNotebookFolderUrlParams, options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
+export const getNotebookFolderUrl = async (params: GetNotebookFolderUrlParams, options?: RequestInit): Promise<{ data: FolderUrlOut }> => {
   const res = await fetch(`/api/notebooks/notebooks/folders/${params.folder_id}/url`, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1698,11 +1720,11 @@ export const getNotebookFolderUrlKey = (params?: GetNotebookFolderUrlParams) => 
   return ["/api/notebooks/notebooks/folders/{folder_id}/url", params] as const;
 };
 
-export function useGetNotebookFolderUrl<TData = { data: Record<string, unknown> }>(options: { params: GetNotebookFolderUrlParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetNotebookFolderUrl<TData = { data: FolderUrlOut }>(options: { params: GetNotebookFolderUrlParams; query?: Omit<UseQueryOptions<{ data: FolderUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useQuery({ queryKey: getNotebookFolderUrlKey(options.params), queryFn: () => getNotebookFolderUrl(options.params), ...options?.query });
 }
 
-export function useGetNotebookFolderUrlSuspense<TData = { data: Record<string, unknown> }>(options: { params: GetNotebookFolderUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetNotebookFolderUrlSuspense<TData = { data: FolderUrlOut }>(options: { params: GetNotebookFolderUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: FolderUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getNotebookFolderUrlKey(options.params), queryFn: () => getNotebookFolderUrl(options.params), ...options?.query });
 }
 
@@ -1729,7 +1751,7 @@ export function useGetNotebookSuspense<TData = { data: NotebookInfo }>(options: 
   return useSuspenseQuery({ queryKey: getNotebookKey(options.params), queryFn: () => getNotebook(options.params), ...options?.query });
 }
 
-export const getNotebookUrl = async (params: GetNotebookUrlParams, options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
+export const getNotebookUrl = async (params: GetNotebookUrlParams, options?: RequestInit): Promise<{ data: NotebookUrlOut }> => {
   const res = await fetch(`/api/notebooks/notebooks/${params.notebook_id}/url`, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1744,11 +1766,11 @@ export const getNotebookUrlKey = (params?: GetNotebookUrlParams) => {
   return ["/api/notebooks/notebooks/{notebook_id}/url", params] as const;
 };
 
-export function useGetNotebookUrl<TData = { data: Record<string, unknown> }>(options: { params: GetNotebookUrlParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetNotebookUrl<TData = { data: NotebookUrlOut }>(options: { params: GetNotebookUrlParams; query?: Omit<UseQueryOptions<{ data: NotebookUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useQuery({ queryKey: getNotebookUrlKey(options.params), queryFn: () => getNotebookUrl(options.params), ...options?.query });
 }
 
-export function useGetNotebookUrlSuspense<TData = { data: Record<string, unknown> }>(options: { params: GetNotebookUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+export function useGetNotebookUrlSuspense<TData = { data: NotebookUrlOut }>(options: { params: GetNotebookUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: NotebookUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getNotebookUrlKey(options.params), queryFn: () => getNotebookUrl(options.params), ...options?.query });
 }
 

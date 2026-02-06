@@ -198,7 +198,7 @@ async def get_dashboard(dashboard_id: str) -> DashboardInfo:
     )
 
 
-@router.get("/dashboards/{dashboard_id}/url", operation_id="getDashboardUrl")
+@router.get("/dashboards/{dashboard_id}/url", response_model=dict[str, Any], operation_id="getDashboardUrl")
 async def get_dashboard_url(
     dashboard_id: str,
     embed: bool = Query(False, description="Return embed-friendly URL"),
@@ -240,7 +240,7 @@ async def get_dashboard_url(
     }
 
 
-@router.get("/dashboards/categories/list", operation_id="listDashboardCategories")
+@router.get("/dashboards/categories/list", response_model=dict[str, Any], operation_id="listDashboardCategories")
 async def list_categories() -> dict[str, Any]:
     """
     List all dashboard categories with counts.
@@ -264,7 +264,7 @@ async def list_categories() -> dict[str, Any]:
     }
 
 
-@router.get("/dashboards/tags/list", operation_id="listDashboardTags")
+@router.get("/dashboards/tags/list", response_model=dict[str, Any], operation_id="listDashboardTags")
 async def list_tags() -> dict[str, Any]:
     """
     List all dashboard tags with counts.

@@ -167,7 +167,7 @@ function DecisionCard({
           {typeof result === "object" &&
             result != null &&
             "audit_id" in result && (
-              <Badge variant="outline">{String((result as any).audit_id)}</Badge>
+              <Badge variant="outline">{String((result as Record<string, unknown>).audit_id)}</Badge>
             )}
         </CardTitle>
       </CardHeader>
