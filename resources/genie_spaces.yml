@@ -1,58 +1,18 @@
-# Genie Spaces Configuration for Payment Analysis
-# Provides natural language query interface for business users
+# =============================================================================
+# Genie Space Sync Job
+# =============================================================================
+# Syncs Genie space configuration and sample questions for natural language
+# analytics over payment data. Catalog/schema from variables.
+# =============================================================================
 
 resources:
-  # Note: Genie Spaces are created via UI/API, this documents the expected configuration
-  
-  # Genie Space definitions (for reference and deployment scripts)
-  # Deploy using: databricks genie create-space --json @genie_space_config.json
-
-# ============================================================================
-# GENIE SPACE: Payment Analytics
-# ============================================================================
-# Configuration to be applied via Databricks API/UI:
-#
-# Space Name: Payment Analytics
-# Description: Natural language interface for payment transaction analytics
-#
-# Data Sources:
-#   - ${var.catalog}.${var.schema}.v_executive_kpis
-#   - ${var.catalog}.${var.schema}.v_top_decline_reasons
-#   - ${var.catalog}.${var.schema}.v_performance_by_geography
-#   - ${var.catalog}.${var.schema}.v_solution_performance
-#   - ${var.catalog}.${var.schema}.v_approval_trends_hourly
-#   - ${var.catalog}.${var.schema}.payments_enriched_silver
-#
-# Sample Questions (for training):
-#   1. "What is the current approval rate?"
-#   2. "Show me top decline reasons"
-#   3. "Compare approval rates by country"
-#   4. "Which payment solution performs best?"
-#   5. "How many high risk transactions today?"
-#   6. "What's the trend this week?"
-#   7. "Show me transactions by merchant segment"
-#   8. "Are there any active alerts?"
-#
-# Instructions:
-#   - Approval rate is calculated as approved/total * 100
-#   - Use v_executive_kpis for overall metrics
-#   - Use v_top_decline_reasons for decline analysis
-#   - Use payments_enriched_silver for detailed queries
-#   - Risk tiers: low (<0.3), medium (0.3-0.7), high (>0.7)
-#
-# Permissions:
-#   - Viewers: users group
-#   - Editors: data_analysts group
-#   - Owners: workspace admins
-# ============================================================================
-
-# Job to sync Genie configuration
   jobs:
     genie_sync_job:
       name: "[${var.environment}] Genie Space Sync"
-      description: "Syncs Genie space configuration and sample questions"
+      description: "Syncs Genie space configuration and sample questions for natural language analytics"
       tasks:
-        - task_key: "sync_genie_config"
+        - task_key: sync_genie_config
+          description: "Sync Genie space configuration"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/genie/sync_genie_space
             base_parameters:
@@ -63,16 +23,17 @@ resources:
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 600
-      # Run weekly to refresh configuration
       schedule:
         quartz_cron_expression: "0 0 5 ? * SUN"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
         component: genie
+        domain: payment-analytics

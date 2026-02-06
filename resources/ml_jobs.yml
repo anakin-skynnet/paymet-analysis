@@ -1,106 +1,99 @@
+# =============================================================================
+# ML and Analytics Jobs
+# =============================================================================
+# Train ML models, create gold views (SQL), and test the agent framework.
+# Catalog/schema from variables. Gold views job uses SQL warehouse resource.
+# =============================================================================
+
 resources:
   jobs:
-    # ML Model Training - All 4 Models
     train_ml_models_job:
       name: "[${var.environment}] Train Payment Approval ML Models"
-      description: "Train approval propensity, risk scoring, smart routing, and smart retry models"
-      
+      description: "Train approval propensity, risk scoring, smart routing, and smart retry models; registers in Unity Catalog"
       tasks:
         - task_key: train_models
           description: "Train all ML models with MLflow tracking"
-          
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/ml/train_models
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-          
           new_cluster:
             spark_version: "15.4.x-cpu-ml-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             spark_env_vars:
               MLFLOW_TRACKING_URI: "databricks"
             custom_tags:
               ResourceClass: SingleNode
-          
           timeout_seconds: 5400
           max_retries: 1
-      
       schedule:
-        quartz_cron_expression: "0 0 3 * * ?"  # Daily at 3 AM
+        quartz_cron_expression: "0 0 3 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
-      
       tags:
         environment: ${var.environment}
+        project: payment-analysis
         component: ml-training
-    
-    # Create Gold Views Job
+        domain: payment-analytics
+
     create_gold_views_job:
       name: "[${var.environment}] Create Payment Analysis Gold Views"
-      description: "Execute SQL to create all gold-layer analytical views"
-      
+      description: "Execute SQL to create all gold-layer analytical views for dashboards and Genie"
       tasks:
         - task_key: create_views
-          description: "Create 20+ gold views for dashboards and analytics"
-          
+          description: "Create gold views for dashboards and analytics"
           sql_task:
             warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
             file:
               path: ${workspace.file_path}/src/payment_analysis/transform/gold_views.sql
-          
           timeout_seconds: 600
           max_retries: 2
-      
       schedule:
-        quartz_cron_expression: "0 30 * * * ?"  # Every hour at :30
+        quartz_cron_expression: "0 30 * * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
-      
       tags:
         environment: ${var.environment}
+        project: payment-analysis
         component: gold-views
-    
-    # AI Agent Framework Test
+        domain: payment-analytics
+
     test_agent_framework_job:
       name: "[${var.environment}] Test AI Agent Framework"
       description: "Verify multi-agent framework with orchestrator and specialist agents"
-      
       tasks:
         - task_key: test_agents
           description: "Test decline analyst, risk assessor, and routing optimizer agents"
-          
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               test_mode: "true"
-          
           new_cluster:
             spark_version: "15.4.x-cpu-ml-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             spark_env_vars:
               MLFLOW_TRACKING_URI: "databricks"
             custom_tags:
               ResourceClass: SingleNode
-          
           timeout_seconds: 1800
           max_retries: 1
-      
       schedule:
-        quartz_cron_expression: "0 0 4 ? * MON"  # Weekly on Monday at 4 AM
+        quartz_cron_expression: "0 0 4 ? * MON"
         timezone_id: "UTC"
         pause_status: "PAUSED"
-      
       tags:
         environment: ${var.environment}
+        project: payment-analysis
         component: ai-agents
+        domain: payment-analytics

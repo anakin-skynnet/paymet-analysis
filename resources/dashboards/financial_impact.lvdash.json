@@ -23,9 +23,8 @@
               {
                 "name": "approved_value_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT approved_value FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT approved_value FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -50,9 +49,8 @@
               {
                 "name": "declined_value_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT declined_value FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT declined_value FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -77,9 +75,8 @@
               {
                 "name": "avg_value_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT avg_transaction_amount FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT avg_transaction_amount FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -104,9 +101,8 @@
               {
                 "name": "recovery_value_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_decline_recovery_opportunities",
-                  "query_text": "SELECT SUM(potential_recovery_value) as total_recoverable FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM')",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "query_text": "SELECT SUM(potential_recovery_value) as total_recoverable FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM')"
                 }
               }
             ],
@@ -131,9 +127,8 @@
               {
                 "name": "segment_value_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT merchant_segment, total_value, transaction_count, avg_transaction_amount FROM v_merchant_segment_performance ORDER BY total_value DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT merchant_segment, total_value, transaction_count, avg_transaction_amount FROM v_merchant_segment_performance ORDER BY total_value DESC"
                 }
               }
             ],
@@ -157,9 +152,8 @@
               {
                 "name": "geo_value_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_performance_by_geography",
-                  "query_text": "SELECT country, total_transaction_value, transaction_count, approval_rate_pct FROM v_performance_by_geography ORDER BY total_transaction_value DESC LIMIT 10",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography",
+                  "query_text": "SELECT country, total_transaction_value, transaction_count, approval_rate_pct FROM v_performance_by_geography ORDER BY total_transaction_value DESC LIMIT 10"
                 }
               }
             ],
@@ -183,9 +177,8 @@
               {
                 "name": "decline_value_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_top_decline_reasons",
-                  "query_text": "SELECT decline_reason, total_declined_value, decline_count, avg_amount, recoverable_pct FROM v_top_decline_reasons ORDER BY total_declined_value DESC LIMIT 10",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons",
+                  "query_text": "SELECT decline_reason, total_declined_value, decline_count, avg_amount, recoverable_pct FROM v_top_decline_reasons ORDER BY total_declined_value DESC LIMIT 10"
                 }
               }
             ],
@@ -209,9 +202,8 @@
               {
                 "name": "recovery_roi_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_decline_recovery_opportunities",
-                  "query_text": "SELECT decline_reason, merchant_segment, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "query_text": "SELECT decline_reason, merchant_segment, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20"
                 }
               }
             ],
@@ -239,9 +231,8 @@
               {
                 "name": "retry_value_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_retry_performance",
-                  "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, recovered_value, effectiveness FROM v_retry_performance WHERE recovered_value > 0 ORDER BY recovered_value DESC LIMIT 15",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, recovered_value, effectiveness FROM v_retry_performance WHERE recovered_value > 0 ORDER BY recovered_value DESC LIMIT 15"
                 }
               }
             ],
@@ -269,9 +260,8 @@
               {
                 "name": "value_trend_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_daily_trends",
-                  "query_text": "SELECT event_date, total_value, transactions, approval_rate FROM v_daily_trends ORDER BY event_date DESC LIMIT 90",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "query_text": "SELECT event_date, total_value, transactions, approval_rate FROM v_daily_trends ORDER BY event_date DESC LIMIT 90"
                 }
               }
             ],

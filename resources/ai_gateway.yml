@@ -1,192 +1,198 @@
-# AI Gateway Configuration for Payment Analysis
-# Defines LLM endpoints, guardrails, and all AI agents
+# =============================================================================
+# AI Agent Jobs (Smart Routing, Retry, Decline, Risk, Performance, Orchestrator)
+# =============================================================================
+# Six agent jobs calling the shared agent_framework notebook with different roles.
+# Catalog/schema from variables. All use single-node clusters; schedules are PAUSED by default.
+# =============================================================================
 
 resources:
-  # Note: LLM model serving endpoints require external model credentials
-  # Configure separately via Databricks UI or use existing endpoints
-  # model_serving_endpoints:
-  #   llama_agent_endpoint:
-  #     name: "payment-analysis-llama-${var.environment}"
-  #     ...
-
-  # Databricks Jobs for All Agents
   jobs:
-    # 1. Smart Routing & Cascading Agent
     smart_routing_agent_job:
       name: "[${var.environment}] Smart Routing Agent"
       description: "Optimizes payment routing and cascading strategies"
       tasks:
-        - task_key: "run_smart_routing"
+        - task_key: run_smart_routing
+          description: "Run smart routing agent"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "smart_routing"
-              query: "Analyze current routing performance and recommend optimal cascade configurations"
+              query: "Analyze routing performance and recommend cascade configurations"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
-        quartz_cron_expression: "0 0 */6 * * ?"  # Every 6 hours
+        quartz_cron_expression: "0 0 */6 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: smart_routing
 
-    # 2. Smart Retry Agent
     smart_retry_agent_job:
       name: "[${var.environment}] Smart Retry Agent"
       description: "Intelligent payment retry and recovery optimization"
       tasks:
-        - task_key: "run_smart_retry"
+        - task_key: run_smart_retry
+          description: "Run smart retry agent"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "smart_retry"
-              query: "Identify retry opportunities and recommend recovery strategies"
+              query: "Identify retry opportunities and recovery strategies"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
-        quartz_cron_expression: "0 0 */4 * * ?"  # Every 4 hours
+        quartz_cron_expression: "0 0 */4 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: smart_retry
 
-    # 3. Decline Analyst Agent
     decline_analyst_agent_job:
       name: "[${var.environment}] Decline Analyst Agent"
       description: "Automated decline pattern analysis and recommendations"
       tasks:
-        - task_key: "run_decline_analysis"
+        - task_key: run_decline_analysis
+          description: "Run decline analyst agent"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "decline_analyst"
-              query: "Analyze recent decline patterns and provide recovery recommendations"
+              query: "Analyze decline patterns and recovery recommendations"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
-        quartz_cron_expression: "0 0 8 * * ?"  # Daily at 8 AM
+        quartz_cron_expression: "0 0 8 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: decline_analyst
 
-    # 4. Risk Assessor Agent
     risk_assessor_agent_job:
       name: "[${var.environment}] Risk Assessor Agent"
       description: "Automated risk assessment and fraud detection"
       tasks:
-        - task_key: "run_risk_assessment"
+        - task_key: run_risk_assessment
+          description: "Run risk assessor agent"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "risk_assessor"
-              query: "Identify high-risk transactions and recommend interventions"
+              query: "Identify high-risk transactions and interventions"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
-        quartz_cron_expression: "0 0 */2 * * ?"  # Every 2 hours
+        quartz_cron_expression: "0 0 */2 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: risk_assessor
 
-    # 5. Performance Recommender Agent
     performance_recommender_agent_job:
       name: "[${var.environment}] Performance Recommender Agent"
       description: "Comprehensive performance optimization recommendations"
       tasks:
-        - task_key: "run_performance_analysis"
+        - task_key: run_performance_analysis
+          description: "Run performance recommender agent"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "performance_recommender"
-              query: "Analyze overall performance and recommend optimizations"
+              query: "Analyze performance and recommend optimizations"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
-        quartz_cron_expression: "0 0 6 * * ?"  # Daily at 6 AM
+        quartz_cron_expression: "0 0 6 * * ?"
         timezone_id: "UTC"
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: performance_recommender
 
-    # 6. Orchestrator Agent (runs all agents)
     orchestrator_agent_job:
       name: "[${var.environment}] Payment Analysis Orchestrator"
       description: "Orchestrates all payment analysis agents for comprehensive insights"
       max_concurrent_runs: 1
       tasks:
-        - task_key: "run_orchestrator"
+        - task_key: run_orchestrator
+          description: "Run orchestrator for all agents"
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
               agent_role: "orchestrator"
-              query: "Run comprehensive payment analysis covering routing, retries, declines, risk, and performance"
+              query: "Run comprehensive payment analysis (routing, retries, declines, risk, performance)"
           new_cluster:
             spark_version: "15.4.x-scala2.12"
             node_type_id: "Standard_DS3_v2"
             num_workers: 0
             spark_conf:
-              "spark.databricks.cluster.profile": "singleNode"
-              "spark.master": "local[*]"
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
             custom_tags:
               ResourceClass: SingleNode
           timeout_seconds: 3600
@@ -196,4 +202,6 @@ resources:
         pause_status: "PAUSED"
       tags:
         environment: ${var.environment}
+        project: payment-analysis
+        component: ai-agents
         agent: orchestrator

@@ -23,9 +23,8 @@
               {
                 "name": "decline_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_top_decline_reasons",
-                  "query_text": "SELECT decline_reason, decline_count, pct_of_declines, total_declined_value FROM v_top_decline_reasons ORDER BY decline_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons",
+                  "query_text": "SELECT decline_reason, decline_count, pct_of_declines, total_declined_value FROM v_top_decline_reasons ORDER BY decline_count DESC"
                 }
               }
             ],
@@ -47,9 +46,8 @@
               {
                 "name": "recovery_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_decline_recovery_opportunities",
-                  "query_text": "SELECT * FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "query_text": "SELECT * FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20"
                 }
               }
             ],
@@ -77,9 +75,8 @@
               {
                 "name": "trend_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_approval_trends_hourly",
-                  "query_text": "SELECT hour, SUM(transaction_count * (100 - approval_rate_pct) / 100) as decline_count FROM v_approval_trends_hourly GROUP BY hour ORDER BY hour",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_approval_trends_hourly",
+                  "query_text": "SELECT hour, SUM(transaction_count * (100 - approval_rate_pct) / 100) as decline_count FROM v_approval_trends_hourly GROUP BY hour ORDER BY hour"
                 }
               }
             ],
@@ -101,9 +98,8 @@
               {
                 "name": "retry_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_retry_performance",
-                  "query_text": "SELECT * FROM v_retry_performance ORDER BY retry_success_rate_pct DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT * FROM v_retry_performance ORDER BY retry_success_rate_pct DESC"
                 }
               }
             ],

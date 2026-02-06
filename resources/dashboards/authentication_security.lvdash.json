@@ -23,9 +23,8 @@
               {
                 "name": "auth_usage_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT auth_3ds_usage_pct, total_transactions FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT auth_3ds_usage_pct, total_transactions FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -50,9 +49,8 @@
               {
                 "name": "secured_txns_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.payments_enriched_silver",
-                  "query_text": "SELECT COUNT(*) as secured_transactions FROM payments_enriched_silver WHERE uses_3ds = true",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "query_text": "SELECT COUNT(*) as secured_transactions FROM payments_enriched_silver WHERE uses_3ds = true"
                 }
               }
             ],
@@ -76,9 +74,8 @@
               {
                 "name": "auth_lift_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.payments_enriched_silver",
-                  "query_text": "SELECT ROUND(AVG(CASE WHEN uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as with_3ds_rate, ROUND(AVG(CASE WHEN NOT uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as without_3ds_rate FROM payments_enriched_silver",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "query_text": "SELECT ROUND(AVG(CASE WHEN uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as with_3ds_rate, ROUND(AVG(CASE WHEN NOT uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as without_3ds_rate FROM payments_enriched_silver"
                 }
               }
             ],
@@ -103,9 +100,8 @@
               {
                 "name": "segment_3ds_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, transaction_count, approval_rate_pct FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, transaction_count, approval_rate_pct FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC"
                 }
               }
             ],
@@ -129,9 +125,8 @@
               {
                 "name": "correlation_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM v_merchant_segment_performance ORDER BY merchant_segment",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM v_merchant_segment_performance ORDER BY merchant_segment"
                 }
               }
             ],
@@ -154,9 +149,8 @@
               {
                 "name": "3ds_trend_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.payments_enriched_silver",
-                  "query_text": "SELECT DATE_TRUNC('day', event_time) as date, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as usage_pct, COUNT(*) as total_txns FROM payments_enriched_silver WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 30 DAYS GROUP BY DATE_TRUNC('day', event_time) ORDER BY date",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "query_text": "SELECT DATE_TRUNC('day', event_time) as date, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as usage_pct, COUNT(*) as total_txns FROM payments_enriched_silver WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 30 DAYS GROUP BY DATE_TRUNC('day', event_time) ORDER BY date"
                 }
               }
             ],
@@ -180,9 +174,8 @@
               {
                 "name": "auth_details_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT merchant_segment, transaction_count, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score, unique_merchants, total_value FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT merchant_segment, transaction_count, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score, unique_merchants, total_value FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC"
                 }
               }
             ],
@@ -211,9 +204,8 @@
               {
                 "name": "geo_3ds_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.payments_enriched_silver",
-                  "query_text": "SELECT issuer_country, COUNT(*) as txns, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as auth_3ds_pct, ROUND(AVG(CASE WHEN is_approved THEN 100.0 ELSE 0.0 END), 2) as approval_rate FROM payments_enriched_silver GROUP BY issuer_country HAVING COUNT(*) >= 10 ORDER BY txns DESC LIMIT 15",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "query_text": "SELECT issuer_country, COUNT(*) as txns, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as auth_3ds_pct, ROUND(AVG(CASE WHEN is_approved THEN 100.0 ELSE 0.0 END), 2) as approval_rate FROM payments_enriched_silver GROUP BY issuer_country HAVING COUNT(*) >= 10 ORDER BY txns DESC LIMIT 15"
                 }
               }
             ],

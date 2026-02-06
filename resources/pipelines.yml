@@ -1,33 +1,32 @@
-# Lakeflow Declarative Pipelines
-# Optimized for continuous processing and cost (autoscale, idle timeout, shared config)
+# =============================================================================
+# Delta Live Tables (DLT) Pipelines
+# =============================================================================
+# Two pipelines: main ETL (Bronze → Silver → Gold) and dedicated real-time stream.
+# Catalog/schema from variables. Serverless, continuous, Photon. Development mode in dev.
+# =============================================================================
 
 resources:
   pipelines:
-    # ==========================================================================
-    # Continuous ETL (Bronze → Silver → Gold) — real-time events from simulator
-    # ==========================================================================
+    # Main ETL: bronze_ingest → silver_transform → gold_views (notebooks)
     payment_analysis_etl:
       name: "[${var.environment}] Payment Analysis ETL"
-      # Unity Catalog integration (use schema, not deprecated target)
       catalog: ${var.catalog}
       schema: ${var.schema}
       channel: CURRENT
-      # Pipeline configuration
       configuration:
-        # Schema configuration
         catalog_name: ${var.catalog}
         schema_name: ${var.schema}
-        # Performance optimizations
+        # Delta and schema evolution
         spark.databricks.delta.preview.enabled: "true"
         spark.databricks.delta.schema.autoMerge.enabled: "true"
-        # DLT optimizations
         pipelines.tableMaterialization.autoPropagate: "true"
+        # Write and compaction
         spark.databricks.delta.optimizeWrite.enabled: "true"
         spark.databricks.delta.autoCompact.enabled: "true"
+        # Streaming checkpoint
         spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled: "true"
         pipelines.trigger.interval: "2 seconds"
         pipelines.enableAutoOptimize: "true"
-      # Pipeline libraries (notebooks)
       libraries:
         - notebook:
             path: ${workspace.file_path}/src/payment_analysis/streaming/bronze_ingest
@@ -35,19 +34,12 @@ resources:
             path: ${workspace.file_path}/src/payment_analysis/transform/silver_transform
         - notebook:
             path: ${workspace.file_path}/src/payment_analysis/transform/gold_views
-      # Serverless compute (recommended for cost optimization)
       serverless: true
       continuous: true
-      # Batch mode for scheduled ETL
-      # continuous: false
-      # Development mode (set false in prod target)
       development: true
-      # Enable Photon acceleration
       photon: true
 
-    # ==========================================================================
-    # Real-Time Streaming Pipeline (dedicated realtime notebook)
-    # ==========================================================================
+    # Dedicated real-time pipeline (single notebook)
     payment_realtime_pipeline:
       name: "[${var.environment}] Payment Real-Time Stream"
       catalog: ${var.catalog}
@@ -56,29 +48,15 @@ resources:
       configuration:
         catalog_name: ${var.catalog}
         schema_name: ${var.schema}
-        # Streaming optimizations
         spark.databricks.delta.optimizeWrite.enabled: "true"
         spark.databricks.delta.autoCompact.enabled: "true"
         spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled: "true"
-        # Low-latency settings
         pipelines.trigger.interval: "2 seconds"
         pipelines.enableAutoOptimize: "true"
       libraries:
         - notebook:
             path: ${workspace.file_path}/src/payment_analysis/streaming/realtime_pipeline
       serverless: true
-      # Use dedicated cluster for streaming
-      # clusters:
-      #   - label: default
-      #     autoscale:
-      #       min_workers: 1
-      #       max_workers: 4
-      #       mode: ENHANCED
-      #     spark_conf:
-      #       spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled: "true"
-      #       spark.sql.streaming.stateStore.providerClass: "com.databricks.sql.streaming.state.RocksDBStateStoreProvider"
-      
-      # Continuous mode for real-time processing
       continuous: true
       development: true
       photon: true

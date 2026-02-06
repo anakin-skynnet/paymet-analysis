@@ -1,98 +1,51 @@
-# Unity Catalog Resources for Payment Analysis
-# Includes: Schema, Volumes, Table Properties, Data Classification, Quality Monitoring
+# =============================================================================
+# Unity Catalog - Schema and Volumes
+# =============================================================================
+# Single schema and four managed volumes for the payment analysis platform.
+# Catalog and schema names come from variables (default or set at deploy).
+# Tables/views are created by DLT pipelines and gold view job; ML models by ML job.
+# =============================================================================
 
 resources:
-  # Schema for payment analysis data
   schemas:
     payment_analysis_schema:
       name: ${var.schema}
       catalog_name: ${var.catalog}
       comment: |
-        Payment Approval Analysis Platform - ${var.environment} environment.
-        
-        This schema contains all payment transaction data, ML models, and analytics views
-        for the Payment Analysis Platform. Data flows through Bronze -> Silver -> Gold layers.
-        
-        Key Tables:
-        - payments_raw_bronze: Raw payment events (Bronze)
-        - payments_enriched_silver: Cleaned and enriched transactions (Silver)
-        - v_* views: Aggregated analytics views (Gold)
-        
-        ML Models:
-        - approval_propensity_model: Predicts transaction approval probability
-        - risk_scoring_model: Calculates fraud risk scores
-        - smart_routing_model: Recommends optimal payment routes
-        - smart_retry_model: Predicts retry success likelihood
-        
-        For Genie queries, start with:
-        - "What is the approval rate?" -> v_executive_kpis
-        - "Show decline reasons" -> v_top_decline_reasons
-        - "Performance by country" -> v_performance_by_geography
-      
+        Payment Approval Analysis Platform (${var.environment}).
+        Bronze: raw events. Silver: enriched transactions. Gold: v_* analytical views.
+        ML: approval_propensity_model, risk_scoring_model, smart_routing_policy, smart_retry_policy.
       grants:
         - principal: users
-          privileges:
-            - USE_SCHEMA
-            - SELECT
+          privileges: [USE_SCHEMA, SELECT]
         - principal: ${workspace.current_user.userName}
-          privileges:
-            - ALL_PRIVILEGES
+          privileges: [ALL_PRIVILEGES]
 
-  # Volumes for file storage
   volumes:
-    # Raw data landing zone
     raw_data_volume:
       name: raw_data
       catalog_name: ${var.catalog}
       schema_name: ${var.schema}
       volume_type: MANAGED
       comment: "Landing zone for raw payment data files (CSV, JSON, Parquet)"
-    
-    # Checkpoints for streaming
+
     checkpoints_volume:
       name: checkpoints
       catalog_name: ${var.catalog}
       schema_name: ${var.schema}
       volume_type: MANAGED
-      comment: "Checkpoint storage for Structured Streaming jobs"
-    
-    # ML artifacts
+      comment: "Checkpoint storage for Structured Streaming and DLT pipelines"
+
     ml_artifacts_volume:
       name: ml_artifacts
       catalog_name: ${var.catalog}
       schema_name: ${var.schema}
       volume_type: MANAGED
-      comment: "ML model artifacts, feature stores, and training data"
-    
-    # Reports and exports
+      comment: "ML model artifacts, feature store, and training data"
+
     reports_volume:
       name: reports
       catalog_name: ${var.catalog}
       schema_name: ${var.schema}
       volume_type: MANAGED
-      comment: "Generated reports, dashboards exports, and analytics outputs"
-
-# Note: The following are configured via SQL after deployment
-# See: src/payment_analysis/transform/unity_catalog_setup.sql
-
-# Table Properties to Set (via SQL):
-# - delta.enableChangeDataFeed = true (for streaming)
-# - delta.autoOptimize.optimizeWrite = true
-# - delta.autoOptimize.autoCompact = true
-# - predictive_optimization = enabled
-
-# Data Classification Tags to Apply:
-# - pii.contains_pii = true/false
-# - pii.data_category = personal_identifier / financial / behavioral
-# - compliance.gdpr_relevant = true/false
-# - compliance.pci_scope = true/false
-
-# Business Metrics to Define:
-# - approval_rate: SUM(approved) / COUNT(*) * 100
-# - decline_rate: SUM(declined) / COUNT(*) * 100
-# - average_transaction_value: AVG(amount)
-# - fraud_detection_rate: SUM(fraud_flagged) / SUM(actual_fraud) * 100
-
-# Quality Monitors to Create:
-# - payments_enriched_silver: Monitor data drift, null rates, volume anomalies
-# - v_executive_kpis: Monitor KPI thresholds (approval_rate > 85%)
+      comment: "Generated reports, dashboard exports, and analytics outputs"

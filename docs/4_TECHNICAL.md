@@ -40,7 +40,7 @@ Details: [3_AGENTS_VALUE](3_AGENTS_VALUE.md).
 
 ## Analytics
 
-- **AI/BI dashboards:** 10 `.lvdash.json` in `resources/dashboards/`; warehouse_id and datasets from gold views.
+- **AI/BI dashboards:** 10 `.lvdash.json` in `dashboards/`; default catalog/schema `ahs_demos_catalog.ahs_demo_payment_analysis_dev`; warehouse from bundle (`var.warehouse_id` = deployed SQL warehouse in dev).
 - **Genie:** Spaces use `catalog`/`schema`; sample questions and instructions in `genie_spaces.yml`.
 
 ---

@@ -1,15 +1,19 @@
-# Databricks Asset Bundle Configuration
-# Uses latest DAB features: presets, serverless, run_as, permissions
-# Documentation: https://docs.databricks.com/dev-tools/bundles/
+# =============================================================================
+# Databricks Asset Bundle - Payment Approval Optimization Platform
+# =============================================================================
+# Getnet initiatives: Smart Checkout, Reason Codes, Smart Retry.
+# All parameters have defaults or are set at deployment (target/variables).
+# Docs: docs/1_DEPLOYMENTS.md, docs/4_TECHNICAL.md
+# =============================================================================
 
 bundle:
   name: payment-analysis
 
-# Workspace configuration with dynamic path
+# Workspace root for notebooks, jobs, and dashboards (user-scoped)
 workspace:
   root_path: /Workspace/Users/${workspace.current_user.userName}/getnet_approval_rates_v3
 
-# Modular resource definitions
+# Resource modules (order: catalog/pipelines/warehouse first, then jobs, then dashboards)
 include:
   - resources/unity_catalog.yml
   - resources/pipelines.yml
@@ -18,30 +22,30 @@ include:
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
-  # Enable after gold views exist (run DLT pipelines): uncomment and run scripts/substitute_dashboard_vars.py, then deploy with BUNDLE_VAR_warehouse_id set
-  # - resources/dashboards.yml
-  # Enable after ML models are trained (run ML job):
+  - resources/dashboards.yml
+  # Enable after ML models are trained and registered in Unity Catalog:
   # - resources/model_serving.yml
 
-# Environment variables with validation
+# -----------------------------------------------------------------------------
+# Bundle variables (override via --var, BUNDLE_VAR_*, or target variables)
+# -----------------------------------------------------------------------------
 variables:
   catalog:
-    description: Unity Catalog name for data storage
+    description: Unity Catalog name for all data, volumes, and ML models
     default: ahs_demos_catalog
   environment:
-    description: Deployment environment identifier
+    description: Deployment environment identifier (e.g. dev, prod); used in resource names and tags
     default: dev
-  warehouse_id:
-    description: >
-      SQL Warehouse ID for dashboard queries. Required for dashboard deploy.
-      Get one with: databricks sql warehouses list -o json | jq -r '.[0].id'
-      Then: export BUNDLE_VAR_warehouse_id=<id> and run scripts/substitute_dashboard_vars.py before deploy.
-    default: "auto"
   schema:
-    description: Unity Catalog schema name (matches DLT target with dev mode prefix)
+    description: Unity Catalog schema name; must match DLT pipeline and gold views
     default: ahs_demo_payment_analysis_dev
+  warehouse_id:
+    description: SQL Warehouse ID for dashboards and SQL tasks; in dev, set from deployed warehouse resource
+    default: "auto"
 
-# Sync configuration for notebook deployment
+# -----------------------------------------------------------------------------
+# Sync: paths uploaded to workspace for job/pipeline execution
+# -----------------------------------------------------------------------------
 sync:
   include:
     - .build
@@ -54,41 +58,41 @@ sync:
     - "**/__pycache__"
     - "**/*.pyc"
     - "**/node_modules"
+    - "**/.env"
+    - "**/.env.*"
 
-# Build artifacts
+# Build artifact for app deployment (served at /)
 artifacts:
   default:
     build: uv run apx build
 
-# Target configurations
+# -----------------------------------------------------------------------------
+# Targets: dev (development) and prod (production)
+# -----------------------------------------------------------------------------
 targets:
-  # Development environment
   dev:
     mode: development
     default: true
     variables:
       environment: dev
-    # Development presets for faster iteration
+      warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
     presets:
       name_prefix: "[dev ${workspace.current_user.short_name}] "
       pipelines_development: true
       jobs_max_concurrent_runs: 1
       trigger_pause_status: PAUSED
 
-  # Production environment  
   prod:
     mode: production
     variables:
       environment: prod
       catalog: prod_catalog
-    # Production presets with permissions
+      schema: ahs_demo_payment_analysis_prod
     presets:
       name_prefix: "[PROD] "
       pipelines_development: false
-    # Run as service principal in production
     run_as:
       service_principal_name: payment-analysis-sp
-    # Default permissions for all resources
     permissions:
       - level: CAN_VIEW
         group_name: data-analysts

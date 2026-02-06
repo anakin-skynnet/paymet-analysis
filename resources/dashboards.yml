@@ -1,84 +1,89 @@
-# AI/BI Dashboards Configuration
-# All dashboards use Unity Catalog views from the gold layer
+# =============================================================================
+# AI/BI Dashboards - Payment Approval Analytics
+# =============================================================================
+# Ten dashboards backed by Unity Catalog gold views. Catalog/schema are defaulted
+# in each dashboard JSON; warehouse_id comes from var (set at deploy, e.g. from
+# SQL warehouse resource in dev). Dashboards are created under workspace root.
+# =============================================================================
 
 resources:
   dashboards:
-    # Dashboard 1: Executive Overview
+    # High-level KPIs and trends for executives
     executive_overview:
       display_name: "[${var.environment}] Executive Overview - Payment Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/executive_overview.lvdash.json
+      file_path: ./dashboards/executive_overview.lvdash.json
 
-    # Dashboard 2: Decline Analysis
+    # Decline patterns, recovery opportunities, retry performance
     decline_analysis:
       display_name: "[${var.environment}] Decline Analysis & Recovery"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/decline_analysis.lvdash.json
+      file_path: ./dashboards/decline_analysis.lvdash.json
 
-    # Dashboard 3: Real-Time Monitoring
+    # Live system health, last-hour metrics, active alerts
     realtime_monitoring:
       display_name: "[${var.environment}] Real-Time Payment Monitoring"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/realtime_monitoring.lvdash.json
+      file_path: ./dashboards/realtime_monitoring.lvdash.json
 
-    # Dashboard 4: Fraud & Risk Analysis (NEW)
+    # Fraud and risk metrics, AML, 3DS correlation
     fraud_risk_analysis:
       display_name: "[${var.environment}] Fraud & Risk Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/fraud_risk_analysis.lvdash.json
+      file_path: ./dashboards/fraud_risk_analysis.lvdash.json
 
-    # Dashboard 5: Merchant Performance (NEW)
+    # Merchant segments, geography, approval by segment
     merchant_performance:
       display_name: "[${var.environment}] Merchant Performance & Segmentation"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/merchant_performance.lvdash.json
+      file_path: ./dashboards/merchant_performance.lvdash.json
 
-    # Dashboard 6: Routing & Optimization (NEW)
+    # Solution and network performance, retry effectiveness, recovery
     routing_optimization:
       display_name: "[${var.environment}] Smart Routing & Optimization"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/routing_optimization.lvdash.json
+      file_path: ./dashboards/routing_optimization.lvdash.json
 
-    # Dashboard 7: Daily Trends (NEW)
+    # Historical trends, daily volume, approval and value over time
     daily_trends:
       display_name: "[${var.environment}] Daily Trends & Historical Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/daily_trends.lvdash.json
+      file_path: ./dashboards/daily_trends.lvdash.json
 
-    # Dashboard 8: Authentication & Security (NEW)
+    # 3DS adoption, authentication lift, security metrics
     authentication_security:
       display_name: "[${var.environment}] 3DS Authentication & Security Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/authentication_security.lvdash.json
+      file_path: ./dashboards/authentication_security.lvdash.json
 
-    # Dashboard 9: Financial Impact (NEW)
+    # Financial impact, approved/declined value, recovery ROI
     financial_impact:
       display_name: "[${var.environment}] Financial Impact & ROI Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/financial_impact.lvdash.json
+      file_path: ./dashboards/financial_impact.lvdash.json
 
-    # Dashboard 10: Performance & Latency (NEW)
+    # Latency, P95/P99, SLA, performance by solution/network
     performance_latency:
       display_name: "[${var.environment}] Technical Performance & Latency Analysis"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/performance_latency.lvdash.json
+      file_path: ./dashboards/performance_latency.lvdash.json

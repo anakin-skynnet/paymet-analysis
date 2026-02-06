@@ -87,13 +87,9 @@ databricks bundle deploy --target dev
 
 **Purpose:** 10 AI/BI dashboards. Gold views must exist first (Steps 3–4).
 
-- **Option A (bundle):** Uncomment `resources/dashboards.yml` in `databricks.yml`. Then run variable substitution and deploy with a valid SQL warehouse ID:
-  ```bash
-  uv run python scripts/substitute_dashboard_vars.py
-  BUNDLE_VAR_warehouse_id=$(databricks warehouses list -o json | jq -r '.[0].id') databricks bundle deploy -t dev --auto-approve
-  ```
-- **Option B:** SQL → Dashboards → Create → Import; select each `.lvdash.json` from `resources/dashboards/` (manually set catalog/schema/warehouse in each).
-- **Files:** executive_overview, decline_analysis, realtime_monitoring, fraud_risk_analysis, merchant_performance, routing_optimization, daily_trends, authentication_security, financial_impact, performance_latency
+- **Option A (bundle):** Dashboards are included in the bundle and use default catalog/schema (`ahs_demos_catalog.ahs_demo_payment_analysis_dev`). The deployed SQL warehouse ID is assigned automatically via `var.warehouse_id` (from `resources.sql_warehouses.payment_analysis_warehouse.id` in dev). Just run `databricks bundle deploy -t dev`.
+- **Option B:** SQL → Dashboards → Create → Import; select each `.lvdash.json` from `dashboards/` (manually set catalog/schema/warehouse in each if needed).
+- **Files:** All dashboard JSONs live in `dashboards/` at project root (executive_overview, decline_analysis, realtime_monitoring, fraud_risk_analysis, merchant_performance, routing_optimization, daily_trends, authentication_security, financial_impact, performance_latency).
 
 ---
 

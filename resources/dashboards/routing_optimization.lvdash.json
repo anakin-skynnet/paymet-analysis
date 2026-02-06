@@ -23,9 +23,8 @@
               {
                 "name": "solution_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_solution_performance",
-                  "query_text": "SELECT payment_solution, approval_rate_pct, transaction_count FROM v_solution_performance ORDER BY approval_rate_pct DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance",
+                  "query_text": "SELECT payment_solution, approval_rate_pct, transaction_count FROM v_solution_performance ORDER BY approval_rate_pct DESC"
                 }
               }
             ],
@@ -49,9 +48,8 @@
               {
                 "name": "network_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_card_network_performance",
-                  "query_text": "SELECT card_network, approval_rate_pct, transaction_count FROM v_card_network_performance ORDER BY approval_rate_pct DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_card_network_performance",
+                  "query_text": "SELECT card_network, approval_rate_pct, transaction_count FROM v_card_network_performance ORDER BY approval_rate_pct DESC"
                 }
               }
             ],
@@ -75,9 +73,8 @@
               {
                 "name": "solution_detail_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_solution_performance",
-                  "query_text": "SELECT payment_solution, transaction_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM v_solution_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance",
+                  "query_text": "SELECT payment_solution, transaction_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM v_solution_performance ORDER BY transaction_count DESC"
                 }
               }
             ],
@@ -106,9 +103,8 @@
               {
                 "name": "network_detail_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_card_network_performance",
-                  "query_text": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM v_card_network_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_card_network_performance",
+                  "query_text": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM v_card_network_performance ORDER BY transaction_count DESC"
                 }
               }
             ],
@@ -136,9 +132,8 @@
               {
                 "name": "retry_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_retry_performance",
-                  "query_text": "SELECT decline_reason, retry_count, retry_success_rate_pct, retry_attempts, effectiveness FROM v_retry_performance WHERE retry_success_rate_pct > 0 ORDER BY retry_success_rate_pct DESC LIMIT 15",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT decline_reason, retry_count, retry_success_rate_pct, retry_attempts, effectiveness FROM v_retry_performance WHERE retry_success_rate_pct > 0 ORDER BY retry_success_rate_pct DESC LIMIT 15"
                 }
               }
             ],
@@ -163,9 +158,8 @@
               {
                 "name": "retry_detail_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_retry_performance",
-                  "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, avg_fraud_score, recovered_value, effectiveness FROM v_retry_performance ORDER BY recovered_value DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance",
+                  "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, avg_fraud_score, recovered_value, effectiveness FROM v_retry_performance ORDER BY recovered_value DESC"
                 }
               }
             ],
@@ -194,9 +188,8 @@
               {
                 "name": "recovery_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_decline_recovery_opportunities",
-                  "query_text": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 25",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "query_text": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 25"
                 }
               }
             ],

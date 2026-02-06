@@ -23,9 +23,8 @@
               {
                 "name": "fraud_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT avg_fraud_score FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT avg_fraud_score FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -50,9 +49,8 @@
               {
                 "name": "aml_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT avg_aml_risk_score FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT avg_aml_risk_score FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -77,9 +75,8 @@
               {
                 "name": "risk_count",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_last_hour_performance",
-                  "query_text": "SELECT high_risk_transactions FROM v_last_hour_performance",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_last_hour_performance",
+                  "query_text": "SELECT high_risk_transactions FROM v_last_hour_performance"
                 }
               }
             ],
@@ -103,9 +100,8 @@
               {
                 "name": "auth_kpi",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_executive_kpis",
-                  "query_text": "SELECT auth_3ds_usage_pct FROM v_executive_kpis LIMIT 1",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "query_text": "SELECT auth_3ds_usage_pct FROM v_executive_kpis LIMIT 1"
                 }
               }
             ],
@@ -130,9 +126,8 @@
               {
                 "name": "geo_fraud_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_performance_by_geography",
-                  "query_text": "SELECT country, avg_fraud_score, transaction_count, approval_rate_pct FROM v_performance_by_geography ORDER BY avg_fraud_score DESC LIMIT 20",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography",
+                  "query_text": "SELECT country, avg_fraud_score, transaction_count, approval_rate_pct FROM v_performance_by_geography ORDER BY avg_fraud_score DESC LIMIT 20"
                 }
               }
             ],
@@ -156,9 +151,8 @@
               {
                 "name": "fraud_trend_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_approval_trends_hourly",
-                  "query_text": "SELECT hour, avg_fraud_score, transaction_count FROM v_approval_trends_hourly ORDER BY hour DESC LIMIT 168",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_approval_trends_hourly",
+                  "query_text": "SELECT hour, avg_fraud_score, transaction_count FROM v_approval_trends_hourly ORDER BY hour DESC LIMIT 168"
                 }
               }
             ],
@@ -182,9 +176,8 @@
               {
                 "name": "fraud_alerts_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_active_alerts",
-                  "query_text": "SELECT alert_type, severity, current_value, threshold_value, alert_message FROM v_active_alerts WHERE alert_type = 'HIGH_FRAUD_RATE' ORDER BY severity",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_active_alerts",
+                  "query_text": "SELECT alert_type, severity, current_value, threshold_value, alert_message FROM v_active_alerts WHERE alert_type = 'HIGH_FRAUD_RATE' ORDER BY severity"
                 }
               }
             ],
@@ -211,9 +204,8 @@
               {
                 "name": "segment_fraud_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT merchant_segment, avg_fraud_score, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM v_merchant_segment_performance ORDER BY avg_fraud_score DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT merchant_segment, avg_fraud_score, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM v_merchant_segment_performance ORDER BY avg_fraud_score DESC"
                 }
               }
             ],

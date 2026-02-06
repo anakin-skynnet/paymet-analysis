@@ -23,9 +23,8 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_last_hour_performance",
-                  "query_text": "SELECT transactions_last_hour FROM v_last_hour_performance",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_last_hour_performance",
+                  "query_text": "SELECT transactions_last_hour FROM v_last_hour_performance"
                 }
               }
             ],
@@ -46,9 +45,8 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_last_hour_performance",
-                  "query_text": "SELECT approval_rate_pct FROM v_last_hour_performance",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_last_hour_performance",
+                  "query_text": "SELECT approval_rate_pct FROM v_last_hour_performance"
                 }
               }
             ],
@@ -70,9 +68,8 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_last_hour_performance",
-                  "query_text": "SELECT declines_last_hour FROM v_last_hour_performance",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_last_hour_performance",
+                  "query_text": "SELECT declines_last_hour FROM v_last_hour_performance"
                 }
               }
             ],
@@ -93,9 +90,8 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_last_hour_performance",
-                  "query_text": "SELECT high_risk_transactions FROM v_last_hour_performance",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_last_hour_performance",
+                  "query_text": "SELECT high_risk_transactions FROM v_last_hour_performance"
                 }
               }
             ],
@@ -116,9 +112,8 @@
               {
                 "name": "alerts_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_active_alerts",
-                  "query_text": "SELECT * FROM v_active_alerts ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 ELSE 3 END",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_active_alerts",
+                  "query_text": "SELECT * FROM v_active_alerts ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 ELSE 3 END"
                 }
               }
             ],
@@ -145,9 +140,8 @@
               {
                 "name": "solution_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_solution_performance",
-                  "query_text": "SELECT * FROM v_solution_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance",
+                  "query_text": "SELECT * FROM v_solution_performance ORDER BY transaction_count DESC"
                 }
               }
             ],
@@ -169,9 +163,8 @@
               {
                 "name": "network_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_card_network_performance",
-                  "query_text": "SELECT * FROM v_card_network_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_card_network_performance",
+                  "query_text": "SELECT * FROM v_card_network_performance ORDER BY transaction_count DESC"
                 }
               }
             ],
@@ -193,9 +186,8 @@
               {
                 "name": "segment_query",
                 "query": {
-                  "datasetName": "${var.catalog}.${var.schema}.v_merchant_segment_performance",
-                  "query_text": "SELECT * FROM v_merchant_segment_performance ORDER BY transaction_count DESC",
-                  "warehouse_id": "${var.warehouse_id}"
+                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "query_text": "SELECT * FROM v_merchant_segment_performance ORDER BY transaction_count DESC"
                 }
               }
             ],

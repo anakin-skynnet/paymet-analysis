@@ -1,9 +1,16 @@
+# =============================================================================
+# Model Serving Endpoints
+# =============================================================================
+# Four endpoints for approval propensity, risk scoring, smart routing, and smart retry.
+# Enable this include after ML models are trained and registered in Unity Catalog.
+# Catalog/schema from variables; AI Gateway rate limits and guardrails per endpoint.
+# =============================================================================
+
 resources:
   model_serving_endpoints:
-    # Approval Propensity Model Endpoint
+    # Predicts transaction approval probability
     approval_propensity_endpoint:
       name: "approval-propensity-${var.environment}"
-      
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.approval_propensity_model"
@@ -11,33 +18,21 @@ resources:
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-            environment_vars:
-              ENABLE_MLFLOW_TRACING: "true"
-        
+            environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes:
-            - served_model_name: "approval_propensity_model-1"
-              traffic_percentage: 100
-        
+          routes: [{ served_model_name: "approval_propensity_model-1", traffic_percentage: 100 }]
         auto_capture_config:
           catalog_name: ${var.catalog}
           schema_name: ${var.schema}
           table_name_prefix: "approval_propensity_inf"
           enabled: true
-      
       ai_gateway:
-        rate_limits:
-          - key: "user"
-            renewal_period: "minute"
-            calls: 100
-        
-        usage_tracking_config:
-          enabled: true
-    
-    # Risk Scoring Model Endpoint
+        rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
+        usage_tracking_config: { enabled: true }
+
+    # Fraud risk scoring with PII guardrails
     risk_scoring_endpoint:
       name: "risk-scoring-${var.environment}"
-      
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.risk_scoring_model"
@@ -45,36 +40,19 @@ resources:
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-            environment_vars:
-              ENABLE_MLFLOW_TRACING: "true"
-        
+            environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes:
-            - served_model_name: "risk_scoring_model-1"
-              traffic_percentage: 100
-      
+          routes: [{ served_model_name: "risk_scoring_model-1", traffic_percentage: 100 }]
       ai_gateway:
-        rate_limits:
-          - key: "user"
-            renewal_period: "minute"
-            calls: 100
-        
+        rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         guardrails:
-          input:
-            pii:
-              behavior: "BLOCK"
-          output:
-            safety: true
-            pii:
-              behavior: "MASK"
-        
-        usage_tracking_config:
-          enabled: true
-    
-    # Smart Routing Model Endpoint
+          input: { pii: { behavior: "BLOCK" } }
+          output: { safety: true, pii: { behavior: "MASK" } }
+        usage_tracking_config: { enabled: true }
+
+    # Optimal payment route recommendation
     smart_routing_endpoint:
       name: "smart-routing-${var.environment}"
-      
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_routing_policy"
@@ -82,25 +60,15 @@ resources:
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-        
         traffic_config:
-          routes:
-            - served_model_name: "smart_routing_policy-1"
-              traffic_percentage: 100
-      
+          routes: [{ served_model_name: "smart_routing_policy-1", traffic_percentage: 100 }]
       ai_gateway:
-        rate_limits:
-          - key: "user"
-            renewal_period: "minute"
-            calls: 200
-        
-        usage_tracking_config:
-          enabled: true
-    
-    # Smart Retry Model Endpoint
+        rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
+        usage_tracking_config: { enabled: true }
+
+    # Retry success likelihood and recovery
     smart_retry_endpoint:
       name: "smart-retry-${var.environment}"
-      
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_retry_policy"
@@ -108,17 +76,8 @@ resources:
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-        
         traffic_config:
-          routes:
-            - served_model_name: "smart_retry_policy-1"
-              traffic_percentage: 100
-      
+          routes: [{ served_model_name: "smart_retry_policy-1", traffic_percentage: 100 }]
       ai_gateway:
-        rate_limits:
-          - key: "user"
-            renewal_period: "minute"
-            calls: 200
-        
-        usage_tracking_config:
-          enabled: true
+        rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
+        usage_tracking_config: { enabled: true }
