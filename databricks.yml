@@ -23,8 +23,8 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  # Enable after ML models are trained and registered in Unity Catalog:
-  # - resources/model_serving.yml
+  # Deploy after ML models exist: run "Train Payment Approval ML Models" job, then: databricks bundle deploy -t dev
+  - resources/model_serving.yml
 
 # -----------------------------------------------------------------------------
 # Bundle variables (override via --var, BUNDLE_VAR_*, or target variables)

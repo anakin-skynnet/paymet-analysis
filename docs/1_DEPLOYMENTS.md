@@ -9,11 +9,12 @@ Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10
 ## Quick Start
 
 ```bash
-# Prepare dashboard JSONs with catalog/schema for the target (required before validate/deploy)
-uv run python scripts/prepare_dashboards.py
-# For prod: uv run python scripts/prepare_dashboards.py --catalog prod_catalog --schema ahs_demo_payment_analysis_prod
+# Prepare dashboards then validate (required: .build/dashboards/ is not in git)
+./scripts/validate_bundle.sh dev
+# Or manually:
+#   uv run python scripts/prepare_dashboards.py
+#   databricks bundle validate -t dev
 
-databricks bundle validate -t dev
 databricks bundle deploy -t dev
 ```
 
