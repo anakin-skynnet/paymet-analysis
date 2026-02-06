@@ -129,7 +129,7 @@ function Dashboard() {
               onClick={() => openNotebook("realtime_pipeline")}
             >
               <Code2 className="w-4 h-4 mr-2" />
-              DLT Pipeline
+              Declarative Pipeline
               <ExternalLink className="w-3 h-3 ml-2" />
             </Button>
           </div>

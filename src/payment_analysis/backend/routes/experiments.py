@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Optional, cast
 
 from fastapi import APIRouter, HTTPException
@@ -8,14 +7,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import desc
 from sqlmodel import select
 
-from ..db_models import Experiment, ExperimentAssignment
+from ..db_models import Experiment, ExperimentAssignment, utcnow
 from ..dependencies import SessionDep
 
 router = APIRouter(tags=["experiments"])
-
-
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class ExperimentIn(BaseModel):

@@ -467,6 +467,10 @@ class DatabricksService:
               success_rate_pct,
               recovered_value,
               avg_fraud_score,
+              avg_time_since_last_attempt_s,
+              avg_prior_approvals,
+              baseline_approval_pct,
+              incremental_lift_pct,
               effectiveness
             FROM {self.config.full_schema_name}.v_retry_performance
             ORDER BY retry_attempts DESC
@@ -489,7 +493,7 @@ class DatabricksService:
         """
         Submit domain feedback for an insight to the UC feedback table.
 
-        Note: in some environments, DLT-managed tables may disallow direct INSERTs.
+        Note: in some environments, Lakeflow Declarative Pipeline-managed tables may disallow direct INSERTs.
         This is intended as a scaffold for the learning loop.
         """
 
@@ -879,9 +883,10 @@ class MockDataGenerator:
     def retry_performance(limit: int = 50) -> list[dict[str, Any]]:
         """Mock retry performance with scenario split."""
         rows = [
-            ("PaymentRetry", "FUNDS_OR_LIMIT", 1, 1200, 28.0, 18000.0, 0.11, "Moderate"),
-            ("PaymentRetry", "ISSUER_TECHNICAL", 1, 800, 45.0, 22000.0, 0.09, "Effective"),
-            ("PaymentRecurrence", "CARD_EXPIRED", 1, 300, 5.0, 1200.0, 0.08, "Low"),
+            # scenario, reason, retry_count, attempts, success_rate, recovered_value, avg_fraud, avg_wait_s, avg_prior_appr, baseline, lift, effectiveness
+            ("PaymentRetry", "FUNDS_OR_LIMIT", 1, 1200, 28.0, 18000.0, 0.11, 3600.0, 0.6, 18.5, 9.5, "Moderate"),
+            ("PaymentRetry", "ISSUER_TECHNICAL", 1, 800, 45.0, 22000.0, 0.09, 120.0, 0.4, 18.5, 26.5, "Effective"),
+            ("PaymentRecurrence", "CARD_EXPIRED", 1, 300, 5.0, 1200.0, 0.08, 86400.0, 1.2, 18.5, -13.5, "Low"),
         ]
         return [
             {
@@ -892,9 +897,13 @@ class MockDataGenerator:
                 "success_rate_pct": sr,
                 "recovered_value": rv,
                 "avg_fraud_score": af,
+                "avg_time_since_last_attempt_s": avg_wait,
+                "avg_prior_approvals": avg_prior,
+                "baseline_approval_pct": baseline,
+                "incremental_lift_pct": lift,
                 "effectiveness": e,
             }
-            for (s, r, rc, a, sr, rv, af, e) in rows[:limit]
+            for (s, r, rc, a, sr, rv, af, avg_wait, avg_prior, baseline, lift, e) in rows[:limit]
         ]
     
     @staticmethod

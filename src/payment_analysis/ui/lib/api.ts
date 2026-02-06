@@ -1232,7 +1232,7 @@ export const listDashboards = async (params?: ListDashboardsParams, options?: Re
   if (params?.category != null) searchParams.set("category", String(params?.category));
   if (params?.tag != null) searchParams.set("tag", String(params?.tag));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/dashboards/dashboards?${queryString}` : `/api/dashboards/dashboards`;
+  const url = queryString ? `/api/dashboards?${queryString}` : `/api/dashboards`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1244,7 +1244,7 @@ export const listDashboards = async (params?: ListDashboardsParams, options?: Re
 };
 
 export const listDashboardsKey = (params?: ListDashboardsParams) => {
-  return ["/api/dashboards/dashboards", params] as const;
+  return ["/api/dashboards", params] as const;
 };
 
 export function useListDashboards<TData = { data: DashboardList }>(options?: { params?: ListDashboardsParams; query?: Omit<UseQueryOptions<{ data: DashboardList }, ApiError, TData>, "queryKey" | "queryFn"> }) {
@@ -1256,7 +1256,7 @@ export function useListDashboardsSuspense<TData = { data: DashboardList }>(optio
 }
 
 export const listDashboardCategories = async (options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
-  const res = await fetch("/api/dashboards/dashboards/categories/list", { ...options, method: "GET" });
+  const res = await fetch("/api/dashboards/categories/list", { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
     let parsed: unknown;
@@ -1267,7 +1267,7 @@ export const listDashboardCategories = async (options?: RequestInit): Promise<{ 
 };
 
 export const listDashboardCategoriesKey = () => {
-  return ["/api/dashboards/dashboards/categories/list"] as const;
+  return ["/api/dashboards/categories/list"] as const;
 };
 
 export function useListDashboardCategories<TData = { data: Record<string, unknown> }>(options?: { query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
@@ -1279,7 +1279,7 @@ export function useListDashboardCategoriesSuspense<TData = { data: Record<string
 }
 
 export const listDashboardTags = async (options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
-  const res = await fetch("/api/dashboards/dashboards/tags/list", { ...options, method: "GET" });
+  const res = await fetch("/api/dashboards/tags/list", { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
     let parsed: unknown;
@@ -1290,7 +1290,7 @@ export const listDashboardTags = async (options?: RequestInit): Promise<{ data: 
 };
 
 export const listDashboardTagsKey = () => {
-  return ["/api/dashboards/dashboards/tags/list"] as const;
+  return ["/api/dashboards/tags/list"] as const;
 };
 
 export function useListDashboardTags<TData = { data: Record<string, unknown> }>(options?: { query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
@@ -1302,7 +1302,7 @@ export function useListDashboardTagsSuspense<TData = { data: Record<string, unkn
 }
 
 export const getDashboard = async (params: GetDashboardParams, options?: RequestInit): Promise<{ data: DashboardInfo }> => {
-  const res = await fetch(`/api/dashboards/dashboards/${params.dashboard_id}`, { ...options, method: "GET" });
+  const res = await fetch(`/api/dashboards/${params.dashboard_id}`, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
     let parsed: unknown;
@@ -1313,7 +1313,7 @@ export const getDashboard = async (params: GetDashboardParams, options?: Request
 };
 
 export const getDashboardKey = (params?: GetDashboardParams) => {
-  return ["/api/dashboards/dashboards/{dashboard_id}", params] as const;
+  return ["/api/dashboards/{dashboard_id}", params] as const;
 };
 
 export function useGetDashboard<TData = { data: DashboardInfo }>(options: { params: GetDashboardParams; query?: Omit<UseQueryOptions<{ data: DashboardInfo }, ApiError, TData>, "queryKey" | "queryFn"> }) {
@@ -1328,7 +1328,7 @@ export const getDashboardUrl = async (params: GetDashboardUrlParams, options?: R
   const searchParams = new URLSearchParams();
   if (params?.embed != null) searchParams.set("embed", String(params?.embed));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/dashboards/dashboards/${params.dashboard_id}/url?${queryString}` : `/api/dashboards/dashboards/${params.dashboard_id}/url`;
+  const url = queryString ? `/api/dashboards/${params.dashboard_id}/url?${queryString}` : `/api/dashboards/${params.dashboard_id}/url`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1340,7 +1340,7 @@ export const getDashboardUrl = async (params: GetDashboardUrlParams, options?: R
 };
 
 export const getDashboardUrlKey = (params?: GetDashboardUrlParams) => {
-  return ["/api/dashboards/dashboards/{dashboard_id}/url", params] as const;
+  return ["/api/dashboards/{dashboard_id}/url", params] as const;
 };
 
 export function useGetDashboardUrl<TData = { data: Record<string, unknown> }>(options: { params: GetDashboardUrlParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {

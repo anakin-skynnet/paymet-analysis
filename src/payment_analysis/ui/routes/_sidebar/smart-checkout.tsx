@@ -83,8 +83,8 @@ function SmartCheckout() {
             </p>
           ) : servicePaths.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No data yet. Run the simulator + DLT pipeline to populate UC
-              views.
+              No data yet. Run the simulator + Lakeflow Declarative Pipeline to
+              populate UC views.
             </p>
           ) : (
             servicePaths.map((r) => (

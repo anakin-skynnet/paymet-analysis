@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 from fastapi import APIRouter
 from sqlalchemy import desc, func
@@ -186,8 +186,8 @@ async def databricks_kpis() -> DatabricksKPIOut:
     return DatabricksKPIOut(**data)
 
 
-@router.get("/trends", response_model=List[ApprovalTrendOut], operation_id="getApprovalTrends")
-async def approval_trends(hours: int = 168) -> List[ApprovalTrendOut]:
+@router.get("/trends", response_model=list[ApprovalTrendOut], operation_id="getApprovalTrends")
+async def approval_trends(hours: int = 168) -> list[ApprovalTrendOut]:
     """Get approval rate trends from Databricks."""
     hours = max(1, min(hours, 720))  # Limit to 30 days
     service = get_databricks_service()
@@ -195,8 +195,8 @@ async def approval_trends(hours: int = 168) -> List[ApprovalTrendOut]:
     return [ApprovalTrendOut(**row) for row in data]
 
 
-@router.get("/solutions", response_model=List[SolutionPerformanceOut], operation_id="getSolutionPerformance")
-async def solution_performance() -> List[SolutionPerformanceOut]:
+@router.get("/solutions", response_model=list[SolutionPerformanceOut], operation_id="getSolutionPerformance")
+async def solution_performance() -> list[SolutionPerformanceOut]:
     """Get payment solution performance from Databricks."""
     service = get_databricks_service()
     data = await service.get_solution_performance()
@@ -205,10 +205,10 @@ async def solution_performance() -> List[SolutionPerformanceOut]:
 
 @router.get(
     "/smart-checkout/service-paths/br",
-    response_model=List[SmartCheckoutServicePathOut],
+    response_model=list[SmartCheckoutServicePathOut],
     operation_id="getSmartCheckoutServicePathsBr",
 )
-async def smart_checkout_service_paths_br(limit: int = 25) -> List[SmartCheckoutServicePathOut]:
+async def smart_checkout_service_paths_br(limit: int = 25) -> list[SmartCheckoutServicePathOut]:
     """Brazil payment-link performance by Smart Checkout service path."""
     limit = max(1, min(limit, 100))
     service = get_databricks_service()
@@ -218,12 +218,12 @@ async def smart_checkout_service_paths_br(limit: int = 25) -> List[SmartCheckout
 
 @router.get(
     "/smart-checkout/path-performance/br",
-    response_model=List[SmartCheckoutPathPerformanceOut],
+    response_model=list[SmartCheckoutPathPerformanceOut],
     operation_id="getSmartCheckoutPathPerformanceBr",
 )
 async def smart_checkout_path_performance_br(
     limit: int = 20,
-) -> List[SmartCheckoutPathPerformanceOut]:
+) -> list[SmartCheckoutPathPerformanceOut]:
     """Brazil payment-link performance by recommended Smart Checkout path."""
     limit = max(1, min(limit, 50))
     service = get_databricks_service()
@@ -233,10 +233,10 @@ async def smart_checkout_path_performance_br(
 
 @router.get(
     "/smart-checkout/3ds-funnel/br",
-    response_model=List[ThreeDSFunnelOut],
+    response_model=list[ThreeDSFunnelOut],
     operation_id="getThreeDsFunnelBr",
 )
-async def three_ds_funnel_br(days: int = 30) -> List[ThreeDSFunnelOut]:
+async def three_ds_funnel_br(days: int = 30) -> list[ThreeDSFunnelOut]:
     """Brazil payment-link 3DS funnel metrics by day."""
     days = max(1, min(days, 90))
     service = get_databricks_service()
@@ -246,10 +246,10 @@ async def three_ds_funnel_br(days: int = 30) -> List[ThreeDSFunnelOut]:
 
 @router.get(
     "/reason-codes/br",
-    response_model=List[ReasonCodeOut],
+    response_model=list[ReasonCodeOut],
     operation_id="getReasonCodesBr",
 )
-async def reason_codes_br(limit: int = 50) -> List[ReasonCodeOut]:
+async def reason_codes_br(limit: int = 50) -> list[ReasonCodeOut]:
     """Brazil declines consolidated into unified reason-code taxonomy."""
     limit = max(1, min(limit, 200))
     service = get_databricks_service()
@@ -259,10 +259,10 @@ async def reason_codes_br(limit: int = 50) -> List[ReasonCodeOut]:
 
 @router.get(
     "/reason-codes/br/insights",
-    response_model=List[ReasonCodeInsightOut],
+    response_model=list[ReasonCodeInsightOut],
     operation_id="getReasonCodeInsightsBr",
 )
-async def reason_code_insights_br(limit: int = 50) -> List[ReasonCodeInsightOut]:
+async def reason_code_insights_br(limit: int = 50) -> list[ReasonCodeInsightOut]:
     """Brazil reason-code insights with estimated recoverability (demo heuristic)."""
     limit = max(1, min(limit, 200))
     service = get_databricks_service()
@@ -272,10 +272,10 @@ async def reason_code_insights_br(limit: int = 50) -> List[ReasonCodeInsightOut]
 
 @router.get(
     "/reason-codes/br/entry-systems",
-    response_model=List[EntrySystemDistributionOut],
+    response_model=list[EntrySystemDistributionOut],
     operation_id="getEntrySystemDistributionBr",
 )
-async def entry_system_distribution_br() -> List[EntrySystemDistributionOut]:
+async def entry_system_distribution_br() -> list[EntrySystemDistributionOut]:
     """Brazil transaction distribution by entry system (coverage check)."""
     service = get_databricks_service()
     data = await service.get_entry_system_distribution_br()
@@ -296,10 +296,10 @@ async def dedup_collision_stats() -> DedupCollisionStatsOut:
 
 @router.get(
     "/insights/false-insights",
-    response_model=List[FalseInsightsMetricOut],
+    response_model=list[FalseInsightsMetricOut],
     operation_id="getFalseInsightsMetric",
 )
-async def false_insights_metric(days: int = 30) -> List[FalseInsightsMetricOut]:
+async def false_insights_metric(days: int = 30) -> list[FalseInsightsMetricOut]:
     """False Insights counter-metric time series (expert review invalid/non-actionable)."""
     days = max(1, min(days, 180))
     service = get_databricks_service()
@@ -309,10 +309,10 @@ async def false_insights_metric(days: int = 30) -> List[FalseInsightsMetricOut]:
 
 @router.get(
     "/retry/performance",
-    response_model=List[RetryPerformanceOut],
+    response_model=list[RetryPerformanceOut],
     operation_id="getRetryPerformance",
 )
-async def retry_performance(limit: int = 50) -> List[RetryPerformanceOut]:
+async def retry_performance(limit: int = 50) -> list[RetryPerformanceOut]:
     """Smart Retry performance with scenario split."""
     limit = max(1, min(limit, 200))
     service = get_databricks_service()

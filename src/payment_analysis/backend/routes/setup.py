@@ -1,7 +1,7 @@
 """
 Setup & Run API - Trigger jobs and pipelines from the UI.
 
-Provides endpoints to run Databricks jobs and DLT pipelines with configurable
+Provides endpoints to run Databricks jobs and Lakeflow Declarative Pipelines with configurable
 parameters (catalog, schema, warehouse_id). Used by the Setup & Run page.
 """
 
@@ -13,10 +13,13 @@ from typing import Any, TypedDict
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from ..config import AppConfig
 from ..dependencies import get_obo_ws
 from databricks.sdk import WorkspaceClient
 
 router = APIRouter(prefix="/setup", tags=["setup"])
+
+_app_config = AppConfig()
 
 
 # =============================================================================
@@ -32,8 +35,8 @@ class _DefaultIds(TypedDict):
 
 
 def _get_workspace_host() -> str:
-    """Get Databricks workspace host from env or client default."""
-    return os.getenv("DATABRICKS_HOST", "https://adb-984752964297111.11.azuredatabricks.net")
+    """Get Databricks workspace host from centralized config / env."""
+    return _app_config.databricks.workspace_url
 
 
 DEFAULT_IDS: _DefaultIds = {
@@ -97,7 +100,7 @@ class RunJobOut(BaseModel):
 
 class RunPipelineIn(BaseModel):
     """Request to run a pipeline."""
-    pipeline_id: str = Field(..., description="DLT pipeline ID")
+    pipeline_id: str = Field(..., description="Lakeflow Declarative Pipeline ID")
 
 
 class RunPipelineOut(BaseModel):
@@ -172,7 +175,7 @@ def run_setup_pipeline(
     body: RunPipelineIn,
     obo_ws: WorkspaceClient = Depends(get_obo_ws),
 ) -> RunPipelineOut:
-    """Start a DLT pipeline update."""
+    """Start a Lakeflow Declarative Pipeline update."""
     host = _get_workspace_host().rstrip("/")
     try:
         update = obo_ws.pipelines.start_update(pipeline_id=body.pipeline_id)

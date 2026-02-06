@@ -3,7 +3,7 @@
 # =============================================================================
 # Single schema and four managed volumes for the payment analysis platform.
 # Catalog and schema names come from variables (default or set at deploy).
-# Tables/views are created by DLT pipelines and gold view job; ML models by ML job.
+# Tables/views are created by Lakeflow Declarative Pipelines and gold view job; ML models by ML job.
 # =============================================================================
 
 resources:
@@ -34,7 +34,7 @@ resources:
       catalog_name: ${var.catalog}
       schema_name: ${var.schema}
       volume_type: MANAGED
-      comment: "Checkpoint storage for Structured Streaming and DLT pipelines"
+      comment: "Checkpoint storage for Structured Streaming and Lakeflow Declarative Pipelines"
 
     ml_artifacts_volume:
       name: ml_artifacts

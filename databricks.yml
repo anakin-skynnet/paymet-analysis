@@ -37,7 +37,7 @@ variables:
     description: Deployment environment identifier (e.g. dev, prod); used in resource names and tags
     default: dev
   schema:
-    description: Unity Catalog schema name; must match DLT pipeline and gold views
+    description: Unity Catalog schema name; must match Lakeflow Declarative Pipelines outputs and gold views
     default: ahs_demo_payment_analysis_dev
   warehouse_id:
     description: SQL Warehouse ID for dashboards and SQL tasks; in dev, set from deployed warehouse resource

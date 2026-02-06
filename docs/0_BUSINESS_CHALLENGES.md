@@ -139,6 +139,20 @@ Brazil >70% volume. Entry channels (Brazil): PD ~62%, WS ~34%, SEP ~3%, Checkout
   - API/UI: `src/payment_analysis/backend/routes/analytics.py`, `src/payment_analysis/ui/routes/_sidebar/smart-retry.tsx`
 - **Acceptance**: retry performance includes lift vs baseline and key explanatory features.
 
+## Business goals and technology (per requirement)
+
+| Business goal | Business requirement | Technology used | Where it runs |
+|---------------|----------------------|-----------------|---------------|
+| Maximize approval rate | Reduce false declines; optimize routing and retry | ML models (approval propensity, risk, routing, retry); Unity Catalog gold views | Databricks MLflow + Model Serving; UC views queried via SQL Warehouse |
+| Service-path observability | Know which services (antifraud, 3DS, token, etc.) drive outcomes | Lakeflow Declarative Pipelines (bronze → silver → gold); `service_path` + gold views | Pipelines in Databricks; UI fetches via `/api/analytics` → Databricks SQL |
+| Single source of truth for declines | Consolidate Checkout/PD/WS/SEP; no double count | Canonical key + merchant-visible attempts; reason-code taxonomy in silver/gold | Declarative Pipeline + UC; Reason Codes UI calls `/reason-codes/*` |
+| Brazil-first analytics | Segment by geography and entry system | `geo_country`, `entry_system` in pipeline; `*_br` gold views | Gold views; Smart Checkout / Reason Codes / Smart Retry pages |
+| 3DS and antifraud attribution | Funnel and decline attribution | Gold views `v_3ds_funnel_br`, `v_smart_checkout_service_path_br` | UC; Smart Checkout UI |
+| Learning loop / quality control | Expert feedback; False Insights counter-metric | `insight_feedback_silver`; `v_false_insights_metric`; submit API | Pipeline + UC; Reason Codes UI (submit + metric) |
+| Retry effectiveness | Recurrence vs reattempt; incremental lift | Silver features + `v_retry_performance` (baseline, lift); Smart Retry ML model | Pipeline + UC; Smart Retry UI; Model Serving (when enabled) |
+| Real-time decisioning | Per-transaction auth/retry/routing decisions | FastAPI decision endpoints → Databricks Model Serving (approval, risk, routing) | Backend calls serving endpoints; Decisioning playground UI |
+| AI-driven recommendations | Prescriptive insights; natural language | Genie Spaces; AI Gateway agents (Smart Routing, Retry, Decline Analyst, etc.) | Databricks Genie + AI Gateway; AI Agents page links to jobs/Genie |
+
 ## Key Objectives & Impact
 
 | Goal | Target | Initiative lift (approval) |

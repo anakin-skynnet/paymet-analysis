@@ -1,7 +1,7 @@
 [project]
 name = "payment-analysis"
 dynamic = ["version"]
-description = "Add your description here"
+description = "Payment approval rate optimization platform on Databricks — streaming analytics, ML models, and AI agents"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

@@ -250,7 +250,7 @@ export function Component() {
             your payment processing operations. Click any dashboard to open it in a new tab.
           </p>
           <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Data refreshes automatically based on your DLT pipeline schedule</li>
+            <li>Data refreshes automatically based on your Lakeflow Declarative Pipeline schedule</li>
             <li>All dashboards use Unity Catalog for governed data access</li>
             <li>Click notebook links to view the underlying data transformations</li>
             <li>Export functionality available for reporting</li>

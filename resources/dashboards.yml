@@ -14,7 +14,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/executive_overview.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/executive_overview.lvdash.json
 
     # Decline patterns, recovery opportunities, retry performance
     decline_analysis:
@@ -22,7 +22,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/decline_analysis.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/decline_analysis.lvdash.json
 
     # Live system health, last-hour metrics, active alerts
     realtime_monitoring:
@@ -30,7 +30,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/realtime_monitoring.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/realtime_monitoring.lvdash.json
 
     # Fraud and risk metrics, AML, 3DS correlation
     fraud_risk_analysis:
@@ -38,7 +38,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/fraud_risk_analysis.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/fraud_risk_analysis.lvdash.json
 
     # Merchant segments, geography, approval by segment
     merchant_performance:
@@ -46,7 +46,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/merchant_performance.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/merchant_performance.lvdash.json
 
     # Solution and network performance, retry effectiveness, recovery
     routing_optimization:
@@ -54,7 +54,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/routing_optimization.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/routing_optimization.lvdash.json
 
     # Historical trends, daily volume, approval and value over time
     daily_trends:
@@ -62,7 +62,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/daily_trends.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/daily_trends.lvdash.json
 
     # 3DS adoption, authentication lift, security metrics
     authentication_security:
@@ -70,7 +70,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/authentication_security.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/authentication_security.lvdash.json
 
     # Financial impact, approved/declined value, recovery ROI
     financial_impact:
@@ -78,7 +78,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/financial_impact.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/financial_impact.lvdash.json
 
     # Latency, P95/P99, SLA, performance by solution/network
     performance_latency:
@@ -86,4 +86,4 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/performance_latency.lvdash.json
+      file_path: ../src/payment_analysis/dashboards/performance_latency.lvdash.json

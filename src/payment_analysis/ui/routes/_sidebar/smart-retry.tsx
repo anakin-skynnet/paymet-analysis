@@ -36,13 +36,13 @@ function SmartRetry() {
             </p>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No data yet. Run the simulator + DLT pipeline to populate UC
-              views.
+              No data yet. Run the simulator + Lakeflow Declarative Pipeline to
+              populate UC views.
             </p>
           ) : (
-            rows.map((r, idx) => (
+            rows.map((r) => (
               <div
-                key={`${r.retry_scenario}-${r.decline_reason_standard}-${r.retry_count}-${idx}`}
+                key={`${r.retry_scenario}-${r.decline_reason_standard}-${r.retry_count}`}
                 className="flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">

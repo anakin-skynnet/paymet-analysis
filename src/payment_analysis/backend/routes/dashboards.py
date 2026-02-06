@@ -138,10 +138,10 @@ DASHBOARDS = [
 
 
 # =============================================================================
-# Endpoints
+# Endpoints (mounted at /api/dashboards in router.py)
 # =============================================================================
 
-@router.get("/dashboards", response_model=DashboardList, operation_id="listDashboards")
+@router.get("", response_model=DashboardList, operation_id="listDashboards")
 async def list_dashboards(
     category: DashboardCategory | None = Query(None, description="Filter by category"),
     tag: str | None = Query(None, description="Filter by tag"),
@@ -174,7 +174,54 @@ async def list_dashboards(
     )
 
 
-@router.get("/dashboards/{dashboard_id}", response_model=DashboardInfo, operation_id="getDashboard")
+@router.get("/categories/list", response_model=dict[str, Any], operation_id="listDashboardCategories")
+async def list_categories() -> dict[str, Any]:
+    """
+    List all dashboard categories with counts.
+    
+    Returns:
+        Dictionary mapping categories to dashboard counts
+    """
+    category_info = {}
+    
+    for category in DashboardCategory:
+        dashboards_in_category = [d for d in DASHBOARDS if d.category == category]
+        category_info[category.value] = {
+            "name": category.value.replace("_", " ").title(),
+            "count": len(dashboards_in_category),
+            "dashboards": [d.id for d in dashboards_in_category],
+        }
+    
+    return {
+        "categories": category_info,
+        "total_dashboards": len(DASHBOARDS),
+    }
+
+
+@router.get("/tags/list", response_model=dict[str, Any], operation_id="listDashboardTags")
+async def list_tags() -> dict[str, Any]:
+    """
+    List all dashboard tags with counts.
+    
+    Returns:
+        Dictionary of tags and how many dashboards have each tag
+    """
+    tag_counts = {}
+    
+    for dashboard in DASHBOARDS:
+        for tag in dashboard.tags:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    
+    # Sort by count descending
+    sorted_tags = dict(sorted(tag_counts.items(), key=lambda x: x[1], reverse=True))
+    
+    return {
+        "tags": sorted_tags,
+        "total_tags": len(sorted_tags),
+    }
+
+
+@router.get("/{dashboard_id}", response_model=DashboardInfo, operation_id="getDashboard")
 async def get_dashboard(dashboard_id: str) -> DashboardInfo:
     """
     Get metadata for a specific dashboard.
@@ -198,7 +245,7 @@ async def get_dashboard(dashboard_id: str) -> DashboardInfo:
     )
 
 
-@router.get("/dashboards/{dashboard_id}/url", response_model=dict[str, Any], operation_id="getDashboardUrl")
+@router.get("/{dashboard_id}/url", response_model=dict[str, Any], operation_id="getDashboardUrl")
 async def get_dashboard_url(
     dashboard_id: str,
     embed: bool = Query(False, description="Return embed-friendly URL"),
@@ -240,48 +287,3 @@ async def get_dashboard_url(
     }
 
 
-@router.get("/dashboards/categories/list", response_model=dict[str, Any], operation_id="listDashboardCategories")
-async def list_categories() -> dict[str, Any]:
-    """
-    List all dashboard categories with counts.
-    
-    Returns:
-        Dictionary mapping categories to dashboard counts
-    """
-    category_info = {}
-    
-    for category in DashboardCategory:
-        dashboards_in_category = [d for d in DASHBOARDS if d.category == category]
-        category_info[category.value] = {
-            "name": category.value.replace("_", " ").title(),
-            "count": len(dashboards_in_category),
-            "dashboards": [d.id for d in dashboards_in_category],
-        }
-    
-    return {
-        "categories": category_info,
-        "total_dashboards": len(DASHBOARDS),
-    }
-
-
-@router.get("/dashboards/tags/list", response_model=dict[str, Any], operation_id="listDashboardTags")
-async def list_tags() -> dict[str, Any]:
-    """
-    List all dashboard tags with counts.
-    
-    Returns:
-        Dictionary of tags and how many dashboards have each tag
-    """
-    tag_counts = {}
-    
-    for dashboard in DASHBOARDS:
-        for tag in dashboard.tags:
-            tag_counts[tag] = tag_counts.get(tag, 0) + 1
-    
-    # Sort by count descending
-    sorted_tags = dict(sorted(tag_counts.items(), key=lambda x: x[1], reverse=True))
-    
-    return {
-        "tags": sorted_tags,
-        "total_tags": len(sorted_tags),
-    }
