@@ -178,7 +178,7 @@ def v_retry_performance():
     
     payments = dlt.read("payments_enriched_silver")
     
-    # Baseline: overall approval rate for non-retry transactions
+    # Baseline: overall approval rate for non-retry transactions (single-row DF, safe cross join)
     baseline = (
         payments
         .filter(col("is_retry") == False)
@@ -186,7 +186,6 @@ def v_retry_performance():
             round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("baseline_approval_pct")
         )
     )
-    baseline_rate = baseline.collect()[0]["baseline_approval_pct"]  # scalar for broadcast
 
     # Retry cohorts with features
     retry_cohorts = (
@@ -201,7 +200,12 @@ def v_retry_performance():
             round(avg("time_since_last_attempt_seconds"), 0).alias("avg_time_since_last_attempt_s"),
             round(avg("prior_approved_count"), 1).alias("avg_prior_approvals"),
         )
-        .withColumn("baseline_approval_pct", lit(baseline_rate))
+    )
+
+    # Join baseline (single row) instead of .collect() to avoid OOM
+    return (
+        retry_cohorts
+        .crossJoin(baseline)
         .withColumn("incremental_lift_pct",
             round(col("success_rate_pct") - col("baseline_approval_pct"), 2)
         )
@@ -212,7 +216,6 @@ def v_retry_performance():
         )
         .orderBy("retry_scenario", "decline_reason_standard", "retry_count")
     )
-    return retry_cohorts
 
 # COMMAND ----------
 

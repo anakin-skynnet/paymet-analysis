@@ -199,7 +199,10 @@ def payments_enriched_silver():
         .withColumn("previous_attempt_time", lag(col("event_time"), 1).over(w_attempts))
         .withColumn(
             "time_since_last_attempt_seconds",
-            (unix_timestamp(col("event_time")) - unix_timestamp(col("previous_attempt_time"))).cast("long"),
+            when(
+                col("previous_attempt_time").isNotNull(),
+                (unix_timestamp(col("event_time")) - unix_timestamp(col("previous_attempt_time"))).cast("long"),
+            ),  # NULL for first attempt in sequence (no previous attempt)
         )
         .withColumn(
             "prior_approved_count",
