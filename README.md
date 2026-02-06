@@ -22,3 +22,8 @@ uv run apx dev
 ```
 
 See [1_DEPLOYMENTS](docs/1_DEPLOYMENTS.md) and [5_DEMO_SETUP](docs/5_DEMO_SETUP.md) for full steps and one-click runs.
+
+## App URL
+
+- **Local:** After `uv run apx dev`, open **http://localhost:8000** (backend serves the app and API at `/api`).
+- **Databricks Apps:** If you deploy the app as a Databricks App, the URL is shown in the Apps UI (e.g. `https://<workspace>/apps/<app-id>`).
