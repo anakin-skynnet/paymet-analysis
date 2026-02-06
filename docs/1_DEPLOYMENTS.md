@@ -62,7 +62,7 @@ The same app you run at **http://localhost:8000** (FastAPI + React UI) can be de
    - Or in the workspace: **Apps** → find **payment-analysis** → open and start the app.
 4. **App URL** is shown after starting (e.g. `https://<workspace-host>/apps/payment-analysis?o=...`). You can also run `databricks bundle summary -t dev` to see the app and its URL.
 
-The app resource is defined in `resources/app.yml`; runtime is configured in `app.yaml` (uvicorn, PYTHONPATH=src).
+The app resource is defined in `resources/app.yml`; runtime is configured in `app.yaml` (uvicorn, PYTHONPATH=src). Python dependencies for the Apps container are in `requirements.txt` at the project root (Databricks installs these during app deployment).
 
 ## Schema Consistency
 

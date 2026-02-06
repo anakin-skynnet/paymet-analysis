@@ -11,7 +11,7 @@ export function Logo({ to = "/", className = "", showText = false }: LogoProps) 
     <div className={`flex items-center gap-2 ${className}`}>
       <img
         src="/getnet_logo.png"
-        alt="Getnet"
+        alt="Getnet Payment Analysis"
         className="h-8 object-contain"
       />
       {showText && (

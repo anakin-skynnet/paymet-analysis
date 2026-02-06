@@ -1,4 +1,8 @@
-# Used by Databricks Apps and local run. PYTHONPATH=src so payment_analysis is importable from bundle root.
-command: ["uvicorn", "payment_analysis.backend.app:app", "--workers", "2"]
+command:
+  - uvicorn
+  - payment_analysis.backend.app:app
+  - --workers
+  - "2"
 env:
-  PYTHONPATH: "src"
+  - name: PYTHONPATH
+    value: src

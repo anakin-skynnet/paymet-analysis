@@ -35,6 +35,16 @@ Genie 2, Model serving 3, Mosaic AI Gateway (LLM) 2. Agent jobs: [agents.yml](..
 
 **Backend:** `/api/analytics`, `/api/decisioning`, `/api/notebooks`, `/api/dashboards`, `/api/agents`, `/api/rules`, `/api/setup`. UC via Databricks SQL. **Frontend:** React + TanStack Router; `lib/api.ts`. **Stack:** Delta, UC, Lakeflow, SQL Warehouse, MLflow, Serving, Dashboards, Genie, Mosaic AI Gateway, FastAPI, React, TypeScript, Bun, TailwindCSS, Databricks Asset Bundles.
 
+## Verification (test, validate, verify)
+
+Run all local checks (TypeScript + Python, build, backend smoke test, dashboard assets, bundle validate):
+
+```bash
+./scripts/verify_all.sh [dev|prod]
+```
+
+Individual steps: `uv run apx dev check` (lint/types), `uv run apx build` (production build), `uv run python -c "from payment_analysis.backend.app import app; from payment_analysis.backend.router import api"` (backend import), `uv run python scripts/validate_dashboard_assets.py` (dashboard dependencies), `./scripts/validate_bundle.sh dev` (bundle validate). Best practice: run `./scripts/verify_all.sh dev` before committing or deploying.
+
 ## Bundle & Deploy
 
 `databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, vector_search, dashboards, model_serving, genie_spaces, agents, ai_gateway, streaming_simulator. Agent jobs in `resources/agents.yml`; Mosaic AI Gateway in `resources/ai_gateway.yml` (and on endpoints in model_serving.yml). Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: run `./scripts/deploy.sh dev` to prepare dashboards and deploy (or `./scripts/validate_bundle.sh dev` then `databricks bundle deploy -t dev`). For prod use `./scripts/deploy.sh prod` or `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, and optionally DATABRICKS_CATALOG, DATABRICKS_SCHEMA for bootstrap); `uv run apx dev` or `apx build` + deploy. Effective catalog/schema can be set in the UI (**Setup & Run** → **Save catalog & schema**).

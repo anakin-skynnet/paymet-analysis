@@ -1,0 +1,7 @@
+# Dependencies for Databricks Apps. Apps have fastapi, uvicorn, databricks-sdk pre-installed.
+# Only list packages to add or override. Pin versions for reproducible installs.
+pydantic-settings==2.12.0
+sqlmodel==0.0.32
+psycopg==3.3.2
+psycopg-binary==3.3.2
+psycopg-pool==3.3.0

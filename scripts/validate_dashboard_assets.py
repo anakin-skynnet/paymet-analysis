@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-List tables and views required by the 11 dashboards so you can verify they exist
+List tables and views required by the 12 dashboards so you can verify they exist
 in your catalog.schema (run Create Gold Views job and Lakeflow pipelines first).
 
 Usage:

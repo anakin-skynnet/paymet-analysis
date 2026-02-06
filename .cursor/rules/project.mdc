@@ -58,6 +58,11 @@ uv run apx dev status
 uv run apx dev check
 ```
 
+**Verify all** (lint, build, backend smoke test, dashboard assets, bundle validate):
+```bash
+./scripts/verify_all.sh [dev|prod]
+```
+
 **View logs:**
 ```bash
 uv run apx dev logs              # Recent logs (default: last 10m)
@@ -80,7 +85,7 @@ uv run apx build
 ./scripts/deploy.sh [dev|prod]
 # Or: ./scripts/validate_bundle.sh dev && databricks bundle deploy -t dev
 ```
-Never run `databricks bundle validate` or `databricks bundle deploy` without running `uv run python scripts/prepare_dashboards.py` first (or use the scripts above), or dashboard file_path errors will occur.
+Before any `databricks bundle` command (validate, deploy, run), ensure dashboard files exist: run `./scripts/ensure_dashboards.sh [dev|prod]` or `uv run python scripts/prepare_dashboards.py`—otherwise you get "failed to read serialized dashboard from file_path .build/dashboards/...."
 
 **Note:** OpenAPI client is automatically regenerated on every code change when dev servers are running. No manual regeneration needed.
 
