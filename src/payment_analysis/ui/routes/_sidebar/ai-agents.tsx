@@ -121,7 +121,7 @@ function AIAgents() {
             <div>
               <h1 className="text-3xl font-bold">Databricks AI Agents</h1>
               <p className="text-muted-foreground mt-1">
-                Genie, Model Serving, and AI Gateway agents. Run Orchestrator from Setup step 6; agents use Lakehouse Rules to accelerate approvals.
+                Genie, Model Serving, and Mosaic AI Gateway (LLM) agents. Agent jobs are in agents.yml; run Orchestrator from Setup step 6; agents use Lakehouse Rules to accelerate approvals.
               </p>
             </div>
           </div>
@@ -204,7 +204,7 @@ function AIAgents() {
                   routing and retry optimization
                 </li>
                 <li>
-                  <strong>AI Gateway:</strong> LLM-powered insights and
+                  <strong>Mosaic AI Gateway:</strong> LLM-powered insights and
                   recommendations (Llama 3.1 70B)
                 </li>
                 <li>

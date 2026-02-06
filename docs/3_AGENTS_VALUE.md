@@ -11,8 +11,8 @@ Seven agents to increase approval rates (e.g. 85% → 90%+).
 | 3 | Approval Propensity Predictor | Model Serving | Real-time approval probability | <50ms p95; ~40% less manual review |
 | 4 | Smart Routing Advisor | Model Serving | Recommend solution (3DS, token, etc.) | +2–5% approval; $2–5M/year @ $1B vol |
 | 5 | Smart Retry Optimizer | Model Serving | Which declines to retry, when | +15–25% vs random; $1.5–2.5M/year @ $1B |
-| 6 | Payment Intelligence Assistant | AI Gateway (Llama 3.1) | Explain data, root cause, recommendations | ~90% faster root cause; 10–20 h/week saved |
-| 7 | Risk Assessment Advisor | AI Gateway (Llama 3.1) | Risk explanation, mitigation | 20–30% fewer false positives |
+| 6 | Payment Intelligence Assistant | Mosaic AI Gateway (Llama 3.1) | Explain data, root cause, recommendations | ~90% faster root cause; 10–20 h/week saved |
+| 7 | Risk Assessment Advisor | Mosaic AI Gateway (Llama 3.1) | Risk explanation, mitigation | 20–30% fewer false positives |
 
 ## Aggregate Impact
 

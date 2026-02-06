@@ -13,6 +13,8 @@ alwaysApply: true
 - If agent has access to native browser tool, use it to verify changes on the frontend. If such tool is not present or is not working, use playwright MCP to automate browser actions (e.g. screenshots, clicks, etc.).
 - Avoid unnecessary restarts of the development servers
 - **Databricks SDK:** Use the apx MCP `docs` tool to search Databricks SDK documentation instead of guessing or hallucinating API signatures.
+- Always use Databricks latest features, releases and naming
+- When mentioning an APP in a prompt, always confirm if it is referring ot a Databricks APP
 
 ## Package Management
 - **Frontend:** Bun might not be present on user's $PATH. It's recommended to use prebundled bun (e.g., `uv run apx bun install` or `uv run apx bun add <dependency>`), unless user explicitly stated otherwise.

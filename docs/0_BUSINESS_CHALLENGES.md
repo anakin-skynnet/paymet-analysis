@@ -151,7 +151,7 @@ Brazil >70% volume. Entry channels (Brazil): PD ~62%, WS ~34%, SEP ~3%, Checkout
 | Learning loop / quality control | Expert feedback; False Insights counter-metric | `insight_feedback_silver`; `v_false_insights_metric`; submit API | Pipeline + UC; Reason Codes UI (submit + metric) |
 | Retry effectiveness | Recurrence vs reattempt; incremental lift | Silver features + `v_retry_performance` (baseline, lift); Smart Retry ML model | Pipeline + UC; Smart Retry UI; Model Serving (when enabled) |
 | Real-time decisioning | Per-transaction auth/retry/routing decisions | FastAPI decision endpoints → Databricks Model Serving (approval, risk, routing) | Backend calls serving endpoints; Decisioning playground UI |
-| AI-driven recommendations | Prescriptive insights; natural language | Genie Spaces; AI Gateway agents (Smart Routing, Retry, Decline Analyst, etc.) | Databricks Genie + AI Gateway; AI Agents page links to jobs/Genie |
+| AI-driven recommendations | Prescriptive insights; natural language | Genie Spaces; agent jobs (Smart Routing, Retry, Decline Analyst, etc.) + Mosaic AI Gateway for LLM | Databricks Genie + AI Gateway; AI Agents page links to jobs/Genie |
 
 ## Key Objectives & Impact
 

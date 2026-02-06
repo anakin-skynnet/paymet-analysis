@@ -26,7 +26,7 @@ Target: <5s Bronze → Gold.
 
 ## Stage 3: Intelligence
 
-**ML (Unity Catalog):** Approval propensity ~92%, risk scoring ~88%, smart routing ~75%, smart retry ~81%. Flow: Silver → features → MLflow → Registry → Serving. **AI agents:** 7 (Genie, serving, AI Gateway). Target: <50ms serving, <30s agent.
+**ML (Unity Catalog):** Approval propensity ~92%, risk scoring ~88%, smart routing ~75%, smart retry ~81%. Flow: Silver → features → MLflow → Registry → Serving. **AI agents:** 7 (Genie, model serving, Mosaic AI Gateway). Agent jobs in agents.yml. Target: <50ms serving, <30s agent.
 
 ## Stage 4: Analytics
 
@@ -47,4 +47,4 @@ Event → Bronze (~1s) → Silver (~3s) → `v_executive_kpis` (~5s) → backend
 | Ingestion / Bronze→Silver / Silver→Gold | <1s / <3s / <2s |
 | API query / ML inference / Agent | <2s / <100ms / <30s |
 
-**Stack:** Delta Lake, Unity Catalog, **Lakeflow**, MLflow, Model Serving, AI/BI Dashboards, Genie, AI Gateway, FastAPI, React. See [1_DEPLOYMENTS](1_DEPLOYMENTS.md).
+**Stack:** Delta Lake, Unity Catalog, **Lakeflow**, MLflow, Model Serving, AI/BI Dashboards, Genie, Mosaic AI Gateway, FastAPI, React. See [1_DEPLOYMENTS](1_DEPLOYMENTS.md).

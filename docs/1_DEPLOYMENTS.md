@@ -27,7 +27,7 @@ For prod with different catalog/schema in dashboards, run `./scripts/validate_bu
 | 6 | Train ML models | App **Setup & Run** or Workflows | Run **Train Payment Approval ML Models** (~10–15 min); 4 models in UC |
 | 7 | Dashboards & app | — | 11 dashboards in bundle; app: `.env` + `uv run apx dev` or deploy |
 | 8 | Model serving | After step 6 | Redeploy bundle (model_serving.yml) or already included |
-| 9 | AI agents (optional) | Workflows | Run **Orchestrator** or other agents in `ai_gateway.yml`; Genie optional |
+| 9 | AI agents (optional) | Workflows | Run **Orchestrator** or other agents in `agents.yml`; Genie optional |
 | 10 | Verify | App + Workspace | KPIs on **Dashboard**; **Rules**, **Decisioning**, **ML Models**; 4 models in UC. All jobs/pipelines have one-click Run and Open in **Setup & Run** (steps 1–7 and 6b; Quick links for Stream processor and Test Agent Framework). |
 
 ## Steps (detail)
@@ -40,10 +40,26 @@ For prod with different catalog/schema in dashboards, run `./scripts/validate_bu
 | **4** | Gold views | **Setup & Run** → “Run gold views job” or Workflows → “Create Payment Analysis Gold Views”; verify `v_executive_kpis` etc. |
 | **5** | Lakehouse (SQL) | In SQL Warehouse or a notebook (same catalog/schema), run in order: (a) `vector_search_and_recommendations.sql` — Vector Search source + recommendations; (b) `approval_rules.sql` — Rules table for app + agents; (c) `online_features.sql` — Online features for ML/AI in the app. Scripts live in `src/payment_analysis/transform/`. |
 | **6** | ML models | **Setup & Run** → “Run ML training” or Workflows → “Train Payment Approval ML Models”; ~10–15 min; registers 4 models in UC. |
-| **7** | Dashboards & app | Bundle deploys 11 dashboards; warehouse from `var.warehouse_id`. App: set `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy. |
+| **7** | Dashboards & app | Bundle deploys 11 dashboards; warehouse from `var.warehouse_id`. App: set `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); run locally with `uv run apx dev`, or deploy as a Databricks App (see **Deploy app as a Databricks App** below). |
 | **8** | Model serving | After step 6, model serving deploys with bundle (or redeploy). **ML Models** page in app shows catalog/schema models. |
 | **9** | Genie / AI agents | Optional: Genie Spaces; run **Orchestrator** or other agent jobs from **Setup & Run** or Workflows. |
 | **10** | Verify | **Dashboard**: KPIs, online features, decisions. **Rules**: add/edit rules (Lakehouse). **Decisioning**: recommendations + policy test. **ML Models**: list and links to Registry/MLflow. Workspace: bronze/silver data; 4 models in UC. |
+
+## Deploy app as a Databricks App
+
+The same app you run at **http://localhost:8000** (FastAPI + React UI) can be deployed to Databricks Apps via the bundle.
+
+1. **Build** the frontend and wheel (so the app serves the UI):  
+   `uv run apx build`
+2. **Deploy** the bundle (this creates/updates the app in the workspace):  
+   `databricks bundle deploy -t dev`  
+   If deploy fails with *"The maximum number of apps for your workspace... is 200"*, delete unused apps in **Workspace → Apps** and redeploy.
+3. **Run** the app and get the URL:
+   - From the CLI: `databricks bundle run payment_analysis_app -t dev`
+   - Or in the workspace: **Apps** → find **payment-analysis** → open and start the app.
+4. **App URL** is shown after starting (e.g. `https://<workspace-host>/apps/payment-analysis?o=...`). You can also run `databricks bundle summary -t dev` to see the app and its URL.
+
+The app resource is defined in `resources/app.yml`; runtime is configured in `app.yml` / `app.yaml` (uvicorn, PYTHONPATH=src).
 
 ## Schema Consistency
 
@@ -73,7 +89,8 @@ So: **follow the instructions in order.** If deploy fails at model serving or Ve
 After a **successful** `databricks bundle deploy -t dev`, look for:
 
 - **Workspace:** **Workspace** → **Users** → your user → **getnet_approval_rates_v3** (files, dashboards folder).
-- **Jobs:** **Workflow** (Jobs) → names like `[dev …] Train Payment Approval ML Models`, `[dev …] Transaction Stream Simulator`.
+- **Jobs:** **Workflow** (Jobs) → names like `[dev …] Train Payment Approval ML Models`, `[dev …] Transaction Stream Simulator`. Agent jobs (Orchestrator, Smart Routing, etc.) are defined in `resources/agents.yml`.
+- **Mosaic AI Gateway:** Governed LLM access is configured on the four custom endpoints in `model_serving.yml` (rate limits, usage tracking, guardrails). For pay-per-token LLM endpoints, enable AI Gateway in **Serving** → endpoint → **Edit AI Gateway**. See [AI Gateway docs](https://docs.databricks.com/aws/en/ai-gateway/).
 - **Lakeflow:** **Lakeflow** → `[dev] Payment Analysis ETL`, `[dev] Payment Real-Time Stream`.
 - **SQL Warehouse:** **SQL** → **Warehouses** → `[dev] Payment Analysis Warehouse`.
 - **Catalog:** **Catalog** → `ahs_demos_catalog` → schema `ahs_demo_payment_analysis_dev`.

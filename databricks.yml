@@ -19,13 +19,15 @@ include:
   - resources/pipelines.yml
   - resources/sql_warehouse.yml
   - resources/ml_jobs.yml
+  - resources/agents.yml
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/vector_search.yml
   - resources/dashboards.yml
-  # Deploy after "Train Payment Approval ML Models" job has run (4 models in UC)
-  - resources/model_serving.yml
+  # Uncomment after freeing app slots (workspace limit 200): - resources/app.yml
+  # Uncomment after "Train Payment Approval ML Models" job has run (4 models in UC)
+  # - resources/model_serving.yml
 
 # -----------------------------------------------------------------------------
 # Bundle variables (override via --var, BUNDLE_VAR_*, or target variables)

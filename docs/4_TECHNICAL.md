@@ -4,7 +4,7 @@ Architecture and implementation reference.
 
 ## Architecture
 
-- **Databricks:** Simulator → **Lakeflow** (Bronze → Silver → Gold) → Unity Catalog (12+ views, 4 models). MLflow, Model Serving, AI Gateway, Genie. 11 AI/BI dashboards, SQL Warehouse.
+- **Databricks:** Simulator → **Lakeflow** (Bronze → Silver → Gold) → Unity Catalog (12+ views, 4 models). MLflow, Model Serving, Mosaic AI Gateway, Genie. 11 AI/BI dashboards, SQL Warehouse.
 - **App:** FastAPI (analytics, decisioning, notebooks, dashboards, agents) ↔ React (dashboard, dashboards, notebooks, models, ai-agents, decisioning, experiments, declines).
 
 ## Data Layer
@@ -23,7 +23,7 @@ Models: approval propensity (RF ~92%), risk (~88%), routing (RF ~75%), retry (~8
 
 ## AI Agents (Summary)
 
-Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE.md).
+Genie 2, Model serving 3, Mosaic AI Gateway (LLM) 2. Agent jobs: [agents.yml](../resources/agents.yml). Details: [3_AGENTS_VALUE](3_AGENTS_VALUE.md).
 
 ## Analytics
 
@@ -31,11 +31,11 @@ Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE
 
 ## Application Layer
 
-**Backend:** `/api/analytics`, `/api/decisioning`, `/api/notebooks`, `/api/dashboards`, `/api/agents`, `/api/rules`, `/api/setup`. UC via Databricks SQL. **Frontend:** React + TanStack Router; `lib/api.ts`. **Stack:** Delta, UC, Lakeflow, SQL Warehouse, MLflow, Serving, Dashboards, Genie, AI Gateway, FastAPI, React, TypeScript, Bun, TailwindCSS, Databricks Asset Bundles.
+**Backend:** `/api/analytics`, `/api/decisioning`, `/api/notebooks`, `/api/dashboards`, `/api/agents`, `/api/rules`, `/api/setup`. UC via Databricks SQL. **Frontend:** React + TanStack Router; `lib/api.ts`. **Stack:** Delta, UC, Lakeflow, SQL Warehouse, MLflow, Serving, Dashboards, Genie, Mosaic AI Gateway, FastAPI, React, TypeScript, Bun, TailwindCSS, Databricks Asset Bundles.
 
 ## Bundle & Deploy
 
-`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, vector_search, dashboards, model_serving, genie_spaces, ai_gateway, streaming_simulator. Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. For prod catalog/schema in dashboards use `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
+`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, vector_search, dashboards, model_serving, genie_spaces, agents, ai_gateway, streaming_simulator. Agent jobs in `resources/agents.yml`; Mosaic AI Gateway in `resources/ai_gateway.yml` (and on endpoints in model_serving.yml). Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. For prod catalog/schema in dashboards use `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
 
 ## Workspace components ↔ UI mapping
 
@@ -48,8 +48,8 @@ Every Databricks workspace component (bundle resource) is linked from the app so
 | Create Gold Views | `ml_jobs.create_gold_views_job` | **Setup & Run** step 3 | Run gold views job / Open job (run) |
 | Lakehouse tables (SQL) | — | **Setup & Run** step 4 | Open SQL Warehouse / Explore schema |
 | Train ML Models | `ml_jobs.train_ml_models_job` | **Setup & Run** step 5 | Run ML training / Open job (run) |
-| Orchestrator Agent | `ai_gateway.orchestrator_agent_job` | **Setup & Run** step 6 | Run orchestrator / Open job (run) |
-| Specialist agents (5) | `ai_gateway.smart_routing_agent_job` etc. | **Setup & Run** step 6b | Run Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender / Open job each |
+| Orchestrator Agent | `jobs.orchestrator_agent_job` (agents.yml) | **Setup & Run** step 6 | Run orchestrator / Open job (run) |
+| Specialist agents (5) | `jobs.smart_routing_agent_job` etc. (agents.yml) | **Setup & Run** step 6b | Run Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender / Open job each |
 | Real-time pipeline | `pipelines.payment_realtime_pipeline` | **Setup & Run** step 7 | Start real-time pipeline / Open pipeline |
 | Continuous Stream Processor | `streaming_simulator.continuous_stream_processor` | **Setup & Run** Quick links | Stream processor (run) |
 | Test Agent Framework | `ml_jobs.test_agent_framework_job` | **Setup & Run** Quick links (if job ID set) | Test Agent Framework / All jobs |

@@ -4,7 +4,7 @@ Databricks AI Agents Registry - Payment Approval Optimization.
 This module provides AI agents powered by Databricks features:
 - Genie: Natural language SQL analytics
 - Model Serving: ML-powered recommendations
-- AI Gateway: LLM routing and prompt engineering
+- Mosaic AI Gateway: LLM routing and prompt engineering
 - Custom Agents: Domain-specific payment intelligence
 
 NOTE: Workspace URLs are constructed dynamically based on environment variables.
