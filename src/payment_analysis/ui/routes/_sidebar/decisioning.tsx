@@ -28,7 +28,7 @@ const openNotebook = async (notebookId: string) => {
 };
 
 function Decisioning() {
-  const [ctx, setCtx] = useState<DecisionContext>({
+  const [ctx, setCtx] = useState<DecisionContext & { experiment_id?: string; subject_key?: string }>({
     merchant_id: "m_demo",
     amount_minor: 1999,
     currency: "USD",
@@ -120,6 +120,26 @@ function Decisioning() {
               }
             />
           </div>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">A/B Experiment ID (optional)</label>
+            <Input
+              placeholder="e.g. experiment-uuid"
+              value={ctx.experiment_id ?? ""}
+              onChange={(e) =>
+                setCtx({ ...ctx, experiment_id: e.target.value || undefined })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">Subject key (optional, default: merchant_id)</label>
+            <Input
+              placeholder="default: merchant_id"
+              value={ctx.subject_key ?? ""}
+              onChange={(e) =>
+                setCtx({ ...ctx, subject_key: e.target.value || undefined })
+              }
+            />
+          </div>
 
           <div className="flex flex-wrap gap-2 pt-2 md:col-span-2">
             <Button onClick={() => auth.mutate(ctx)} disabled={auth.isPending}>
@@ -159,17 +179,26 @@ function DecisionCard({
   title: string;
   result?: unknown;
 }) {
+  const obj = typeof result === "object" && result != null ? (result as Record<string, unknown>) : null;
+  const variant = obj?.variant as string | undefined;
+  const experimentId = obj?.experiment_id as string | undefined;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between flex-wrap gap-2">
           <span>{title}</span>
-          {typeof result === "object" &&
-            result != null &&
-            "audit_id" in result && (
-              <Badge variant="outline">{String((result as Record<string, unknown>).audit_id)}</Badge>
+          <div className="flex items-center gap-2">
+            {variant != null && (
+              <Badge variant="secondary">A/B: {variant}</Badge>
             )}
+            {obj?.audit_id != null && (
+              <Badge variant="outline">{String(obj.audit_id)}</Badge>
+            )}
+          </div>
         </CardTitle>
+        {experimentId != null && (
+          <p className="text-xs text-muted-foreground mt-1">Experiment: {experimentId}</p>
+        )}
       </CardHeader>
       <CardContent>
         {result ? (

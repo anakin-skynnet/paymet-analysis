@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 from uuid import uuid4
 
 from .schemas import (
@@ -36,10 +37,22 @@ def _risk_tier(ctx: DecisionContext) -> RiskTier:
     return RiskTier.low
 
 
-def decide_authentication(ctx: DecisionContext) -> AuthDecisionOut:
+def decide_authentication(
+    ctx: DecisionContext,
+    variant: Optional[str] = None,
+) -> AuthDecisionOut:
     tier = _risk_tier(ctx)
+    is_treatment = variant == "treatment" or variant == "B"
 
     if ctx.supports_passkey and tier == RiskTier.low:
+        # Treatment: prefer 3DS frictionless for low risk (stricter, measure lift)
+        if is_treatment:
+            return AuthDecisionOut(
+                audit_id=_audit_id(),
+                path=AuthPath.three_ds_frictionless,
+                risk_tier=tier,
+                reason="[A/B treatment] Low risk; 3DS frictionless for experiment.",
+            )
         return AuthDecisionOut(
             audit_id=_audit_id(),
             path=AuthPath.passkey,
@@ -56,6 +69,14 @@ def decide_authentication(ctx: DecisionContext) -> AuthDecisionOut:
         )
 
     if tier == RiskTier.medium:
+        # Treatment: try challenge instead of frictionless (stricter)
+        if is_treatment:
+            return AuthDecisionOut(
+                audit_id=_audit_id(),
+                path=AuthPath.three_ds_challenge,
+                risk_tier=tier,
+                reason="[A/B treatment] Medium risk; step-up challenge for experiment.",
+            )
         return AuthDecisionOut(
             audit_id=_audit_id(),
             path=AuthPath.three_ds_frictionless,
@@ -80,9 +101,13 @@ _SOFT_DECLINE_CODES = {
 }
 
 
-def decide_retry(ctx: DecisionContext) -> RetryDecisionOut:
-    # Only retry up to max attempts.
-    max_attempts = 3
+def decide_retry(
+    ctx: DecisionContext,
+    variant: Optional[str] = None,
+) -> RetryDecisionOut:
+    is_treatment = variant == "treatment" or variant == "B"
+    max_attempts = 4 if is_treatment else 3
+
     if ctx.attempt_number >= max_attempts:
         return RetryDecisionOut(
             audit_id=_audit_id(),
@@ -95,12 +120,14 @@ def decide_retry(ctx: DecisionContext) -> RetryDecisionOut:
     reason = (ctx.previous_decline_reason or "").strip().lower()
 
     if ctx.is_recurring and (code in _SOFT_DECLINE_CODES or "timeout" in reason):
+        # Treatment: shorter backoff for recurring
+        backoff = 5 * 60 if is_treatment else 15 * 60
         return RetryDecisionOut(
             audit_id=_audit_id(),
             should_retry=True,
-            retry_after_seconds=15 * 60,
+            retry_after_seconds=backoff,
             max_attempts=max_attempts,
-            reason="Recurring + soft decline; schedule safe retry with backoff.",
+            reason="Recurring + soft decline; schedule retry with backoff." + (" [A/B treatment]" if is_treatment else ""),
         )
 
     if code in {"91", "96"}:
@@ -110,6 +137,16 @@ def decide_retry(ctx: DecisionContext) -> RetryDecisionOut:
             retry_after_seconds=60,
             max_attempts=max_attempts,
             reason="Transient issuer/system decline; quick retry may recover.",
+        )
+
+    # Treatment: allow one extra retry for do_not_honor_soft
+    if is_treatment and ("do_not_honor" in reason or "51" in code):
+        return RetryDecisionOut(
+            audit_id=_audit_id(),
+            should_retry=True,
+            retry_after_seconds=30 * 60,
+            max_attempts=max_attempts,
+            reason="[A/B treatment] Soft decline; allow retry with backoff.",
         )
 
     return RetryDecisionOut(
@@ -126,38 +163,48 @@ class RouteCandidate:
     score: float
 
 
-def decide_routing(ctx: DecisionContext) -> RoutingDecisionOut:
+def decide_routing(
+    ctx: DecisionContext,
+    variant: Optional[str] = None,
+) -> RoutingDecisionOut:
     """
-    Minimal routing scaffold.
-
-    Replace with bandit/optimizer under constraints (cost/SLA/geo) in production.
+    Minimal routing scaffold. A/B: treatment prefers secondary first (different route order).
     """
+    is_treatment = variant == "treatment" or variant == "B"
 
-    # Example: simple deterministic candidate set.
-    candidates = [
-        RouteCandidate("psp_primary", 0.6),
-        RouteCandidate("psp_secondary", 0.55),
-        RouteCandidate("psp_tertiary", 0.5),
-    ]
-
-    # Small preference: if issuer country is set and not domestic, prefer secondary.
-    if ctx.issuer_country and ctx.issuer_country.upper() not in {"US"}:
+    # Control: primary first; treatment: secondary first (measure approval lift by route).
+    if is_treatment:
         candidates = [
             RouteCandidate("psp_secondary", 0.62),
             RouteCandidate("psp_primary", 0.58),
             RouteCandidate("psp_tertiary", 0.5),
         ]
+        reason_suffix = " [A/B treatment] Secondary-first routing."
+    else:
+        candidates = [
+            RouteCandidate("psp_primary", 0.6),
+            RouteCandidate("psp_secondary", 0.55),
+            RouteCandidate("psp_tertiary", 0.5),
+        ]
+        # Small preference: if issuer country is set and not domestic, prefer secondary.
+        if ctx.issuer_country and ctx.issuer_country.upper() not in {"US"}:
+            candidates = [
+                RouteCandidate("psp_secondary", 0.62),
+                RouteCandidate("psp_primary", 0.58),
+                RouteCandidate("psp_tertiary", 0.5),
+            ]
+        reason_suffix = "Baseline routing heuristic; cascade after initial attempt."
 
     sorted_candidates = sorted(candidates, key=lambda c: c.score, reverse=True)
     primary = sorted_candidates[0].name
-    cascade = ctx.attempt_number > 0  # cascade only after an initial failure
+    cascade = ctx.attempt_number > 0
 
     return RoutingDecisionOut(
         audit_id=_audit_id(),
         primary_route=primary,
         candidates=[c.name for c in sorted_candidates],
         should_cascade=cascade,
-        reason="Baseline routing heuristic; cascade after initial attempt.",
+        reason=reason_suffix,
     )
 
 

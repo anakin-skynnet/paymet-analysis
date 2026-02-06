@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+import hashlib
+from typing import Any, Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from sqlmodel import select
 
-from ..db_models import DecisionLog
+from ..db_models import DecisionLog, Experiment, ExperimentAssignment
 from ..decisioning.policies import (
     decide_authentication,
     decide_retry,
@@ -22,6 +24,46 @@ from ..dependencies import SessionDep
 from ..services.databricks_service import get_databricks_service
 
 router = APIRouter(tags=["decisioning"])
+
+
+def _get_or_assign_variant(
+    session: SessionDep,
+    experiment_id: Optional[str],
+    subject_key: str,
+) -> Optional[str]:
+    """Resolve A/B variant for this subject. If no assignment exists and experiment is assignable, auto-enroll with 50/50 control/treatment (deterministic by subject_key). Returns None if no experiment or experiment not assignable."""
+    if not experiment_id or not subject_key:
+        return None
+    stmt = select(ExperimentAssignment).where(
+        ExperimentAssignment.experiment_id == experiment_id,
+        ExperimentAssignment.subject_key == subject_key,
+    ).limit(1)
+    assignment = session.exec(stmt).first()
+    if assignment:
+        return assignment.variant
+    exp = session.get(Experiment, experiment_id)
+    if not exp or exp.status not in {"running", "draft"}:
+        return None
+    variant = "treatment" if (hashlib.sha256(subject_key.encode()).digest()[-1] % 2 == 1) else "control"
+    session.add(
+        ExperimentAssignment(
+            experiment_id=experiment_id,
+            subject_key=subject_key,
+            variant=variant,
+        )
+    )
+    session.commit()
+    return variant
+
+
+def _with_ab(decision: Any, experiment_id: Optional[str], variant: Optional[str]) -> dict[str, Any]:
+    """Merge experiment_id and variant into decision response for logging and response."""
+    out = decision.model_dump()
+    if experiment_id is not None:
+        out["experiment_id"] = experiment_id
+    if variant is not None:
+        out["variant"] = variant
+    return out
 
 
 class MLPredictionInput(BaseModel):
@@ -61,47 +103,59 @@ class RoutingPredictionOut(BaseModel):
     "/authentication", response_model=AuthDecisionOut, operation_id="decideAuthentication"
 )
 def authentication(ctx: DecisionContext, session: SessionDep) -> AuthDecisionOut:
-    decision = decide_authentication(ctx)
+    subject_key = ctx.subject_key or ctx.merchant_id
+    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
+    variant = variant if variant is not None else "control"
+    decision = decide_authentication(ctx, variant=variant)
+    response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
             audit_id=decision.audit_id,
             decision_type="authentication",
             request=serialize_context(ctx),
-            response=decision.model_dump(),
+            response=response,
         )
     )
     session.commit()
-    return decision
+    return AuthDecisionOut(**response)
 
 
 @router.post("/retry", response_model=RetryDecisionOut, operation_id="decideRetry")
 def retry(ctx: DecisionContext, session: SessionDep) -> RetryDecisionOut:
-    decision = decide_retry(ctx)
+    subject_key = ctx.subject_key or ctx.merchant_id
+    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
+    variant = variant if variant is not None else "control"
+    decision = decide_retry(ctx, variant=variant)
+    response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
             audit_id=decision.audit_id,
             decision_type="retry",
             request=serialize_context(ctx),
-            response=decision.model_dump(),
+            response=response,
         )
     )
     session.commit()
-    return decision
+    return RetryDecisionOut(**response)
 
 
 @router.post("/routing", response_model=RoutingDecisionOut, operation_id="decideRouting")
 def routing(ctx: DecisionContext, session: SessionDep) -> RoutingDecisionOut:
-    decision = decide_routing(ctx)
+    subject_key = ctx.subject_key or ctx.merchant_id
+    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
+    variant = variant if variant is not None else "control"
+    decision = decide_routing(ctx, variant=variant)
+    response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
             audit_id=decision.audit_id,
             decision_type="routing",
             request=serialize_context(ctx),
-            response=decision.model_dump(),
+            response=response,
         )
     )
     session.commit()
-    return decision
+    return RoutingDecisionOut(**response)
 
 
 # ML Model Serving Endpoints

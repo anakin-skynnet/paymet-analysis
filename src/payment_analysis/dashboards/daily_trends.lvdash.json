@@ -3,7 +3,12 @@
   "name": "Daily Trends Dashboard",
   "displayName": "Daily Trends & Historical Analysis",
   "description": "Historical trends and day-over-day performance analysis",
-  "tags": ["trends", "historical", "daily", "analytics"],
+  "tags": [
+    "trends",
+    "historical",
+    "daily",
+    "analytics"
+  ],
   "pages": [
     {
       "name": "daily_trends",
@@ -14,7 +19,12 @@
             "name": "header",
             "textbox_spec": "## Daily Trends & Historical Analysis\n\n90-day historical performance and trend analysis"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +33,7 @@
               {
                 "name": "period_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT period_start, period_end FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -39,7 +49,12 @@
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 6, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -48,7 +63,7 @@
               {
                 "name": "period_end_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT period_end FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -64,7 +79,12 @@
               }
             }
           },
-          "position": { "x": 6, "y": 2, "width": 6, "height": 4 }
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -73,7 +93,7 @@
               {
                 "name": "daily_volume_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, transactions FROM v_daily_trends ORDER BY event_date"
                 }
               }
@@ -82,14 +102,25 @@
               "version": 2,
               "widgetType": "area-chart",
               "encodings": {
-                "x": { "fieldName": "event_date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "event_date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "transactions", "displayName": "Transactions" }
+                  {
+                    "fieldName": "transactions",
+                    "displayName": "Transactions"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -98,7 +129,7 @@
               {
                 "name": "daily_approval_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, approval_rate FROM v_daily_trends ORDER BY event_date"
                 }
               }
@@ -107,14 +138,25 @@
               "version": 2,
               "widgetType": "line-chart",
               "encodings": {
-                "x": { "fieldName": "event_date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "event_date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "approval_rate", "displayName": "Approval Rate %" }
+                  {
+                    "fieldName": "approval_rate",
+                    "displayName": "Approval Rate %"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 14, "width": 6, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -123,7 +165,7 @@
               {
                 "name": "daily_value_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, total_value FROM v_daily_trends ORDER BY event_date"
                 }
               }
@@ -132,14 +174,25 @@
               "version": 2,
               "widgetType": "area-chart",
               "encodings": {
-                "x": { "fieldName": "event_date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "event_date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "total_value", "displayName": "Total Value ($)" }
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total Value ($)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 6, "y": 14, "width": 6, "height": 8 }
+          "position": {
+            "x": 6,
+            "y": 14,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -148,7 +201,7 @@
               {
                 "name": "daily_fraud_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, avg_fraud_score FROM v_daily_trends ORDER BY event_date"
                 }
               }
@@ -157,14 +210,25 @@
               "version": 2,
               "widgetType": "line-chart",
               "encodings": {
-                "x": { "fieldName": "event_date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "event_date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "avg_fraud_score", "displayName": "Avg Fraud Score" }
+                  {
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 22, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 22,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -173,7 +237,7 @@
               {
                 "name": "daily_detail_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM v_daily_trends ORDER BY event_date DESC LIMIT 30"
                 }
               }
@@ -183,20 +247,54 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "event_date", "displayName": "Date" },
-                  { "fieldName": "transactions", "displayName": "Transactions" },
-                  { "fieldName": "approval_rate", "displayName": "Approval %" },
-                  { "fieldName": "avg_fraud_score", "displayName": "Fraud Score" },
-                  { "fieldName": "total_value", "displayName": "Total Value" },
-                  { "fieldName": "dod_volume_change", "displayName": "DoD Change" }
+                  {
+                    "fieldName": "event_date",
+                    "displayName": "Date"
+                  },
+                  {
+                    "fieldName": "transactions",
+                    "displayName": "Transactions"
+                  },
+                  {
+                    "fieldName": "approval_rate",
+                    "displayName": "Approval %"
+                  },
+                  {
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Fraud Score"
+                  },
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total Value"
+                  },
+                  {
+                    "fieldName": "dod_volume_change",
+                    "displayName": "DoD Change"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 30, "width": 12, "height": 10 }
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 10
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "v_daily_trends",
+      "displayName": "V Daily Trends",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends"
+    },
+    {
+      "name": "v_executive_kpis",
+      "displayName": "V Executive Kpis",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis"
+    }
+  ]
 }

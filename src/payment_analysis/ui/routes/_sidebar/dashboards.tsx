@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight } from "lucide-react";
 import { getWorkspaceUrl } from "@/config/workspace";
-import { useListDashboards, getNotebookUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
+import { friendlyReason } from "@/lib/reasoning";
+import { useListDashboards, useRecentDecisions, getNotebookUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/dashboards")({
   component: Component,
@@ -60,6 +61,8 @@ export function Component() {
 
   const dashboards = dashboardList?.data.dashboards ?? [];
   const categories = dashboardList?.data.categories ?? {};
+  const { data: decisionsData } = useRecentDecisions({ params: { limit: 5 } });
+  const recentDecisions = decisionsData?.data ?? [];
 
   const handleDashboardClick = (dashboard: Dashboard) => {
     if (dashboard.url_path) {
@@ -240,6 +243,51 @@ export function Component() {
           )}
         </Card>
       )}
+
+      {/* ML & decision reasoning */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquareText className="w-4 h-4" />
+            ML & decision reasoning
+          </CardTitle>
+          <CardDescription>
+            Latest policy and model reasoning from authentication, retry, and routing decisions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentDecisions.length === 0 ? (
+            <p className="text-sm text-muted-foreground mb-4">
+              No recent decisions. Use the Decisioning playground to generate decisions and reasoning.
+            </p>
+          ) : (
+            <ul className="space-y-3 mb-4">
+              {recentDecisions.map((log) => {
+                const reason = friendlyReason(log.response?.reason as string);
+                const variant = log.response?.variant as string | undefined;
+                return (
+                  <li key={log.audit_id ?? log.id ?? Math.random()} className="text-sm border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {log.decision_type}
+                      </Badge>
+                      {variant != null && (
+                        <span className="text-xs text-muted-foreground">A/B: {variant}</span>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground line-clamp-2">{reason}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/decisioning">
+              Open Decisioning <ArrowRight className="w-3 h-3 ml-1" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Info Card */}
       <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">

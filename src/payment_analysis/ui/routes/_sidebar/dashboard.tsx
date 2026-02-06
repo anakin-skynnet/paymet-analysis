@@ -14,8 +14,10 @@ import {
   useGetKpisSuspense,
   useGetApprovalTrendsSuspense,
   useGetSolutionPerformanceSuspense,
+  useRecentDecisionsSuspense,
 } from "@/lib/api";
 import selector from "@/lib/selector";
+import { friendlyReason } from "@/lib/reasoning";
 import {
   ExternalLink,
   Code2,
@@ -24,6 +26,7 @@ import {
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
+  MessageSquareText,
 } from "lucide-react";
 import { getDashboardUrl } from "@/config/workspace";
 
@@ -91,16 +94,52 @@ function DashboardSkeleton() {
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-56" />
+          <Skeleton className="h-4 w-full mt-2" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
+}
+
+function formatDecisionTime(iso: string | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffM = Math.floor(diffMs / 60000);
+  if (diffM < 1) return "Just now";
+  if (diffM < 60) return `${diffM}m ago`;
+  const diffH = Math.floor(diffM / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function Dashboard() {
   const { data: kpis } = useGetKpisSuspense(selector());
   const { data: trends } = useGetApprovalTrendsSuspense(selector());
   const { data: solutions } = useGetSolutionPerformanceSuspense(selector());
+  const { data: decisions } = useRecentDecisionsSuspense({
+    params: { limit: 20 },
+  });
 
   const pct = (kpis.approval_rate * 100).toFixed(2);
+  const decisionList = decisions?.data ?? [];
+  const getReason = (log: { response?: Record<string, unknown> }) =>
+    friendlyReason(log.response?.reason as string);
+  const getVariant = (log: { response?: Record<string, unknown> }) =>
+    log.response?.variant as string | undefined;
+  const getPath = (log: { response?: Record<string, unknown> }) =>
+    log.response?.path as string | undefined;
+  const getRiskTier = (log: { response?: Record<string, unknown> }) =>
+    log.response?.risk_tier as string | undefined;
 
   return (
     <div className="space-y-6">
@@ -288,6 +327,53 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ML & decision reasoning */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquareText className="w-4 h-4" />
+            ML & decision reasoning
+          </CardTitle>
+          <CardDescription>
+            Recent policy and model reasoning from authentication, retry, and routing decisions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {decisionList.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No recent decisions. Use the Decisioning playground to generate decisions and reasoning.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {decisionList.slice(0, 15).map((log) => {
+                const reason = getReason(log);
+                const variant = getVariant(log);
+                const path = getPath(log);
+                const riskTier = getRiskTier(log);
+                return (
+                  <li key={log.audit_id ?? log.id ?? Math.random()} className="border-b border-border/60 pb-4 last:border-0 last:pb-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {log.decision_type}
+                      </Badge>
+                      {(variant ?? path ?? riskTier) && (
+                        <span className="text-xs text-muted-foreground">
+                          {[variant && `A/B: ${variant}`, path, riskTier].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {formatDecisionTime(log.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground">{reason}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

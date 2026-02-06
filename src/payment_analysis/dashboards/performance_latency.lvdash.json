@@ -3,7 +3,12 @@
   "name": "Performance & Latency Dashboard",
   "displayName": "Technical Performance & Latency Analysis",
   "description": "Processing time, latency metrics, and technical performance by solution and network",
-  "tags": ["performance", "latency", "technical", "sla"],
+  "tags": [
+    "performance",
+    "latency",
+    "technical",
+    "sla"
+  ],
   "pages": [
     {
       "name": "performance_latency",
@@ -14,7 +19,12 @@
             "name": "header",
             "textbox_spec": "## Technical Performance & Latency Analysis\n\nProcessing time metrics, SLA monitoring, and performance optimization"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +33,7 @@
               {
                 "name": "latency_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT ROUND(AVG(processing_time_ms), 2) as avg_latency_ms FROM payments_enriched_silver"
                 }
               }
@@ -37,10 +47,17 @@
                   "displayName": "Avg Latency (ms)"
                 }
               },
-              "format": { "suffix": " ms" }
+              "format": {
+                "suffix": " ms"
+              }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -49,7 +66,7 @@
               {
                 "name": "p95_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT ROUND(PERCENTILE(processing_time_ms, 0.95), 2) as p95_latency FROM payments_enriched_silver"
                 }
               }
@@ -63,10 +80,17 @@
                   "displayName": "P95 Latency (ms)"
                 }
               },
-              "format": { "suffix": " ms" }
+              "format": {
+                "suffix": " ms"
+              }
             }
           },
-          "position": { "x": 3, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -75,7 +99,7 @@
               {
                 "name": "p99_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT ROUND(PERCENTILE(processing_time_ms, 0.99), 2) as p99_latency FROM payments_enriched_silver"
                 }
               }
@@ -89,10 +113,17 @@
                   "displayName": "P99 Latency (ms)"
                 }
               },
-              "format": { "suffix": " ms" }
+              "format": {
+                "suffix": " ms"
+              }
             }
           },
-          "position": { "x": 6, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -101,7 +132,7 @@
               {
                 "name": "slow_txns_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT COUNT(*) as slow_transactions FROM payments_enriched_silver WHERE processing_time_ms > 500"
                 }
               }
@@ -117,7 +148,12 @@
               }
             }
           },
-          "position": { "x": 9, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 9,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -126,7 +162,7 @@
               {
                 "name": "solution_latency_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance",
+                  "datasetName": "v_solution_performance",
                   "query_text": "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM v_solution_performance ORDER BY avg_latency_ms"
                 }
               }
@@ -135,14 +171,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "payment_solution", "displayName": "Solution" },
+                "x": {
+                  "fieldName": "payment_solution",
+                  "displayName": "Solution"
+                },
                 "y": [
-                  { "fieldName": "avg_latency_ms", "displayName": "Avg Latency (ms)" }
+                  {
+                    "fieldName": "avg_latency_ms",
+                    "displayName": "Avg Latency (ms)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -151,7 +198,7 @@
               {
                 "name": "network_latency_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_card_network_performance",
+                  "datasetName": "v_card_network_performance",
                   "query_text": "SELECT card_network, avg_latency_ms, transaction_count, approval_rate_pct FROM v_card_network_performance ORDER BY avg_latency_ms"
                 }
               }
@@ -160,14 +207,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "card_network", "displayName": "Network" },
+                "x": {
+                  "fieldName": "card_network",
+                  "displayName": "Network"
+                },
                 "y": [
-                  { "fieldName": "avg_latency_ms", "displayName": "Avg Latency (ms)" }
+                  {
+                    "fieldName": "avg_latency_ms",
+                    "displayName": "Avg Latency (ms)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 6, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -176,7 +234,7 @@
               {
                 "name": "latency_dist_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT CASE WHEN processing_time_ms < 100 THEN '<100ms' WHEN processing_time_ms < 200 THEN '100-200ms' WHEN processing_time_ms < 300 THEN '200-300ms' WHEN processing_time_ms < 500 THEN '300-500ms' WHEN processing_time_ms < 1000 THEN '500ms-1s' ELSE '>1s' END as latency_bucket, COUNT(*) as transaction_count FROM payments_enriched_silver GROUP BY CASE WHEN processing_time_ms < 100 THEN '<100ms' WHEN processing_time_ms < 200 THEN '100-200ms' WHEN processing_time_ms < 300 THEN '200-300ms' WHEN processing_time_ms < 500 THEN '300-500ms' WHEN processing_time_ms < 1000 THEN '500ms-1s' ELSE '>1s' END ORDER BY latency_bucket"
                 }
               }
@@ -185,14 +243,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "latency_bucket", "displayName": "Latency Range" },
+                "x": {
+                  "fieldName": "latency_bucket",
+                  "displayName": "Latency Range"
+                },
                 "y": [
-                  { "fieldName": "transaction_count", "displayName": "Transaction Count" }
+                  {
+                    "fieldName": "transaction_count",
+                    "displayName": "Transaction Count"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 14, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -201,7 +270,7 @@
               {
                 "name": "latency_approval_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT payment_solution, ROUND(AVG(processing_time_ms), 2) as avg_latency, ROUND(AVG(CASE WHEN is_approved THEN 100.0 ELSE 0.0 END), 2) as approval_rate, COUNT(*) as txns FROM payments_enriched_silver GROUP BY payment_solution ORDER BY payment_solution"
                 }
               }
@@ -210,13 +279,27 @@
               "version": 2,
               "widgetType": "scatter-plot",
               "encodings": {
-                "x": { "fieldName": "avg_latency", "displayName": "Avg Latency (ms)" },
-                "y": { "fieldName": "approval_rate", "displayName": "Approval Rate %" },
-                "color": { "fieldName": "payment_solution", "displayName": "Solution" }
+                "x": {
+                  "fieldName": "avg_latency",
+                  "displayName": "Avg Latency (ms)"
+                },
+                "y": {
+                  "fieldName": "approval_rate",
+                  "displayName": "Approval Rate %"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "displayName": "Solution"
+                }
               }
             }
           },
-          "position": { "x": 0, "y": 22, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 22,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -225,7 +308,7 @@
               {
                 "name": "perf_details_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance",
+                  "datasetName": "v_solution_performance",
                   "query_text": "SELECT payment_solution, transaction_count, approval_rate_pct, avg_latency_ms, avg_fraud_score, avg_amount, total_value FROM v_solution_performance ORDER BY avg_latency_ms"
                 }
               }
@@ -235,18 +318,44 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "payment_solution", "displayName": "Solution" },
-                  { "fieldName": "transaction_count", "displayName": "Txns" },
-                  { "fieldName": "approval_rate_pct", "displayName": "Approval %" },
-                  { "fieldName": "avg_latency_ms", "displayName": "Latency (ms)" },
-                  { "fieldName": "avg_fraud_score", "displayName": "Fraud" },
-                  { "fieldName": "avg_amount", "displayName": "Avg $" },
-                  { "fieldName": "total_value", "displayName": "Total $" }
+                  {
+                    "fieldName": "payment_solution",
+                    "displayName": "Solution"
+                  },
+                  {
+                    "fieldName": "transaction_count",
+                    "displayName": "Txns"
+                  },
+                  {
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval %"
+                  },
+                  {
+                    "fieldName": "avg_latency_ms",
+                    "displayName": "Latency (ms)"
+                  },
+                  {
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Fraud"
+                  },
+                  {
+                    "fieldName": "avg_amount",
+                    "displayName": "Avg $"
+                  },
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total $"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 30, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -255,7 +364,7 @@
               {
                 "name": "latency_trend_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT DATE_TRUNC('hour', event_time) as hour, ROUND(AVG(processing_time_ms), 2) as avg_latency, COUNT(*) as txn_count FROM payments_enriched_silver WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 7 DAYS GROUP BY DATE_TRUNC('hour', event_time) ORDER BY hour DESC LIMIT 168"
                 }
               }
@@ -264,17 +373,44 @@
               "version": 2,
               "widgetType": "line-chart",
               "encodings": {
-                "x": { "fieldName": "hour", "displayName": "Hour" },
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Hour"
+                },
                 "y": [
-                  { "fieldName": "avg_latency", "displayName": "Avg Latency (ms)" }
+                  {
+                    "fieldName": "avg_latency",
+                    "displayName": "Avg Latency (ms)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 38, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 38,
+            "width": 12,
+            "height": 8
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "payments_enriched_silver",
+      "displayName": "Payments Enriched Silver",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver"
+    },
+    {
+      "name": "v_card_network_performance",
+      "displayName": "V Card Network Performance",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_card_network_performance"
+    },
+    {
+      "name": "v_solution_performance",
+      "displayName": "V Solution Performance",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_solution_performance"
+    }
+  ]
 }

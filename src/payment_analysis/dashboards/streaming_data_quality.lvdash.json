@@ -3,7 +3,13 @@
   "name": "Streaming Data Quality Dashboard",
   "displayName": "Streaming & Data Quality",
   "description": "Incoming streaming data volume and data quality metrics (bronze/silver retention)",
-  "tags": ["streaming", "ingestion", "data-quality", "bronze", "silver"],
+  "tags": [
+    "streaming",
+    "ingestion",
+    "data-quality",
+    "bronze",
+    "silver"
+  ],
   "pages": [
     {
       "name": "incoming_streaming",
@@ -14,7 +20,12 @@
             "name": "header",
             "textbox_spec": "## Incoming Streaming Data\n\nBronze ingestion volume and silver processing over time"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +34,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_data_quality_summary",
+                  "datasetName": "v_data_quality_summary",
                   "query_text": "SELECT bronze_last_24h FROM v_data_quality_summary LIMIT 1"
                 }
               }
@@ -32,11 +43,19 @@
               "version": 2,
               "widgetType": "counter",
               "encodings": {
-                "value": { "fieldName": "bronze_last_24h", "displayName": "Bronze Records (24h)" }
+                "value": {
+                  "fieldName": "bronze_last_24h",
+                  "displayName": "Bronze Records (24h)"
+                }
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -45,7 +64,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_data_quality_summary",
+                  "datasetName": "v_data_quality_summary",
                   "query_text": "SELECT silver_last_24h FROM v_data_quality_summary LIMIT 1"
                 }
               }
@@ -54,11 +73,19 @@
               "version": 2,
               "widgetType": "counter",
               "encodings": {
-                "value": { "fieldName": "silver_last_24h", "displayName": "Silver Records (24h)" }
+                "value": {
+                  "fieldName": "silver_last_24h",
+                  "displayName": "Silver Records (24h)"
+                }
               }
             }
           },
-          "position": { "x": 3, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -67,7 +94,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_data_quality_summary",
+                  "datasetName": "v_data_quality_summary",
                   "query_text": "SELECT retention_pct_24h FROM v_data_quality_summary LIMIT 1"
                 }
               }
@@ -76,12 +103,22 @@
               "version": 2,
               "widgetType": "counter",
               "encodings": {
-                "value": { "fieldName": "retention_pct_24h", "displayName": "Retention % (24h)" }
+                "value": {
+                  "fieldName": "retention_pct_24h",
+                  "displayName": "Retention % (24h)"
+                }
               },
-              "format": { "suffix": "%" }
+              "format": {
+                "suffix": "%"
+              }
             }
           },
-          "position": { "x": 6, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -90,7 +127,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_streaming_ingestion_hourly",
+                  "datasetName": "v_streaming_ingestion_hourly",
                   "query_text": "SELECT hour, bronze_record_count FROM v_streaming_ingestion_hourly ORDER BY hour"
                 }
               }
@@ -99,12 +136,25 @@
               "version": 2,
               "widgetType": "area-chart",
               "encodings": {
-                "x": { "fieldName": "hour", "displayName": "Hour" },
-                "y": [{ "fieldName": "bronze_record_count", "displayName": "Bronze Records" }]
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Hour"
+                },
+                "y": [
+                  {
+                    "fieldName": "bronze_record_count",
+                    "displayName": "Bronze Records"
+                  }
+                ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 6, "height": 6 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
         },
         {
           "widget": {
@@ -113,7 +163,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_silver_processed_hourly",
+                  "datasetName": "v_silver_processed_hourly",
                   "query_text": "SELECT hour, silver_record_count FROM v_silver_processed_hourly ORDER BY hour"
                 }
               }
@@ -122,12 +172,25 @@
               "version": 2,
               "widgetType": "area-chart",
               "encodings": {
-                "x": { "fieldName": "hour", "displayName": "Hour" },
-                "y": [{ "fieldName": "silver_record_count", "displayName": "Silver Records" }]
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Hour"
+                },
+                "y": [
+                  {
+                    "fieldName": "silver_record_count",
+                    "displayName": "Silver Records"
+                  }
+                ]
               }
             }
           },
-          "position": { "x": 6, "y": 6, "width": 6, "height": 6 }
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
         }
       ]
     },
@@ -138,9 +201,14 @@
         {
           "widget": {
             "name": "header",
-            "textbox_spec": "## Data Quality Summary\n\nPipeline retention and data freshness (bronze → silver)"
+            "textbox_spec": "## Data Quality Summary\n\nPipeline retention and data freshness (bronze \u2192 silver)"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -149,7 +217,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_data_quality_summary",
+                  "datasetName": "v_data_quality_summary",
                   "query_text": "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM v_data_quality_summary"
                 }
               }
@@ -159,23 +227,48 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "bronze_last_24h", "displayName": "Bronze (24h)" },
-                  { "fieldName": "silver_last_24h", "displayName": "Silver (24h)" },
-                  { "fieldName": "retention_pct_24h", "displayName": "Retention %" },
-                  { "fieldName": "latest_bronze_ingestion", "displayName": "Latest Bronze Ingestion" },
-                  { "fieldName": "latest_silver_event", "displayName": "Latest Silver Event" }
+                  {
+                    "fieldName": "bronze_last_24h",
+                    "displayName": "Bronze (24h)"
+                  },
+                  {
+                    "fieldName": "silver_last_24h",
+                    "displayName": "Silver (24h)"
+                  },
+                  {
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "Retention %"
+                  },
+                  {
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "Latest Bronze Ingestion"
+                  },
+                  {
+                    "fieldName": "latest_silver_event",
+                    "displayName": "Latest Silver Event"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 12, "height": 5 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 5
+          }
         },
         {
           "widget": {
             "name": "quality_note",
-            "textbox_spec": "**Quality notes:** Records dropped by silver expectations (e.g. invalid transaction_id, amount ≤ 0) are not in silver; retention % = silver/bronze over the last 24h. Low retention may indicate validation failures or pipeline lag."
+            "textbox_spec": "**Quality notes:** Records dropped by silver expectations (e.g. invalid transaction_id, amount \u2264 0) are not in silver; retention % = silver/bronze over the last 24h. Low retention may indicate validation failures or pipeline lag."
           },
-          "position": { "x": 0, "y": 7, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 2
+          }
         }
       ]
     },
@@ -188,7 +281,12 @@
             "name": "header",
             "textbox_spec": "## Unity Catalog Data Quality Metrics\n\nFreshness, completeness, and downstream impact from system.data_quality_monitoring. Enable data quality monitoring on tables to populate this view."
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -197,7 +295,7 @@
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_uc_data_quality_metrics",
+                  "datasetName": "v_uc_data_quality_metrics",
                   "query_text": "SELECT table_name, overall_status, freshness_status, completeness_status, impact_level, num_downstream_tables, num_queries_affected, event_time FROM v_uc_data_quality_metrics ORDER BY overall_status DESC, table_name"
                 }
               }
@@ -207,29 +305,84 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "table_name", "displayName": "Table" },
-                  { "fieldName": "overall_status", "displayName": "Status" },
-                  { "fieldName": "freshness_status", "displayName": "Freshness" },
-                  { "fieldName": "completeness_status", "displayName": "Completeness" },
-                  { "fieldName": "impact_level", "displayName": "Impact Level" },
-                  { "fieldName": "num_downstream_tables", "displayName": "Downstream Tables" },
-                  { "fieldName": "num_queries_affected", "displayName": "Queries Affected" },
-                  { "fieldName": "event_time", "displayName": "Last Check" }
+                  {
+                    "fieldName": "table_name",
+                    "displayName": "Table"
+                  },
+                  {
+                    "fieldName": "overall_status",
+                    "displayName": "Status"
+                  },
+                  {
+                    "fieldName": "freshness_status",
+                    "displayName": "Freshness"
+                  },
+                  {
+                    "fieldName": "completeness_status",
+                    "displayName": "Completeness"
+                  },
+                  {
+                    "fieldName": "impact_level",
+                    "displayName": "Impact Level"
+                  },
+                  {
+                    "fieldName": "num_downstream_tables",
+                    "displayName": "Downstream Tables"
+                  },
+                  {
+                    "fieldName": "num_queries_affected",
+                    "displayName": "Queries Affected"
+                  },
+                  {
+                    "fieldName": "event_time",
+                    "displayName": "Last Check"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
             "name": "uc_note",
-            "textbox_spec": "**Unity Catalog data quality monitoring** runs freshness and completeness checks on enabled tables. Status: Healthy / Unhealthy / Unknown. Impact level 0–4 indicates downstream impact severity. Grant SELECT on system.data_quality_monitoring.table_results if the view is empty."
+            "textbox_spec": "**Unity Catalog data quality monitoring** runs freshness and completeness checks on enabled tables. Status: Healthy / Unhealthy / Unknown. Impact level 0\u20134 indicates downstream impact severity. Grant SELECT on system.data_quality_monitoring.table_results if the view is empty."
           },
-          "position": { "x": 0, "y": 10, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 12,
+            "height": 2
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "v_data_quality_summary",
+      "displayName": "V Data Quality Summary",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_data_quality_summary"
+    },
+    {
+      "name": "v_silver_processed_hourly",
+      "displayName": "V Silver Processed Hourly",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_silver_processed_hourly"
+    },
+    {
+      "name": "v_streaming_ingestion_hourly",
+      "displayName": "V Streaming Ingestion Hourly",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_streaming_ingestion_hourly"
+    },
+    {
+      "name": "v_uc_data_quality_metrics",
+      "displayName": "V Uc Data Quality Metrics",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_uc_data_quality_metrics"
+    }
+  ]
 }

@@ -3,7 +3,12 @@
   "name": "Financial Impact Dashboard",
   "displayName": "Financial Impact & ROI Analysis",
   "description": "Transaction value analysis, revenue impact, and financial metrics",
-  "tags": ["financial", "revenue", "roi", "value"],
+  "tags": [
+    "financial",
+    "revenue",
+    "roi",
+    "value"
+  ],
   "pages": [
     {
       "name": "financial_impact",
@@ -14,7 +19,12 @@
             "name": "header",
             "textbox_spec": "## Financial Impact & ROI Analysis\n\nTransaction value metrics, revenue impact, and optimization ROI"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +33,7 @@
               {
                 "name": "approved_value_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT approved_value FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -37,10 +47,18 @@
                   "displayName": "Approved Value"
                 }
               },
-              "format": { "prefix": "$", "notation": "compact" }
+              "format": {
+                "prefix": "$",
+                "notation": "compact"
+              }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -49,7 +67,7 @@
               {
                 "name": "declined_value_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT declined_value FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -63,10 +81,18 @@
                   "displayName": "Declined Value"
                 }
               },
-              "format": { "prefix": "$", "notation": "compact" }
+              "format": {
+                "prefix": "$",
+                "notation": "compact"
+              }
             }
           },
-          "position": { "x": 3, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -75,7 +101,7 @@
               {
                 "name": "avg_value_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT avg_transaction_amount FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -89,10 +115,17 @@
                   "displayName": "Avg Transaction"
                 }
               },
-              "format": { "prefix": "$" }
+              "format": {
+                "prefix": "$"
+              }
             }
           },
-          "position": { "x": 6, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -101,7 +134,7 @@
               {
                 "name": "recovery_value_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "datasetName": "v_decline_recovery_opportunities",
                   "query_text": "SELECT SUM(potential_recovery_value) as total_recoverable FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM')"
                 }
               }
@@ -115,10 +148,18 @@
                   "displayName": "Recoverable Value"
                 }
               },
-              "format": { "prefix": "$", "notation": "compact" }
+              "format": {
+                "prefix": "$",
+                "notation": "compact"
+              }
             }
           },
-          "position": { "x": 9, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 9,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -127,7 +168,7 @@
               {
                 "name": "segment_value_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, total_value, transaction_count, avg_transaction_amount FROM v_merchant_segment_performance ORDER BY total_value DESC"
                 }
               }
@@ -136,14 +177,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "merchant_segment", "displayName": "Segment" },
+                "x": {
+                  "fieldName": "merchant_segment",
+                  "displayName": "Segment"
+                },
                 "y": [
-                  { "fieldName": "total_value", "displayName": "Total Value ($)" }
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total Value ($)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -152,7 +204,7 @@
               {
                 "name": "geo_value_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography",
+                  "datasetName": "v_performance_by_geography",
                   "query_text": "SELECT country, total_transaction_value, transaction_count, approval_rate_pct FROM v_performance_by_geography ORDER BY total_transaction_value DESC LIMIT 10"
                 }
               }
@@ -161,14 +213,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "country", "displayName": "Country" },
+                "x": {
+                  "fieldName": "country",
+                  "displayName": "Country"
+                },
                 "y": [
-                  { "fieldName": "total_transaction_value", "displayName": "Total Value ($)" }
+                  {
+                    "fieldName": "total_transaction_value",
+                    "displayName": "Total Value ($)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 6, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -177,7 +240,7 @@
               {
                 "name": "decline_value_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons",
+                  "datasetName": "v_top_decline_reasons",
                   "query_text": "SELECT decline_reason, total_declined_value, decline_count, avg_amount, recoverable_pct FROM v_top_decline_reasons ORDER BY total_declined_value DESC LIMIT 10"
                 }
               }
@@ -186,14 +249,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "decline_reason", "displayName": "Decline Reason" },
+                "x": {
+                  "fieldName": "decline_reason",
+                  "displayName": "Decline Reason"
+                },
                 "y": [
-                  { "fieldName": "total_declined_value", "displayName": "Declined Value ($)" }
+                  {
+                    "fieldName": "total_declined_value",
+                    "displayName": "Declined Value ($)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 14, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -202,7 +276,7 @@
               {
                 "name": "recovery_roi_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities",
+                  "datasetName": "v_decline_recovery_opportunities",
                   "query_text": "SELECT decline_reason, merchant_segment, decline_count, potential_recovery_value, recovery_likelihood, recommended_action FROM v_decline_recovery_opportunities WHERE recovery_likelihood IN ('HIGH', 'MEDIUM') ORDER BY potential_recovery_value DESC LIMIT 20"
                 }
               }
@@ -212,17 +286,40 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "decline_reason", "displayName": "Decline" },
-                  { "fieldName": "merchant_segment", "displayName": "Segment" },
-                  { "fieldName": "decline_count", "displayName": "Count" },
-                  { "fieldName": "potential_recovery_value", "displayName": "Recovery $" },
-                  { "fieldName": "recovery_likelihood", "displayName": "Likelihood" },
-                  { "fieldName": "recommended_action", "displayName": "Action" }
+                  {
+                    "fieldName": "decline_reason",
+                    "displayName": "Decline"
+                  },
+                  {
+                    "fieldName": "merchant_segment",
+                    "displayName": "Segment"
+                  },
+                  {
+                    "fieldName": "decline_count",
+                    "displayName": "Count"
+                  },
+                  {
+                    "fieldName": "potential_recovery_value",
+                    "displayName": "Recovery $"
+                  },
+                  {
+                    "fieldName": "recovery_likelihood",
+                    "displayName": "Likelihood"
+                  },
+                  {
+                    "fieldName": "recommended_action",
+                    "displayName": "Action"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 22, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 22,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -231,7 +328,7 @@
               {
                 "name": "retry_value_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance",
+                  "datasetName": "v_retry_performance",
                   "query_text": "SELECT decline_reason, retry_count, retry_attempts, retry_success_rate_pct, recovered_value, effectiveness FROM v_retry_performance WHERE recovered_value > 0 ORDER BY recovered_value DESC LIMIT 15"
                 }
               }
@@ -241,17 +338,40 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "decline_reason", "displayName": "Decline" },
-                  { "fieldName": "retry_count", "displayName": "Retry #" },
-                  { "fieldName": "retry_attempts", "displayName": "Attempts" },
-                  { "fieldName": "retry_success_rate_pct", "displayName": "Success %" },
-                  { "fieldName": "recovered_value", "displayName": "Recovered $" },
-                  { "fieldName": "effectiveness", "displayName": "Effectiveness" }
+                  {
+                    "fieldName": "decline_reason",
+                    "displayName": "Decline"
+                  },
+                  {
+                    "fieldName": "retry_count",
+                    "displayName": "Retry #"
+                  },
+                  {
+                    "fieldName": "retry_attempts",
+                    "displayName": "Attempts"
+                  },
+                  {
+                    "fieldName": "retry_success_rate_pct",
+                    "displayName": "Success %"
+                  },
+                  {
+                    "fieldName": "recovered_value",
+                    "displayName": "Recovered $"
+                  },
+                  {
+                    "fieldName": "effectiveness",
+                    "displayName": "Effectiveness"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 30, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -260,7 +380,7 @@
               {
                 "name": "value_trend_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends",
+                  "datasetName": "v_daily_trends",
                   "query_text": "SELECT event_date, total_value, transactions, approval_rate FROM v_daily_trends ORDER BY event_date DESC LIMIT 90"
                 }
               }
@@ -269,17 +389,64 @@
               "version": 2,
               "widgetType": "area-chart",
               "encodings": {
-                "x": { "fieldName": "event_date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "event_date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "total_value", "displayName": "Total Value ($)" }
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total Value ($)"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 38, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 38,
+            "width": 12,
+            "height": 8
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "v_daily_trends",
+      "displayName": "V Daily Trends",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_daily_trends"
+    },
+    {
+      "name": "v_decline_recovery_opportunities",
+      "displayName": "V Decline Recovery Opportunities",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_decline_recovery_opportunities"
+    },
+    {
+      "name": "v_executive_kpis",
+      "displayName": "V Executive Kpis",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis"
+    },
+    {
+      "name": "v_merchant_segment_performance",
+      "displayName": "V Merchant Segment Performance",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance"
+    },
+    {
+      "name": "v_performance_by_geography",
+      "displayName": "V Performance By Geography",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography"
+    },
+    {
+      "name": "v_retry_performance",
+      "displayName": "V Retry Performance",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_retry_performance"
+    },
+    {
+      "name": "v_top_decline_reasons",
+      "displayName": "V Top Decline Reasons",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons"
+    }
+  ]
 }

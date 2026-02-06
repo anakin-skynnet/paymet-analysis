@@ -41,6 +41,10 @@ class DecisionContext(BaseModel):
     previous_decline_code: Optional[str] = None
     previous_decline_reason: Optional[str] = None
 
+    # A/B test: if set, lookup assignment for subject_key (default merchant_id) and branch by variant
+    experiment_id: Optional[str] = None
+    subject_key: Optional[str] = None  # default: merchant_id
+
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -49,6 +53,8 @@ class AuthDecisionOut(BaseModel):
     path: AuthPath
     risk_tier: RiskTier
     reason: str
+    experiment_id: Optional[str] = None
+    variant: Optional[str] = None
 
 
 class RetryDecisionOut(BaseModel):
@@ -57,6 +63,8 @@ class RetryDecisionOut(BaseModel):
     retry_after_seconds: Optional[int] = None
     max_attempts: int = 3
     reason: str
+    experiment_id: Optional[str] = None
+    variant: Optional[str] = None
 
 
 class RoutingDecisionOut(BaseModel):
@@ -65,6 +73,8 @@ class RoutingDecisionOut(BaseModel):
     candidates: list[str]
     should_cascade: bool
     reason: str
+    experiment_id: Optional[str] = None
+    variant: Optional[str] = None
 
 
 class KPIOut(BaseModel):

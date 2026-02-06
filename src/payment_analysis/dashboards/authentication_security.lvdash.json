@@ -3,7 +3,12 @@
   "name": "Authentication & Security Dashboard",
   "displayName": "3DS Authentication & Security Analysis",
   "description": "Deep dive into 3D Secure usage, authentication patterns, and security metrics",
-  "tags": ["3ds", "authentication", "security", "compliance"],
+  "tags": [
+    "3ds",
+    "authentication",
+    "security",
+    "compliance"
+  ],
   "pages": [
     {
       "name": "authentication_security",
@@ -14,7 +19,12 @@
             "name": "header",
             "textbox_spec": "## 3D Secure Authentication & Security Analysis\n\nAuthentication adoption, security patterns, and compliance metrics"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +33,7 @@
               {
                 "name": "auth_usage_kpi",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT auth_3ds_usage_pct, total_transactions FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -37,10 +47,17 @@
                   "displayName": "Overall 3DS Usage %"
                 }
               },
-              "format": { "suffix": "%" }
+              "format": {
+                "suffix": "%"
+              }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 4, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -49,7 +66,7 @@
               {
                 "name": "secured_txns_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT COUNT(*) as secured_transactions FROM payments_enriched_silver WHERE uses_3ds = true"
                 }
               }
@@ -65,7 +82,12 @@
               }
             }
           },
-          "position": { "x": 4, "y": 2, "width": 4, "height": 4 }
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -74,7 +96,7 @@
               {
                 "name": "auth_lift_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT ROUND(AVG(CASE WHEN uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as with_3ds_rate, ROUND(AVG(CASE WHEN NOT uses_3ds THEN CASE WHEN is_approved THEN 100.0 ELSE 0.0 END END), 2) as without_3ds_rate FROM payments_enriched_silver"
                 }
               }
@@ -88,10 +110,17 @@
                   "displayName": "Approval Rate w/ 3DS"
                 }
               },
-              "format": { "suffix": "%" }
+              "format": {
+                "suffix": "%"
+              }
             }
           },
-          "position": { "x": 8, "y": 2, "width": 4, "height": 4 }
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -100,7 +129,7 @@
               {
                 "name": "segment_3ds_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, transaction_count, approval_rate_pct FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC"
                 }
               }
@@ -109,14 +138,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "merchant_segment", "displayName": "Segment" },
+                "x": {
+                  "fieldName": "merchant_segment",
+                  "displayName": "Segment"
+                },
                 "y": [
-                  { "fieldName": "auth_3ds_usage_pct", "displayName": "3DS Usage %" }
+                  {
+                    "fieldName": "auth_3ds_usage_pct",
+                    "displayName": "3DS Usage %"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -125,7 +165,7 @@
               {
                 "name": "correlation_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM v_merchant_segment_performance ORDER BY merchant_segment"
                 }
               }
@@ -134,13 +174,27 @@
               "version": 2,
               "widgetType": "scatter-plot",
               "encodings": {
-                "x": { "fieldName": "auth_3ds_usage_pct", "displayName": "3DS Usage %" },
-                "y": { "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" },
-                "color": { "fieldName": "merchant_segment", "displayName": "Segment" }
+                "x": {
+                  "fieldName": "auth_3ds_usage_pct",
+                  "displayName": "3DS Usage %"
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "displayName": "Approval Rate %"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "displayName": "Segment"
+                }
               }
             }
           },
-          "position": { "x": 6, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -149,7 +203,7 @@
               {
                 "name": "3ds_trend_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT DATE_TRUNC('day', event_time) as date, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as usage_pct, COUNT(*) as total_txns FROM payments_enriched_silver WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 30 DAYS GROUP BY DATE_TRUNC('day', event_time) ORDER BY date"
                 }
               }
@@ -158,14 +212,25 @@
               "version": 2,
               "widgetType": "line-chart",
               "encodings": {
-                "x": { "fieldName": "date", "displayName": "Date" },
+                "x": {
+                  "fieldName": "date",
+                  "displayName": "Date"
+                },
                 "y": [
-                  { "fieldName": "usage_pct", "displayName": "3DS Usage %" }
+                  {
+                    "fieldName": "usage_pct",
+                    "displayName": "3DS Usage %"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 14, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -174,7 +239,7 @@
               {
                 "name": "auth_details_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance",
+                  "datasetName": "v_merchant_segment_performance",
                   "query_text": "SELECT merchant_segment, transaction_count, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score, unique_merchants, total_value FROM v_merchant_segment_performance ORDER BY auth_3ds_usage_pct DESC"
                 }
               }
@@ -184,18 +249,44 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "merchant_segment", "displayName": "Segment" },
-                  { "fieldName": "transaction_count", "displayName": "Transactions" },
-                  { "fieldName": "auth_3ds_usage_pct", "displayName": "3DS %" },
-                  { "fieldName": "approval_rate_pct", "displayName": "Approval %" },
-                  { "fieldName": "avg_fraud_score", "displayName": "Fraud Score" },
-                  { "fieldName": "unique_merchants", "displayName": "Merchants" },
-                  { "fieldName": "total_value", "displayName": "Total Value" }
+                  {
+                    "fieldName": "merchant_segment",
+                    "displayName": "Segment"
+                  },
+                  {
+                    "fieldName": "transaction_count",
+                    "displayName": "Transactions"
+                  },
+                  {
+                    "fieldName": "auth_3ds_usage_pct",
+                    "displayName": "3DS %"
+                  },
+                  {
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval %"
+                  },
+                  {
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Fraud Score"
+                  },
+                  {
+                    "fieldName": "unique_merchants",
+                    "displayName": "Merchants"
+                  },
+                  {
+                    "fieldName": "total_value",
+                    "displayName": "Total Value"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 22, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 22,
+            "width": 12,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -204,7 +295,7 @@
               {
                 "name": "geo_3ds_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver",
+                  "datasetName": "payments_enriched_silver",
                   "query_text": "SELECT issuer_country, COUNT(*) as txns, ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as auth_3ds_pct, ROUND(AVG(CASE WHEN is_approved THEN 100.0 ELSE 0.0 END), 2) as approval_rate FROM payments_enriched_silver GROUP BY issuer_country HAVING COUNT(*) >= 10 ORDER BY txns DESC LIMIT 15"
                 }
               }
@@ -214,18 +305,51 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "issuer_country", "displayName": "Country" },
-                  { "fieldName": "txns", "displayName": "Transactions" },
-                  { "fieldName": "auth_3ds_pct", "displayName": "3DS Usage %" },
-                  { "fieldName": "approval_rate", "displayName": "Approval %" }
+                  {
+                    "fieldName": "issuer_country",
+                    "displayName": "Country"
+                  },
+                  {
+                    "fieldName": "txns",
+                    "displayName": "Transactions"
+                  },
+                  {
+                    "fieldName": "auth_3ds_pct",
+                    "displayName": "3DS Usage %"
+                  },
+                  {
+                    "fieldName": "approval_rate",
+                    "displayName": "Approval %"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 30, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 8
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "payments_enriched_silver",
+      "displayName": "Payments Enriched Silver",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payments_enriched_silver"
+    },
+    {
+      "name": "v_executive_kpis",
+      "displayName": "V Executive Kpis",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis"
+    },
+    {
+      "name": "v_merchant_segment_performance",
+      "displayName": "V Merchant Segment Performance",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_merchant_segment_performance"
+    }
+  ]
 }

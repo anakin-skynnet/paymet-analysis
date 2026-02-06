@@ -3,7 +3,11 @@
   "name": "Executive Overview Dashboard",
   "displayName": "Executive Overview - Payment Analysis",
   "description": "High-level KPIs and trends for executives",
-  "tags": ["executive", "kpi", "overview"],
+  "tags": [
+    "executive",
+    "kpi",
+    "overview"
+  ],
   "pages": [
     {
       "name": "executive_summary",
@@ -14,7 +18,12 @@
             "name": "header",
             "textbox_spec": "## Payment Approval Performance\n\nKey metrics and trends at a glance"
           },
-          "position": { "x": 0, "y": 0, "width": 12, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
         },
         {
           "widget": {
@@ -23,7 +32,7 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT total_transactions, approval_rate_pct, total_transaction_value FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -39,7 +48,12 @@
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -48,7 +62,7 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT approval_rate_pct FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -62,10 +76,17 @@
                   "displayName": "Approval Rate %"
                 }
               },
-              "format": { "suffix": "%" }
+              "format": {
+                "suffix": "%"
+              }
             }
           },
-          "position": { "x": 3, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -74,7 +95,7 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT total_transaction_value FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -88,10 +109,18 @@
                   "displayName": "Total Value"
                 }
               },
-              "format": { "prefix": "$", "notation": "compact" }
+              "format": {
+                "prefix": "$",
+                "notation": "compact"
+              }
             }
           },
-          "position": { "x": 6, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -100,7 +129,7 @@
               {
                 "name": "kpi_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis",
+                  "datasetName": "v_executive_kpis",
                   "query_text": "SELECT avg_fraud_score FROM v_executive_kpis LIMIT 1"
                 }
               }
@@ -116,7 +145,12 @@
               }
             }
           },
-          "position": { "x": 9, "y": 2, "width": 3, "height": 4 }
+          "position": {
+            "x": 9,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
         },
         {
           "widget": {
@@ -125,7 +159,7 @@
               {
                 "name": "trend_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_approval_trends_hourly",
+                  "datasetName": "v_approval_trends_hourly",
                   "query_text": "SELECT * FROM v_approval_trends_hourly ORDER BY hour LIMIT 168"
                 }
               }
@@ -134,12 +168,25 @@
               "version": 2,
               "widgetType": "line-chart",
               "encodings": {
-                "x": { "fieldName": "hour", "displayName": "Time" },
-                "y": [{ "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }]
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Time"
+                },
+                "y": [
+                  {
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval Rate %"
+                  }
+                ]
               }
             }
           },
-          "position": { "x": 0, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -148,7 +195,7 @@
               {
                 "name": "geo_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography",
+                  "datasetName": "v_performance_by_geography",
                   "query_text": "SELECT * FROM v_performance_by_geography ORDER BY transaction_count DESC LIMIT 15"
                 }
               }
@@ -157,12 +204,25 @@
               "version": 2,
               "widgetType": "bar-chart",
               "encodings": {
-                "x": { "fieldName": "country", "displayName": "Country" },
-                "y": [{ "fieldName": "approval_rate_pct", "displayName": "Approval Rate %" }]
+                "x": {
+                  "fieldName": "country",
+                  "displayName": "Country"
+                },
+                "y": [
+                  {
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval Rate %"
+                  }
+                ]
               }
             }
           },
-          "position": { "x": 6, "y": 6, "width": 6, "height": 8 }
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 8
+          }
         },
         {
           "widget": {
@@ -171,7 +231,7 @@
               {
                 "name": "decline_query",
                 "query": {
-                  "datasetName": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons",
+                  "datasetName": "v_top_decline_reasons",
                   "query_text": "SELECT * FROM v_top_decline_reasons LIMIT 10"
                 }
               }
@@ -181,19 +241,60 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  { "fieldName": "decline_reason", "displayName": "Decline Reason" },
-                  { "fieldName": "decline_count", "displayName": "Count" },
-                  { "fieldName": "pct_of_declines", "displayName": "% of Total" },
-                  { "fieldName": "total_declined_value", "displayName": "Value" },
-                  { "fieldName": "recoverable_pct", "displayName": "Recoverable %" }
+                  {
+                    "fieldName": "decline_reason",
+                    "displayName": "Decline Reason"
+                  },
+                  {
+                    "fieldName": "decline_count",
+                    "displayName": "Count"
+                  },
+                  {
+                    "fieldName": "pct_of_declines",
+                    "displayName": "% of Total"
+                  },
+                  {
+                    "fieldName": "total_declined_value",
+                    "displayName": "Value"
+                  },
+                  {
+                    "fieldName": "recoverable_pct",
+                    "displayName": "Recoverable %"
+                  }
                 ]
               }
             }
           },
-          "position": { "x": 0, "y": 14, "width": 12, "height": 8 }
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 8
+          }
         }
       ]
     }
   ],
-  "datasets": []
+  "datasets": [
+    {
+      "name": "v_approval_trends_hourly",
+      "displayName": "V Approval Trends Hourly",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_approval_trends_hourly"
+    },
+    {
+      "name": "v_executive_kpis",
+      "displayName": "V Executive Kpis",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_executive_kpis"
+    },
+    {
+      "name": "v_performance_by_geography",
+      "displayName": "V Performance By Geography",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography"
+    },
+    {
+      "name": "v_top_decline_reasons",
+      "displayName": "V Top Decline Reasons",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons"
+    }
+  ]
 }

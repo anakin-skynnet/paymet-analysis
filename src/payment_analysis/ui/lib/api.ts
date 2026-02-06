@@ -69,9 +69,11 @@ export interface AssignIn {
 
 export interface AuthDecisionOut {
   audit_id: string;
+  experiment_id?: string | null;
   path: AuthPath;
   reason: string;
   risk_tier: RiskTier;
+  variant?: string | null;
 }
 
 export const AuthPath = {
@@ -149,6 +151,7 @@ export interface DecisionContext {
   currency: string;
   device_trust_score?: number | null;
   entry_mode?: string | null;
+  experiment_id?: string | null;
   is_recurring?: boolean;
   issuer_country?: string | null;
   merchant_id: string;
@@ -157,6 +160,7 @@ export interface DecisionContext {
   previous_decline_code?: string | null;
   previous_decline_reason?: string | null;
   risk_score?: number | null;
+  subject_key?: string | null;
   supports_passkey?: boolean;
 }
 
@@ -359,10 +363,12 @@ export interface RemediationTask {
 
 export interface RetryDecisionOut {
   audit_id: string;
+  experiment_id?: string | null;
   max_attempts?: number;
   reason: string;
   retry_after_seconds?: number | null;
   should_retry: boolean;
+  variant?: string | null;
 }
 
 export interface RetryPerformanceOut {
@@ -397,9 +403,11 @@ export type RiskTier = (typeof RiskTier)[keyof typeof RiskTier];
 export interface RoutingDecisionOut {
   audit_id: string;
   candidates: string[];
+  experiment_id?: string | null;
   primary_route: string;
   reason: string;
   should_cascade: boolean;
+  variant?: string | null;
 }
 
 export interface RoutingPredictionOut {
