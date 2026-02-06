@@ -83,7 +83,17 @@ Executive Overview, Decline Analysis & Recovery, Real-Time Payment Monitoring, F
 - **Notebooks** — List from API; each notebook card and category cards open notebook or workspace in a new tab.  
 - **Declines / Reason codes / Smart checkout / Smart retry** — Cards open relevant dashboards (e.g. decline_analysis, routing_optimization, authentication_security) in a new tab.  
 - **Profile** — User info (no Databricks process to open).  
-- **Experiments / Incidents** — App-level data; no direct workspace process links required.
+- **Experiments** — Each experiment card opens **MLflow** in the workspace (A/B experiments; track runs in Databricks).  
+- **Incidents** — Each incident card opens **Real-Time Monitoring** dashboard in the workspace (investigate alerts in Databricks).
+
+### Left unchanged by design (no workspace link)
+
+- **Profile** — Cards show user/account data only; there is no single “backend process” in the workspace to open, so they are not linked to Databricks.
+
+### Previously “app-level only”, now wired to workspace
+
+- **Incidents** — Data still comes from the app DB; each incident card is clickable and opens the **Real-Time Monitoring** dashboard so you can investigate alerts in the workspace.  
+- **Experiments** — Data still comes from the app DB; each experiment card is clickable and opens **MLflow** so you can view/track experiment runs in the workspace.
 
 ---
 

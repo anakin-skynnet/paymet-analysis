@@ -106,9 +106,21 @@ function Incidents() {
   );
 }
 
+const MONITORING_DASHBOARD_PATH = "/sql/dashboards/realtime_monitoring";
+
 function IncidentRow({ inc }: { inc: Incident }) {
+  const openInWorkspace = () => {
+    const url = getDashboardUrl(MONITORING_DASHBOARD_PATH);
+    if (url) window.open(url, "_blank");
+  };
   return (
-    <Card>
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow"
+      onClick={openInWorkspace}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && openInWorkspace()}
+    >
       <CardHeader className="py-4">
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -124,8 +136,10 @@ function IncidentRow({ inc }: { inc: Incident }) {
             <Badge variant={inc.status === "open" ? "default" : "secondary"}>
               {inc.status}
             </Badge>
+            <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
           </div>
         </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">Click to open Real-Time Monitoring in Databricks</p>
       </CardHeader>
     </Card>
   );

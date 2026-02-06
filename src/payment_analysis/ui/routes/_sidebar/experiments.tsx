@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Code2, FlaskConical } from "lucide-react";
+import { getMLflowUrl } from "@/config/workspace";
 
 export const Route = createFileRoute("/_sidebar/experiments")({
   component: () => <Experiments />,
@@ -127,8 +128,18 @@ function ExperimentRow({
   onStop: () => void;
 }) {
   const id = exp.id ?? "";
+  const openInWorkspace = () => {
+    const url = getMLflowUrl();
+    if (url) window.open(url, "_blank");
+  };
   return (
-    <Card>
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow"
+      onClick={openInWorkspace}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && openInWorkspace()}
+    >
       <CardHeader className="py-4">
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -137,12 +148,16 @@ function ExperimentRow({
               {id || "(no id)"}
             </div>
           </div>
-          <Badge variant={exp.status === "running" ? "default" : "secondary"}>
-            {exp.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={exp.status === "running" ? "default" : "secondary"}>
+              {exp.status}
+            </Badge>
+            <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+          </div>
         </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">Click to open MLflow in Databricks</p>
       </CardHeader>
-      <CardContent className="flex gap-2">
+      <CardContent className="flex gap-2" onClick={(e) => e.stopPropagation()}>
         <Button
           variant="secondary"
           onClick={onStart}
