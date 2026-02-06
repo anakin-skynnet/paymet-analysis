@@ -4,7 +4,7 @@ Step-by-step deployment for the Payment Approval Optimization Platform. **One-cl
 
 ## Prerequisites
 
-Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10+ with `uv`, Node 18+ with `bun`. Permissions: jobs, DLT, model serving; write to `ahs_demos_catalog`; deploy to `/Workspace/Users/<your_email>/`.
+Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10+ with `uv`, Node 18+ with `bun`. Permissions: jobs, **Lakeflow Declarative Pipelines**, model serving; write to `ahs_demos_catalog`; deploy to `/Workspace/Users/<your_email>/`.
 
 ## Quick Start
 
@@ -21,10 +21,10 @@ Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md); optionally [Step 6:
 |------|---------|--------|
 | **1** | Deploy bundle | `databricks bundle validate` then `databricks bundle deploy -t dev` |
 | **2** | Generate data | Workflows → “Transaction Stream Simulator” or run `transaction_simulator.py`; output `raw_payment_events` |
-| **3** | DLT | Lakeflow → “Payment Analysis ETL” → Start; Bronze → Silver → Gold |
+| **3** | Lakeflow Declarative Pipelines | Lakeflow → “Payment Analysis ETL” → Start; Bronze → Silver → Gold |
 | **4** | Gold views | Workflows → “Create Payment Analysis Gold Views”; verify `v_executive_kpis` etc. |
 | **5** | ML models | Workflows → “Train Payment Approval ML Models”; ~10–15 min; 4 models in UC |
-| **6** | Dashboards | Bundle includes dashboards (default catalog/schema; warehouse from resource). Or SQL → Import `.lvdash.json` from `resources/dashboards/` |
+| **6** | Dashboards | Bundle includes dashboards (default catalog/schema; warehouse from resource). Or SQL → Import `.lvdash.json` from `src/payment_analysis/dashboards/` |
 | **7** | Genie (optional) | SQL → Genie Spaces → Create “Payment Approval Analytics” / “Decline Analysis”; attach gold views; run `genie_sync_job` |
 | **7** | Model serving (optional) | After Step 5: uncomment `resources/model_serving.yml` in `databricks.yml`, redeploy |
 | **7** | AI agents (optional) | Verify Llama endpoint; `databricks bundle run orchestrator_agent_job -t dev`; agents in `ai_gateway.yml` (PAUSED) |
@@ -39,7 +39,7 @@ Use one catalog/schema everywhere (defaults: `ahs_demos_catalog`, `ahs_demo_paym
 
 | Issue | Actions |
 |-------|---------|
-| DLT fails | Pipeline logs; confirm `raw_payment_events`; UC permissions; `pipelines reset` if needed |
+| Lakeflow pipeline fails | Pipeline logs; confirm `raw_payment_events`; UC permissions; `pipelines reset` if needed |
 | Dashboards empty | Gold views + data; warehouse running; warehouse_id in config |
 | ML training fails | Silver data; ML runtime; UC model registry; MLflow logs |
 | App won’t start | Ports 8000/5173; `uv sync`, `bun install`; `.env` |

@@ -47,4 +47,4 @@ Event → Bronze (~1s) → Silver (~3s) → `v_executive_kpis` (~5s) → backend
 | Ingestion / Bronze→Silver / Silver→Gold | <1s / <3s / <2s |
 | API query / ML inference / Agent | <2s / <100ms / <30s |
 
-**Stack:** Delta Lake, Unity Catalog, Lakeflow DLT, MLflow, Model Serving, AI/BI Dashboards, Genie, AI Gateway, FastAPI, React. See [1_DEPLOYMENTS](1_DEPLOYMENTS.md).
+**Stack:** Delta Lake, Unity Catalog, **Lakeflow Declarative Pipelines**, MLflow, Model Serving, AI/BI Dashboards, Genie, AI Gateway, FastAPI, React. See [1_DEPLOYMENTS](1_DEPLOYMENTS.md).

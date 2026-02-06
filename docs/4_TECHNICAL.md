@@ -4,7 +4,7 @@ Architecture and implementation reference.
 
 ## Architecture
 
-- **Databricks:** Simulator → Lakeflow DLT (Bronze → Silver → Gold) → Unity Catalog (12+ views, 4 models). MLflow, Model Serving, AI Gateway, Genie. 10 AI/BI dashboards, SQL Warehouse.
+- **Databricks:** Simulator → **Lakeflow Declarative Pipelines** (Bronze → Silver → Gold) → Unity Catalog (12+ views, 4 models). MLflow, Model Serving, AI Gateway, Genie. 10 AI/BI dashboards, SQL Warehouse.
 - **App:** FastAPI (analytics, decisioning, notebooks, dashboards, agents) ↔ React (dashboard, dashboards, notebooks, models, ai-agents, decisioning, experiments, declines).
 
 ## Data Layer
@@ -21,11 +21,11 @@ Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE
 
 ## Analytics
 
-10 dashboards in `resources/dashboards/`; default catalog/schema; warehouse from bundle `var.warehouse_id`. Genie: spaces use catalog/schema; see `genie_spaces.yml`.
+10 dashboards are defined in `resources/dashboards.yml` and sourced from `src/payment_analysis/dashboards/*.lvdash.json`; default catalog/schema; warehouse from bundle `var.warehouse_id`. Genie: spaces use catalog/schema; see `genie_spaces.yml`.
 
 ## Application Layer
 
-**Backend:** `/api/analytics`, `/api/decisioning`, `/api/notebooks`, `/api/dashboards`, `/api/agents`. UC via Databricks SQL. **Frontend:** React + TanStack Router; `lib/api.ts`. **Stack:** Delta, UC, DLT, SQL Warehouse, MLflow, Serving, Dashboards, Genie, AI Gateway, FastAPI, React, TypeScript, Bun, TailwindCSS, Databricks Asset Bundles.
+**Backend:** `/api/analytics`, `/api/decisioning`, `/api/notebooks`, `/api/dashboards`, `/api/agents`. UC via Databricks SQL. **Frontend:** React + TanStack Router; `lib/api.ts`. **Stack:** Delta, UC, Lakeflow Declarative Pipelines, SQL Warehouse, MLflow, Serving, Dashboards, Genie, AI Gateway, FastAPI, React, TypeScript, Bun, TailwindCSS, Databricks Asset Bundles.
 
 ## Bundle & Deploy
 
