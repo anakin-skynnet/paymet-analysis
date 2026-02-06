@@ -29,7 +29,7 @@ Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE
 
 ## Bundle & Deploy
 
-`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, dashboards, (optional) model_serving, genie_spaces, ai_gateway, streaming_simulator. Commands: `./scripts/validate_bundle.sh dev` (or `prepare_dashboards.py` then `databricks bundle validate -t dev`), `databricks bundle deploy -t dev`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
+`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, dashboards, model_serving, genie_spaces, ai_gateway, streaming_simulator. Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. For prod catalog/schema in dashboards use `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
 
 ## UI & verification checklist
 

@@ -9,16 +9,11 @@ Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10
 ## Quick Start
 
 ```bash
-# Prepare dashboards then validate (required: .build/dashboards/ is not in git)
-./scripts/validate_bundle.sh dev
-# Or manually:
-#   uv run python scripts/prepare_dashboards.py
-#   databricks bundle validate -t dev
-
+databricks bundle validate -t dev
 databricks bundle deploy -t dev
 ```
 
-Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md); optionally [Step 6: Import dashboards](#step-6-import-dashboards).
+For prod with different catalog/schema in dashboards, run `./scripts/validate_bundle.sh prod` (uses `prepare_dashboards.py`). Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md).
 
 ## Steps
 
@@ -29,13 +24,13 @@ Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md); optionally [Step 6:
 | **2** | Generate data | Workflows → “Transaction Stream Simulator” or run `transaction_simulator.py`; output `raw_payment_events` |
 | **3** | Lakeflow | Lakeflow → “Payment Analysis ETL” → Start; Bronze → Silver → Gold |
 | **4** | Gold views | Workflows → “Create Payment Analysis Gold Views”; verify `v_executive_kpis` etc. |
-| **5** | ML models | Workflows → “Train Payment Approval ML Models”; ~10–15 min; 4 models in UC |
-| **6** | Dashboards | Bundle includes dashboards; warehouse from `var.warehouse_id` (set per target). Dashboard dataset refs use `var.catalog`/`var.schema` via `scripts/prepare_dashboards.py`. |
+| **5** | ML models | Workflows → “Train Payment Approval ML Models”; ~10–15 min; registers 4 models in UC (approval_propensity_model, risk_scoring_model, smart_routing_policy, smart_retry_policy). |
+| **6** | Dashboards | Bundle includes 11 dashboards (source: `src/payment_analysis/dashboards/`); warehouse from `var.warehouse_id`. |
 | **7** | Genie (optional) | SQL → Genie Spaces → Create “Payment Approval Analytics” / “Decline Analysis”; attach gold views; run `genie_sync_job` |
-| **7** | Model serving (optional) | After Step 5: uncomment `resources/model_serving.yml` in `databricks.yml`, redeploy |
+| **7** | Model serving & UI | After Step 5, redeploy deploys model serving. ML Models UI shows models via backend (set DATABRICKS_CATALOG/SCHEMA). |
 | **7** | AI agents (optional) | Verify Llama endpoint; `databricks bundle run orchestrator_agent_job -t dev`; agents in `ai_gateway.yml` (PAUSED) |
 | **8** | Web app | `.env`: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_CATALOG`, `DATABRICKS_SCHEMA`. `uv run apx dev` or `apx build` + deploy |
-| **9** | Verify | Data in bronze/silver; 4 models; 11 dashboards; app routes load |
+| **9** | Verify | Data in bronze/silver; 4 models in UC; model serving endpoints; 11 dashboards; app **ML Models** page shows list and links to Model Registry/MLflow |
 
 ## Schema Consistency
 
