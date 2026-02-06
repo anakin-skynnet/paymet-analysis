@@ -25,7 +25,7 @@ export default defineConfig({
     },
   },
   define: {
-    __APP_NAME__: JSON.stringify("payment-analysis"),
+    __APP_NAME__: JSON.stringify("Payment Analysis"),
   },
   build: {
     // Output to the Python package static assets folder

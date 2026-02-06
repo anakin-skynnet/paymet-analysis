@@ -1,6 +1,6 @@
 # 2. Data Flow
 
-Transaction to insight in five stages.
+**Payment Analysis** — transaction to insight in five stages.
 
 ## Overview
 
@@ -30,7 +30,7 @@ Target: <5s Bronze → Gold.
 
 ## Stage 4: Analytics
 
-11 AI/BI dashboards (gold views); Genie natural language. Target: >85% query success, 100+ MAU.
+12 AI/BI dashboards (gold views); Genie natural language. Target: >85% query success, 100+ MAU.
 
 ## Stage 5: Application
 
@@ -47,4 +47,4 @@ Event → Bronze (~1s) → Silver (~3s) → `v_executive_kpis` (~5s) → backend
 | Ingestion / Bronze→Silver / Silver→Gold | <1s / <3s / <2s |
 | API query / ML inference / Agent | <2s / <100ms / <30s |
 
-**Stack:** Delta Lake, Unity Catalog, **Lakeflow**, MLflow, Model Serving, AI/BI Dashboards, Genie, Mosaic AI Gateway, FastAPI, React. See [1_DEPLOYMENTS](1_DEPLOYMENTS.md).
+**Stack:** Delta Lake, Unity Catalog, **Lakeflow**, MLflow, Model Serving, AI/BI Dashboards, Genie, Mosaic AI Gateway, FastAPI, React. See [4_TECHNICAL](4_TECHNICAL.md) for bundle and deployment.

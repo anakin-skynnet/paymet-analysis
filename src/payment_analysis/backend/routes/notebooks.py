@@ -42,7 +42,7 @@ def get_workspace_base_path() -> str:
     
     # Fallback: construct from user email and folder name
     user_email = os.getenv("DATABRICKS_USER", "user@company.com")
-    folder_name = os.getenv("BUNDLE_FOLDER", "getnet_approval_rates_v3")
+    folder_name = os.getenv("BUNDLE_FOLDER", "payment-analysis")
     return f"/Workspace/Users/{user_email}/{folder_name}/files"
 
 

@@ -1,8 +1,12 @@
+# Databricks App runtime. Dependencies: requirements.txt (pydantic-settings, sqlmodel, psycopg-binary).
+# Optional: set PGAPPNAME to Lakebase instance name for rules/experiments/incidents DB.
 command:
   - uvicorn
   - payment_analysis.backend.app:app
+  - --host
+  - "0.0.0.0"
   - --workers
-  - "2"
+  - "1"
 env:
   - name: PYTHONPATH
     value: src

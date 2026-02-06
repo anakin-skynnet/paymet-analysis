@@ -61,10 +61,18 @@ def get_obo_ws(
 
 def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
     """
-    Returns a SQLModel session.
+    Returns a SQLModel session. Raises 503 if database is not configured (Databricks App: set PGAPPNAME).
     """
-    with rt.get_session() as session:
-        yield session
+    try:
+        with rt.get_session() as session:
+            yield session
+    except RuntimeError as e:
+        if "not configured" in str(e).lower():
+            raise HTTPException(
+                status_code=503,
+                detail="Database not configured. Set PGAPPNAME to your Lakebase instance name in the app configuration.",
+            ) from e
+        raise
 
 
 SessionDep = Annotated[Session, Depends(get_session)]

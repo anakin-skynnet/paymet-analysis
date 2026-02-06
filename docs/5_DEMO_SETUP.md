@@ -1,12 +1,12 @@
 # 5. Demo Setup — Run End-to-End
 
-One-click links and steps. **Base URL:** Replace `<WORKSPACE_URL>` with your Databricks workspace URL (e.g. `https://adb-984752964297111.11.azuredatabricks.net`).
+One-click links and steps for **Payment Analysis**. **Base URL:** Replace `<WORKSPACE_URL>` with your Databricks workspace URL. After deploy, bundle files (notebooks, dashboards) live under **Workspace → Users → &lt;you&gt; → payment-analysis** (or the folder set by `var.workspace_folder`).
 
 ## Recommended order (matches app **Setup & Run**)
 
 | Order | Step | Description |
 |-------|------|-------------|
-| 1 | Deploy bundle | `./scripts/deploy.sh dev` — [1_DEPLOYMENTS](1_DEPLOYMENTS.md) |
+| 1 | Deploy bundle | `./scripts/deploy.sh dev` — [4_TECHNICAL](4_TECHNICAL.md) (Bundle & Deploy) |
 | 2 | Data ingestion | Run Transaction Stream Simulator |
 | 3 | ETL (Lakeflow) | Start Payment Analysis ETL pipeline (Bronze → Silver → Gold) |
 | 4 | Gold views | Run Create Payment Analysis Gold Views job |
@@ -34,4 +34,4 @@ Replace `<WORKSPACE_URL>` with your workspace URL. After deploy, get job IDs fro
 
 ## Deploy first
 
-If not deployed: `./scripts/deploy.sh dev`. Full steps: [1_DEPLOYMENTS](1_DEPLOYMENTS.md).
+If not deployed: `./scripts/deploy.sh dev`. Bundle and variables: [4_TECHNICAL](4_TECHNICAL.md).

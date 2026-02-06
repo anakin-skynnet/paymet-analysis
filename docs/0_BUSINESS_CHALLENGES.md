@@ -1,5 +1,7 @@
 # 0. Business Challenges & Value
 
+**Payment Analysis** — business context and solution mapping.
+
 ## Business Challenge
 
 Every declined legitimate transaction is lost revenue. Key pain points: **false declines**, **static rules**, **suboptimal routing**, **manual analysis**.
@@ -170,7 +172,7 @@ Unified data + ML + apps; real-time; scalable; Unity Catalog; serverless.
 
 ## Plan coverage verification
 
-All topics from the Getnet initiatives and business-requirements plans are implemented and wired:
+All topics from the payment approval initiatives and business-requirements plans are implemented and wired:
 
 | Plan topic | Implemented in repo |
 |------------|----------------------|

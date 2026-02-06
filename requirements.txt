@@ -1,5 +1,6 @@
-# Dependencies for Databricks Apps. Apps have fastapi, uvicorn, databricks-sdk pre-installed.
-# Only list packages to add or override. Use binary wheels only (no psycopg source) to avoid build failures.
-pydantic-settings>=2.11.0,<3
-sqlmodel>=0.0.27
-psycopg[binary,pool]>=3.2
+# Databricks App: only add packages not pre-installed (fastapi, uvicorn, databricks-sdk are already there).
+# Keep minimal and use names that resolve to wheels to avoid "error installing packages".
+# psycopg[binary] = main psycopg package + C binary; required for postgresql+psycopg:// (do not use psycopg-binary alone).
+pydantic-settings
+sqlmodel
+psycopg[binary]

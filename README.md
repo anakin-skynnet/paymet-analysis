@@ -1,16 +1,17 @@
-# Payment Approval Optimization Platform
+# Payment Analysis
 
-Databricks-powered solution to maximize payment approval rates via real-time analytics, ML, and AI.
+Databricks-powered payment approval optimization: real-time analytics, ML models, and AI agents.
 
 ## Documentation
 
 | Doc | Audience | Description |
 |-----|----------|-------------|
+| Doc | Audience | Description |
+|-----|----------|-------------|
 | [0. Business Challenges](docs/0_BUSINESS_CHALLENGES.md) | C-Suite / Business | Challenges, solution, initiatives, ROI |
-| [1. Deployments](docs/1_DEPLOYMENTS.md) | DevOps / Engineering | **Step-by-step deployment** (start here) |
 | [2. Data Flow](docs/2_DATA_FLOW.md) | Data Engineers | 5-stage flow: ingestion → application |
 | [3. Agents & Value](docs/3_AGENTS_VALUE.md) | ML / Data Science | 7 AI agents and business value |
-| [4. Technical](docs/4_TECHNICAL.md) | Engineers / Architects | Architecture, stack, bundle |
+| [4. Technical](docs/4_TECHNICAL.md) | Engineers / Architects | Architecture, bundle & deployment, stack |
 | [5. Demo Setup](docs/5_DEMO_SETUP.md) | Everyone | **One-click run links and CLI** |
 
 ## Quick Start
@@ -19,7 +20,7 @@ Databricks-powered solution to maximize payment approval rates via real-time ana
 2. **Run pipeline:** Use app **Setup & Run** (steps 2–6) or [5_DEMO_SETUP](docs/5_DEMO_SETUP.md): data ingestion → ETL → gold views → Lakehouse SQL → ML training → agents.
 3. **App:** `uv sync && bun install` then `uv run apx dev` (set `.env` for Databricks).
 
-See [1_DEPLOYMENTS](docs/1_DEPLOYMENTS.md) for the full step guide and [5_DEMO_SETUP](docs/5_DEMO_SETUP.md) for one-click links.
+See [4_TECHNICAL](docs/4_TECHNICAL.md) (Bundle & Deploy) for variables and commands, and [5_DEMO_SETUP](docs/5_DEMO_SETUP.md) for one-click run links.
 
 ## App URL
 

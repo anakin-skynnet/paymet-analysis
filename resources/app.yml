@@ -11,6 +11,6 @@ resources:
   apps:
     payment_analysis_app:
       name: payment-analysis
-      # Bundle root = app source (app.yaml, src/, pyproject.toml, etc.)
       source_code_path: ..
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
+      # Set PGAPPNAME in the app UI to var.lakebase_instance_name (default payment-analysis-db) to use the Lakebase instance.

@@ -12,5 +12,5 @@ else
   uv run python scripts/prepare_dashboards.py
 fi
 echo "Deploying bundle (-t $TARGET)..."
-databricks bundle deploy -t "$TARGET"
+databricks bundle deploy -t "$TARGET" --auto-approve
 echo "Deployment complete!"

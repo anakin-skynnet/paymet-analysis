@@ -1,10 +1,10 @@
 # 1. Deployments
 
-Step-by-step deployment for the Payment Approval Optimization Platform. **One-click run links:** [5_DEMO_SETUP](5_DEMO_SETUP.md).
+Step-by-step deployment for **Payment Analysis**. **One-click run links:** [5_DEMO_SETUP](5_DEMO_SETUP.md).
 
 ## Prerequisites
 
-Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10+ with `uv`, Node 18+ with `bun`. Permissions: jobs, **Lakeflow**, model serving; write to `ahs_demos_catalog`; deploy to `/Workspace/Users/<your_email>/`.
+Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10+ with `uv`, Node 18+ with `bun`. Permissions: jobs, **Lakeflow**, model serving; write to `ahs_demos_catalog`; deploy to `/Workspace/Users/<your_email>/payment-analysis` (or `var.workspace_folder`).
 
 ## Quick Start
 
@@ -72,34 +72,30 @@ Use one catalog/schema everywhere (defaults: `ahs_demos_catalog`, `ahs_demo_paym
 
 **Yes, if you follow the steps and deploy succeeds.** The bundle deploys:
 
-- **Workspace** folder and synced files (notebooks, transform SQL, etc.)
-- **Workflow (Jobs):** 11 jobs (simulator, gold views, ML training, test agent, 6 AI agents, stream processor)
+- **Workspace** folder and synced files (notebooks, transform SQL) under **Workspace → Users → &lt;you&gt; → payment-analysis** (`var.workspace_folder`)
+- **Lakebase** (managed Postgres) instance + UC catalog for app rules/experiments/incidents; set app env **PGAPPNAME** to the instance name (e.g. `payment-analysis-db`)
+- **Workflow (Jobs):** simulator, gold views, ML training, test agent, 6 AI agents, stream processor, Genie sync
 - **Lakeflow:** 2 pipelines (ETL, real-time)
-- **SQL** warehouse, **Catalog** (schema + volumes), **12 dashboards**
-- **Vector Search** (endpoint + index) and **Model serving** (4 endpoints) when their prerequisites are met
+- **SQL** warehouse, **Unity Catalog** (schema + volumes), **12 dashboards**, **Databricks App**
+- **Model serving** (4 endpoints) when models exist in UC (run Step 6 first)
 
-**Two resources can fail until you complete prerequisites:**
+**Model serving** can fail until you run **Step 6** (Train Payment Approval ML Models) so the 4 models exist in Unity Catalog. If deploy fails at model serving, comment out `resources/model_serving.yml` in `databricks.yml`, run `./scripts/deploy.sh dev` again, then run Step 6 and redeploy to add model serving.
 
-| Resource | Prerequisite | If it fails |
-|----------|--------------|-------------|
-| **Model serving** | Run **Step 6** (Train Payment Approval ML Models) so 4 models exist in Unity Catalog | Comment out `resources/model_serving.yml` in `databricks.yml`, run `./scripts/deploy.sh dev` again. You’ll see all other resources. After training, uncomment and redeploy to add model serving. |
-| **Vector Search** | Run **Step 5** (Lakehouse SQL) so `transaction_summaries_for_search` exists; embedding model `databricks-bge-large-en` available | Comment out `resources/vector_search.yml` in `databricks.yml` and redeploy to see everything else. Optionally run Step 5 first, then include Vector Search and redeploy. |
-
-So: **follow the instructions in order.** If deploy fails at model serving or Vector Search, use the table above so the rest of the resources still appear; then fix the prerequisite and redeploy to add the missing one.
+**Vector Search** is not in the bundle schema; create the endpoint and index manually from `resources/vector_search.yml` (Vector Search UI or API) after running `vector_search_and_recommendations.sql`.
 
 ## Where to find resources in the workspace
 
 After a **successful** `./scripts/deploy.sh dev` (or equivalent deploy), look for:
 
-- **Workspace:** **Workspace** → **Users** → your user → **getnet_approval_rates_v3** (files, dashboards folder).
+- **Workspace:** **Workspace** → **Users** → your user → **payment-analysis** (files, dashboards folder; from `var.workspace_folder`).
 - **Jobs:** **Workflow** (Jobs) → names like `[dev …] Train Payment Approval ML Models`, `[dev …] Transaction Stream Simulator`. Agent jobs (Orchestrator, Smart Routing, etc.) are defined in `resources/agents.yml`.
 - **Mosaic AI Gateway:** Governed LLM access is configured on the four custom endpoints in `model_serving.yml` (rate limits, usage tracking, guardrails). For pay-per-token LLM endpoints, enable AI Gateway in **Serving** → endpoint → **Edit AI Gateway**. See [AI Gateway docs](https://docs.databricks.com/aws/en/ai-gateway/).
 - **Lakeflow:** **Lakeflow** → `[dev] Payment Analysis ETL`, `[dev] Payment Real-Time Stream`.
 - **SQL Warehouse:** **SQL** → **Warehouses** → `[dev] Payment Analysis Warehouse`.
-- **Catalog:** **Catalog** → `ahs_demos_catalog` → schema `ahs_demo_payment_analysis_dev`.
-- **Dashboards:** **SQL** → **Dashboards** (or under the workspace folder above).
+- **Catalog (Lakehouse database):** **Data** (Catalog Explorer) → **Catalogs** → `ahs_demos_catalog` → schema `ahs_demo_payment_analysis_dev`. Tables, views, and volumes appear under the schema.
+- **Dashboards:** **SQL** → **Dashboards** (or under the workspace folder above). After deploy, run `uv run python scripts/publish_dashboards.py` to publish all 12 dashboards (embed credentials).
 
-If deploy **failed** (e.g. at model serving), some resources will be missing. Comment out `model_serving.yml` in `databricks.yml` and run `./scripts/deploy.sh dev` again. Confirm workspace/user with `./scripts/validate_bundle.sh dev`. **Vector Search** deploy can fail if the source table `transaction_summaries_for_search` does not exist (run `vector_search_and_recommendations.sql` first) or if the embedding model `databricks-bge-large-en` is not available in the workspace; you can comment out `resources/vector_search.yml` in `databricks.yml` to skip it.
+If deploy **failed** (e.g. at model serving), some resources will be missing. Comment out `model_serving.yml` in `databricks.yml` and run `./scripts/deploy.sh dev` again. Confirm workspace path with `./scripts/validate_bundle.sh dev`.
 
 **Dashboard TABLE_OR_VIEW_NOT_FOUND:** Dashboards use tables/views in the catalog.schema chosen when you ran `prepare_dashboards.py`. Run **Create Payment Analysis Gold Views** in that same catalog.schema (the job uses `.build/transform/gold_views.sql`, which sets `USE CATALOG`/`USE SCHEMA`). List required assets: `uv run python scripts/validate_dashboard_assets.py --catalog X --schema Y`.
 
@@ -107,7 +103,8 @@ If deploy **failed** (e.g. at model serving), some resources will be missing. Co
 
 | Issue | Actions |
 |-------|---------|
-| Don't see resources | Redeploy after commenting out `model_serving.yml` if deploy failed; check workspace/user with `./scripts/validate_bundle.sh dev`. |
+| Don't see resources | Redeploy after commenting out `model_serving.yml` if deploy failed; check workspace path with `./scripts/validate_bundle.sh dev`. |
+| Lakebase "Instance name is not unique" | A Lakebase instance with that name already exists in the workspace, or one is still starting. Use a different instance name in bundle vars or wait and retry. |
 | Lakeflow fails | Pipeline logs; confirm `raw_payment_events`; UC permissions; `pipelines reset` if needed |
 | Dashboards empty | Gold views + data; warehouse running; warehouse_id in config |
 | ML training fails | Silver data; ML runtime; UC model registry; MLflow logs |
@@ -115,8 +112,10 @@ If deploy **failed** (e.g. at model serving), some resources will be missing. Co
 
 ## Scripts
 
-- **validate_bundle.sh** — Runs `prepare_dashboards.py` (with optional prod catalog/schema), then `databricks bundle validate -t <target>`. Use before validate so `.build/dashboards` exists.
-- **deploy.sh** — Runs prepare_dashboards then `databricks bundle deploy -t <target>`. Use for deploy so dashboard file_path errors do not occur.
-- **prepare_dashboards.py** — Run once per prod deploy: copies dashboard JSONs to `.build/dashboards/` and optionally substitutes catalog/schema. Dev uses source files in `src/payment_analysis/dashboards/` directly.
+- **deploy.sh** — Runs `prepare_dashboards.py` then `databricks bundle deploy -t <target>`. Use for full deploy so `.build/dashboards` exists and dashboard paths are valid.
+- **validate_bundle.sh** — Runs `prepare_dashboards.py` (with optional prod catalog/schema), then `databricks bundle validate -t <target>`. Use before deploy to verify the bundle.
+- **verify_all.sh** — Runs lint (apx dev check), build, backend smoke test, dashboard assets list, and bundle validate. Use before committing or deploying.
+- **prepare_dashboards.py** — Copies dashboard JSONs to `.build/dashboards/` and writes `.build/transform/gold_views.sql` with catalog/schema. Run by deploy.sh and validate_bundle.sh; for prod use `--catalog`/`--schema`.
+- **publish_dashboards.py** — After deploy, publishes all 12 dashboards in the workspace with embed credentials. Run: `uv run python scripts/publish_dashboards.py` (optional `--path` if bundle path differs).
 
 **Estimated time:** 45–60 min.

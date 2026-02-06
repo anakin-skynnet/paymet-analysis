@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
     runtime = Runtime(config)
     runtime.validate_db()
     runtime.initialize_models()
+    # When PGAPPNAME is not set (e.g. Databricks App without Lakebase), DB is skipped; app still starts.
 
     # Load effective Unity Catalog config from app_config table (bootstrap = env)
     from .services.databricks_service import DatabricksConfig, DatabricksService

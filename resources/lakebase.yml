@@ -1,0 +1,21 @@
+# =============================================================================
+# Lakebase (Databricks managed Postgres) - optional for rules, experiments, incidents
+# =============================================================================
+# See: https://www.databricks.com/product/lakebase
+#      https://learn.microsoft.com/en-us/azure/databricks/oltp/
+# Deploys a Lakebase Provisioned instance and optionally registers it as a UC catalog.
+# The app connects via PGAPPNAME (set to instance name); bind the app to this DB in app.yml if desired.
+# =============================================================================
+
+resources:
+  database_instances:
+    payment_analysis_db:
+      name: ${var.lakebase_instance_name}
+      capacity: ${var.lakebase_capacity}
+
+  database_catalogs:
+    payment_analysis_lakebase_catalog:
+      database_instance_name: ${var.lakebase_instance_name}
+      name: ${var.lakebase_uc_catalog_name}
+      database_name: ${var.lakebase_database_name}
+      create_database_if_not_exists: true

@@ -3,12 +3,12 @@
 Publish all Payment Analysis dashboards in the workspace.
 
 Lakeview dashboards deployed by the bundle are in draft by default. This script
-lists dashboards under the bundle's workspace path ( .../getnet_approval_rates_v3/dashboards )
+lists dashboards under the bundle's workspace path ( .../payment-analysis/dashboards )
 and publishes each with embed_credentials so they can be viewed without per-user warehouse auth.
 
 Requires: Databricks CLI configured. Run after deploy: ./scripts/deploy.sh dev
 Usage:
-  uv run python scripts/publish_dashboards.py [--path /Workspace/Users/.../getnet_approval_rates_v3]
+  uv run python scripts/publish_dashboards.py [--path /Workspace/Users/.../payment-analysis]
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def main() -> int:
     parser.add_argument(
         "--path",
         default=None,
-        help="Workspace root path (e.g. /Workspace/Users/you/getnet_approval_rates_v3). Default: from bundle validate.",
+        help="Workspace root path (e.g. /Workspace/Users/you/payment-analysis). Default: from bundle validate.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Only list dashboards, do not publish")
     args = parser.parse_args()
@@ -52,7 +52,7 @@ def main() -> int:
     root = args.path or get_workspace_root()
     if not root:
         print(
-            "Error: could not get workspace path. Run from repo root after deploy, or pass --path /Workspace/Users/.../getnet_approval_rates_v3",
+            "Error: could not get workspace path. Run from repo root after deploy, or pass --path /Workspace/Users/.../payment-analysis",
             file=sys.stderr,
         )
         return 1

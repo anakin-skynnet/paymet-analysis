@@ -39,14 +39,14 @@ class DatabricksConfig(BaseSettings):
     )
     workspace_path: str = Field(
         description="Workspace deployment path",
-        default="/Workspace/Users/${workspace.current_user.userName}/getnet_approval_rates_v3"
+        default="/Workspace/Users/${workspace.current_user.userName}/payment-analysis"
     )
-    
+
     def get_notebook_path(self, relative_path: str) -> str:
         """Construct full notebook workspace path dynamically."""
-        # Get current user from env or use placeholder
         user_email = os.getenv("DATABRICKS_USER", "${workspace.current_user.userName}")
-        base_path = f"/Workspace/Users/{user_email}/getnet_approval_rates_v3/files"
+        folder = os.getenv("BUNDLE_FOLDER", "payment-analysis")
+        base_path = f"/Workspace/Users/{user_email}/{folder}/files"
         return f"{base_path}/{relative_path}"
     
     def get_workspace_url(self, path: str) -> str:
@@ -67,7 +67,9 @@ class DatabaseConfig(BaseSettings):
         description="The name of the database", default="databricks_postgres"
     )
     instance_name: str = Field(
-        description="The name of the database instance", validation_alias="PGAPPNAME"
+        default="",
+        description="The name of the Lakebase/database instance (set PGAPPNAME in Databricks App)",
+        validation_alias="PGAPPNAME",
     )
 
 

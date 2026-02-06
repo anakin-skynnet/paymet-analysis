@@ -39,7 +39,7 @@ You can use [Agent Bricks](https://www.databricks.com/blog/introducing-agent-bri
 | **Agent Framework + authoring in code** | Build and deploy production agents (LangGraph/LangChain, LlamaIndex, or custom) with MLflow and evaluation. | Extend the existing **agent jobs** (orchestrator, specialist agents in `agents.yml`) with tool-calling or multi-step flows; keep evaluation and deployment in one platform. |
 | **Agent Evaluation** | AI judges and human feedback to measure agent output quality; trace issues and redeploy. | Evaluate “approval rate” and “recovery rate” as agent objectives; grade routing/retry recommendations and root-cause answers; iterate with confidence. |
 | **AI Playground** | Low-code prototype with LLMs and tools, then export to code. | Quickly prototype a “should we retry?” or “explain this decline” agent, wire to Lakehouse rules and Vector Search, then export for production. |
-| **Vector Search** (already in bundle) | Similar-transaction lookup for recommendations. | Agent Bricks or custom agents can use the same index to “find similar approved transactions” and suggest routing/retry; optimize retrieval and prompts for approval quality. |
+| **Vector Search** (create manually; see `resources/vector_search.yml`) | Similar-transaction lookup for recommendations. | Agent Bricks or custom agents can use the same index to “find similar approved transactions” and suggest routing/retry; optimize retrieval and prompts for approval quality. |
 | **AI Gateway + Model Serving** (already in bundle) | Govern and serve models used by agents. | Keep LLM and ML traffic governed; rate limits and guardrails apply to any new Agent Bricks–backed or custom agents. |
 
 **Practical next steps**
@@ -50,4 +50,4 @@ You can use [Agent Bricks](https://www.databricks.com/blog/introducing-agent-bri
 
 ---
 
-**Next:** [5_DEMO_SETUP](5_DEMO_SETUP.md) · [1_DEPLOYMENTS](1_DEPLOYMENTS.md)
+**Next:** [5_DEMO_SETUP](5_DEMO_SETUP.md) · [4_TECHNICAL](4_TECHNICAL.md)

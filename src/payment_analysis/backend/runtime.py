@@ -26,6 +26,12 @@ class Runtime:
         # in development it usually uses the DATABRICKS_CONFIG_PROFILE
         return WorkspaceClient()
 
+    def _db_configured(self) -> bool:
+        """True if a database is configured (local dev or Lakebase instance)."""
+        if self._dev_db_port:
+            return True
+        return bool(self.config.db.instance_name and self.config.db.instance_name.strip())
+
     @cached_property
     def engine_url(self) -> str:
         # Check if we're in local dev mode with APX_DEV_DB_PORT
@@ -39,7 +45,11 @@ class Runtime:
                 )
             return f"postgresql+psycopg://{username}:{password}@localhost:{self._dev_db_port}/postgres?sslmode=disable"
 
-        # Production mode: use Databricks Database
+        # Production mode: use Databricks Lakebase database instance
+        if not self.config.db.instance_name or not self.config.db.instance_name.strip():
+            raise ValueError(
+                "Database not configured. Set PGAPPNAME to your Lakebase instance name (Databricks App)."
+            )
         logger.info(
             f"Using Databricks database instance: {self.config.db.instance_name}"
         )
@@ -63,6 +73,8 @@ class Runtime:
 
     @cached_property
     def engine(self) -> Engine:
+        if not self._db_configured():
+            raise ValueError("Database not configured (set PGAPPNAME for Databricks App).")
         # In dev mode: no SSL, no password callback, single connection (PGlite limit)
         # In production: require SSL and use Databricks credential callback
         if self._dev_db_port:
@@ -82,9 +94,16 @@ class Runtime:
         return engine
 
     def get_session(self) -> Session:
+        if not self._db_configured():
+            raise RuntimeError(
+                "Database not configured. Set PGAPPNAME to your Lakebase instance name (Databricks App)."
+            )
         return Session(self.engine)
 
     def validate_db(self) -> None:
+        if not self._db_configured():
+            logger.info("Database not configured (PGAPPNAME unset); skipping validation.")
+            return
         # In dev mode, skip Databricks-specific validation
         if self._dev_db_port:
             logger.info(
@@ -119,6 +138,9 @@ class Runtime:
             )
 
     def initialize_models(self) -> None:
+        if not self._db_configured():
+            logger.info("Database not configured; skipping table creation.")
+            return
         logger.info("Initializing database models")
         # Ensure SQLModel tables are registered before create_all().
         # Import is intentionally inside the method to avoid import-time side effects.

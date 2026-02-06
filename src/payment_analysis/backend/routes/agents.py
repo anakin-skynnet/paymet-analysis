@@ -42,7 +42,7 @@ def get_notebook_workspace_url(relative_path: str) -> str:
     """Construct full workspace URL for a notebook."""
     workspace_url = get_workspace_url()
     user_email = os.getenv("DATABRICKS_USER", "user@company.com")
-    folder_name = os.getenv("BUNDLE_FOLDER", "getnet_approval_rates_v3")
+    folder_name = os.getenv("BUNDLE_FOLDER", "payment-analysis")
     full_path = f"/Users/{user_email}/{folder_name}/files/{relative_path}"
     return f"{workspace_url}/workspace{full_path}"
 

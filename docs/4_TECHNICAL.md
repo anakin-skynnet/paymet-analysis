@@ -1,6 +1,6 @@
 # 4. Technical
 
-Architecture and implementation reference.
+**Payment Analysis** — architecture, bundle resources, and deployment reference.
 
 ## Architecture
 
@@ -45,9 +45,47 @@ Run all local checks (TypeScript + Python, build, backend smoke test, dashboard 
 
 Individual steps: `uv run apx dev check` (lint/types), `uv run apx build` (production build), `uv run python -c "from payment_analysis.backend.app import app; from payment_analysis.backend.router import api"` (backend import), `uv run python scripts/validate_dashboard_assets.py` (dashboard dependencies), `./scripts/validate_bundle.sh dev` (bundle validate). Best practice: run `./scripts/verify_all.sh dev` before committing or deploying.
 
+## Lakebase (managed Postgres) deployment
+
+[Lakebase](https://www.databricks.com/product/lakebase) is Databricks’ managed Postgres for operational data (rules, experiments, incidents). It is separate from the Lakehouse (Unity Catalog / Delta).
+
+The bundle **deploys a Lakebase instance** via **`resources/lakebase.yml`**:
+
+- **`database_instances.payment_analysis_db`** — one Lakebase Provisioned instance (name from `var.lakebase_instance_name`, default `payment-analysis-db`; capacity `var.lakebase_capacity`, default `CU_1`).
+- **`database_catalogs.payment_analysis_lakebase_catalog`** — registers that instance as a Unity Catalog catalog (`var.lakebase_uc_catalog_name`) so you can query it from the lakehouse.
+
+Variables (in `databricks.yml`): `lakebase_instance_name`, `lakebase_capacity` (e.g. `CU_1`), `lakebase_uc_catalog_name`, `lakebase_database_name`. After deploy, set the app env **`PGAPPNAME`** to the instance name (e.g. `payment-analysis-db`) so the app uses this DB for rules, experiments, and incidents.
+
+## Databricks App (deploy)
+
+The app is deployed as a **Databricks App** (FastAPI + React). The platform pre-installs `fastapi`, `uvicorn`, and `databricks-sdk`. Extra Python deps are in **`requirements.txt`** at the project root (minimal to avoid "error installing packages"): `pydantic-settings`, `sqlmodel`, `psycopg-binary`. Do not add version pins or source-only packages; use only wheel-friendly names.
+
+**Lakebase database:** The bundle deploys a Lakebase instance (see above). Set **`PGAPPNAME`** in the app’s environment to the instance name (e.g. `payment-analysis-db`); if unset, the app starts without DB and rules/experiments/incidents endpoints return 503. Local dev uses `APX_DEV_DB_PORT` instead.
+
+**Runtime:** `app.yaml` sets `command` (uvicorn), `PYTHONPATH=src`, and one worker. After deploy, open the app from Workspace → Apps.
+
 ## Bundle & Deploy
 
-`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, vector_search, dashboards, model_serving, genie_spaces, agents, ai_gateway, streaming_simulator. Agent jobs in `resources/agents.yml`; Mosaic AI Gateway in `resources/ai_gateway.yml` (and on endpoints in model_serving.yml). Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: run `./scripts/deploy.sh dev` to prepare dashboards and deploy (or `./scripts/validate_bundle.sh dev` then `databricks bundle deploy -t dev`). For prod use `./scripts/deploy.sh prod` or `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, and optionally DATABRICKS_CATALOG, DATABRICKS_SCHEMA for bootstrap); `uv run apx dev` or `apx build` + deploy. Effective catalog/schema can be set in the UI (**Setup & Run** → **Save catalog & schema**).
+**Included resources (all expected):**
+
+| Resource file | Contents |
+|---------------|----------|
+| `unity_catalog.yml` | UC schema + 4 volumes (raw_data, checkpoints, ml_artifacts, reports) |
+| `lakebase.yml` | Lakebase instance + database_catalog (Postgres for app rules/experiments/incidents) |
+| `pipelines.yml` | Payment Analysis ETL, Real-Time Stream (Lakeflow) |
+| `sql_warehouse.yml` | Payment Analysis Warehouse (PRO, serverless) |
+| `ml_jobs.yml` | Train ML Models, Create Gold Views, Test Agent Framework |
+| `agents.yml` | 6 agent jobs (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender, Orchestrator) |
+| `ai_gateway.yml` | Mosaic AI Gateway (governed LLM) |
+| `streaming_simulator.yml` | Transaction Stream Simulator job, Continuous Stream Processor job |
+| `genie_spaces.yml` | Genie Space Sync job |
+| `dashboards.yml` | 12 AI/BI dashboards |
+| `model_serving.yml` | 4 serving endpoints (approval propensity, risk scoring, smart routing, smart retry). **Run “[dev] Train Payment Approval ML Models” once** so models exist in UC before deploy, or deploy will fail on these endpoints. |
+| `app.yml` | Databricks App (payment-analysis) |
+
+**Not in bundle (create manually if needed):** Vector Search endpoint and index are not in the Asset Bundle schema yet. See `resources/vector_search.yml` for the spec and create the endpoint/index in the Vector Search UI, or via API, after running `vector_search_and_recommendations.sql`.
+
+**Variables:** `catalog`, `schema`, `environment`, `warehouse_id`, `lakebase_*`, `workspace_folder` (default `payment-analysis`; workspace root path). **Commands:** `./scripts/deploy.sh dev` (or `validate_bundle.sh dev` then `databricks bundle deploy -t dev`); prod: `./scripts/deploy.sh prod`. **App:** `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, optional DATABRICKS_CATALOG/SCHEMA); set **PGAPPNAME** to Lakebase instance name for rules/experiments/incidents. Set **BUNDLE_FOLDER** to match `var.workspace_folder` if your app resolves workspace paths. Effective catalog/schema in UI: **Setup & Run** → **Save catalog & schema**.
 
 ## Workspace components ↔ UI mapping
 
@@ -87,4 +125,4 @@ Job and pipeline IDs come from `GET /api/setup/defaults` (backend `DEFAULT_IDS` 
 
 ---
 
-**See also:** [0_BUSINESS_CHALLENGES](0_BUSINESS_CHALLENGES.md) · [1_DEPLOYMENTS](1_DEPLOYMENTS.md) · [2_DATA_FLOW](2_DATA_FLOW.md) · [3_AGENTS_VALUE](3_AGENTS_VALUE.md) · [5_DEMO_SETUP](5_DEMO_SETUP.md)
+**See also:** [0_BUSINESS_CHALLENGES](0_BUSINESS_CHALLENGES.md) · [2_DATA_FLOW](2_DATA_FLOW.md) · [3_AGENTS_VALUE](3_AGENTS_VALUE.md) · [5_DEMO_SETUP](5_DEMO_SETUP.md)
