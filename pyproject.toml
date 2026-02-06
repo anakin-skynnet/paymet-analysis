@@ -65,7 +65,7 @@ version = "{version}"
 artifacts = ["src/payment_analysis/__dist__", "src/payment_analysis/_metadata.py"]
 exclude = ["src/payment_analysis/ui"]
 
-# Exclude Databricks-only notebooks from type checking (dbutils, spark, dlt are runtime-injected)
+# Exclude Databricks-only notebooks from type checking (dbutils, spark, dlt/Lakeflow are runtime-injected)
 [tool.ty.src]
 exclude = [
     "src/payment_analysis/genie/**",

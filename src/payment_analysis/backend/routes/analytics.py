@@ -162,6 +162,42 @@ class DedupCollisionStatsOut(BaseModel):
     avg_transaction_ids_per_key: float
 
 
+class ModelMetricOut(BaseModel):
+    """Single metric for an ML model."""
+    name: str
+    value: str
+
+
+class ModelOut(BaseModel):
+    """ML model metadata and optional metrics (from backend/Databricks)."""
+    id: str
+    name: str
+    description: str
+    model_type: str
+    features: list[str]
+    catalog_path: str
+    metrics: list[ModelMetricOut] = []
+
+
+@router.get("/models", response_model=list[ModelOut], operation_id="getModels")
+async def list_models() -> list[ModelOut]:
+    """List ML models with catalog path and optional metrics from backend (catalog/schema from config)."""
+    service = get_databricks_service()
+    data = await service.get_ml_models()
+    return [
+        ModelOut(
+            id=m["id"],
+            name=m["name"],
+            description=m["description"],
+            model_type=m["model_type"],
+            features=m["features"],
+            catalog_path=m["catalog_path"],
+            metrics=[ModelMetricOut(name=x["name"], value=str(x["value"])) for x in m.get("metrics") or []],
+        )
+        for m in data
+    ]
+
+
 @router.get("/kpis", response_model=KPIOut, operation_id="getKpis")
 def kpis(session: SessionDep) -> KPIOut:
     """Get KPIs from local database."""

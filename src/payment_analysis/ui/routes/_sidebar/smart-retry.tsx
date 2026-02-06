@@ -3,6 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGetRetryPerformance } from "@/lib/api";
+import { getDashboardUrl } from "@/config/workspace";
+
+const openInDatabricks = (url: string) => {
+  if (url) window.open(url, "_blank");
+};
 
 export const Route = createFileRoute("/_sidebar/smart-retry")({
   component: () => <SmartRetry />,
@@ -23,7 +28,7 @@ function SmartRetry() {
         </p>
       </div>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}>
         <CardHeader>
           <CardTitle>Top retry cohorts</CardTitle>
         </CardHeader>

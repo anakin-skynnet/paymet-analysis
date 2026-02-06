@@ -164,9 +164,9 @@ function Decisioning() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <DecisionCard title="Authentication" result={auth.data?.data} />
-        <DecisionCard title="Retry" result={retry.data?.data} />
-        <DecisionCard title="Routing" result={routing.data?.data} />
+        <DecisionCard title="Authentication" result={auth.data?.data} notebookId="agent_framework" />
+        <DecisionCard title="Retry" result={retry.data?.data} notebookId="agent_framework" />
+        <DecisionCard title="Routing" result={routing.data?.data} notebookId="agent_framework" />
       </div>
     </div>
   );
@@ -175,15 +175,24 @@ function Decisioning() {
 function DecisionCard({
   title,
   result,
+  notebookId,
 }: {
   title: string;
   result?: unknown;
+  notebookId?: string;
 }) {
   const obj = typeof result === "object" && result != null ? (result as Record<string, unknown>) : null;
   const variant = obj?.variant as string | undefined;
   const experimentId = obj?.experiment_id as string | undefined;
+  const handleCardClick = () => notebookId && openNotebook(notebookId);
   return (
-    <Card>
+    <Card
+      className={notebookId ? "cursor-pointer hover:shadow-md transition-shadow" : undefined}
+      onClick={notebookId ? handleCardClick : undefined}
+      role={notebookId ? "button" : undefined}
+      tabIndex={notebookId ? 0 : undefined}
+      onKeyDown={notebookId ? (e) => e.key === "Enter" && handleCardClick() : undefined}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between flex-wrap gap-2">
           <span>{title}</span>

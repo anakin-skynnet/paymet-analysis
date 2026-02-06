@@ -9,8 +9,12 @@ Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. Python 3.10
 ## Quick Start
 
 ```bash
-databricks bundle validate
-databricks bundle deploy --target dev
+# Prepare dashboard JSONs with catalog/schema for the target (required before validate/deploy)
+uv run python scripts/prepare_dashboards.py
+# For prod: uv run python scripts/prepare_dashboards.py --catalog prod_catalog --schema ahs_demo_payment_analysis_prod
+
+databricks bundle validate -t dev
+databricks bundle deploy -t dev
 ```
 
 Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md); optionally [Step 6: Import dashboards](#step-6-import-dashboards).
@@ -19,12 +23,13 @@ Then run jobs/pipelines per [5_DEMO_SETUP](5_DEMO_SETUP.md); optionally [Step 6:
 
 | Step | Purpose | Action |
 |------|---------|--------|
-| **1** | Deploy bundle | `databricks bundle validate` then `databricks bundle deploy -t dev` |
+| **1** | Prepare dashboards | `uv run python scripts/prepare_dashboards.py` (for prod add `--catalog prod_catalog --schema ahs_demo_payment_analysis_prod`) |
+| **1** | Deploy bundle | `databricks bundle validate -t dev` then `databricks bundle deploy -t dev` |
 | **2** | Generate data | Workflows → “Transaction Stream Simulator” or run `transaction_simulator.py`; output `raw_payment_events` |
 | **3** | Lakeflow | Lakeflow → “Payment Analysis ETL” → Start; Bronze → Silver → Gold |
 | **4** | Gold views | Workflows → “Create Payment Analysis Gold Views”; verify `v_executive_kpis` etc. |
 | **5** | ML models | Workflows → “Train Payment Approval ML Models”; ~10–15 min; 4 models in UC |
-| **6** | Dashboards | Bundle includes dashboards (default catalog/schema; warehouse from resource). Or SQL → Import `.lvdash.json` from `src/payment_analysis/dashboards/` |
+| **6** | Dashboards | Bundle includes dashboards; warehouse from `var.warehouse_id` (set per target). Dashboard dataset refs use `var.catalog`/`var.schema` via `scripts/prepare_dashboards.py`. |
 | **7** | Genie (optional) | SQL → Genie Spaces → Create “Payment Approval Analytics” / “Decline Analysis”; attach gold views; run `genie_sync_job` |
 | **7** | Model serving (optional) | After Step 5: uncomment `resources/model_serving.yml` in `databricks.yml`, redeploy |
 | **7** | AI agents (optional) | Verify Llama endpoint; `databricks bundle run orchestrator_agent_job -t dev`; agents in `ai_gateway.yml` (PAUSED) |

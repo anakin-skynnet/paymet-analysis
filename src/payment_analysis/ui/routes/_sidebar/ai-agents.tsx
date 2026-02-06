@@ -29,6 +29,11 @@ import {
   getNotebookFolderUrl,
   type AgentType,
 } from "@/lib/api";
+import { getGenieUrl } from "@/config/workspace";
+
+const openInDatabricks = (url: string) => {
+  if (url) window.open(url, "_blank");
+};
 
 export const Route = createFileRoute("/_sidebar/ai-agents")({
   component: () => <AIAgents />,
@@ -128,11 +133,63 @@ function AIAgents() {
         </div>
       </div>
 
-      {/* Info Card */}
-      <Card className="border-primary/20 bg-primary/5">
+      {/* Ask Data with Genie — click opens Genie in Databricks */}
+      <Card
+        className="border-primary/20 bg-primary/5 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => openInDatabricks(getGenieUrl())}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getGenieUrl())}
+      >
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Ask Data with Genie
+          </CardTitle>
+          <CardDescription>
+            Chat with Genie in natural language to explore payment data. Open Genie in Databricks to run these prompts and more.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Sample prompts</p>
+            <ul className="space-y-1.5 text-sm">
+              <li className="pl-3 border-l-2 border-muted italic text-muted-foreground">
+                &ldquo;What was our approval rate by card network last week?&rdquo;
+              </li>
+              <li className="pl-3 border-l-2 border-muted italic text-muted-foreground">
+                &ldquo;Show me top decline reasons and recovery potential.&rdquo;
+              </li>
+              <li className="pl-3 border-l-2 border-muted italic text-muted-foreground">
+                &ldquo;Compare 3DS vs non-3DS approval rates by merchant segment.&rdquo;
+              </li>
+            </ul>
+          </div>
+          <Button
+            variant="default"
+            onClick={(e) => { e.stopPropagation(); openInDatabricks(getGenieUrl()); }}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Open Genie to chat
+            <ExternalLink className="w-3 h-3 ml-2" />
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Data is fetched from your Databricks workspace when you use Genie. Ensure backend and Databricks (catalog, schema, warehouse) are configured for connectivity and data access.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Info Card — click opens Genie */}
+      <Card
+        className="border-muted cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => openInDatabricks(getGenieUrl())}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getGenieUrl())}
+      >
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Sparkles className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+            <Bot className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
               <p className="text-sm font-medium">
                 Leverage Databricks AI capabilities to optimize payment approval

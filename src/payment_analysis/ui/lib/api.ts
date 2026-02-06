@@ -284,6 +284,21 @@ export interface MLPredictionInput {
   uses_3ds?: boolean;
 }
 
+export interface ModelMetricOut {
+  name: string;
+  value: string;
+}
+
+export interface ModelOut {
+  catalog_path: string;
+  description: string;
+  features: string[];
+  id: string;
+  metrics?: ModelMetricOut[];
+  model_type: string;
+  name: string;
+}
+
 export interface Name {
   family_name?: string | null;
   given_name?: string | null;
@@ -952,6 +967,29 @@ export function useGetDatabricksKpis<TData = { data: DatabricksKPIOut }>(options
 
 export function useGetDatabricksKpisSuspense<TData = { data: DatabricksKPIOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: DatabricksKPIOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getDatabricksKpisKey(), queryFn: () => getDatabricksKpis(), ...options?.query });
+}
+
+export const getModels = async (options?: RequestInit): Promise<{ data: ModelOut[] }> => {
+  const res = await fetch("/api/analytics/models", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getModelsKey = () => {
+  return ["/api/analytics/models"] as const;
+};
+
+export function useGetModels<TData = { data: ModelOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getModelsKey(), queryFn: () => getModels(), ...options?.query });
+}
+
+export function useGetModelsSuspense<TData = { data: ModelOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getModelsKey(), queryFn: () => getModels(), ...options?.query });
 }
 
 export const getReasonCodesBr = async (params?: GetReasonCodesBrParams, options?: RequestInit): Promise<{ data: ReasonCodeOut[] }> => {

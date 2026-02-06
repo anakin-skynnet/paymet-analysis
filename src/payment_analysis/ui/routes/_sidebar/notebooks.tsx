@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Code2, Bot, Brain, Zap, Database, BarChart3, ExternalLink, PlayCircle } from "lucide-react";
 import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/api";
+import { getWorkspaceUrl } from "@/config/workspace";
 
 export const Route = createFileRoute("/_sidebar/notebooks")({
   component: Component,
@@ -121,8 +122,12 @@ export function Component() {
             return (
               <Card
                 key={notebook.id}
-                className="hover:shadow-lg transition-all group border-l-4"
+                className="cursor-pointer hover:shadow-lg transition-all group border-l-4"
                 style={{ borderLeftColor: categoryColor.split(" ")[0].replace("bg-", "").replace("/10", "") }}
+                onClick={() => handleNotebookClick(notebook.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && handleNotebookClick(notebook.id)}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -168,7 +173,7 @@ export function Component() {
                     {/* Action Button */}
                     <Button
                       size="sm"
-                      onClick={() => handleNotebookClick(notebook.id)}
+                      onClick={(e) => { e.stopPropagation(); handleNotebookClick(notebook.id); }}
                       className="ml-auto"
                     >
                       Open Notebook
@@ -204,9 +209,15 @@ export function Component() {
         </Card>
       )}
 
-      {/* Category Descriptions */}
+      {/* Category Descriptions — each card opens related backend in Databricks */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="border-purple-200 dark:border-purple-800">
+        <Card
+          className="border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNotebookClick("agent_framework")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && handleNotebookClick("agent_framework")}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -218,7 +229,13 @@ export function Component() {
           </CardContent>
         </Card>
 
-        <Card className="border-blue-200 dark:border-blue-800">
+        <Card
+          className="border-blue-200 dark:border-blue-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNotebookClick("train_models")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && handleNotebookClick("train_models")}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -230,7 +247,13 @@ export function Component() {
           </CardContent>
         </Card>
 
-        <Card className="border-yellow-200 dark:border-yellow-800">
+        <Card
+          className="border-yellow-200 dark:border-yellow-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
@@ -242,7 +265,13 @@ export function Component() {
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 dark:border-green-800">
+        <Card
+          className="border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -254,7 +283,13 @@ export function Component() {
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200 dark:border-orange-800">
+        <Card
+          className="border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && getWorkspaceUrl() && window.open(getWorkspaceUrl(), "_blank")}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-orange-600 dark:text-orange-400" />

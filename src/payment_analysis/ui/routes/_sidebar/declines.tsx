@@ -67,7 +67,7 @@ function Declines() {
         </p>
       </div>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={openDashboard} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openDashboard()}>
         <CardHeader>
           <CardTitle>Top decline buckets</CardTitle>
         </CardHeader>

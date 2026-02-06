@@ -11,6 +11,11 @@ import {
   useGetFalseInsightsMetric,
   useSubmitInsightFeedback,
 } from "@/lib/api";
+import { getDashboardUrl } from "@/config/workspace";
+
+const openInDatabricks = (url: string) => {
+  if (url) window.open(url, "_blank");
+};
 
 export const Route = createFileRoute("/_sidebar/reason-codes")({
   component: () => <ReasonCodes />,
@@ -43,7 +48,7 @@ function ReasonCodes() {
         </p>
       </div>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))}>
         <CardHeader>
           <CardTitle>Entry system coverage</CardTitle>
         </CardHeader>
@@ -75,7 +80,7 @@ function ReasonCodes() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))}>
         <CardHeader>
           <CardTitle>Counter-metric: False Insights</CardTitle>
         </CardHeader>
@@ -117,7 +122,7 @@ function ReasonCodes() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))}>
         <CardHeader>
           <CardTitle>Top standardized decline reasons</CardTitle>
         </CardHeader>
@@ -169,11 +174,11 @@ function ReasonCodes() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))}>
         <CardHeader>
           <CardTitle>Expert review (learning loop)</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3" onClick={(e) => e.stopPropagation()}>
           <p className="text-sm text-muted-foreground">
             Mark an insight as valid/invalid/non-actionable. This updates the
             False Insights counter-metric (when Databricks is available).

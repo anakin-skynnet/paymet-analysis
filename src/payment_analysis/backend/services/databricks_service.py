@@ -479,6 +479,55 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.retry_performance(limit)
 
+    async def get_ml_models(self) -> list[dict[str, Any]]:
+        """Return ML model metadata and optional metrics. Catalog path uses config (catalog.schema)."""
+        base = [
+            {
+                "id": "approval_propensity",
+                "name": "Approval Propensity Model",
+                "description": "Predicts the likelihood of transaction approval based on payment characteristics and risk signals. Uses Random Forest Classifier to optimize routing decisions.",
+                "model_type": "RandomForestClassifier",
+                "features": ["amount", "fraud_score", "device_trust_score", "is_cross_border", "retry_count", "uses_3ds"],
+                "model_suffix": "approval_propensity_model",
+                "metrics": [],
+            },
+            {
+                "id": "risk_scoring",
+                "name": "Risk Scoring Model",
+                "description": "Evaluates transaction risk by combining fraud indicators, AML signals, and behavioral patterns. Identifies high-risk transactions for review.",
+                "model_type": "RandomForestClassifier",
+                "features": ["amount", "fraud_score", "aml_risk_score", "is_cross_border", "processing_time_ms", "device_trust_score"],
+                "model_suffix": "risk_scoring_model",
+                "metrics": [],
+            },
+            {
+                "id": "smart_routing",
+                "name": "Smart Routing Policy",
+                "description": "Determines optimal payment solution (standard, 3DS, network token, passkey) based on merchant segment, risk profile, and historical performance.",
+                "model_type": "RandomForestClassifier",
+                "features": ["amount", "fraud_score", "is_cross_border", "uses_3ds", "device_trust_score", "merchant_segment_*"],
+                "model_suffix": "smart_routing_policy",
+                "metrics": [],
+            },
+            {
+                "id": "smart_retry",
+                "name": "Smart Retry Policy",
+                "description": "Identifies declined transactions with high recovery potential. Recommends optimal retry timing and strategy based on decline reason and transaction context.",
+                "model_type": "RandomForestClassifier",
+                "features": ["decline_encoded", "retry_count", "amount", "is_recurring", "fraud_score", "device_trust_score"],
+                "model_suffix": "smart_retry_policy",
+                "metrics": [],
+            },
+        ]
+        catalog_path_prefix = f"{self.config.catalog}.{self.config.schema}."
+        out: list[dict[str, Any]] = []
+        for m in base:
+            suffix = str(m["model_suffix"])
+            row = {k: v for k, v in m.items() if k != "model_suffix"}
+            row["catalog_path"] = catalog_path_prefix + suffix
+            out.append(row)
+        return out
+
     async def submit_insight_feedback(
         self,
         *,

@@ -28,7 +28,11 @@ import {
   ArrowDownRight,
   MessageSquareText,
 } from "lucide-react";
-import { getDashboardUrl } from "@/config/workspace";
+import { getDashboardUrl, getGenieUrl } from "@/config/workspace";
+
+const openInDatabricks = (url: string) => {
+  if (url) window.open(url, "_blank");
+};
 
 export const Route = createFileRoute("/_sidebar/dashboard")({
   component: () => (
@@ -179,9 +183,15 @@ function Dashboard() {
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — click opens Executive dashboard in Databricks */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total auths
@@ -193,7 +203,13 @@ function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Approved
@@ -205,7 +221,13 @@ function Dashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"))}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Approval rate
@@ -219,8 +241,14 @@ function Dashboard() {
 
       {/* Trends + Solutions */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Approval Trends */}
-        <Card>
+        {/* Approval Trends — click opens Daily Trends dashboard */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/daily_trends"))}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/daily_trends"))}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -270,8 +298,14 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Solution Performance */}
-        <Card>
+        {/* Solution Performance — click opens Smart Routing dashboard */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -328,8 +362,14 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* ML & decision reasoning */}
-      <Card>
+      {/* ML & decision reasoning — click opens Genie in Databricks */}
+      <Card
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => openInDatabricks(getGenieUrl())}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getGenieUrl())}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquareText className="w-4 h-4" />

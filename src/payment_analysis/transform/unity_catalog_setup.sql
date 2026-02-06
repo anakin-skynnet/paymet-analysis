@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Unity Catalog Setup for Payment Analysis Platform
 -- ============================================================================
--- Run this after DLT pipeline creates tables to configure:
+-- Run this after Lakeflow pipeline creates tables to configure:
 -- - Data Classification Tags
 -- - Business Metrics
 -- - Data Quality Monitors

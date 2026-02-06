@@ -88,6 +88,7 @@ targets:
       environment: prod
       catalog: prod_catalog
       schema: ahs_demo_payment_analysis_prod
+      warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
     presets:
       name_prefix: "[PROD] "
       pipelines_development: false

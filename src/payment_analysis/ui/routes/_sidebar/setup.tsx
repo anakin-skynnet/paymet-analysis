@@ -165,6 +165,15 @@ function SetupRun() {
   };
 
   const pending = runJobMutation.isPending || runPipelineMutation.isPending;
+  const host = defaults?.workspace_host || "";
+  const openJobRun = (jobKey: string) => {
+    const id = defaults?.jobs?.[jobKey];
+    if (id && host) window.open(`${host}/#job/${id}/run`, "_blank");
+  };
+  const openPipeline = (pipelineKey: string) => {
+    const id = defaults?.pipelines?.[pipelineKey];
+    if (id && host) window.open(`${host}/pipelines/${id}`, "_blank");
+  };
 
   if (loadingDefaults && !defaults) {
     return (
@@ -257,8 +266,14 @@ function SetupRun() {
       <div className="space-y-4">
         <h2 className="text-lg font-medium">Execution steps</h2>
 
-        {/* Step 1: Data ingestion */}
-        <Card>
+        {/* Step 1: Data ingestion — click opens job run in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("transaction_stream_simulator")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("transaction_stream_simulator")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
@@ -268,10 +283,10 @@ function SetupRun() {
               <Badge variant="secondary">Job</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Generate test payment events (e.g. 1000/sec). Uses catalog and schema above.
+              Events simulator: generate test payment events (e.g. 1000/sec). Uses catalog and schema above.
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("transaction_stream_simulator")}
               disabled={pending}
@@ -298,21 +313,27 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 2: ETL pipeline */}
-        <Card>
+        {/* Step 2: Ingestion / Lakeflow pipeline — click opens pipeline in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openPipeline("payment_analysis_etl")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_analysis_etl")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <GitBranch className="h-4 w-4" />
-                2. Batch ETL pipeline (Bronze → Silver → Gold)
+                2. Ingestion & ETL (Lakeflow pipeline, Bronze → Silver → Gold)
               </CardTitle>
               <Badge variant="secondary">Pipeline</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Process raw data into silver and gold tables. Start a pipeline update.
+              Ingestion Lakeflow pipeline: process raw data into silver and gold tables. Start a pipeline update.
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="default"
               onClick={() => triggerPipeline("payment_analysis_etl")}
@@ -340,8 +361,14 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 3: Gold views */}
-        <Card>
+        {/* Step 3: Gold views — click opens job run in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("create_gold_views")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("create_gold_views")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
@@ -354,7 +381,7 @@ function SetupRun() {
               Create 20+ analytical views for dashboards. Uses warehouse and schema.
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("create_gold_views")}
               disabled={pending}
@@ -381,8 +408,14 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 4: Train ML models */}
-        <Card>
+        {/* Step 4: Train ML models — click opens job run in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("train_ml_models")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("train_ml_models")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
@@ -395,7 +428,7 @@ function SetupRun() {
               Train approval propensity, risk scoring, routing, and retry models. Uses catalog and schema.
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("train_ml_models")}
               disabled={pending}
@@ -422,8 +455,14 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 5: Orchestrator agent */}
-        <Card>
+        {/* Step 5: Orchestrator agent — click opens job run in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("orchestrator_agent")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("orchestrator_agent")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
@@ -436,7 +475,7 @@ function SetupRun() {
               Start the orchestrator to coordinate all AI agents (routing, retry, risk, decline, performance).
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("orchestrator_agent")}
               disabled={pending}
@@ -463,21 +502,27 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 6: Real-time pipeline (optional) */}
-        <Card>
+        {/* Step 6: Real-time Lakeflow pipeline (optional) — click opens pipeline in Databricks */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openPipeline("payment_realtime_pipeline")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_realtime_pipeline")}
+        >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <GitBranch className="h-4 w-4" />
-                6. Real-time streaming pipeline (optional)
+                6. Real-time streaming (Lakeflow pipeline, optional)
               </CardTitle>
               <Badge variant="outline">Pipeline</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Start the continuous real-time payment stream pipeline.
+              Start the continuous real-time payment stream pipeline in Lakeflow.
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2">
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="secondary"
               onClick={() => triggerPipeline("payment_realtime_pipeline")}
@@ -506,12 +551,39 @@ function SetupRun() {
         </Card>
       </div>
 
-      {/* Quick links */}
+      {/* Quick links: Jobs, Pipelines, Warehouse, Genie, etc. */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Quick links</CardTitle>
+          <CardTitle className="text-base">Quick links — open in Databricks</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            One-click to open jobs, pipelines, warehouse, Genie, and data explorer.
+          </p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              window.open(
+                `${defaults?.workspace_host || ""}/#job`,
+                "_blank"
+              )
+            }
+          >
+            Jobs <ExternalLink className="ml-1 h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              window.open(
+                `${defaults?.workspace_host || ""}/pipelines`,
+                "_blank"
+              )
+            }
+          >
+            Pipelines <ExternalLink className="ml-1 h-3 w-3" />
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -546,7 +618,7 @@ function SetupRun() {
               )
             }
           >
-            Genie <ExternalLink className="ml-1 h-3 w-3" />
+            Genie (Ask Data) <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
@@ -558,7 +630,7 @@ function SetupRun() {
               )
             }
           >
-            Stream processor (run) <ExternalLink className="ml-1 h-3 w-3" />
+            Stream processor (run)
           </Button>
         </CardContent>
       </Card>

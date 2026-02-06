@@ -128,7 +128,7 @@ NOTEBOOKS = [
         category=NotebookCategory.STREAMING,
         workspace_path=get_notebook_path("src/payment_analysis/streaming/bronze_ingest.py"),
         job_name="Payment Analysis Lakeflow",
-        tags=["dlt", "bronze", "ingestion", "data-quality"],
+        tags=["lakeflow", "bronze", "ingestion", "data-quality"],
     ),
     NotebookInfo(
         id="realtime_pipeline",
@@ -137,7 +137,7 @@ NOTEBOOKS = [
         category=NotebookCategory.STREAMING,
         workspace_path=get_notebook_path("src/payment_analysis/streaming/realtime_pipeline.py"),
         job_name="Payment Analysis Lakeflow",
-        tags=["dlt", "streaming", "realtime", "cdc", "continuous"],
+        tags=["lakeflow", "streaming", "realtime", "cdc", "continuous"],
     ),
     NotebookInfo(
         id="continuous_processor",
@@ -157,7 +157,7 @@ NOTEBOOKS = [
         category=NotebookCategory.TRANSFORMATION,
         workspace_path=get_notebook_path("src/payment_analysis/transform/silver_transform.py"),
         job_name="Payment Analysis Lakeflow",
-        tags=["dlt", "silver", "transformation", "enrichment", "validation"],
+        tags=["lakeflow", "silver", "transformation", "enrichment", "validation"],
     ),
     NotebookInfo(
         id="gold_views",
@@ -166,7 +166,7 @@ NOTEBOOKS = [
         category=NotebookCategory.TRANSFORMATION,
         workspace_path=get_notebook_path("src/payment_analysis/transform/gold_views.py"),
         job_name="Create Payment Analysis Gold Views",
-        tags=["dlt", "gold", "views", "aggregations", "analytics"],
+        tags=["lakeflow", "gold", "views", "aggregations", "analytics"],
     ),
     NotebookInfo(
         id="gold_views_sql",

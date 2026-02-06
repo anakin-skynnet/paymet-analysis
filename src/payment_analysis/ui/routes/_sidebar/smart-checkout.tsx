@@ -7,6 +7,11 @@ import {
   useGetThreeDsFunnelBr,
   useGetSmartCheckoutPathPerformanceBr,
 } from "@/lib/api";
+import { getDashboardUrl } from "@/config/workspace";
+
+const openInDatabricks = (url: string) => {
+  if (url) window.open(url, "_blank");
+};
 
 export const Route = createFileRoute("/_sidebar/smart-checkout")({
   component: () => <SmartCheckout />,
@@ -38,7 +43,7 @@ function SmartCheckout() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))}>
           <CardHeader>
             <CardTitle>3DS friction</CardTitle>
           </CardHeader>
@@ -48,7 +53,7 @@ function SmartCheckout() {
               : "—"}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))}>
           <CardHeader>
             <CardTitle>3DS authentication</CardTitle>
           </CardHeader>
@@ -58,7 +63,7 @@ function SmartCheckout() {
               : "—"}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/authentication_security"))}>
           <CardHeader>
             <CardTitle>Issuer approval (post-auth)</CardTitle>
           </CardHeader>
@@ -70,7 +75,7 @@ function SmartCheckout() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}>
         <CardHeader>
           <CardTitle>Top service paths (payment links)</CardTitle>
         </CardHeader>
@@ -113,7 +118,7 @@ function SmartCheckout() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}>
         <CardHeader>
           <CardTitle>Recommended path performance</CardTitle>
         </CardHeader>

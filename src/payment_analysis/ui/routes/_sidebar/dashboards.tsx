@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight } from "lucide-react";
-import { getWorkspaceUrl } from "@/config/workspace";
+import { getWorkspaceUrl, getGenieUrl } from "@/config/workspace";
 import { friendlyReason } from "@/lib/reasoning";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
@@ -95,9 +95,9 @@ export function Component() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Analytics Dashboards</h1>
+        <h1 className="text-3xl font-bold">Dashboards</h1>
         <p className="text-muted-foreground mt-2">
-          Access all payment analysis dashboards powered by Databricks AI/BI
+          Stream ingestion (Real-Time Monitoring), data quality (Streaming & Data Quality), analytics (Executive, Decline, Fraud, Merchant, Routing, Daily Trends, 3DS, Financial, Performance, Latency), and technical dashboards. Data is loaded from your Databricks workspace when you open each dashboard. Click any card to open in a new tab and verify connectivity and data access.
         </p>
       </div>
 
@@ -126,11 +126,12 @@ export function Component() {
         })}
       </div>
 
-      {/* Error State */}
+      {/* Error State — connectivity to backend / Databricks */}
       {isError && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="py-8 text-center">
-            <p className="text-destructive font-medium">Failed to load dashboards. Check that the backend is running.</p>
+            <p className="text-destructive font-medium">Failed to load dashboards.</p>
+            <p className="text-sm text-muted-foreground mt-1">Check that the backend is running and can reach Databricks for dashboard metadata and data access.</p>
           </CardContent>
         </Card>
       )}
@@ -244,8 +245,14 @@ export function Component() {
         </Card>
       )}
 
-      {/* ML & decision reasoning */}
-      <Card>
+      {/* ML & decision reasoning — click opens Genie in Databricks */}
+      <Card
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => getGenieUrl() && window.open(getGenieUrl(), "_blank")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && getGenieUrl() && window.open(getGenieUrl(), "_blank")}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquareText className="w-4 h-4" />
@@ -255,7 +262,7 @@ export function Component() {
             Latest policy and model reasoning from authentication, retry, and routing decisions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent onClick={(e) => e.stopPropagation()}>
           {recentDecisions.length === 0 ? (
             <p className="text-sm text-muted-foreground mb-4">
               No recent decisions. Use the Decisioning playground to generate decisions and reasoning.
@@ -282,7 +289,7 @@ export function Component() {
             </ul>
           )}
           <Button variant="outline" size="sm" asChild>
-            <Link to="/decisioning">
+            <Link to="/decisioning" onClick={(e) => e.stopPropagation()}>
               Open Decisioning <ArrowRight className="w-3 h-3 ml-1" />
             </Link>
           </Button>
