@@ -1,30 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Code2, Bot, Brain, Zap, Database, BarChart3, ExternalLink, PlayCircle } from "lucide-react";
+import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/notebooks")({
   component: Component,
 });
 
-interface Notebook {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  workspace_path: string;
-  job_name: string | null;
-  tags: string[];
-}
-
-interface NotebookList {
-  notebooks: Notebook[];
-  total: number;
-  by_category: Record<string, number>;
-}
+// Types come from auto-generated api.ts (NotebookInfo, NotebookList)
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   agents: Bot,
@@ -43,34 +30,18 @@ const categoryColors: Record<string, string> = {
 };
 
 export function Component() {
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Record<string, number>>({});
+  const [selectedCategory, setSelectedCategory] = useState<NotebookCategory | null>(null);
 
-  useEffect(() => {
-    fetchNotebooks();
-  }, [selectedCategory]);
+  const { data: notebookList, isLoading: loading, isError } = useListNotebooks({
+    params: selectedCategory ? { category: selectedCategory } : undefined,
+  });
 
-  const fetchNotebooks = async () => {
-    try {
-      setLoading(true);
-      const categoryParam = selectedCategory ? `?category=${selectedCategory}` : "";
-      const response = await fetch(`/api/notebooks/notebooks${categoryParam}`);
-      const data: NotebookList = await response.json();
-      setNotebooks(data.notebooks);
-      setCategories(data.by_category);
-    } catch (error) {
-      console.error("Failed to fetch notebooks:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const notebooks = notebookList?.data.notebooks ?? [];
+  const categories = notebookList?.data.by_category ?? {};
 
   const handleNotebookClick = async (notebookId: string) => {
     try {
-      const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-      const data = await response.json();
+      const { data } = await getNotebookUrl({ notebook_id: notebookId });
       window.open(data.url, "_blank");
     } catch (error) {
       console.error("Failed to open notebook:", error);
@@ -108,7 +79,7 @@ export function Component() {
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSelectedCategory(category as NotebookCategory)}
             >
               {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
               {getCategoryLabel(category)} ({count})
@@ -116,6 +87,15 @@ export function Component() {
           );
         })}
       </div>
+
+      {/* Error State */}
+      {isError && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-8 text-center">
+            <p className="text-destructive font-medium">Failed to load notebooks. Check that the backend is running.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notebooks List */}
       {loading ? (
@@ -168,7 +148,7 @@ export function Component() {
                   <div className="flex flex-wrap items-center gap-3">
                     {/* Tags */}
                     <div className="flex flex-wrap gap-1 flex-1">
-                      {notebook.tags.map((tag) => (
+                      {(notebook.tags ?? []).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>

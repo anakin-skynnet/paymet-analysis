@@ -9,7 +9,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/executive_overview.lvdash.json
+      file_path: ../.build/dashboards/executive_overview.lvdash.json
 
     # Dashboard 2: Decline Analysis
     decline_analysis:
@@ -17,7 +17,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/decline_analysis.lvdash.json
+      file_path: ../.build/dashboards/decline_analysis.lvdash.json
 
     # Dashboard 3: Real-Time Monitoring
     realtime_monitoring:
@@ -25,7 +25,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/realtime_monitoring.lvdash.json
+      file_path: ../.build/dashboards/realtime_monitoring.lvdash.json
 
     # Dashboard 4: Fraud & Risk Analysis (NEW)
     fraud_risk_analysis:
@@ -33,7 +33,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/fraud_risk_analysis.lvdash.json
+      file_path: ../.build/dashboards/fraud_risk_analysis.lvdash.json
 
     # Dashboard 5: Merchant Performance (NEW)
     merchant_performance:
@@ -41,7 +41,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/merchant_performance.lvdash.json
+      file_path: ../.build/dashboards/merchant_performance.lvdash.json
 
     # Dashboard 6: Routing & Optimization (NEW)
     routing_optimization:
@@ -49,7 +49,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/routing_optimization.lvdash.json
+      file_path: ../.build/dashboards/routing_optimization.lvdash.json
 
     # Dashboard 7: Daily Trends (NEW)
     daily_trends:
@@ -57,7 +57,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/daily_trends.lvdash.json
+      file_path: ../.build/dashboards/daily_trends.lvdash.json
 
     # Dashboard 8: Authentication & Security (NEW)
     authentication_security:
@@ -65,7 +65,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/authentication_security.lvdash.json
+      file_path: ../.build/dashboards/authentication_security.lvdash.json
 
     # Dashboard 9: Financial Impact (NEW)
     financial_impact:
@@ -73,7 +73,7 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/financial_impact.lvdash.json
+      file_path: ../.build/dashboards/financial_impact.lvdash.json
 
     # Dashboard 10: Performance & Latency (NEW)
     performance_latency:
@@ -81,4 +81,4 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ./dashboards/performance_latency.lvdash.json
+      file_path: ../.build/dashboards/performance_latency.lvdash.json

@@ -211,8 +211,8 @@ function Models() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">Features ({model.features.length})</p>
                 <div className="flex flex-wrap gap-1">
-                  {model.features.map((feature, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
+                  {model.features.map((feature) => (
+                    <Badge key={feature} variant="outline" className="text-xs">
                       {feature}
                     </Badge>
                   ))}
@@ -223,8 +223,8 @@ function Models() {
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">Performance Metrics</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {model.metrics.map((metric, idx) => (
-                    <div key={idx} className="bg-muted/50 px-2 py-1.5 rounded text-center">
+                  {model.metrics.map((metric) => (
+                    <div key={metric.name} className="bg-muted/50 px-2 py-1.5 rounded text-center">
                       <p className="text-xs text-muted-foreground">{metric.name}</p>
                       <p className="text-sm font-semibold">{metric.value}</p>
                     </div>

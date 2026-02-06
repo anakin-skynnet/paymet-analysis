@@ -18,8 +18,10 @@ include:
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
-  - resources/dashboards.yml
-  - resources/model_serving.yml
+  # Enable after gold views exist (run DLT pipelines): uncomment and run scripts/substitute_dashboard_vars.py, then deploy with BUNDLE_VAR_warehouse_id set
+  # - resources/dashboards.yml
+  # Enable after ML models are trained (run ML job):
+  # - resources/model_serving.yml
 
 # Environment variables with validation
 variables:
@@ -31,9 +33,9 @@ variables:
     default: dev
   warehouse_id:
     description: >
-      SQL Warehouse ID for dashboard queries. After first deploy, retrieve with:
-      databricks sql warehouses list --output json | jq -r '.warehouses[0].id'
-      Then set via: --var warehouse_id=<id> or BUNDLE_VAR_warehouse_id env var.
+      SQL Warehouse ID for dashboard queries. Required for dashboard deploy.
+      Get one with: databricks sql warehouses list -o json | jq -r '.[0].id'
+      Then: export BUNDLE_VAR_warehouse_id=<id> and run scripts/substitute_dashboard_vars.py before deploy.
     default: "auto"
   schema:
     description: Unity Catalog schema name (matches DLT target with dev mode prefix)

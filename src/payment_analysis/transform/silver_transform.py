@@ -64,6 +64,8 @@ def payments_enriched_silver():
     - Data quality validations
     """
     
+    # Read all columns; DLT manages schema evolution for the bronze→silver boundary.
+    # DLT expectations above enforce required fields at ingestion time.
     payments = dlt.read("payments_raw_bronze")
     merchants = dlt.read("merchants_dim_bronze")
     

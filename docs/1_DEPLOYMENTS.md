@@ -85,10 +85,14 @@ databricks bundle deploy --target dev
 
 ## Step 6: Import dashboards
 
-**Purpose:** 10 AI/BI dashboards.
+**Purpose:** 10 AI/BI dashboards. Gold views must exist first (Steps 3–4).
 
-- **Option A:** Uncomment `resources/dashboards.yml` in `databricks.yml`, then `databricks bundle deploy --target dev`
-- **Option B:** SQL → Dashboards → Create → Import; select each `.lvdash.json` from `resources/dashboards/`  
+- **Option A (bundle):** Uncomment `resources/dashboards.yml` in `databricks.yml`. Then run variable substitution and deploy with a valid SQL warehouse ID:
+  ```bash
+  uv run python scripts/substitute_dashboard_vars.py
+  BUNDLE_VAR_warehouse_id=$(databricks warehouses list -o json | jq -r '.[0].id') databricks bundle deploy -t dev --auto-approve
+  ```
+- **Option B:** SQL → Dashboards → Create → Import; select each `.lvdash.json` from `resources/dashboards/` (manually set catalog/schema/warehouse in each).
 - **Files:** executive_overview, decline_analysis, realtime_monitoring, fraud_risk_analysis, merchant_performance, routing_optimization, daily_trends, authentication_security, financial_impact, performance_latency
 
 ---

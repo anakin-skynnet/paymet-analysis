@@ -1,35 +1,43 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Bot, Brain, Zap, MessageSquare, ExternalLink, TrendingUp, Shield, RotateCcw, BarChart3, Lightbulb } from "lucide-react";
+import {
+  Sparkles,
+  Bot,
+  Brain,
+  Zap,
+  MessageSquare,
+  ExternalLink,
+  TrendingUp,
+  Shield,
+  RotateCcw,
+  BarChart3,
+  Lightbulb,
+} from "lucide-react";
+import {
+  useListAgents,
+  getAgentUrl,
+  getNotebookFolderUrl,
+  type AgentType,
+} from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/ai-agents")({
   component: () => <AIAgents />,
 });
 
-interface Agent {
-  id: string;
-  name: string;
-  description: string;
-  agent_type: string;
-  capabilities: string[];
-  use_case: string;
-  databricks_resource: string;
-  workspace_url: string | null;
-  tags: string[];
-  example_queries: string[];
-}
-
-interface AgentList {
-  agents: Agent[];
-  total: number;
-  by_type: Record<string, number>;
-}
-
-const agentTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+const agentTypeIcons: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   genie: Sparkles,
   model_serving: Brain,
   custom_llm: Bot,
@@ -37,13 +45,20 @@ const agentTypeIcons: Record<string, React.ComponentType<{ className?: string }>
 };
 
 const agentTypeColors: Record<string, string> = {
-  genie: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800",
-  model_serving: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
-  custom_llm: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
-  ai_gateway: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
+  genie:
+    "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800",
+  model_serving:
+    "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+  custom_llm:
+    "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
+  ai_gateway:
+    "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
 };
 
-const agentIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+const agentIcons: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   approval_optimizer_genie: TrendingUp,
   decline_insights_genie: BarChart3,
   approval_propensity_predictor: Brain,
@@ -54,38 +69,29 @@ const agentIcons: Record<string, React.ComponentType<{ className?: string }>> = 
   performance_recommender: Lightbulb,
 };
 
+const getTypeLabel = (type: string): string =>
+  type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
 function AIAgents() {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [types, setTypes] = useState<Record<string, number>>({});
+  const [selectedType, setSelectedType] = useState<AgentType | undefined>(
+    undefined,
+  );
 
-  useEffect(() => {
-    fetchAgents();
-  }, [selectedType]);
+  const {
+    data: agentList,
+    isLoading,
+    isError,
+  } = useListAgents({
+    params: selectedType ? { agent_type: selectedType } : undefined,
+  });
 
-  const fetchAgents = async () => {
-    try {
-      setLoading(true);
-      const typeParam = selectedType ? `?agent_type=${selectedType}` : "";
-      const response = await fetch(`/api/agents/agents${typeParam}`);
-      const data: AgentList = await response.json();
-      setAgents(data.agents);
-      setTypes(data.by_type);
-    } catch (error) {
-      console.error("Failed to fetch agents:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const agents = agentList?.data.agents ?? [];
+  const types = agentList?.data.by_type ?? {};
 
   const handleAgentClick = async (agentId: string) => {
     try {
-      const response = await fetch(`/api/agents/agents/${agentId}/url`);
-      const data = await response.json();
-      if (data.url) {
-        window.open(data.url, "_blank");
-      }
+      const { data } = await getAgentUrl({ agent_id: agentId });
+      if (data.url) window.open(data.url, "_blank");
     } catch (error) {
       console.error("Failed to open agent:", error);
     }
@@ -93,16 +99,11 @@ function AIAgents() {
 
   const openAgentsFolder = async () => {
     try {
-      const response = await fetch(`/api/notebooks/notebooks/folders/agents/url`);
-      const data = await response.json();
+      const { data } = await getNotebookFolderUrl({ folder_id: "agents" });
       if (data.url) window.open(data.url, "_blank");
     } catch (error) {
       console.error("Failed to open agents folder:", error);
     }
-  };
-
-  const getTypeLabel = (type: string): string => {
-    return type.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -115,15 +116,12 @@ function AIAgents() {
             <div>
               <h1 className="text-3xl font-bold">Databricks AI Agents</h1>
               <p className="text-muted-foreground mt-1">
-                AI-powered agents to accelerate payment approval rates using Genie, Model Serving, and LLM intelligence
+                AI-powered agents to accelerate payment approval rates using
+                Genie, Model Serving, and LLM intelligence
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openAgentsFolder}
-          >
+          <Button variant="outline" size="sm" onClick={openAgentsFolder}>
             <ExternalLink className="w-4 h-4 mr-2" />
             Open agents folder in Workspace
           </Button>
@@ -137,13 +135,26 @@ function AIAgents() {
             <Sparkles className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
               <p className="text-sm font-medium">
-                Leverage Databricks AI capabilities to optimize payment approval rates
+                Leverage Databricks AI capabilities to optimize payment approval
+                rates
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li><strong>Genie:</strong> Ask questions in natural language to explore payment data</li>
-                <li><strong>Model Serving:</strong> Real-time ML predictions for routing and retry optimization</li>
-                <li><strong>AI Gateway:</strong> LLM-powered insights and recommendations (Llama 3.1 70B)</li>
-                <li><strong>Custom Agents:</strong> Domain-specific payment intelligence</li>
+                <li>
+                  <strong>Genie:</strong> Ask questions in natural language to
+                  explore payment data
+                </li>
+                <li>
+                  <strong>Model Serving:</strong> Real-time ML predictions for
+                  routing and retry optimization
+                </li>
+                <li>
+                  <strong>AI Gateway:</strong> LLM-powered insights and
+                  recommendations (Llama 3.1 70B)
+                </li>
+                <li>
+                  <strong>Custom Agents:</strong> Domain-specific payment
+                  intelligence
+                </li>
               </ul>
             </div>
           </div>
@@ -153,9 +164,9 @@ function AIAgents() {
       {/* Type Filter */}
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={selectedType === null ? "default" : "outline"}
+          variant={selectedType === undefined ? "default" : "outline"}
           size="sm"
-          onClick={() => setSelectedType(null)}
+          onClick={() => setSelectedType(undefined)}
         >
           <Bot className="w-4 h-4 mr-2" />
           All Agents ({Object.values(types).reduce((a, b) => a + b, 0)})
@@ -167,7 +178,7 @@ function AIAgents() {
               key={type}
               variant={selectedType === type ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedType(type)}
+              onClick={() => setSelectedType(type as AgentType)}
             >
               {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
               {getTypeLabel(type)} ({count})
@@ -176,8 +187,19 @@ function AIAgents() {
         })}
       </div>
 
-      {/* Agents Grid */}
-      {loading ? (
+      {/* Error State */}
+      {isError && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-8 text-center">
+            <p className="text-destructive font-medium">
+              Failed to load agents. Check that the backend is running.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading Skeleton */}
+      {isLoading && (
         <div className="grid gap-6 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -191,7 +213,10 @@ function AIAgents() {
             </Card>
           ))}
         </div>
-      ) : (
+      )}
+
+      {/* Agents Grid */}
+      {!isLoading && !isError && (
         <div className="grid gap-6 md:grid-cols-2">
           {agents.map((agent) => {
             const IconComponent = agentIcons[agent.id] || Bot;
@@ -210,7 +235,10 @@ function AIAgents() {
                       <IconComponent className="w-5 h-5 text-primary flex-shrink-0" />
                       <CardTitle className="text-lg">{agent.name}</CardTitle>
                     </div>
-                    <Badge variant="outline" className={`${typeColor} flex-shrink-0`}>
+                    <Badge
+                      variant="outline"
+                      className={`${typeColor} flex-shrink-0`}
+                    >
                       {TypeIcon && <TypeIcon className="w-3 h-3 mr-1" />}
                       {getTypeLabel(agent.agent_type)}
                     </Badge>
@@ -222,13 +250,17 @@ function AIAgents() {
                 <CardContent className="space-y-4">
                   {/* Use Case */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">💡 Use Case</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                      Use Case
+                    </p>
                     <p className="text-sm">{agent.use_case}</p>
                   </div>
 
                   {/* Databricks Resource */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">🔗 Databricks Resource</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">
+                      Databricks Resource
+                    </p>
                     <code className="text-xs bg-muted px-2 py-1 rounded block font-mono break-all">
                       {agent.databricks_resource}
                     </code>
@@ -237,10 +269,16 @@ function AIAgents() {
                   {/* Capabilities */}
                   {agent.capabilities && agent.capabilities.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">🎯 Capabilities</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">
+                        Capabilities
+                      </p>
                       <div className="flex flex-wrap gap-1">
-                        {agent.capabilities.slice(0, 3).map((cap, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
+                        {agent.capabilities.slice(0, 3).map((cap) => (
+                          <Badge
+                            key={cap}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {cap.replace(/_/g, " ")}
                           </Badge>
                         ))}
@@ -254,23 +292,31 @@ function AIAgents() {
                   )}
 
                   {/* Example Queries */}
-                  {agent.example_queries && agent.example_queries.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">💬 Example Queries</p>
-                      <div className="space-y-1">
-                        {agent.example_queries.slice(0, 2).map((query, idx) => (
-                          <p key={idx} className="text-xs italic text-muted-foreground pl-3 border-l-2 border-muted">
-                            "{query}"
-                          </p>
-                        ))}
-                        {agent.example_queries.length > 2 && (
-                          <p className="text-xs text-muted-foreground pl-3">
-                            +{agent.example_queries.length - 2} more examples
-                          </p>
-                        )}
+                  {agent.example_queries &&
+                    agent.example_queries.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">
+                          Example Queries
+                        </p>
+                        <div className="space-y-1">
+                          {agent.example_queries
+                            .slice(0, 2)
+                            .map((query) => (
+                              <p
+                                key={query}
+                                className="text-xs italic text-muted-foreground pl-3 border-l-2 border-muted"
+                              >
+                                &ldquo;{query}&rdquo;
+                              </p>
+                            ))}
+                          {agent.example_queries.length > 2 && (
+                            <p className="text-xs text-muted-foreground pl-3">
+                              +{agent.example_queries.length - 2} more examples
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Action Button */}
                   <Button
@@ -293,11 +339,13 @@ function AIAgents() {
       )}
 
       {/* Empty State */}
-      {!loading && agents.length === 0 && (
+      {!isLoading && !isError && agents.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No agents found for this filter</p>
+            <p className="text-muted-foreground">
+              No agents found for this filter
+            </p>
           </CardContent>
         </Card>
       )}

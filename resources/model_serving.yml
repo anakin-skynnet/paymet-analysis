@@ -22,7 +22,7 @@ resources:
         auto_capture_config:
           catalog_name: ${var.catalog}
           schema_name: ${var.schema}
-          table_name_prefix: "approval_propensity_inference_"
+          table_name_prefix: "approval_propensity_inf"
           enabled: true
       
       ai_gateway:

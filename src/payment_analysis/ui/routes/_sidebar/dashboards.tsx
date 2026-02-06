@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,25 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2 } from "lucide-react";
 import { getWorkspaceUrl } from "@/config/workspace";
+import { useListDashboards, getNotebookUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/dashboards")({
   component: Component,
 });
 
-interface Dashboard {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  tags: string[];
-  url_path: string | null;
-}
-
-interface DashboardList {
-  dashboards: Dashboard[];
-  total: number;
-  categories: Record<string, number>;
-}
+// Use DashboardInfo from api.ts; keep a local alias for the click handler
+type Dashboard = DashboardInfo;
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   executive: Award,
@@ -61,43 +50,26 @@ const dashboardNotebooks: Record<string, string[]> = {
 };
 
 export function Component() {
-  const [dashboards, setDashboards] = useState<Dashboard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Record<string, number>>({});
+  const [selectedCategory, setSelectedCategory] = useState<DashboardCategory | null>(null);
 
-  useEffect(() => {
-    fetchDashboards();
-  }, [selectedCategory]);
+  const { data: dashboardList, isLoading: loading, isError } = useListDashboards({
+    params: selectedCategory ? { category: selectedCategory } : undefined,
+  });
 
-  const fetchDashboards = async () => {
-    try {
-      setLoading(true);
-      const categoryParam = selectedCategory ? `?category=${selectedCategory}` : "";
-      const response = await fetch(`/api/dashboards/dashboards${categoryParam}`);
-      const data: DashboardList = await response.json();
-      setDashboards(data.dashboards);
-      setCategories(data.categories);
-    } catch (error) {
-      console.error("Failed to fetch dashboards:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const dashboards = dashboardList?.data.dashboards ?? [];
+  const categories = dashboardList?.data.categories ?? {};
 
   const handleDashboardClick = (dashboard: Dashboard) => {
     if (dashboard.url_path) {
-      // Open in new tab pointing to Databricks workspace
       const databricksUrl = `${getWorkspaceUrl()}${dashboard.url_path}`;
       window.open(databricksUrl, "_blank");
     }
   };
 
   const handleNotebookClick = async (notebookId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent dashboard card click
+    e.stopPropagation();
     try {
-      const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-      const data = await response.json();
+      const { data } = await getNotebookUrl({ notebook_id: notebookId });
       window.open(data.url, "_blank");
     } catch (error) {
       console.error("Failed to open notebook:", error);
@@ -140,7 +112,7 @@ export function Component() {
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSelectedCategory(category as DashboardCategory)}
             >
               {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
               {category.charAt(0).toUpperCase() + category.slice(1)} ({count})
@@ -148,6 +120,15 @@ export function Component() {
           );
         })}
       </div>
+
+      {/* Error State */}
+      {isError && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-8 text-center">
+            <p className="text-destructive font-medium">Failed to load dashboards. Check that the backend is running.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dashboard Grid */}
       {loading ? (
@@ -190,14 +171,14 @@ export function Component() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {dashboard.tags.slice(0, 3).map((tag) => (
+                    {(dashboard.tags ?? []).slice(0, 3).map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
-                    {dashboard.tags.length > 3 && (
+                    {(dashboard.tags ?? []).length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{dashboard.tags.length - 3}
+                        +{(dashboard.tags ?? []).length - 3}
                       </Badge>
                     )}
                   </div>

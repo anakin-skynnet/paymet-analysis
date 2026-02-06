@@ -33,9 +33,21 @@ warnings.filterwarnings('ignore')
 # Get parameters from widgets or use defaults
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
 dbutils.widgets.text("schema", "ahs_demo_payment_analysis_dev")
+dbutils.widgets.text("n_estimators", "100")
+dbutils.widgets.text("max_depth_approval", "10")
+dbutils.widgets.text("max_depth_risk", "12")
+dbutils.widgets.text("max_depth_routing", "10")
+dbutils.widgets.text("max_depth_retry", "8")
+dbutils.widgets.text("min_samples_split", "5")
 
 CATALOG = dbutils.widgets.get("catalog")
 SCHEMA = dbutils.widgets.get("schema")
+N_ESTIMATORS = int(dbutils.widgets.get("n_estimators"))
+MAX_DEPTH_APPROVAL = int(dbutils.widgets.get("max_depth_approval"))
+MAX_DEPTH_RISK = int(dbutils.widgets.get("max_depth_risk"))
+MAX_DEPTH_ROUTING = int(dbutils.widgets.get("max_depth_routing"))
+MAX_DEPTH_RETRY = int(dbutils.widgets.get("max_depth_retry"))
+MIN_SAMPLES_SPLIT = int(dbutils.widgets.get("min_samples_split"))
 EXPERIMENT_PATH = f"/Users/{spark.sql('SELECT current_user()').collect()[0][0]}/payment_analysis_models"
 
 # Set MLflow to use Unity Catalog
@@ -142,59 +154,65 @@ except Exception as e:
 
 # COMMAND ----------
 
+training_errors: list[str] = []  # collect failures; raise at the end if any
+
 print("=" * 80)
 print("TRAINING MODEL 1: Approval Propensity Model")
 print("=" * 80)
 
-features_approval = ['amount', 'fraud_score', 'device_trust_score', 'is_cross_border', 'retry_count', 'uses_3ds']
-X_approval = df[features_approval].fillna(0)
-y_approval = df['is_approved'].astype(int)
+try:
+    features_approval = ['amount', 'fraud_score', 'device_trust_score', 'is_cross_border', 'retry_count', 'uses_3ds']
+    X_approval = df[features_approval].fillna(0)
+    y_approval = df['is_approved'].astype(int)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X_approval, y_approval, test_size=0.2, random_state=42, stratify=y_approval
-)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_approval, y_approval, test_size=0.2, random_state=42, stratify=y_approval
+    )
 
-with mlflow.start_run(run_name="approval_propensity_model") as run:
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=10,
-        min_samples_split=5,
-        random_state=42,
-        n_jobs=-1
-    )
-    model.fit(X_train, y_train)
-    
-    y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]
-    
-    metrics = {
-        "accuracy": accuracy_score(y_test, y_pred),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_pred_proba)
-    }
-    
-    mlflow.log_params({
-        "model_type": "RandomForestClassifier",
-        "n_estimators": 100,
-        "max_depth": 10,
-        "features": ",".join(features_approval)
-    })
-    mlflow.log_metrics(metrics)
-    
-    signature = infer_signature(X_train, model.predict(X_train))
-    model_name = f"{CATALOG}.{SCHEMA}.approval_propensity_model"
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        registered_model_name=model_name,
-        signature=signature
-    )
-    
-    print(f"\n✓ Model registered: {model_name}")
-    for k, v in metrics.items():
-        print(f"  {k}: {v:.4f}")
+    with mlflow.start_run(run_name="approval_propensity_model") as run:
+        model = RandomForestClassifier(
+            n_estimators=N_ESTIMATORS,
+            max_depth=MAX_DEPTH_APPROVAL,
+            min_samples_split=MIN_SAMPLES_SPLIT,
+            random_state=42,
+            n_jobs=-1
+        )
+        model.fit(X_train, y_train)
+        
+        y_pred = model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        
+        metrics = {
+            "accuracy": accuracy_score(y_test, y_pred),
+            "precision": precision_score(y_test, y_pred),
+            "recall": recall_score(y_test, y_pred),
+            "f1_score": f1_score(y_test, y_pred),
+            "roc_auc": roc_auc_score(y_test, y_pred_proba)
+        }
+        
+        mlflow.log_params({
+            "model_type": "RandomForestClassifier",
+            "n_estimators": N_ESTIMATORS,
+            "max_depth": MAX_DEPTH_APPROVAL,
+            "features": ",".join(features_approval)
+        })
+        mlflow.log_metrics(metrics)
+        
+        signature = infer_signature(X_train, model.predict(X_train))
+        model_name = f"{CATALOG}.{SCHEMA}.approval_propensity_model"
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            registered_model_name=model_name,
+            signature=signature
+        )
+        
+        print(f"\n✓ Model registered: {model_name}")
+        for k, v in metrics.items():
+            print(f"  {k}: {v:.4f}")
+except Exception as e:
+    print(f"\n✗ Model 1 (Approval Propensity) FAILED: {e}")
+    training_errors.append(f"Approval Propensity: {e}")
 
 # COMMAND ----------
 
@@ -207,55 +225,59 @@ print("=" * 80)
 print("TRAINING MODEL 2: Risk Scoring Model")
 print("=" * 80)
 
-features_risk = ['amount', 'fraud_score', 'aml_risk_score', 'is_cross_border', 'processing_time_ms', 'device_trust_score']
-X_risk = df[features_risk].fillna(0)
-y_risk = ((df['fraud_score'] > 0.5) | (df['is_approved'] == 0)).astype(int)
+try:
+    features_risk = ['amount', 'fraud_score', 'aml_risk_score', 'is_cross_border', 'processing_time_ms', 'device_trust_score']
+    X_risk = df[features_risk].fillna(0)
+    y_risk = ((df['fraud_score'] > 0.5) | (df['is_approved'] == 0)).astype(int)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X_risk, y_risk, test_size=0.2, random_state=42, stratify=y_risk
-)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_risk, y_risk, test_size=0.2, random_state=42, stratify=y_risk
+    )
 
-with mlflow.start_run(run_name="risk_scoring_model") as run:
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=12,
-        min_samples_split=5,
-        random_state=42,
-        n_jobs=-1
-    )
-    model.fit(X_train, y_train)
-    
-    y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]
-    
-    metrics = {
-        "accuracy": accuracy_score(y_test, y_pred),
-        "precision": precision_score(y_test, y_pred),
-        "recall": recall_score(y_test, y_pred),
-        "f1_score": f1_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_pred_proba)
-    }
-    
-    mlflow.log_params({
-        "model_type": "RandomForestClassifier",
-        "n_estimators": 100,
-        "max_depth": 12,
-        "features": ",".join(features_risk)
-    })
-    mlflow.log_metrics(metrics)
-    
-    signature = infer_signature(X_train, model.predict(X_train))
-    model_name = f"{CATALOG}.{SCHEMA}.risk_scoring_model"
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        registered_model_name=model_name,
-        signature=signature
-    )
-    
-    print(f"\n✓ Model registered: {model_name}")
-    for k, v in metrics.items():
-        print(f"  {k}: {v:.4f}")
+    with mlflow.start_run(run_name="risk_scoring_model") as run:
+        model = RandomForestClassifier(
+            n_estimators=N_ESTIMATORS,
+            max_depth=MAX_DEPTH_RISK,
+            min_samples_split=MIN_SAMPLES_SPLIT,
+            random_state=42,
+            n_jobs=-1
+        )
+        model.fit(X_train, y_train)
+        
+        y_pred = model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        
+        metrics = {
+            "accuracy": accuracy_score(y_test, y_pred),
+            "precision": precision_score(y_test, y_pred),
+            "recall": recall_score(y_test, y_pred),
+            "f1_score": f1_score(y_test, y_pred),
+            "roc_auc": roc_auc_score(y_test, y_pred_proba)
+        }
+        
+        mlflow.log_params({
+            "model_type": "RandomForestClassifier",
+            "n_estimators": N_ESTIMATORS,
+            "max_depth": MAX_DEPTH_RISK,
+            "features": ",".join(features_risk)
+        })
+        mlflow.log_metrics(metrics)
+        
+        signature = infer_signature(X_train, model.predict(X_train))
+        model_name = f"{CATALOG}.{SCHEMA}.risk_scoring_model"
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            registered_model_name=model_name,
+            signature=signature
+        )
+        
+        print(f"\n✓ Model registered: {model_name}")
+        for k, v in metrics.items():
+            print(f"  {k}: {v:.4f}")
+except Exception as e:
+    print(f"\n✗ Model 2 (Risk Scoring) FAILED: {e}")
+    training_errors.append(f"Risk Scoring: {e}")
 
 # COMMAND ----------
 
@@ -268,59 +290,63 @@ print("=" * 80)
 print("TRAINING MODEL 3: Smart Routing Policy")
 print("=" * 80)
 
-features_routing = ['amount', 'fraud_score', 'is_cross_border', 'uses_3ds', 'device_trust_score']
-df_routing = df.copy()
-df_routing = pd.get_dummies(df_routing, columns=['merchant_segment'], prefix='segment')
-segment_cols = [col for col in df_routing.columns if col.startswith('segment_')]
-features_routing_all = features_routing + segment_cols
+try:
+    features_routing = ['amount', 'fraud_score', 'is_cross_border', 'uses_3ds', 'device_trust_score']
+    df_routing = df.copy()
+    df_routing = pd.get_dummies(df_routing, columns=['merchant_segment'], prefix='segment')
+    segment_cols = [col for col in df_routing.columns if col.startswith('segment_')]
+    features_routing_all = features_routing + segment_cols
 
-X_routing = df_routing[features_routing_all].fillna(0)
+    X_routing = df_routing[features_routing_all].fillna(0)
 
-le = LabelEncoder()
-y_routing = le.fit_transform(df['payment_solution'])
+    le = LabelEncoder()
+    y_routing = le.fit_transform(df['payment_solution'])
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X_routing, y_routing, test_size=0.2, random_state=42
-)
-
-with mlflow.start_run(run_name="smart_routing_policy") as run:
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=10,
-        min_samples_split=5,
-        random_state=42,
-        n_jobs=-1
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_routing, y_routing, test_size=0.2, random_state=42
     )
-    model.fit(X_train, y_train)
-    
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    
-    mlflow.log_params({
-        "model_type": "RandomForestClassifier",
-        "n_estimators": 100,
-        "max_depth": 10,
-        "features": ",".join(features_routing_all),
-        "classes": ",".join(le.classes_)
-    })
-    mlflow.log_metrics({"accuracy": accuracy, "n_classes": len(le.classes_)})
-    
-    with open("/tmp/label_encoder.pkl", "wb") as f:
-        pickle.dump(le, f)
-    mlflow.log_artifact("/tmp/label_encoder.pkl")
-    
-    signature = infer_signature(X_train, model.predict(X_train))
-    model_name = f"{CATALOG}.{SCHEMA}.smart_routing_policy"
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        registered_model_name=model_name,
-        signature=signature
-    )
-    
-    print(f"\n✓ Model registered: {model_name}")
-    print(f"  Accuracy: {accuracy:.4f}")
-    print(f"  Classes: {', '.join(le.classes_)}")
+
+    with mlflow.start_run(run_name="smart_routing_policy") as run:
+        model = RandomForestClassifier(
+            n_estimators=N_ESTIMATORS,
+            max_depth=MAX_DEPTH_ROUTING,
+            min_samples_split=MIN_SAMPLES_SPLIT,
+            random_state=42,
+            n_jobs=-1
+        )
+        model.fit(X_train, y_train)
+        
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        
+        mlflow.log_params({
+            "model_type": "RandomForestClassifier",
+            "n_estimators": N_ESTIMATORS,
+            "max_depth": MAX_DEPTH_ROUTING,
+            "features": ",".join(features_routing_all),
+            "classes": ",".join(le.classes_)
+        })
+        mlflow.log_metrics({"accuracy": accuracy, "n_classes": len(le.classes_)})
+        
+        with open("/tmp/label_encoder.pkl", "wb") as f:
+            pickle.dump(le, f)
+        mlflow.log_artifact("/tmp/label_encoder.pkl")
+        
+        signature = infer_signature(X_train, model.predict(X_train))
+        model_name = f"{CATALOG}.{SCHEMA}.smart_routing_policy"
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            registered_model_name=model_name,
+            signature=signature
+        )
+        
+        print(f"\n✓ Model registered: {model_name}")
+        print(f"  Accuracy: {accuracy:.4f}")
+        print(f"  Classes: {', '.join(le.classes_)}")
+except Exception as e:
+    print(f"\n✗ Model 3 (Smart Routing) FAILED: {e}")
+    training_errors.append(f"Smart Routing: {e}")
 
 # COMMAND ----------
 
@@ -333,85 +359,89 @@ print("=" * 80)
 print("TRAINING MODEL 4: Smart Retry Policy")
 print("=" * 80)
 
-df_declined = df[df['is_approved'] == 0].copy()
+try:
+    df_declined = df[df['is_approved'] == 0].copy()
 
-if len(df_declined) > 50:
-    # Prefer standardized taxonomy if available
-    reason_source = "decline_reason_standard" if "decline_reason_standard" in df_declined.columns else "decline_reason"
-    df_declined['decline_encoded'] = df_declined[reason_source].fillna('unknown').astype('category').cat.codes
-    df_declined["retry_scenario_encoded"] = (
-        df_declined.get("retry_scenario", "None").fillna("None").astype("category").cat.codes
-    )
-    
-    features_retry = [
-        "decline_encoded",
-        "retry_scenario_encoded",
-        "retry_count",
-        "amount",
-        "is_recurring",
-        "fraud_score",
-        "device_trust_score",
-        "attempt_sequence",
-        "time_since_last_attempt_seconds",
-        "prior_approved_count",
-        "merchant_retry_policy_max_attempts",
-    ]
-    X_retry = df_declined[features_retry].fillna(0)
-    
-    # Heuristic label for recoverability (placeholder for supervised labels)
-    recoverable_reasons = {"FUNDS_OR_LIMIT", "ISSUER_TECHNICAL", "ISSUER_DO_NOT_HONOR"}
-    reason_series = df_declined[reason_source].fillna("unknown")
-    y_retry = (
-        (reason_series.isin(recoverable_reasons))
-        & (df_declined["fraud_score"] < 0.5)
-        & (df_declined["retry_count"] < 2)
-    ).astype(int)
-    
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_retry, y_retry, test_size=0.2, random_state=42
-    )
-    
-    with mlflow.start_run(run_name="smart_retry_policy") as run:
-        model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=8,
-            min_samples_split=5,
-            random_state=42,
-            n_jobs=-1
-        )
-        model.fit(X_train, y_train)
-        
-        y_pred = model.predict(X_test)
-        
-        metrics = {
-            "accuracy": accuracy_score(y_test, y_pred),
-            "precision": precision_score(y_test, y_pred, zero_division=0),
-            "recall": recall_score(y_test, y_pred, zero_division=0),
-            "f1_score": f1_score(y_test, y_pred, zero_division=0)
-        }
-        
-        mlflow.log_params({
-            "model_type": "RandomForestClassifier",
-            "n_estimators": 100,
-            "max_depth": 8,
-            "features": ",".join(features_retry)
-        })
-        mlflow.log_metrics(metrics)
-        
-        signature = infer_signature(X_train, model.predict(X_train))
-        model_name = f"{CATALOG}.{SCHEMA}.smart_retry_policy"
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="model",
-            registered_model_name=model_name,
-            signature=signature
+    if len(df_declined) > 50:
+        # Prefer standardized taxonomy if available
+        reason_source = "decline_reason_standard" if "decline_reason_standard" in df_declined.columns else "decline_reason"
+        df_declined['decline_encoded'] = df_declined[reason_source].fillna('unknown').astype('category').cat.codes
+        df_declined["retry_scenario_encoded"] = (
+            df_declined.get("retry_scenario", "None").fillna("None").astype("category").cat.codes
         )
         
-        print(f"\n✓ Model registered: {model_name}")
-        for k, v in metrics.items():
-            print(f"  {k}: {v:.4f}")
-else:
-    print("✗ Not enough declined transactions for training")
+        features_retry = [
+            "decline_encoded",
+            "retry_scenario_encoded",
+            "retry_count",
+            "amount",
+            "is_recurring",
+            "fraud_score",
+            "device_trust_score",
+            "attempt_sequence",
+            "time_since_last_attempt_seconds",
+            "prior_approved_count",
+            "merchant_retry_policy_max_attempts",
+        ]
+        X_retry = df_declined[features_retry].fillna(0)
+        
+        # Heuristic label for recoverability (placeholder for supervised labels)
+        recoverable_reasons = {"FUNDS_OR_LIMIT", "ISSUER_TECHNICAL", "ISSUER_DO_NOT_HONOR"}
+        reason_series = df_declined[reason_source].fillna("unknown")
+        y_retry = (
+            (reason_series.isin(recoverable_reasons))
+            & (df_declined["fraud_score"] < 0.5)
+            & (df_declined["retry_count"] < 2)
+        ).astype(int)
+        
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_retry, y_retry, test_size=0.2, random_state=42
+        )
+        
+        with mlflow.start_run(run_name="smart_retry_policy") as run:
+            model = RandomForestClassifier(
+                n_estimators=N_ESTIMATORS,
+                max_depth=MAX_DEPTH_RETRY,
+                min_samples_split=MIN_SAMPLES_SPLIT,
+                random_state=42,
+                n_jobs=-1
+            )
+            model.fit(X_train, y_train)
+            
+            y_pred = model.predict(X_test)
+            
+            metrics = {
+                "accuracy": accuracy_score(y_test, y_pred),
+                "precision": precision_score(y_test, y_pred, zero_division=0),
+                "recall": recall_score(y_test, y_pred, zero_division=0),
+                "f1_score": f1_score(y_test, y_pred, zero_division=0)
+            }
+            
+            mlflow.log_params({
+                "model_type": "RandomForestClassifier",
+                "n_estimators": N_ESTIMATORS,
+                "max_depth": MAX_DEPTH_RETRY,
+                "features": ",".join(features_retry)
+            })
+            mlflow.log_metrics(metrics)
+            
+            signature = infer_signature(X_train, model.predict(X_train))
+            model_name = f"{CATALOG}.{SCHEMA}.smart_retry_policy"
+            mlflow.sklearn.log_model(
+                sk_model=model,
+                artifact_path="model",
+                registered_model_name=model_name,
+                signature=signature
+            )
+            
+            print(f"\n✓ Model registered: {model_name}")
+            for k, v in metrics.items():
+                print(f"  {k}: {v:.4f}")
+    else:
+        print("⚠ Not enough declined transactions for training — skipping Model 4")
+except Exception as e:
+    print(f"\n✗ Model 4 (Smart Retry) FAILED: {e}")
+    training_errors.append(f"Smart Retry: {e}")
 
 # COMMAND ----------
 
@@ -424,11 +454,25 @@ print("\n" + "=" * 80)
 print("ML TRAINING COMPLETE")
 print("=" * 80)
 
-print(f"\n✓ All models trained and registered to Unity Catalog:")
-print(f"  1. {CATALOG}.{SCHEMA}.approval_propensity_model")
-print(f"  2. {CATALOG}.{SCHEMA}.risk_scoring_model")
-print(f"  3. {CATALOG}.{SCHEMA}.smart_routing_policy")
-print(f"  4. {CATALOG}.{SCHEMA}.smart_retry_policy")
+if training_errors:
+    print(f"\n⚠ {len(training_errors)} model(s) failed:")
+    for err in training_errors:
+        print(f"  ✗ {err}")
+    print()
+
+models = [
+    f"{CATALOG}.{SCHEMA}.approval_propensity_model",
+    f"{CATALOG}.{SCHEMA}.risk_scoring_model",
+    f"{CATALOG}.{SCHEMA}.smart_routing_policy",
+    f"{CATALOG}.{SCHEMA}.smart_retry_policy",
+]
+print("Models targeted for Unity Catalog:")
+for i, m in enumerate(models, 1):
+    print(f"  {i}. {m}")
 
 print(f"\n✓ MLflow Experiment: {EXPERIMENT_PATH}")
-print("✓ Models ready for serving")
+
+if training_errors:
+    raise RuntimeError(f"Training completed with {len(training_errors)} error(s). See logs above.")
+
+print("✓ All models trained and ready for serving")
