@@ -53,6 +53,36 @@ export interface ApprovalPredictionOut {
   should_approve: boolean;
 }
 
+export interface ApprovalRuleIn {
+  action_summary: string;
+  condition_expression?: string | null;
+  is_active?: boolean;
+  name: string;
+  priority?: number;
+  rule_type: string;
+}
+
+export interface ApprovalRuleOut {
+  action_summary: string;
+  condition_expression?: string | null;
+  created_at?: string | null;
+  id: string;
+  is_active: boolean;
+  name: string;
+  priority: number;
+  rule_type: string;
+  updated_at?: string | null;
+}
+
+export interface ApprovalRuleUpdate {
+  action_summary?: string | null;
+  condition_expression?: string | null;
+  is_active?: boolean | null;
+  name?: string | null;
+  priority?: number | null;
+  rule_type?: string | null;
+}
+
 export interface ApprovalTrendOut {
   approval_rate_pct: number;
   approved_count: number;
@@ -339,6 +369,17 @@ export interface NotebookUrlOut {
   workspace_path: string;
 }
 
+export interface OnlineFeatureOut {
+  created_at?: string | null;
+  entity_id?: string | null;
+  feature_name: string;
+  feature_set?: string | null;
+  feature_value?: number | null;
+  feature_value_str?: string | null;
+  id: string;
+  source: string;
+}
+
 export interface ReasonCodeInsightOut {
   decline_count: number;
   decline_reason_group: string;
@@ -364,6 +405,15 @@ export interface ReasonCodeOut {
   pct_of_declines?: number | null;
   recommended_action: string;
   total_declined_value: number;
+}
+
+export interface RecommendationOut {
+  context_summary: string;
+  created_at?: string | null;
+  id: string;
+  recommended_action: string;
+  score: number;
+  source_type: string;
 }
 
 export interface RemediationTask {
@@ -569,11 +619,20 @@ export interface GetFalseInsightsMetricParams {
   days?: number;
 }
 
+export interface GetOnlineFeaturesParams {
+  source?: string | null;
+  limit?: number;
+}
+
 export interface GetReasonCodesBrParams {
   limit?: number;
 }
 
 export interface GetReasonCodeInsightsBrParams {
+  limit?: number;
+}
+
+export interface GetRecommendationsParams {
   limit?: number;
 }
 
@@ -668,6 +727,20 @@ export interface GetNotebookParams {
 
 export interface GetNotebookUrlParams {
   notebook_id: string;
+}
+
+export interface ListApprovalRulesParams {
+  rule_type?: string | null;
+  active_only?: boolean;
+  limit?: number;
+}
+
+export interface UpdateApprovalRuleParams {
+  rule_id: string;
+}
+
+export interface DeleteApprovalRuleParams {
+  rule_id: string;
 }
 
 export interface RunSetupJobParams {
@@ -992,6 +1065,34 @@ export function useGetModelsSuspense<TData = { data: ModelOut[] }>(options?: { q
   return useSuspenseQuery({ queryKey: getModelsKey(), queryFn: () => getModels(), ...options?.query });
 }
 
+export const getOnlineFeatures = async (params?: GetOnlineFeaturesParams, options?: RequestInit): Promise<{ data: OnlineFeatureOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.source != null) searchParams.set("source", String(params?.source));
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/online-features?${queryString}` : `/api/analytics/online-features`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getOnlineFeaturesKey = (params?: GetOnlineFeaturesParams) => {
+  return ["/api/analytics/online-features", params] as const;
+};
+
+export function useGetOnlineFeatures<TData = { data: OnlineFeatureOut[] }>(options?: { params?: GetOnlineFeaturesParams; query?: Omit<UseQueryOptions<{ data: OnlineFeatureOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getOnlineFeaturesKey(options?.params), queryFn: () => getOnlineFeatures(options?.params), ...options?.query });
+}
+
+export function useGetOnlineFeaturesSuspense<TData = { data: OnlineFeatureOut[] }>(options?: { params?: GetOnlineFeaturesParams; query?: Omit<UseSuspenseQueryOptions<{ data: OnlineFeatureOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getOnlineFeaturesKey(options?.params), queryFn: () => getOnlineFeatures(options?.params), ...options?.query });
+}
+
 export const getReasonCodesBr = async (params?: GetReasonCodesBrParams, options?: RequestInit): Promise<{ data: ReasonCodeOut[] }> => {
   const searchParams = new URLSearchParams();
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
@@ -1090,6 +1191,33 @@ export function useGetDedupCollisionStats<TData = { data: DedupCollisionStatsOut
 
 export function useGetDedupCollisionStatsSuspense<TData = { data: DedupCollisionStatsOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: DedupCollisionStatsOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getDedupCollisionStatsKey(), queryFn: () => getDedupCollisionStats(), ...options?.query });
+}
+
+export const getRecommendations = async (params?: GetRecommendationsParams, options?: RequestInit): Promise<{ data: RecommendationOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/recommendations?${queryString}` : `/api/analytics/recommendations`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getRecommendationsKey = (params?: GetRecommendationsParams) => {
+  return ["/api/analytics/recommendations", params] as const;
+};
+
+export function useGetRecommendations<TData = { data: RecommendationOut[] }>(options?: { params?: GetRecommendationsParams; query?: Omit<UseQueryOptions<{ data: RecommendationOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getRecommendationsKey(options?.params), queryFn: () => getRecommendations(options?.params), ...options?.query });
+}
+
+export function useGetRecommendationsSuspense<TData = { data: RecommendationOut[] }>(options?: { params?: GetRecommendationsParams; query?: Omit<UseSuspenseQueryOptions<{ data: RecommendationOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getRecommendationsKey(options?.params), queryFn: () => getRecommendations(options?.params), ...options?.query });
 }
 
 export const getRetryPerformance = async (params?: GetRetryPerformanceParams, options?: RequestInit): Promise<{ data: RetryPerformanceOut[] }> => {
@@ -1818,6 +1946,80 @@ export function useGetNotebookUrl<TData = { data: NotebookUrlOut }>(options: { p
 
 export function useGetNotebookUrlSuspense<TData = { data: NotebookUrlOut }>(options: { params: GetNotebookUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: NotebookUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getNotebookUrlKey(options.params), queryFn: () => getNotebookUrl(options.params), ...options?.query });
+}
+
+export const listApprovalRules = async (params?: ListApprovalRulesParams, options?: RequestInit): Promise<{ data: ApprovalRuleOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.rule_type != null) searchParams.set("rule_type", String(params?.rule_type));
+  if (params?.active_only != null) searchParams.set("active_only", String(params?.active_only));
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/rules?${queryString}` : `/api/rules`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const listApprovalRulesKey = (params?: ListApprovalRulesParams) => {
+  return ["/api/rules", params] as const;
+};
+
+export function useListApprovalRules<TData = { data: ApprovalRuleOut[] }>(options?: { params?: ListApprovalRulesParams; query?: Omit<UseQueryOptions<{ data: ApprovalRuleOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: listApprovalRulesKey(options?.params), queryFn: () => listApprovalRules(options?.params), ...options?.query });
+}
+
+export function useListApprovalRulesSuspense<TData = { data: ApprovalRuleOut[] }>(options?: { params?: ListApprovalRulesParams; query?: Omit<UseSuspenseQueryOptions<{ data: ApprovalRuleOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: listApprovalRulesKey(options?.params), queryFn: () => listApprovalRules(options?.params), ...options?.query });
+}
+
+export const createApprovalRule = async (data: ApprovalRuleIn, options?: RequestInit): Promise<{ data: ApprovalRuleOut }> => {
+  const res = await fetch("/api/rules", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useCreateApprovalRule(options?: { mutation?: UseMutationOptions<{ data: ApprovalRuleOut }, ApiError, ApprovalRuleIn> }) {
+  return useMutation({ mutationFn: (data) => createApprovalRule(data), ...options?.mutation });
+}
+
+export const updateApprovalRule = async (params: UpdateApprovalRuleParams, data: ApprovalRuleUpdate, options?: RequestInit): Promise<{ data: ApprovalRuleOut }> => {
+  const res = await fetch(`/api/rules/${params.rule_id}`, { ...options, method: "PATCH", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useUpdateApprovalRule(options?: { mutation?: UseMutationOptions<{ data: ApprovalRuleOut }, ApiError, { params: UpdateApprovalRuleParams; data: ApprovalRuleUpdate }> }) {
+  return useMutation({ mutationFn: (vars) => updateApprovalRule(vars.params, vars.data), ...options?.mutation });
+}
+
+export const deleteApprovalRule = async (params: DeleteApprovalRuleParams, options?: RequestInit): Promise<void> => {
+  const res = await fetch(`/api/rules/${params.rule_id}`, { ...options, method: "DELETE" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return;
+};
+
+export function useDeleteApprovalRule(options?: { mutation?: UseMutationOptions<void, ApiError, { params: DeleteApprovalRuleParams }> }) {
+  return useMutation({ mutationFn: (vars) => deleteApprovalRule(vars.params), ...options?.mutation });
 }
 
 export const getSetupDefaults = async (options?: RequestInit): Promise<{ data: SetupDefaultsOut }> => {

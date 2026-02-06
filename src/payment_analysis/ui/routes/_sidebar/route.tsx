@@ -16,6 +16,7 @@ import {
   CreditCard,
   ListChecks,
   RotateCcw,
+  ScrollText,
 } from "lucide-react";
 import {
   SidebarGroup,
@@ -73,6 +74,12 @@ function Layout() {
       label: "Decisioning",
       icon: <Wand2 size={16} />,
       match: (path: string) => path === "/decisioning",
+    },
+    {
+      to: "/rules",
+      label: "Rules",
+      icon: <ScrollText size={16} />,
+      match: (path: string) => path === "/rules",
     },
     {
       to: "/experiments",

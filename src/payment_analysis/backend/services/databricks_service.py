@@ -479,6 +479,140 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.retry_performance(limit)
 
+    async def get_recommendations_from_lakehouse(self, limit: int = 20) -> list[dict[str, Any]]:
+        """Fetch approval recommendations from Lakehouse (UC table) for similar cases / Vector Search results."""
+        limit = max(1, min(limit, 100))
+        query = f"""
+            SELECT id, context_summary, recommended_action, score, source_type, created_at
+            FROM {self.config.full_schema_name}.v_recommendations_from_lakehouse
+            LIMIT {limit}
+        """
+        try:
+            results = await self.execute_query(query)
+            return results or []
+        except Exception:
+            return MockDataGenerator.recommendations(limit)
+
+    def _escape_sql_string(self, s: str) -> str:
+        """Escape single quotes for SQL string literals."""
+        return (s or "").replace("'", "''")
+
+    async def get_approval_rules(
+        self,
+        *,
+        rule_type: str | None = None,
+        active_only: bool = False,
+        limit: int = 200,
+    ) -> list[dict[str, Any]]:
+        """Fetch approval rules from Lakehouse. Used by app and by ML/Agents to accelerate approval rates."""
+        limit = max(1, min(limit, 500))
+        table = self.config.full_schema_name + ".approval_rules"
+        where_clauses = []
+        if rule_type:
+            where_clauses.append(f"rule_type = '{self._escape_sql_string(rule_type)}'")
+        if active_only:
+            where_clauses.append("is_active = true")
+        where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+        query = f"""
+            SELECT id, name, rule_type, condition_expression, action_summary, priority, is_active, created_at, updated_at
+            FROM {table}
+            {where_sql}
+            ORDER BY priority ASC, updated_at DESC
+            LIMIT {limit}
+            """
+        try:
+            return await self.execute_query(query) or []
+        except Exception:
+            return []
+
+    async def create_approval_rule(
+        self,
+        *,
+        id: str,
+        name: str,
+        rule_type: str,
+        action_summary: str,
+        condition_expression: str | None = None,
+        priority: int = 100,
+        is_active: bool = True,
+    ) -> bool:
+        """Insert one approval rule into the Lakehouse table."""
+        table = self.config.full_schema_name + ".approval_rules"
+        cond = f"'{self._escape_sql_string(condition_expression)}'" if condition_expression else "NULL"
+        stmt = f"""
+            INSERT INTO {table} (id, name, rule_type, condition_expression, action_summary, priority, is_active, updated_at)
+            VALUES (
+                '{self._escape_sql_string(id)}',
+                '{self._escape_sql_string(name)}',
+                '{self._escape_sql_string(rule_type)}',
+                {cond},
+                '{self._escape_sql_string(action_summary)}',
+                {priority},
+                {str(is_active).upper()},
+                current_timestamp()
+            )
+        """
+        return await self.execute_non_query(stmt)
+
+    async def update_approval_rule(
+        self,
+        id: str,
+        *,
+        name: str | None = None,
+        rule_type: str | None = None,
+        condition_expression: str | None = None,
+        action_summary: str | None = None,
+        priority: int | None = None,
+        is_active: bool | None = None,
+    ) -> bool:
+        """Update an approval rule by id."""
+        table = self.config.full_schema_name + ".approval_rules"
+        updates = ["updated_at = current_timestamp()"]
+        if name is not None:
+            updates.append(f"name = '{self._escape_sql_string(name)}'")
+        if rule_type is not None:
+            updates.append(f"rule_type = '{self._escape_sql_string(rule_type)}'")
+        if condition_expression is not None:
+            updates.append(f"condition_expression = '{self._escape_sql_string(condition_expression)}'")
+        if action_summary is not None:
+            updates.append(f"action_summary = '{self._escape_sql_string(action_summary)}'")
+        if priority is not None:
+            updates.append(f"priority = {priority}")
+        if is_active is not None:
+            updates.append(f"is_active = {str(is_active).upper()}")
+        stmt = f"UPDATE {table} SET {', '.join(updates)} WHERE id = '{self._escape_sql_string(id)}'"
+        return await self.execute_non_query(stmt)
+
+    async def delete_approval_rule(self, id: str) -> bool:
+        """Delete an approval rule by id."""
+        table = self.config.full_schema_name + ".approval_rules"
+        stmt = f"DELETE FROM {table} WHERE id = '{self._escape_sql_string(id)}'"
+        return await self.execute_non_query(stmt)
+
+    async def get_online_features(
+        self,
+        *,
+        source: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Fetch online features from Lakehouse (ML and AI processes) for UI."""
+        limit = max(1, min(limit, 500))
+        table = self.config.full_schema_name + ".online_features"
+        where = "WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS"
+        if source and source.lower() in ("ml", "agent"):
+            where += f" AND source = '{self._escape_sql_string(source.lower())}'"
+        query = f"""
+            SELECT id, source, feature_set, feature_name, feature_value, feature_value_str, entity_id, created_at
+            FROM {table}
+            {where}
+            ORDER BY created_at DESC
+            LIMIT {limit}
+        """
+        try:
+            return await self.execute_query(query) or []
+        except Exception:
+            return MockDataGenerator.online_features(limit)
+
     async def get_ml_models(self) -> list[dict[str, Any]]:
         """Return ML model metadata and optional metrics. Catalog path uses config (catalog.schema)."""
         base = [
@@ -761,6 +895,28 @@ class MockDataGenerator:
             }
             for solution, count, approved, rate, avg_amt in solutions
         ]
+
+    @staticmethod
+    def recommendations(limit: int = 10) -> list[dict[str, Any]]:
+        """Generate mock approval recommendations (Lakehouse / Vector Search fallback)."""
+        from datetime import timezone
+        now = datetime.now(timezone.utc).isoformat()
+        return [
+            {"id": "rec_1", "context_summary": "Low amount, domestic, low risk", "recommended_action": "Route standard; no 3DS friction", "score": 0.92, "source_type": "rule", "created_at": now},
+            {"id": "rec_2", "context_summary": "Cross-border, medium risk", "recommended_action": "Use 3DS for authentication", "score": 0.88, "source_type": "rule", "created_at": now},
+            {"id": "rec_3", "context_summary": "Declined insufficient_funds", "recommended_action": "Retry after 2h; similar cases approved 65%", "score": 0.78, "source_type": "vector_search", "created_at": now},
+        ][:limit]
+
+    @staticmethod
+    def online_features(limit: int = 20) -> list[dict[str, Any]]:
+        """Mock online features from ML/AI (Lakehouse fallback)."""
+        from datetime import timezone
+        now = datetime.now(timezone.utc).isoformat()
+        return [
+            {"id": "of_1", "source": "ml", "feature_set": "approval_propensity", "feature_name": "approval_probability", "feature_value": 0.89, "feature_value_str": None, "entity_id": "tx_demo_1", "created_at": now},
+            {"id": "of_2", "source": "ml", "feature_set": "risk_scoring", "feature_name": "risk_score", "feature_value": 0.22, "feature_value_str": None, "entity_id": "tx_demo_1", "created_at": now},
+            {"id": "of_3", "source": "agent", "feature_set": "smart_routing", "feature_name": "recommended_route", "feature_value": None, "feature_value_str": "psp_primary", "entity_id": "tx_demo_1", "created_at": now},
+        ][:limit]
 
     @staticmethod
     def smart_checkout_service_paths(limit: int = 25) -> list[dict[str, Any]]:

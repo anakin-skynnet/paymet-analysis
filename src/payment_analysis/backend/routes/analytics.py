@@ -179,6 +179,66 @@ class ModelOut(BaseModel):
     metrics: list[ModelMetricOut] = []
 
 
+class RecommendationOut(BaseModel):
+    """Approval recommendation from Lakehouse / Vector Search (similar cases)."""
+    id: str
+    context_summary: str
+    recommended_action: str
+    score: float
+    source_type: str
+    created_at: Optional[str] = None
+
+
+class OnlineFeatureOut(BaseModel):
+    """Online feature from ML or AI, stored in Lakehouse."""
+    id: str
+    source: str
+    feature_set: Optional[str] = None
+    feature_name: str
+    feature_value: Optional[float] = None
+    feature_value_str: Optional[str] = None
+    entity_id: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+@router.get("/online-features", response_model=list[OnlineFeatureOut], operation_id="getOnlineFeatures")
+async def get_online_features(source: Optional[str] = None, limit: int = 100) -> list[OnlineFeatureOut]:
+    """Get online features from the Lakehouse (ML and AI processes). Presented in the UI."""
+    service = get_databricks_service()
+    rows = await service.get_online_features(source=source, limit=limit)
+    return [
+        OnlineFeatureOut(
+            id=r["id"],
+            source=r["source"],
+            feature_set=r.get("feature_set"),
+            feature_name=r["feature_name"],
+            feature_value=float(r["feature_value"]) if r.get("feature_value") is not None else None,
+            feature_value_str=r.get("feature_value_str"),
+            entity_id=r.get("entity_id"),
+            created_at=str(r["created_at"]) if r.get("created_at") else None,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/recommendations", response_model=list[RecommendationOut], operation_id="getRecommendations")
+async def get_recommendations(limit: int = 20) -> list[RecommendationOut]:
+    """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases."""
+    service = get_databricks_service()
+    rows = await service.get_recommendations_from_lakehouse(limit=limit)
+    return [
+        RecommendationOut(
+            id=r["id"],
+            context_summary=r["context_summary"],
+            recommended_action=r["recommended_action"],
+            score=float(r["score"]),
+            source_type=r["source_type"],
+            created_at=str(r["created_at"]) if r.get("created_at") else None,
+        )
+        for r in rows
+    ]
+
+
 @router.get("/models", response_model=list[ModelOut], operation_id="getModels")
 async def list_models() -> list[ModelOut]:
     """List ML models with catalog path and optional metrics from backend (catalog/schema from config)."""

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   MessageSquareText,
+  Cpu,
 } from "lucide-react";
 import { getDashboardUrl, getGenieUrl } from "@/config/workspace";
 
@@ -362,6 +364,9 @@ function Dashboard() {
         </Card>
       </div>
 
+      {/* Online features (Lakehouse) — from ML and AI processes */}
+      <OnlineFeaturesCard />
+
       {/* ML & decision reasoning — click opens Genie in Databricks */}
       <Card
         className="cursor-pointer hover:shadow-md transition-shadow"
@@ -415,5 +420,74 @@ function Dashboard() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+type OnlineFeature = {
+  id: string;
+  source: string;
+  feature_set?: string | null;
+  feature_name: string;
+  feature_value?: number | null;
+  feature_value_str?: string | null;
+  entity_id?: string | null;
+  created_at?: string | null;
+};
+
+async function fetchOnlineFeatures(limit = 50): Promise<OnlineFeature[]> {
+  const res = await fetch(`/api/analytics/online-features?limit=${limit}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+function OnlineFeaturesCard() {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["/api/analytics/online-features", 50],
+    queryFn: () => fetchOnlineFeatures(50),
+  });
+  const features = data ?? [];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Cpu className="w-4 h-4" />
+          Online features (Lakehouse)
+        </CardTitle>
+        <CardDescription>
+          Features from ML and AI processes stored in the Lakehouse database; run <code className="text-xs">online_features.sql</code> and populate from jobs or decisioning.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        )}
+        {isError && (
+          <p className="text-sm text-destructive">Failed to load online features.</p>
+        )}
+        {!isLoading && !isError && features.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No features yet. Create the <code className="text-xs">online_features</code> table and populate from ML/agent jobs.
+          </p>
+        )}
+        {!isLoading && !isError && features.length > 0 && (
+          <ul className="space-y-2">
+            {features.slice(0, 20).map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center gap-2 rounded border px-3 py-2 text-sm">
+                <Badge variant={f.source === "ml" ? "default" : "secondary"}>{f.source}</Badge>
+                {f.feature_set && <span className="text-muted-foreground">{f.feature_set}</span>}
+                <span className="font-medium">{f.feature_name}</span>
+                {f.feature_value != null && <span className="text-muted-foreground">= {f.feature_value}</span>}
+                {f.feature_value_str != null && <span className="text-muted-foreground">= {f.feature_value_str}</span>}
+                {f.entity_id && <span className="text-xs text-muted-foreground truncate">({f.entity_id})</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

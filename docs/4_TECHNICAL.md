@@ -11,6 +11,12 @@ Architecture and implementation reference.
 
 Bronze: raw + `_ingested_at`. Silver: quality, `risk_tier`, `amount_bucket`, `composite_risk_score`. Gold: 12+ views. UC: `ahs_demos_catalog.ahs_demo_payment_analysis_dev` — governance, lineage, audit.
 
+**Lakehouse recommendations & Vector Search:** `vector_search_and_recommendations.sql` defines `transaction_summaries_for_search` (Delta, source for Vector Search index), `approval_recommendations`, and view `v_recommendations_from_lakehouse`. The app’s **Decisioning** page shows a “Similar cases & recommendations (Lakehouse)” card fed by `GET /api/analytics/recommendations`, which reads from this view to accelerate approval decisions (e.g. similar transactions, retry suggestions). Vector Search index (`resources/vector_search.yml`) syncs from the search table using `databricks-bge-large-en`; when populated, it can power similar-transaction lookups and RAG for agents.
+
+**Approval rules (Lakehouse):** `approval_rules.sql` defines `approval_rules` and view `v_approval_rules_active`. The app **Rules** page (sidebar) lets users create, edit, and delete rules stored in this table. ML and AI agents (e.g. Smart Routing, Smart Retry, Orchestrator) can read from `catalog.schema.approval_rules` or `v_approval_rules_active` to apply business rules and accelerate approval rates alongside model outputs. API: `GET/POST /api/rules`, `PATCH/DELETE /api/rules/{id}`.
+
+**Online features (Lakehouse):** `online_features.sql` defines `online_features` and view `v_online_features_latest`. Features from ML and AI processes are stored here; the app **Dashboard** shows them in the "Online features (Lakehouse)" card. API: `GET /api/analytics/online-features` (optional `source=ml|agent`, `limit`). Populate from decisioning, model serving, or agent jobs.
+
 ## ML Layer
 
 Models: approval propensity (RF ~92%), risk (~88%), routing (RF ~75%), retry (~81%). MLflow → UC Registry → Serving (<50ms p95, scale-to-zero). Lifecycle: experiment → register → serve → monitor → retrain.
@@ -29,7 +35,7 @@ Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE
 
 ## Bundle & Deploy
 
-`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, dashboards, model_serving, genie_spaces, ai_gateway, streaming_simulator. Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. For prod catalog/schema in dashboards use `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
+`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, vector_search, dashboards, model_serving, genie_spaces, ai_gateway, streaming_simulator. Dashboard JSONs from `src/payment_analysis/dashboards/`. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. For prod catalog/schema in dashboards use `./scripts/validate_bundle.sh prod`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
 
 ## UI & verification checklist
 

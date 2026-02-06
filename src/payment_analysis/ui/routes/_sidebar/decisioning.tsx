@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   type DecisionContext,
@@ -11,11 +12,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Code2, Brain } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ExternalLink, Code2, Brain, Database, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_sidebar/decisioning")({
   component: () => <Decisioning />,
 });
+
+type Recommendation = {
+  id: string;
+  context_summary: string;
+  recommended_action: string;
+  score: number;
+  source_type: string;
+  created_at?: string | null;
+};
 
 const openNotebook = async (notebookId: string) => {
   try {
@@ -26,6 +37,12 @@ const openNotebook = async (notebookId: string) => {
     console.error("Failed to open notebook:", error);
   }
 };
+
+async function fetchRecommendations(limit = 20): Promise<Recommendation[]> {
+  const res = await fetch(`/api/analytics/recommendations?limit=${limit}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
 
 function Decisioning() {
   const [ctx, setCtx] = useState<DecisionContext & { experiment_id?: string; subject_key?: string }>({
@@ -47,6 +64,10 @@ function Decisioning() {
   const auth = useDecideAuthentication();
   const retry = useDecideRetry();
   const routing = useDecideRouting();
+  const recommendationsQuery = useQuery({
+    queryKey: ["/api/analytics/recommendations", 20],
+    queryFn: () => fetchRecommendations(20),
+  });
 
   return (
     <div className="space-y-6">
@@ -168,6 +189,52 @@ function Decisioning() {
         <DecisionCard title="Retry" result={retry.data?.data} notebookId="agent_framework" />
         <DecisionCard title="Routing" result={routing.data?.data} notebookId="agent_framework" />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Similar cases & recommendations (Lakehouse)
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Recommendations from the Lakehouse (Unity Catalog) and Vector Search–backed similar transactions to accelerate approval rates.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {recommendationsQuery.isLoading && (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          )}
+          {recommendationsQuery.isError && (
+            <p className="text-sm text-destructive">Failed to load recommendations.</p>
+          )}
+          {recommendationsQuery.data && recommendationsQuery.data.length === 0 && (
+            <p className="text-sm text-muted-foreground">No recommendations yet. Run the gold views and populate approval_recommendations in the Lakehouse.</p>
+          )}
+          {recommendationsQuery.data && recommendationsQuery.data.length > 0 && (
+            <ul className="space-y-3">
+              {recommendationsQuery.data.map((r) => (
+                <li key={r.id} className="flex items-start gap-3 rounded-lg border p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{r.context_summary}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{r.recommended_action}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={r.source_type === "vector_search" ? "default" : "secondary"} className="gap-1">
+                      {r.source_type === "vector_search" ? <Sparkles className="w-3 h-3" /> : null}
+                      {r.source_type}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{(r.score * 100).toFixed(0)}%</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

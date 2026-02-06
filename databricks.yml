@@ -22,7 +22,9 @@ include:
   - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
+  - resources/vector_search.yml
   - resources/dashboards.yml
+  # Deploy after "Train Payment Approval ML Models" job has run (4 models in UC)
   - resources/model_serving.yml
 
 # -----------------------------------------------------------------------------

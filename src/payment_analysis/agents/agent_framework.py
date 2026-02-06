@@ -192,6 +192,29 @@ class BaseAgent:
             logger.error(f"SQL execution error: {e}")
             return []
 
+    def get_lakehouse_approval_rules(self, rule_type: Optional[str] = None) -> List[Dict]:
+        """
+        Load active approval rules from the Lakehouse (approval_rules table).
+        Rules are written from the app (Rules page) and used here to accelerate approval rates.
+        Returns list of dicts with keys: name, rule_type, action_summary, condition_expression, priority.
+        """
+        try:
+            allowed = ("authentication", "retry", "routing")
+            if rule_type and rule_type not in allowed:
+                rule_type = None
+            where = f"WHERE rule_type = '{rule_type}'" if rule_type else ""
+            query = f"""
+                SELECT name, rule_type, action_summary, condition_expression, priority
+                FROM {self.catalog}.{self.schema}.v_approval_rules_active
+                {where}
+                ORDER BY priority ASC
+                LIMIT 50
+            """
+            return self._execute_sql(query)
+        except Exception as e:
+            logger.warning(f"Could not load Lakehouse approval rules: {e}")
+            return []
+
 
 class SmartRoutingAgent(BaseAgent):
     """Agent for smart payment routing and cascading decisions."""

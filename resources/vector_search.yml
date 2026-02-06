@@ -1,0 +1,25 @@
+# =============================================================================
+# Vector Search - Similar-transaction lookup to accelerate approval rates
+# =============================================================================
+# Endpoint + index for finding similar past transactions (by embedding summary_text).
+# Source table: transaction_summaries_for_search (create via vector_search_and_recommendations.sql).
+# Requires: embedding model endpoint "databricks-bge-large-en" in workspace (Foundation Model API).
+# =============================================================================
+
+resources:
+  vector_search_endpoints:
+    payment_similar_transactions:
+      name: "payment-similar-transactions-${var.environment}"
+
+  vector_search_indexes:
+    similar_transactions_index:
+      name: "${var.catalog}.${var.schema}.similar_transactions_index"
+      endpoint_name: "payment-similar-transactions-${var.environment}"
+      primary_key: "transaction_id"
+      index_type: "DELTA_SYNC"
+      delta_sync_index_spec:
+        source_table: "${var.catalog}.${var.schema}.transaction_summaries_for_search"
+        pipeline_type: "TRIGGERED"
+        embedding_source_columns:
+          - name: "summary_text"
+            embedding_model_endpoint_name: "databricks-bge-large-en"

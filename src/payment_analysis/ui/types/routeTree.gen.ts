@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './../routes/index'
 import { Route as SidebarSmartRetryRouteImport } from './../routes/_sidebar/smart-retry'
 import { Route as SidebarSmartCheckoutRouteImport } from './../routes/_sidebar/smart-checkout'
 import { Route as SidebarSetupRouteImport } from './../routes/_sidebar/setup'
+import { Route as SidebarRulesRouteImport } from './../routes/_sidebar/rules'
 import { Route as SidebarReasonCodesRouteImport } from './../routes/_sidebar/reason-codes'
 import { Route as SidebarProfileRouteImport } from './../routes/_sidebar/profile'
 import { Route as SidebarNotebooksRouteImport } from './../routes/_sidebar/notebooks'
@@ -48,6 +49,11 @@ const SidebarSmartCheckoutRoute = SidebarSmartCheckoutRouteImport.update({
 const SidebarSetupRoute = SidebarSetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => SidebarRouteRoute,
+} as any)
+const SidebarRulesRoute = SidebarRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
   getParentRoute: () => SidebarRouteRoute,
 } as any)
 const SidebarReasonCodesRoute = SidebarReasonCodesRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/notebooks': typeof SidebarNotebooksRoute
   '/profile': typeof SidebarProfileRoute
   '/reason-codes': typeof SidebarReasonCodesRoute
+  '/rules': typeof SidebarRulesRoute
   '/setup': typeof SidebarSetupRoute
   '/smart-checkout': typeof SidebarSmartCheckoutRoute
   '/smart-retry': typeof SidebarSmartRetryRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/notebooks': typeof SidebarNotebooksRoute
   '/profile': typeof SidebarProfileRoute
   '/reason-codes': typeof SidebarReasonCodesRoute
+  '/rules': typeof SidebarRulesRoute
   '/setup': typeof SidebarSetupRoute
   '/smart-checkout': typeof SidebarSmartCheckoutRoute
   '/smart-retry': typeof SidebarSmartRetryRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/_sidebar/notebooks': typeof SidebarNotebooksRoute
   '/_sidebar/profile': typeof SidebarProfileRoute
   '/_sidebar/reason-codes': typeof SidebarReasonCodesRoute
+  '/_sidebar/rules': typeof SidebarRulesRoute
   '/_sidebar/setup': typeof SidebarSetupRoute
   '/_sidebar/smart-checkout': typeof SidebarSmartCheckoutRoute
   '/_sidebar/smart-retry': typeof SidebarSmartRetryRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/notebooks'
     | '/profile'
     | '/reason-codes'
+    | '/rules'
     | '/setup'
     | '/smart-checkout'
     | '/smart-retry'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/notebooks'
     | '/profile'
     | '/reason-codes'
+    | '/rules'
     | '/setup'
     | '/smart-checkout'
     | '/smart-retry'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/_sidebar/notebooks'
     | '/_sidebar/profile'
     | '/_sidebar/reason-codes'
+    | '/_sidebar/rules'
     | '/_sidebar/setup'
     | '/_sidebar/smart-checkout'
     | '/_sidebar/smart-retry'
@@ -254,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SidebarSetupRouteImport
+      parentRoute: typeof SidebarRouteRoute
+    }
+    '/_sidebar/rules': {
+      id: '/_sidebar/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof SidebarRulesRouteImport
       parentRoute: typeof SidebarRouteRoute
     }
     '/_sidebar/reason-codes': {
@@ -348,6 +367,7 @@ interface SidebarRouteRouteChildren {
   SidebarNotebooksRoute: typeof SidebarNotebooksRoute
   SidebarProfileRoute: typeof SidebarProfileRoute
   SidebarReasonCodesRoute: typeof SidebarReasonCodesRoute
+  SidebarRulesRoute: typeof SidebarRulesRoute
   SidebarSetupRoute: typeof SidebarSetupRoute
   SidebarSmartCheckoutRoute: typeof SidebarSmartCheckoutRoute
   SidebarSmartRetryRoute: typeof SidebarSmartRetryRoute
@@ -365,6 +385,7 @@ const SidebarRouteRouteChildren: SidebarRouteRouteChildren = {
   SidebarNotebooksRoute: SidebarNotebooksRoute,
   SidebarProfileRoute: SidebarProfileRoute,
   SidebarReasonCodesRoute: SidebarReasonCodesRoute,
+  SidebarRulesRoute: SidebarRulesRoute,
   SidebarSetupRoute: SidebarSetupRoute,
   SidebarSmartCheckoutRoute: SidebarSmartCheckoutRoute,
   SidebarSmartRetryRoute: SidebarSmartRetryRoute,
