@@ -29,7 +29,16 @@ Genie 2, Model serving 3, AI Gateway 2. Details: [3_AGENTS_VALUE](3_AGENTS_VALUE
 
 ## Bundle & Deploy
 
-`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, dashboards, (optional) model_serving, genie_spaces, ai_gateway, streaming_simulator. Commands: `databricks bundle validate -t dev`, `databricks bundle deploy -t dev`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
+`databricks.yml`: variables `catalog`, `schema`, `environment`, `warehouse_id`; include pipelines, jobs, unity_catalog, dashboards, (optional) model_serving, genie_spaces, ai_gateway, streaming_simulator. Commands: `./scripts/validate_bundle.sh dev` (or `prepare_dashboards.py` then `databricks bundle validate -t dev`), `databricks bundle deploy -t dev`. App: `.env` (DATABRICKS_HOST, TOKEN, WAREHOUSE_ID, CATALOG, SCHEMA); `uv run apx dev` or `apx build` + deploy.
+
+## UI & verification checklist
+
+- **Setup & Run:** Steps 1–6 + Quick links; each card opens job/pipeline in Databricks. Run triggers job/pipeline; Open opens in new tab.
+- **Dashboards:** 11 dashboards (stream ingestion, data quality, analytics); list from `GET /api/dashboards`; click card opens dashboard in workspace. Real-Time Monitoring, Streaming & Data Quality, Executive, Decline, Daily Trends, etc.
+- **Ask Data (Genie):** AI Agents page — sample prompts, "Open Genie to chat" opens Genie in workspace.
+- **ML Models:** Approval propensity, risk scoring, smart routing, smart retry + combined business impact; data from backend (catalog/schema); cards open Model Registry or MLflow.
+- **Other UI:** Dashboard home, Decisioning, Notebooks, Declines, Reason codes, Smart checkout, Smart retry — cards open related dashboard/notebook/workspace. Incidents → Real-Time Monitoring; Experiments → MLflow. Profile stays app-only (no workspace link).
+- **Verify:** `GET /api/setup/defaults`, `GET /api/dashboards`, `GET /api/analytics/models`, `GET /api/agents/agents`. Frontend: set `VITE_DATABRICKS_HOST` for Open-in-Databricks links.
 
 ---
 

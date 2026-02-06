@@ -17,7 +17,9 @@ Databricks-powered solution to maximize payment approval rates via real-time ana
 
 ```bash
 uv sync && bun install
-databricks bundle validate && databricks bundle deploy --target dev
+# Prepare dashboards then validate (required; .build/dashboards/ is not in git)
+./scripts/validate_bundle.sh dev
+databricks bundle deploy -t dev
 uv run apx dev
 ```
 
