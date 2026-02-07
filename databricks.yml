@@ -63,6 +63,10 @@ variables:
   workspace_folder:
     description: Workspace folder name for bundle files (notebooks, dashboards, app)
     default: payment-analysis
+  # Genie space ID to bind to the app (e.g. existing "Approvals domain expert"; find ID in Genie UI)
+  genie_space_id:
+    description: Genie space ID for app resource binding (current space name: Approvals domain expert; update when new space is created)
+    default: ""
 
 # -----------------------------------------------------------------------------
 # Sync: paths uploaded to workspace for job/pipeline execution
