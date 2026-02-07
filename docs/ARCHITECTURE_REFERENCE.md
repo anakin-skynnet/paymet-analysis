@@ -71,7 +71,7 @@ Managed Postgres for rules, experiments, incidents. Bundle: `resources/lakebase.
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | Runtime spec at root | OK | `app.yaml` and `app.yml` (same content) |
-| Command | OK | `uvicorn app:app` |
+| Command | OK | `uvicorn payment_analysis.backend.app:app` |
 | API prefix `/api` | OK | Router `prefix="/api"` |
 | requirements.txt | OK | Exact versions from pyproject.toml/uv.lock (fastapi, uvicorn, pydantic, sqlmodel, psycopg[binary], etc.) |
 | No system packages | OK | Pure Python deps |

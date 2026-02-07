@@ -1,9 +1,9 @@
 # Runtime spec (same as app.yaml). Required at root for "error loading app spec from app.yml".
 # DBA definition lives in resources/fastapi_app.yml (included from databricks.yml). This file only defines how to run the container.
-# app:app = Python module "app" (app.py) and FastAPI instance "app". PGAPPNAME must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
+# Single app: payment_analysis.backend.app (PYTHONPATH=src). PGAPPNAME must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
 command:
   - uvicorn
-  - app:app
+  - payment_analysis.backend.app:app
   - --host
   - "0.0.0.0"
   - --port
