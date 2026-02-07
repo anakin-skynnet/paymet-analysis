@@ -167,12 +167,16 @@ class DatabricksService:
     async def _execute_query_internal(self, query: str) -> list[dict[str, Any]]:
         """Internal query execution with full error handling."""
         from databricks.sdk.service.sql import StatementState
-        
+
+        client = self.client
+        if client is None:
+            raise RuntimeError("Databricks client not available")
+
         warehouse_id = self._get_warehouse_id()
         if not warehouse_id:
             raise RuntimeError("No SQL Warehouse available")
-        
-        response = self.client.statement_execution.execute_statement(
+
+        response = client.statement_execution.execute_statement(
             warehouse_id=warehouse_id,
             statement=query,
             wait_timeout="30s",
@@ -207,6 +211,10 @@ class DatabricksService:
             logger.warning("Databricks unavailable, skipping non-query execution")
             return False
 
+        client = self.client
+        if client is None:
+            return False
+
         try:
             from databricks.sdk.service.sql import StatementState
 
@@ -214,7 +222,7 @@ class DatabricksService:
             if not warehouse_id:
                 raise RuntimeError("No SQL Warehouse available")
 
-            response = self.client.statement_execution.execute_statement(
+            response = client.statement_execution.execute_statement(
                 warehouse_id=warehouse_id,
                 statement=statement,
                 wait_timeout="30s",
@@ -228,8 +236,12 @@ class DatabricksService:
         """Get warehouse ID from config or discover first available."""
         if self.config.warehouse_id:
             return self.config.warehouse_id
-        
-        warehouses = list(self.client.warehouses.list())
+
+        client = self.client
+        if client is None:
+            return None
+
+        warehouses = list(client.warehouses.list())
         return warehouses[0].id if warehouses else None
     
     # =========================================================================
@@ -765,9 +777,13 @@ class DatabricksService:
         if not self.is_available:
             logger.warning(f"Databricks unavailable, using mock for {endpoint_name}")
             return mock_fallback()
-        
+
+        client = self.client
+        if client is None:
+            return mock_fallback()
+
         try:
-            response = self.client.serving_endpoints.query(
+            response = client.serving_endpoints.query(
                 name=endpoint_name,
                 dataframe_records=[features],
             )

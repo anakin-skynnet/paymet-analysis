@@ -111,7 +111,7 @@ By default: Workspace folder, Lakebase, Jobs (simulator, gold views, ML, agents,
    Then redeploy. The app is compatible with fastapi 0.115.0 and uvicorn 0.30.6.
 3. **Keep full pins only if needed:** Use the full `requirements.txt` (with fastapi/uvicorn overrides) if you need features from newer FastAPI/Uvicorn and the minimal set installs successfully.
 
-**Supported and compatible:** All listed packages have manylinux-compatible wheels or are pure Python. We use `psycopg` without `[binary]` so no C compiler is required. Run `uv run python scripts/verify_versions.py` to ensure versions match `uv.lock`.
+**Supported and compatible:** All listed packages have manylinux-compatible wheels or are pure Python. We use `psycopg` without `[binary]` so no C compiler is required. Run `uv run python scripts/verify_versions.py` to ensure `requirements.txt`, `requirements-databricks-minimal.txt`, and `pyproject.toml` all match `uv.lock`.
 
 ## Troubleshooting
 
