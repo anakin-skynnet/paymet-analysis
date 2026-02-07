@@ -61,9 +61,18 @@ The app (FastAPI + React) is deployed to Databricks Apps via the bundle.
    - From the CLI: `databricks bundle run payment_analysis_app -t dev`
    - Or in the workspace: **Apps** → find **payment-analysis** → open and start the app.
 4. **App URL** is shown after starting (e.g. `https://<workspace-host>/apps/payment-analysis?o=...`). You can also run `databricks bundle summary -t dev` to see the app and its URL.
-5. **Lakebase (required for UI CRUD and ML features):** In **Workspace → Apps** → payment-analysis → **Edit** → **Environment**, set **PGAPPNAME** to the Lakebase instance name (dev: `payment-analysis-db-dev`). Without this, rules, experiments, incidents, and ML features in the UI will not work.
+5. **Required app configuration (Workspace → Apps → payment-analysis → Edit → Environment):**
+   | Variable | Purpose | Example / note |
+   |----------|---------|----------------|
+   | **PGAPPNAME** | Lakebase instance for rules, experiments, incidents, ML features | `payment-analysis-db-dev` (dev). Without this, Rules/Experiments/Incidents and ML features return 503. |
+   | **DATABRICKS_HOST** | Workspace URL for Dashboard links, Agents, Genie, Setup & Run one-click links | Your workspace URL (e.g. `https://adb-xxx.11.azuredatabricks.net`). Backend uses this for `/api/setup/defaults` (workspace_host) and agent workspace URLs. |
+   | **DATABRICKS_WAREHOUSE_ID** | SQL Warehouse for analytics, app_config, gold views | From bundle: run `databricks bundle summary -t dev` and use the SQL Warehouses URL id, or set in target. |
+   | **DATABRICKS_TOKEN** | API access (run job, pipeline, read app_config); may be auto-provided by the platform per request | If the app uses OAuth, the platform may inject token via headers; otherwise set a PAT. |
+   With these set, **Dashboard** (12 dashboards), **AI Agents**, **Genie** links, and **Setup & Run** one-click actions work as expected.
 
-The app resource is defined in `resources/app.yml`; runtime is configured in `app.yaml` (uvicorn, PYTHONPATH=src). Python dependencies for the Apps container are in `requirements.txt` at the project root (Databricks installs these during app deployment).
+**How the app uses deployed resources:** The bundle deploys jobs, Lakebase, pipelines, SQL warehouse, Genie sync job, dashboards, and the app. The app is *configured* to run jobs, connect to the database, open Genie, and use those resources only when the environment variables above are set. Database connection uses **PGAPPNAME** (Lakebase instance name) and the platform’s auth for `database.get_database_instance` / `generate_database_credential`. Job/pipeline IDs for **Setup & Run** come from backend defaults (or env overrides like `DATABRICKS_WAREHOUSE_ID`); after deploying to a new workspace, you may need to set warehouse and optionally job/pipeline IDs to match your deployed resources (see 4_TECHNICAL.md).
+
+The app resource is defined in `resources/app.yml`; runtime is configured in `app.yaml` (uvicorn, PYTHONPATH=src, PGAPPNAME). Python dependencies for the Apps container are in `requirements.txt` at the project root (Databricks installs these during app deployment).
 
 ## Schema Consistency
 
@@ -86,6 +95,19 @@ Use one catalog/schema everywhere (defaults: `ahs_demos_catalog`, `ahs_demo_paym
 | **Model serving** (4 endpoints) | Run **Step 6** (Train Payment Approval ML Models) so the 4 models exist in UC. Then in `databricks.yml`, uncomment `resources/model_serving.yml` and run `./scripts/bundle.sh deploy dev` again. |
 
 **Vector Search** is not in the bundle schema; create the endpoint and index manually from `resources/vector_search.yml` after running `vector_search_and_recommendations.sql`.
+
+## Verify app configuration (Dashboard, Agents, Genie, Setup & Run)
+
+After deploying the app and setting the required environment variables above, confirm:
+
+| Check | How to verify |
+|-------|----------------|
+| **Dashboard** | Open **Dashboard** or **Dashboards** in the app; click a dashboard card. It should open the Databricks dashboard in a new tab (workspace URL from DATABRICKS_HOST or browser host when app runs inside Databricks). |
+| **AI Agents** | Open **AI Agents**; the list loads from `/api/agents`. Click **Open in Databricks** on an agent; Genie and model links use the workspace URL. |
+| **Genie** | From **AI Agents** or **Setup & Run** → Quick links → **Open Genie**; should open the workspace Genie page. |
+| **Setup & Run** | **Setup & Run** shows job/pipeline links and **Run** buttons. One-click links use `workspace_host` from `/api/setup/defaults` (requires DATABRICKS_HOST set). **Save catalog & schema** requires DATABRICKS_TOKEN and warehouse. |
+| **Rules / Experiments / Incidents** | Require **PGAPPNAME** set to the Lakebase instance name; otherwise endpoints return 503. |
+| **Catalog/schema** | Effective catalog/schema is read from the `app_config` table (or env). Set via **Setup & Run** → **Save catalog & schema** after running `app_config.sql` in the same catalog.schema. |
 
 ## Where to find resources in the workspace
 
@@ -115,12 +137,14 @@ If deploy failed, confirm workspace path with `./scripts/bundle.sh validate dev`
 | Dashboards empty | Gold views + data; warehouse running; warehouse_id in config |
 | ML training fails | Silver data; ML runtime; UC model registry; MLflow logs |
 
+**INVALID_PARAMETER_VALUE: Path .../dashboards/payment_analysis_models is not an exportable asset. type=mlflowExperiment** — The app deployment exports the app source from the workspace; an MLflow experiment at `.../src/payment_analysis/dashboards/payment_analysis_models` cannot be exported as a file. Dashboard JSONs now live in `resources/dashboards/` (not under `src/`), so new deploys avoid that path. If you still see this: in the workspace, remove or move the MLflow experiment so it is not under the app source folder (e.g. delete the experiment at that path, or use **MLflow** → Experiments and ensure no experiment path is inside your app folder). The training job creates the experiment at `/Users/<you>/payment_analysis_models` (user root), not under `paymet-analysis/src/...`; if you created one under dashboards, remove it and redeploy.
+
 **Error deploying app: error installing packages** — `requirements.txt` uses pinned versions and pure `psycopg` (no `[binary]`) so pip install succeeds in the container. The world-map (global_coverage) dashboard is a Lakeview dashboard, not a Python/Node package, so it does not cause this error. If the error persists, the platform may be running `npm install` from `package.json`: ensure all three TanStack packages are **1.158.1** and `package.json` has **overrides** for `@tanstack/react-router`, `@tanstack/react-router-devtools`, and `@tanstack/router-plugin` at 1.158.1. Do not commit `package-lock.json` (use `bun.lock` only). Then redeploy. See [4_TECHNICAL](4_TECHNICAL.md) (Databricks Apps package compatibility).
 
 ## Scripts
 
 - **bundle.sh** — Single script for bundle and verification. **`./scripts/bundle.sh deploy [dev|prod]`** — prepare dashboards then deploy. **`./scripts/bundle.sh validate [dev|prod]`** — prepare then validate (use before deploy). **`./scripts/bundle.sh verify [dev|prod]`** — build, backend smoke test, dashboard assets, bundle validate.
-- **dashboards.py** — **`prepare`** copies dashboard JSONs and gold_views.sql to `.build/` (run by bundle.sh). **`validate-assets`** lists required tables/views. **`publish`** publishes all 12 dashboards with embed credentials after deploy: `uv run python scripts/dashboards.py publish` (optional `--path`).
+- **dashboards.py** — **`prepare`** copies dashboard JSONs from `resources/dashboards/` and gold_views.sql to `.build/` (run by bundle.sh). **`validate-assets`** lists required tables/views. **`publish`** publishes all 12 dashboards with embed credentials after deploy: `uv run python scripts/dashboards.py publish` (optional `--path`).
 
 ## Demo setup & one-click run
 

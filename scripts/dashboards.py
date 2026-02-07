@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEV_CATALOG_SCHEMA = "ahs_demos_catalog.ahs_demo_payment_analysis_dev"
-SOURCE_DIR = REPO_ROOT / "src" / "payment_analysis" / "dashboards"
+SOURCE_DIR = REPO_ROOT / "resources" / "dashboards"
 OUT_DIR = REPO_ROOT / ".build" / "dashboards"
 GOLD_VIEWS_SOURCE = REPO_ROOT / "src" / "payment_analysis" / "transform" / "gold_views.sql"
 GOLD_VIEWS_OUT_DIR = REPO_ROOT / ".build" / "transform"
