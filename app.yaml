@@ -1,9 +1,13 @@
 # Runtime spec. Keep app.yml in sync (runtime may load app.yml first).
 # See https://apps-cookbook.dev/docs/fastapi/getting_started/create
-# command: app:app = root app.py module, "app" attribute (FastAPI instance). Not fastapi_app.
-# PGAPPNAME must match var.lakebase_instance_name for target (dev: payment-analysis-db-dev).
-# Set in Apps UI: DATABRICKS_HOST, DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN (see resources/fastapi_app.yml).
-command: ["uvicorn", "app:app"]
+# PGAPPNAME must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
+command:
+  - uvicorn
+  - app:app
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "8000"
 env:
   - name: PYTHONPATH
     value: src

@@ -1,7 +1,12 @@
 # Runtime spec (same as app.yaml). Required at root for "error loading app spec from app.yml".
-# command: app:app = root app.py → "app" (FastAPI instance). Bundle app resource is resources/fastapi_app.yml.
 # PGAPPNAME must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
-command: ["uvicorn", "app:app"]
+command:
+  - uvicorn
+  - app:app
+  - --host
+  - "0.0.0.0"
+  - --port
+  - "8000"
 env:
   - name: PYTHONPATH
     value: src
