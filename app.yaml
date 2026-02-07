@@ -10,3 +10,6 @@ command:
 env:
   - name: PYTHONPATH
     value: src
+  # Lakebase instance for rules, experiments, incidents, ML features (dev)
+  - name: PGAPPNAME
+    value: payment-analysis-db-dev
