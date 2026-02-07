@@ -1,6 +1,6 @@
 command:
   - uvicorn
-  - app:fastapi_app
+  - app:app
   
 env:
   - name: PYTHONPATH
