@@ -24,7 +24,7 @@ function RootErrorFallback({
           </div>
         </div>
         <div className="space-y-2">
-          <h1 className="text-xl font-semibold font-heading">Something went wrong</h1>
+          <h1 className="text-xl font-semibold font-heading">Something went wrong loading this view</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">{error.message}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">

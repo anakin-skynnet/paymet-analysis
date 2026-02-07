@@ -1,4 +1,4 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useLocation, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import {
@@ -14,6 +14,39 @@ import {
 import SidebarUserFooter from "@/components/apx/sidebar-user-footer";
 import { ModeToggle } from "@/components/apx/mode-toggle";
 import Logo from "@/components/apx/logo";
+
+const PATH_LABELS: Record<string, string> = {
+  "/dashboard": "Portfolio overview",
+  "/setup": "Setup & run",
+  "/dashboards": "Analytics dashboards",
+  "/notebooks": "Notebooks",
+  "/models": "ML models",
+  "/ai-agents": "AI agents",
+  "/decisioning": "Decisioning",
+  "/rules": "Rules",
+  "/experiments": "Experiments",
+  "/incidents": "Incidents",
+  "/declines": "Declines",
+  "/smart-checkout": "Smart checkout",
+  "/reason-codes": "Reason codes",
+  "/smart-retry": "Smart retry",
+  "/profile": "Profile",
+};
+
+function Breadcrumb() {
+  const location = useLocation();
+  const path = location.pathname;
+  const label = PATH_LABELS[path] ?? "Overview";
+  return (
+    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0" aria-label="Breadcrumb">
+      <Link to="/" className="hover:text-foreground transition-colors truncate">
+        Home
+      </Link>
+      <span aria-hidden className="shrink-0">/</span>
+      <span className="truncate font-medium text-foreground">{label}</span>
+    </nav>
+  );
+}
 
 interface SidebarLayoutProps {
   children?: ReactNode;
@@ -35,8 +68,9 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen">
-        <header className="sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b flex h-16 shrink-0 items-center gap-2 px-4 transition-colors duration-200">
+        <header className="sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b flex h-16 shrink-0 items-center gap-4 px-4 transition-colors duration-200">
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-md transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+          <Breadcrumb />
           <div className="flex-1 min-w-0" />
           <ModeToggle />
         </header>

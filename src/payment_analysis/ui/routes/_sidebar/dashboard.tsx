@@ -171,17 +171,19 @@ function Dashboard() {
       initial="hidden"
       animate="show"
     >
+      {/* Welcome / context line */}
+      <motion.div variants={dashboardItem}>
+        <p className="text-sm text-muted-foreground">
+          Overview of Getnet portfolio performance in the last 30 days. Key metrics, trends, and where to act.
+        </p>
+      </motion.div>
+
       {/* Header with Links */}
       <motion.div variants={dashboardItem}>
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-heading">
-              Approval performance
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Real-time KPIs, trends, and Lakehouse intelligence. Your command center for conversion and revenue.
-            </p>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-heading">
+            Portfolio overview
+          </h1>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={openDashboard}>
               <TrendingUp className="w-4 h-4 mr-2" />
@@ -210,8 +212,41 @@ function Dashboard() {
         </div>
       </motion.div>
 
-      {/* KPI Cards — hero card for Approval rate */}
+      {/* What is happening — Hero KPI first, then supporting KPIs */}
+      <motion.div variants={dashboardItem}>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          What is happening
+        </h2>
+      </motion.div>
       <motion.div variants={dashboardStagger} className="grid gap-4 md:grid-cols-3">
+        {/* Hero KPI — extra visual emphasis; presentation moment: tap to open full dashboard */}
+        <motion.div
+          variants={dashboardItem}
+          className="md:col-span-1"
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
+        >
+          <Card
+            className="cursor-pointer relative overflow-hidden border-2 border-primary/50 bg-primary/10 hover:shadow-xl hover:shadow-primary/20 hover:border-primary/70 transition-all duration-300 elevation-2"
+            onClick={openExecutive}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && openExecutive()}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-transparent pointer-events-none" />
+            <CardHeader className="pb-2 relative">
+              <CardTitle className="text-sm font-semibold text-primary">
+                Portfolio approval rate
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative">
+              <p className="text-4xl md:text-5xl font-bold text-primary">{pct}%</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Core metric for Getnet — higher rate means more revenue and better customer experience.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
         <motion.div variants={dashboardItem}>
           <Card
             className="cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300"
@@ -252,29 +287,14 @@ function Dashboard() {
             </CardContent>
           </Card>
         </motion.div>
-        <motion.div variants={dashboardItem}>
-          <Card
-            className="cursor-pointer relative overflow-hidden border-primary/40 bg-primary/5 hover:shadow-xl hover:shadow-primary/15 hover:border-primary/60 transition-all duration-300"
-            onClick={openExecutive}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && openExecutive()}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
-            <CardHeader className="pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-primary">
-                Approval rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <p className="text-4xl font-bold text-primary">{pct}%</p>
-              <p className="text-xs text-muted-foreground mt-1">Key metric</p>
-            </CardContent>
-          </Card>
-        </motion.div>
       </motion.div>
 
-      {/* Trends + Solutions */}
+      {/* Why — trends and solution performance */}
+      <motion.div variants={dashboardItem}>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Why
+        </h2>
+      </motion.div>
       <motion.div variants={dashboardStagger} className="grid gap-4 md:grid-cols-2">
         <motion.div variants={dashboardItem}>
         {/* Approval Trends — click opens Daily Trends dashboard */}
@@ -296,9 +316,11 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             {trends.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No trend data available yet.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <BarChart3 className="h-10 w-10 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">No trend data yet.</p>
+                <p className="text-xs text-muted-foreground">Complete setup steps 1–6; data will appear here.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {trends.slice(0, 8).map((t) => (
@@ -355,9 +377,11 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             {solutions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No solution data available yet.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <TrendingUp className="h-10 w-10 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">No solution data yet.</p>
+                <p className="text-xs text-muted-foreground">Run the pipeline to see performance by solution.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {solutions.map((s) => (
@@ -401,12 +425,17 @@ function Dashboard() {
         </motion.div>
       </motion.div>
 
-      {/* Online features (Lakehouse) — from ML and AI processes */}
+      {/* Where to act — operations and insights */}
+      <motion.div variants={dashboardItem}>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Where to act
+        </h2>
+      </motion.div>
+
       <motion.div variants={dashboardItem}>
         <OnlineFeaturesCard />
       </motion.div>
 
-      {/* ML & decision reasoning — click opens Genie in Databricks */}
       <motion.div variants={dashboardItem}>
       <Card
         className="cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300"
@@ -426,9 +455,11 @@ function Dashboard() {
         </CardHeader>
         <CardContent>
           {decisionList.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No recent decisions. Use the Decisioning playground to generate decisions and reasoning.
-            </p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <MessageSquareText className="h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">No recent decisions.</p>
+              <p className="text-xs text-muted-foreground">Use the Decisioning playground to generate decisions and reasoning.</p>
+            </div>
           ) : (
             <ul className="space-y-4">
               {decisionList.slice(0, 15).map((log) => {
@@ -510,9 +541,11 @@ function OnlineFeaturesCard() {
           <p className="text-sm text-destructive">Failed to load online features.</p>
         )}
         {!isLoading && !isError && features.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No features yet. Complete Setup step 5 (run lakehouse_bootstrap.sql), then populate from ML or agent jobs.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <Cpu className="h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">No features yet.</p>
+            <p className="text-xs text-muted-foreground">Complete Setup step 5 (run lakehouse_bootstrap.sql), then populate from ML or agent jobs.</p>
+          </div>
         )}
         {!isLoading && !isError && features.length > 0 && (
           <ul className="space-y-2">
