@@ -69,7 +69,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
-**Version alignment:** One source of truth for Python app deps: `pyproject.toml` (what we need) and `uv.lock` (resolved versions). After changing `pyproject.toml` run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py` to regenerate `requirements.txt` for the Databricks App. If you see "error installing packages" on deploy, check **Compute → Apps → your app → Logs** for the exact `pip` error.
+**Version alignment:** All dependency references use exactly the same versions everywhere (no ranges). Python: `pyproject.toml` (pinned `==`) → `uv.lock` → `requirements.txt` via `scripts/sync_requirements_from_lock.py`. Frontend: `package.json` and `bun.lock` use exact versions only (no `^`). After changing `pyproject.toml` run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. If you see "error installing packages" on deploy, check **Compute → Apps → your app → Logs** for the exact `pip` error.
 
 **Version verification (same versions everywhere):**
 
