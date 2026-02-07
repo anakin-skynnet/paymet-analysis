@@ -1,9 +1,14 @@
 # =============================================================================
-# Model Serving Endpoints
+# Model Serving Endpoints & AI Gateway
 # =============================================================================
 # Four endpoints for approval propensity, risk scoring, smart routing, and smart retry.
 # Enable this include after ML models are trained and registered in Unity Catalog.
-# Catalog/schema from variables; AI Gateway rate limits and guardrails per endpoint.
+# Catalog/schema from variables.
+#
+# AI Gateway is configured per endpoint (rate limits, usage tracking, guardrails).
+# Reference: https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/configure-ai-gateway-endpoints
+# For governed LLM endpoints (Payment Intelligence, Risk Advisor), enable AI Gateway
+# on your workspace Foundation Model API endpoint in Serving UI. See docs/TECHNICAL.md.
 # =============================================================================
 
 resources:

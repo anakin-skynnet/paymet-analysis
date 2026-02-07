@@ -383,7 +383,7 @@ function SetupRun() {
         </div>
       )}
 
-      {/* Steps — order matches docs/1_DEPLOYMENTS.md (Demo setup) */}
+      {/* Steps — order matches docs/DEPLOYMENT.md (Demo setup) */}
       <div className="space-y-4">
         <h2 className="text-lg font-medium">Execution steps (1–7)</h2>
         <p className="text-sm text-muted-foreground">
@@ -560,7 +560,7 @@ function SetupRun() {
               <Badge variant="outline">SQL</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              In SQL Warehouse run in order: vector_search_and_recommendations.sql, approval_rules.sql, online_features.sql (same catalog/schema). Enables Rules, recommendations, and Dashboard features.
+              In SQL Warehouse run lakehouse_bootstrap.sql (same catalog/schema). Enables Rules, recommendations, and Dashboard features.
             </p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>

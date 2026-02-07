@@ -2,7 +2,7 @@
 # Vector Search - Similar-transaction lookup to accelerate approval rates
 # =============================================================================
 # Endpoint + index for finding similar past transactions (by embedding summary_text).
-# Source table: transaction_summaries_for_search (create via vector_search_and_recommendations.sql).
+# Source table: transaction_summaries_for_search (create via lakehouse_bootstrap.sql).
 # Requires: embedding model endpoint "databricks-bge-large-en" in workspace (Foundation Model API).
 #
 # NOTE: vector_search_endpoints and vector_search_indexes are not yet in the

@@ -11,8 +11,10 @@ import logging
 from enum import Enum
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from ..dependencies import ConfigDep
 
 logger = logging.getLogger(__name__)
 
@@ -264,6 +266,7 @@ async def get_dashboard(dashboard_id: str) -> DashboardInfo:
 @router.get("/{dashboard_id}/url", response_model=dict[str, Any], operation_id="getDashboardUrl")
 async def get_dashboard_url(
     dashboard_id: str,
+    config: ConfigDep,
     embed: bool = Query(False, description="Return embed-friendly URL"),
 ) -> dict[str, Any]:
     """
@@ -281,13 +284,14 @@ async def get_dashboard_url(
     """
     dashboard = await get_dashboard(dashboard_id)
     
-    # In production, construct full Databricks URL
-    # For now, return relative path that frontend can build upon
+    # Relative path; frontend can prepend workspace URL from config
     base_url = dashboard.url_path
     
     if embed:
-        # Add embed parameters for Databricks dashboards
-        embed_url = f"{base_url}?o=984752964297111&embed=true"
+        # Embed URL: optional workspace ID (o=) from DATABRICKS_WORKSPACE_ID so embed works in any workspace
+        embed_url = f"{base_url}?embed=true"
+        if config.databricks.workspace_id:
+            embed_url = f"{base_url}?o={config.databricks.workspace_id}&embed=true"
         return {
             "dashboard_id": dashboard_id,
             "url": base_url,

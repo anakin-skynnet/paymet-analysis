@@ -197,7 +197,7 @@ function Decisioning() {
             Similar cases & recommendations (Lakehouse)
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Recommendations from the Lakehouse (run vector_search_and_recommendations.sql in Setup step 4). Use with Rules to accelerate approval rates.
+            Recommendations from the Lakehouse (run lakehouse_bootstrap.sql in Setup step 5). Use with Rules to accelerate approval rates.
           </p>
         </CardHeader>
         <CardContent>

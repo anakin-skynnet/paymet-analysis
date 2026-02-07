@@ -453,7 +453,7 @@ function OnlineFeaturesCard() {
           Online features (Lakehouse)
         </CardTitle>
         <CardDescription>
-          Features from ML and AI stored in the Lakehouse (Setup step 4: run online_features.sql). Populate from jobs or decisioning.
+          Features from ML and AI stored in the Lakehouse (Setup step 5: run lakehouse_bootstrap.sql). Populate from jobs or decisioning.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -469,7 +469,7 @@ function OnlineFeaturesCard() {
         )}
         {!isLoading && !isError && features.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            No features yet. Complete Setup step 4 (run online_features.sql), then populate from ML or agent jobs.
+            No features yet. Complete Setup step 5 (run lakehouse_bootstrap.sql), then populate from ML or agent jobs.
           </p>
         )}
         {!isLoading && !isError && features.length > 0 && (

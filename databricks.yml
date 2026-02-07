@@ -3,7 +3,7 @@
 # =============================================================================
 # Payment approval optimization: Smart Checkout, Reason Codes, Smart Retry.
 # All parameters have defaults or are set at deployment (target/variables).
-# Docs: docs/4_TECHNICAL.md
+# Docs: docs/TECHNICAL.md
 # =============================================================================
 
 bundle:
@@ -24,7 +24,6 @@ include:
   - resources/sql_warehouse.yml
   - resources/ml_jobs.yml
   - resources/agents.yml
-  - resources/ai_gateway.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml

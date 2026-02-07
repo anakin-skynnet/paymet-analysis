@@ -10,4 +10,3 @@ env:
     value: src
   - name: PGAPPNAME
     value: payment-analysis-db-dev
-

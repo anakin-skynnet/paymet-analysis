@@ -1,0 +1,109 @@
+-- ============================================================================
+-- Lakehouse bootstrap – run once in target catalog/schema (same as gold views)
+-- ============================================================================
+-- Run in SQL Warehouse or a notebook. Order: app_config → vector_search &
+-- recommendations → approval_rules → online_features. Enables Rules, Decisioning
+-- recommendations, and Dashboard features. See docs/DEPLOYMENT.md Step 5.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 1. App config (catalog/schema used by the app)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS app_config (
+    id INT NOT NULL DEFAULT 1,
+    catalog STRING NOT NULL COMMENT 'Unity Catalog name used by the app',
+    schema STRING NOT NULL COMMENT 'Schema name used by the app',
+    updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+COMMENT 'Single-row config: catalog and schema for the Payment Approval app. Updated via UI or API.';
+
+INSERT INTO app_config (id, catalog, schema)
+SELECT 1, CURRENT_CATALOG(), CURRENT_SCHEMA()
+WHERE (SELECT COUNT(*) FROM app_config) = 0;
+
+-- ----------------------------------------------------------------------------
+-- 2. Vector Search source & Lakehouse recommendations
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS transaction_summaries_for_search (
+    transaction_id STRING NOT NULL,
+    summary_text STRING NOT NULL COMMENT 'Concatenated context for embedding',
+    outcome STRING NOT NULL,
+    amount DOUBLE,
+    network STRING,
+    merchant_segment STRING,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES (
+    'delta.enableChangeDataFeed' = 'true',
+    'delta.autoOptimize.optimizeWrite' = 'true'
+)
+COMMENT 'Source for Vector Search index. Create index from resources/vector_search.yml if needed.';
+
+CREATE TABLE IF NOT EXISTS approval_recommendations (
+    id STRING NOT NULL,
+    context_summary STRING NOT NULL,
+    recommended_action STRING NOT NULL,
+    score DOUBLE,
+    source_type STRING,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')
+COMMENT 'Recommendations from similar transactions and rules; shown in app Decisioning.';
+
+CREATE OR REPLACE VIEW v_recommendations_from_lakehouse AS
+SELECT id, context_summary, recommended_action, score, source_type, created_at
+FROM approval_recommendations
+ORDER BY created_at DESC
+LIMIT 100;
+
+-- ----------------------------------------------------------------------------
+-- 3. Approval rules (editable from app, used by ML/Agents)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS approval_rules (
+    id STRING NOT NULL,
+    name STRING NOT NULL,
+    rule_type STRING NOT NULL COMMENT 'authentication | retry | routing',
+    condition_expression STRING,
+    action_summary STRING NOT NULL,
+    priority INT NOT NULL DEFAULT 100,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+    updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+COMMENT 'Business rules for approval/retry/routing. Written from the app; consumed by decision API and AI agents.';
+
+CREATE OR REPLACE VIEW v_approval_rules_active AS
+SELECT id, name, rule_type, condition_expression, action_summary, priority, created_at, updated_at
+FROM approval_rules
+WHERE is_active = true
+ORDER BY priority ASC, updated_at DESC;
+
+-- ----------------------------------------------------------------------------
+-- 4. Online features (ML and AI output for app UI)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS online_features (
+    id STRING NOT NULL,
+    source STRING NOT NULL COMMENT 'ml | agent',
+    feature_set STRING,
+    feature_name STRING NOT NULL,
+    feature_value DOUBLE,
+    feature_value_str STRING,
+    entity_id STRING,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+COMMENT 'Online features from ML and AI; presented in the app Dashboard.';
+
+CREATE OR REPLACE VIEW v_online_features_latest AS
+SELECT id, source, feature_set, feature_name, feature_value, feature_value_str, entity_id, created_at
+FROM online_features
+WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS
+ORDER BY created_at DESC
+LIMIT 200;

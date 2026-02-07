@@ -37,6 +37,11 @@ class DatabricksConfig(BaseSettings):
         description="Databricks workspace URL",
         validation_alias="DATABRICKS_HOST"
     )
+    workspace_id: str | None = Field(
+        default=None,
+        description="Workspace ID (e.g. for dashboard embed URL query param 'o'). Set DATABRICKS_WORKSPACE_ID.",
+        validation_alias="DATABRICKS_WORKSPACE_ID",
+    )
     workspace_path: str = Field(
         description="Workspace deployment path",
         default="/Workspace/Users/${workspace.current_user.userName}/payment-analysis"

@@ -3,7 +3,7 @@
 # =============================================================================
 # Six agent jobs calling the shared agent_framework notebook with different roles.
 # Catalog/schema from variables. All use single-node clusters; schedules are PAUSED by default.
-# Mosaic AI Gateway (governed LLM access) is a separate resource: resources/ai_gateway.yml
+# Mosaic AI Gateway: configured on model serving endpoints (model_serving.yml) and on LLM endpoints in Serving UI.
 # =============================================================================
 
 resources:

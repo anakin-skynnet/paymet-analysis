@@ -40,27 +40,38 @@ def _get_workspace_host() -> str:
     return _app_config.databricks.workspace_url
 
 
-# Job/pipeline IDs are from bundle deploy (target workspace). Override via env if needed.
+def _job_id_env_key(key: str) -> str:
+    """Env var name for job ID override: e.g. transaction_stream_simulator -> DATABRICKS_JOB_ID_TRANSACTION_STREAM_SIMULATOR."""
+    return "DATABRICKS_JOB_ID_" + key.upper()
+
+
+def _pipeline_id_env_key(key: str) -> str:
+    """Env var name for pipeline ID override: e.g. payment_analysis_etl -> DATABRICKS_PIPELINE_ID_PAYMENT_ANALYSIS_ETL."""
+    return "DATABRICKS_PIPELINE_ID_" + key.upper()
+
+
+# Job/pipeline IDs from bundle deploy (target workspace). Override via env: DATABRICKS_JOB_ID_<NAME>, DATABRICKS_PIPELINE_ID_<NAME>.
+# See docs/DEPLOYMENT.md for the list of env vars.
 DEFAULT_IDS: _DefaultIds = {
     "warehouse_id": os.getenv("DATABRICKS_WAREHOUSE_ID", "bf12ee0011ea4ced") or "",
     "catalog": os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog") or "",
     "schema": os.getenv("DATABRICKS_SCHEMA", "ahs_demo_payment_analysis_dev") or "",
     "jobs": {
-        "transaction_stream_simulator": "782493643247677",
-        "create_gold_views": "775632375108394",
-        "train_ml_models": "231255282351595",
-        "orchestrator_agent": "582671124403091",
-        "smart_routing_agent": "767448715494660",
-        "smart_retry_agent": "109985467901177",
-        "risk_assessor_agent": "564155694169057",
-        "decline_analyst_agent": "102676008371002",
-        "performance_recommender_agent": "560263049146932",
-        "continuous_stream_processor": "1124715161556931",
-        "test_agent_framework": os.getenv("DATABRICKS_JOB_ID_TEST_AGENT_FRAMEWORK", "0") or "0",
+        "transaction_stream_simulator": os.getenv(_job_id_env_key("transaction_stream_simulator"), "782493643247677") or "782493643247677",
+        "create_gold_views": os.getenv(_job_id_env_key("create_gold_views"), "775632375108394") or "775632375108394",
+        "train_ml_models": os.getenv(_job_id_env_key("train_ml_models"), "231255282351595") or "231255282351595",
+        "orchestrator_agent": os.getenv(_job_id_env_key("orchestrator_agent"), "582671124403091") or "582671124403091",
+        "smart_routing_agent": os.getenv(_job_id_env_key("smart_routing_agent"), "767448715494660") or "767448715494660",
+        "smart_retry_agent": os.getenv(_job_id_env_key("smart_retry_agent"), "109985467901177") or "109985467901177",
+        "risk_assessor_agent": os.getenv(_job_id_env_key("risk_assessor_agent"), "564155694169057") or "564155694169057",
+        "decline_analyst_agent": os.getenv(_job_id_env_key("decline_analyst_agent"), "102676008371002") or "102676008371002",
+        "performance_recommender_agent": os.getenv(_job_id_env_key("performance_recommender_agent"), "560263049146932") or "560263049146932",
+        "continuous_stream_processor": os.getenv(_job_id_env_key("continuous_stream_processor"), "1124715161556931") or "1124715161556931",
+        "test_agent_framework": os.getenv(_job_id_env_key("test_agent_framework"), "0") or "0",
     },
     "pipelines": {
-        "payment_analysis_etl": "eb4edb4a-0069-4208-9261-2151f4bf33d9",
-        "payment_realtime_pipeline": "0ef506fd-d386-4581-a609-57fb9a23291c",
+        "payment_analysis_etl": os.getenv(_pipeline_id_env_key("payment_analysis_etl"), "eb4edb4a-0069-4208-9261-2151f4bf33d9") or "eb4edb4a-0069-4208-9261-2151f4bf33d9",
+        "payment_realtime_pipeline": os.getenv(_pipeline_id_env_key("payment_realtime_pipeline"), "0ef506fd-d386-4581-a609-57fb9a23291c") or "0ef506fd-d386-4581-a609-57fb9a23291c",
     },
 }
 

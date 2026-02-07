@@ -1,4 +1,4 @@
-# Databricks App: add ONLY packages not pre-installed (see docs/4_TECHNICAL.md for full pre-installed list).
+# Databricks App: add ONLY packages not pre-installed (see docs/TECHNICAL.md).
 # Pre-installed include: databricks-sdk 0.33.0, fastapi 0.115.0, uvicorn[standard] 0.30.6, flask, streamlit, dash, etc.
 # Pinned versions; pure Python psycopg (no [binary]) so pip install succeeds without a C compiler.
 pydantic-settings==2.6.1
