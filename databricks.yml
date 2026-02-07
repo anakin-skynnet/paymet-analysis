@@ -60,7 +60,7 @@ variables:
     description: Postgres database name inside the Lakebase instance
     default: payment_analysis
   workspace_folder:
-    description: Workspace folder name for bundle files (notebooks, dashboards, app)
+    description: Workspace folder name for bundle files (notebooks, dashboards, app). Must match repo/deploy path (e.g. payment-analysis).
     default: payment-analysis
   # Genie space ID for app resource binding. Default empty; do not add genie-space to app resources in resources/fastapi_app.yml unless this is set (empty space_id causes deploy to fail).
   genie_space_id:

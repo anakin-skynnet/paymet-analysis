@@ -6,7 +6,7 @@
 #   DATABRICKS_HOST        — Workspace URL (e.g. https://xxx.azuredatabricks.net).
 #   DATABRICKS_WAREHOUSE_ID — SQL Warehouse ID (from bundle; use deployed payment_analysis_warehouse id).
 #   DATABRICKS_TOKEN       — PAT or OAuth for API calls (notebooks, jobs, dashboards).
-# Optional: DATABRICKS_WORKSPACE_ID (for dashboard URLs); BUNDLE_FOLDER (if var.workspace_folder != payment-analysis).
+# Optional: DATABRICKS_WORKSPACE_ID (for dashboard URLs); BUNDLE_FOLDER (set if var.workspace_folder != payment-analysis).
 
 resources:
   apps:

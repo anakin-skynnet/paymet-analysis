@@ -100,10 +100,10 @@ By default: Workspace folder, Lakebase, Jobs (simulator, gold views, ML, agents,
 
 ### Fix: Failed to export … type=mlflowExperiment
 
-The error means an MLflow experiment was created at a path inside the app’s source folder (e.g. `…/paymet-analysis/src/payment_analysis/dashboards/payment_analysis_models`). The training notebook was updated so **new** runs use `…/mlflow_experiments/payment_analysis_models` (outside the app path) — see `src/payment_analysis/ml/train_models.py`.
+The error means an MLflow experiment was created at a path inside the app’s source folder (e.g. `…/payment-analysis/src/payment_analysis/dashboards/payment_analysis_models`). The training notebook was updated so **new** runs use `…/mlflow_experiments/payment_analysis_models` (outside the app path) — see `src/payment_analysis/ml/train_models.py`.
 
 If you still see the error, an old experiment is left in the workspace. Delete it manually:  
-**Workspace** → **Users** → **&lt;your-user&gt;** → **paymet-analysis** (or your workspace folder) → **src** → **payment_analysis** → **dashboards** → right‑click **payment_analysis_models** → **Delete**. Then redeploy or export again.
+**Workspace** → **Users** → **&lt;your-user&gt;** → **payment-analysis** (or your workspace folder) → **src** → **payment_analysis** → **dashboards** → right‑click **payment_analysis_models** → **Delete**. Then redeploy or export again.
 
 ### App spec error
 

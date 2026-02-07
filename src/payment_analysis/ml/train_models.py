@@ -48,7 +48,7 @@ MAX_DEPTH_RISK = int(dbutils.widgets.get("max_depth_risk"))
 MAX_DEPTH_ROUTING = int(dbutils.widgets.get("max_depth_routing"))
 MAX_DEPTH_RETRY = int(dbutils.widgets.get("max_depth_retry"))
 MIN_SAMPLES_SPLIT = int(dbutils.widgets.get("min_samples_split"))
-# Use a path outside the app source tree (e.g. paymet-analysis/) so app export does not try to export this MLflow experiment
+# Use a path outside the app source tree (e.g. payment-analysis/) so app export does not try to export this MLflow experiment
 EXPERIMENT_PATH = f"/Users/{spark.sql('SELECT current_user()').collect()[0][0]}/mlflow_experiments/payment_analysis_models"
 
 # Set MLflow to use Unity Catalog
