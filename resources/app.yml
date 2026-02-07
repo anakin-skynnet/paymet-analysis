@@ -4,7 +4,7 @@
 # Deploys the app (FastAPI + React UI) to Databricks Apps. After bundle deploy,
 # run the app via Workspace → Apps or: databricks bundle run payment_analysis_app -t dev
 # App URL is shown in bundle summary or in Workspace → Apps.
-# Name: payment-analysis. Source folder: project root (source_code_path: ..).
+# Name: payment-analysis. Source folder: bundle root (project root), see source_code_path below.
 #
 # Bound resources (include if required for the app):
 #   - database: Lakebase (rules, experiments, incidents, ML features)
@@ -22,7 +22,8 @@ resources:
   apps:
     payment_analysis_app:
       name: payment-analysis
-      source_code_path: ..
+      # Source folder path (relative to bundle root = project root: paymet-analysis)
+      source_code_path: .
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
       resources:
         - name: database
@@ -36,13 +37,13 @@ resources:
           sql_warehouse:
             id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
             permission: CAN_USE
-        # Genie space: uses existing "Approvals domain expert"; set var.genie_space_id to that space's ID (from Genie UI). Change name/ID when a new Genie space is created.
-        - name: genie-space
-          description: Genie space for natural language analytics (Ask Data)
-          genie_space:
-            name: "Approvals domain expert"
-            space_id: ${var.genie_space_id}
-            permission: CAN_RUN
+        # Genie: uncomment and set --var genie_space_id=<id> (ID of "Approvals domain expert" from Genie UI) so deploy binds the space.
+        # - name: genie-space
+        #   description: Genie space for natural language analytics (Ask Data)
+        #   genie_space:
+        #     name: "Approvals domain expert"
+        #     space_id: ${var.genie_space_id}
+        #     permission: CAN_RUN
         # Optional secret: uncomment and set scope/key if the app needs secrets
         # - name: app-secrets
         #   description: Secret scope for API keys or other sensitive config
@@ -50,19 +51,20 @@ resources:
         #     scope: "payment-analysis"
         #     key: "api-key"
         #     permission: READ
-        - name: volume-reports
-          description: UC volume for reports and Genie config
-          uc_securable:
-            securable_type: VOLUME
-            securable_full_name: "${var.catalog}.${var.schema}.reports"
-            permission: READ_VOLUME
+        # UC volume: uncomment after schema/volume exist (e.g. after first full deploy)
+        # - name: volume-reports
+        #   description: UC volume for reports and Genie config
+        #   uc_securable:
+        #     securable_type: VOLUME
+        #     securable_full_name: "${var.catalog}.${var.schema}.reports"
+        #     permission: READ_VOLUME
         # Jobs used by UI (Setup & Run, agents, streaming, Genie sync)
         - name: job-simulator
           description: Transaction stream simulator
           job:
             id: ${resources.jobs.transaction_stream_simulator.id}
             permission: CAN_MANAGE_RUN
-        - name: job-continuous-processor
+        - name: job-stream-processor
           description: Continuous stream processor
           job:
             id: ${resources.jobs.continuous_stream_processor.id}
@@ -97,7 +99,7 @@ resources:
           job:
             id: ${resources.jobs.smart_retry_agent_job.id}
             permission: CAN_MANAGE_RUN
-        - name: job-decline-analyst-agent
+        - name: job-decline-analyst
           description: Decline analyst agent
           job:
             id: ${resources.jobs.decline_analyst_agent_job.id}
@@ -107,7 +109,7 @@ resources:
           job:
             id: ${resources.jobs.risk_assessor_agent_job.id}
             permission: CAN_MANAGE_RUN
-        - name: job-performance-recommender-agent
+        - name: job-perf-recommender-agent
           description: Performance recommender agent
           job:
             id: ${resources.jobs.performance_recommender_agent_job.id}
@@ -117,25 +119,25 @@ resources:
           job:
             id: ${resources.jobs.genie_sync_job.id}
             permission: CAN_MANAGE_RUN
-        # Model serving endpoints (require resources/model_serving.yml in databricks.yml)
-        - name: serving-approval-propensity
-          description: Approval propensity model endpoint
-          serving_endpoint:
-            name: "approval-propensity-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-risk-scoring
-          description: Risk scoring model endpoint
-          serving_endpoint:
-            name: "risk-scoring-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-routing
-          description: Smart routing model endpoint
-          serving_endpoint:
-            name: "smart-routing-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-retry
-          description: Smart retry model endpoint
-          serving_endpoint:
-            name: "smart-retry-${var.environment}"
-            permission: CAN_QUERY
+        # Model serving: uncomment when resources/model_serving.yml is included (endpoints must exist)
+        # - name: serving-approval-prop
+        #   description: Approval propensity model endpoint
+        #   serving_endpoint:
+        #     name: "approval-propensity-${var.environment}"
+        #     permission: CAN_QUERY
+        # - name: serving-risk-scoring
+        #   description: Risk scoring model endpoint
+        #   serving_endpoint:
+        #     name: "risk-scoring-${var.environment}"
+        #     permission: CAN_QUERY
+        # - name: serving-smart-routing
+        #   description: Smart routing model endpoint
+        #   serving_endpoint:
+        #     name: "smart-routing-${var.environment}"
+        #     permission: CAN_QUERY
+        # - name: serving-smart-retry
+        #   description: Smart retry model endpoint
+        #   serving_endpoint:
+        #     name: "smart-retry-${var.environment}"
+        #     permission: CAN_QUERY
       # PGAPPNAME is set in app.yaml for Lakebase (e.g. payment-analysis-db-dev).
