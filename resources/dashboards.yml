@@ -5,8 +5,8 @@
 #   uv run python scripts/dashboards.py prepare   (dev: uses var defaults)
 #   uv run python scripts/dashboards.py prepare --catalog X --schema Y   (prod/custom)
 # Or: ./scripts/bundle.sh validate [dev|prod]
-# Dashboards read from ../.build/dashboards/*.lvdash.json (same catalog.schema
-# as where Create Gold Views job runs). warehouse_id from var.
+# Dashboards: file_path relative to this file (resources/) so ../.build = repo root .build. Run prepare before deploy.
+# Same catalog.schema as Create Gold Views job. warehouse_id from var.
 # =============================================================================
 
 resources:

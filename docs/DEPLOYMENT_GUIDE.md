@@ -51,6 +51,23 @@ Or: `uv run python scripts/dashboards.py prepare` then `databricks bundle valida
 
 App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yaml` and `app.yml` at project root (keep in sync). See [App spec error](#app-spec-error).
 
+## App configuration and resource paths
+
+**Bundle root:** Directory containing `databricks.yml`. **App source:** `source_code_path: .` (bundle root) in `resources/fastapi_app.yml`.
+
+**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `fastapi_app`. Optional: `model_serving` (uncomment after training models).
+
+**Paths:**  
+- Workspace root: `/Workspace/Users/${user}/${var.workspace_folder}` (default folder: `payment-analysis`).  
+- Notebooks/jobs: `${workspace.file_path}/src/payment_analysis/...` (e.g. `ml/train_models`, `streaming/transaction_simulator`, `agents/agent_framework`).  
+- Gold views SQL: `${workspace.file_path}/.build/transform/gold_views.sql` (from `scripts/dashboards.py prepare`).  
+- Dashboards: `file_path` in `resources/dashboards.yml` is `../.build/dashboards/*.lvdash.json` (relative to `resources/`).  
+- Sync (uploaded to workspace): `.build`, `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`.
+
+**App bindings:** database (Lakebase), sql-warehouse (`payment_analysis_warehouse`), 12 jobs (simulator, stream processor, gold views, train ML, test agent, 6 agent jobs, genie sync). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
+
+Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
+
 ## Schema consistency
 
 One catalog/schema (defaults: `ahs_demos_catalog`, `ahs_demo_payment_analysis_dev`). Effective catalog/schema from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#catalog-and-schema-app_config).
@@ -79,7 +96,14 @@ By default: Workspace folder, Lakebase, Jobs (simulator, gold views, ML, agents,
 | Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
 | Error installing packages | TanStack **1.158.1** with overrides; use `bun.lock`. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#databricks-app-deploy) |
 | **Error loading app spec from app.yml** | Ensure **`app.yaml`** and **`app.yml`** exist at project root with same content. Redeploy. |
-| **Failed to export ... type=mlflowExperiment** | MLflow experiment was under the app source path. Training job now uses `.../mlflow_experiments/payment_analysis_models`. If export still fails, in **Workspace** delete the experiment at `.../src/payment_analysis/dashboards/payment_analysis_models` (or the path in the error); then redeploy/export. |
+| **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
+
+### Fix: Failed to export … type=mlflowExperiment
+
+The error means an MLflow experiment was created at a path inside the app’s source folder (e.g. `…/paymet-analysis/src/payment_analysis/dashboards/payment_analysis_models`). The training notebook was updated so **new** runs use `…/mlflow_experiments/payment_analysis_models` (outside the app path) — see `src/payment_analysis/ml/train_models.py`.
+
+If you still see the error, an old experiment is left in the workspace. Delete it manually:  
+**Workspace** → **Users** → **&lt;your-user&gt;** → **paymet-analysis** (or your workspace folder) → **src** → **payment_analysis** → **dashboards** → right‑click **payment_analysis_models** → **Delete**. Then redeploy or export again.
 
 ### App spec error
 

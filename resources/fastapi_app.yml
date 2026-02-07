@@ -1,11 +1,18 @@
 # Bundle app resource: app name, source path, and bindings (database, warehouse, jobs).
 # Runtime spec: app.yaml and app.yml at project root. Run: Workspace → Apps or databricks bundle run payment_analysis_app -t dev
+#
+# Required environment variables (set in Workspace → Apps → payment-analysis → Edit → Environment):
+#   PGAPPNAME              — Set in app.yaml/app.yml (dev: payment-analysis-db-dev). Must match var.lakebase_instance_name.
+#   DATABRICKS_HOST        — Workspace URL (e.g. https://xxx.azuredatabricks.net).
+#   DATABRICKS_WAREHOUSE_ID — SQL Warehouse ID (from bundle; use deployed payment_analysis_warehouse id).
+#   DATABRICKS_TOKEN       — PAT or OAuth for API calls (notebooks, jobs, dashboards).
+# Optional: DATABRICKS_WORKSPACE_ID (for dashboard URLs); BUNDLE_FOLDER (if var.workspace_folder != payment-analysis).
 
 resources:
   apps:
     payment_analysis_app:
       name: payment-analysis
-      # Source folder path: relative to bundle root so the bundle can locate and upload app source (do not use workspace path)
+      # Source path: relative to bundle root (where databricks.yml lives). Do not use workspace path.
       source_code_path: .
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
       resources:
