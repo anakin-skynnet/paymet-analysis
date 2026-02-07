@@ -7,13 +7,16 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .logger import logger
 
 try:
-    from .._metadata import api_prefix as _api_prefix, dist_dir as _dist_dir
+    from .._metadata import api_prefix as _api_prefix, dist_dir as _default_dist_dir
 except Exception:
     _api_prefix = "/api"
-    _dist_dir = Path(__file__).resolve().parents[1] / "__dist__"
+    _default_dist_dir = Path(__file__).resolve().parents[1] / "__dist__"
 
 
-def add_not_found_handler(app: FastAPI):
+def add_not_found_handler(app: FastAPI, ui_dist_dir: Path | None = None):
+    """Register 404 handler with SPA fallback. Use ui_dist_dir when UI is served from a resolved fallback path."""
+    dist_dir = ui_dist_dir if ui_dist_dir is not None else _default_dist_dir
+
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         logger.info(
             f"HTTP exception handler called for request {request.url.path} with status code {exc.status_code}"
@@ -30,11 +33,9 @@ def add_not_found_handler(app: FastAPI):
             looks_like_asset = "." in last_segment
 
             if (not is_api) and is_get_page_nav and (not looks_like_asset):
-                index_html = _dist_dir / "index.html"
+                index_html = dist_dir / "index.html"
                 if index_html.exists():
-                    # Let the SPA router handle it
                     return FileResponse(index_html)
-        # Default: return the original HTTP error (JSON 404 for API, etc.)
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
     app.exception_handler(StarletteHTTPException)(http_exception_handler)

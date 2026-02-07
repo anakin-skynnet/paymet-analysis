@@ -102,4 +102,4 @@ else:
         )
 
 
-add_not_found_handler(app)
+add_not_found_handler(app, _ui_dist)

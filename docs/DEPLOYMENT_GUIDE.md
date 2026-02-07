@@ -133,6 +133,7 @@ By default: Workspace folder, Lakebase, Jobs (simulator, gold views, ML, agents,
 | Error installing packages (app deploy) | Check **Logs** for the exact pip error. Ensure `requirements.txt` is up to date: run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. See [Databricks Apps compatibility](#databricks-apps-compatibility). |
 | **permission denied for schema public** | App tables use schema `app` by default. Set **LAKEBASE_SCHEMA** (e.g. `app`) in the app environment if needed; the app creates the schema if it has permission. |
 | **Error loading app spec from app.yml** | Ensure **`app.yml`** exists at project root (runtime spec for the app container). Redeploy. |
+| **Web UI shows "API only" / fallback page** | The UI build was not in the deployed app. Run **`uv run apx build`** then **`databricks bundle deploy -t dev`** (or `./scripts/bundle.sh deploy dev`). The bundle runs the build and syncs `src/payment_analysis/__dist__` so the app can serve the UI. |
 | **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
 
 ### Fix: Failed to export … type=mlflowExperiment

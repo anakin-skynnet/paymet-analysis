@@ -68,11 +68,12 @@ variables:
     default: ""
 
 # -----------------------------------------------------------------------------
-# Sync: paths uploaded to workspace for job/pipeline execution
+# Sync: paths uploaded to workspace for job/pipeline execution and app
 # -----------------------------------------------------------------------------
 sync:
   include:
     - .build
+    - src/payment_analysis/__dist__   # UI build output (created by artifacts.default build); required for app web UI
     - src/payment_analysis/ml
     - src/payment_analysis/streaming
     - src/payment_analysis/transform
