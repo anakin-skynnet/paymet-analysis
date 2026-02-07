@@ -88,7 +88,7 @@ The app is deployed as a **Databricks App** (FastAPI + React). **Pre-installed P
 
 **Lakebase database:** Required for UI CRUD (rules, experiments, incidents) and ML features. The bundle includes `resources/lakebase.yml`. Set **`PGAPPNAME`** in the app environment to the instance name (dev: `payment-analysis-db-dev`). If unset, rules/experiments/incidents endpoints return 503.
 
-**Runtime:** `app.yaml` sets `command` (uvicorn), `PYTHONPATH=src`, and one worker. After deploy, open the app from Workspace → Apps.
+**Runtime:** `app.yml` sets `command` (uvicorn), `PYTHONPATH=src`, and one worker. After deploy, open the app from Workspace → Apps.
 
 **Version strategy (Databricks App deployment):** Pin versions for reproducibility and to avoid drift. **Python:** Overriding a pre-installed Python package with a specific version is supported and recommended when stability matters. `requirements.txt` (App runtime) and `pyproject.toml` share the same pins for overlapping packages (`pydantic-settings==2.6.1`, `sqlmodel==0.0.27`, `psycopg==3.2.3`). **Node:** `package.json` uses exact pinned versions for TanStack (all **1.158.1**) and overrides for all three; run `uv run apx bun install` after changing `package.json` so `bun.lock` stays in sync. Test after version changes: run `uv run apx build`, then deploy.
 

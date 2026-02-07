@@ -72,7 +72,7 @@ The app (FastAPI + React) is deployed to Databricks Apps via the bundle.
 
 **How the app uses deployed resources:** The bundle deploys jobs, Lakebase, pipelines, SQL warehouse, Genie sync job, dashboards, and the app. The app is *configured* to run jobs, connect to the database, open Genie, and use those resources only when the environment variables above are set. Database connection uses **PGAPPNAME** (Lakebase instance name) and the platform’s auth for `database.get_database_instance` / `generate_database_credential`. Job/pipeline IDs for **Setup & Run** come from backend defaults (or env overrides like `DATABRICKS_WAREHOUSE_ID`); after deploying to a new workspace, you may need to set warehouse and optionally job/pipeline IDs to match your deployed resources (see 4_TECHNICAL.md).
 
-The app resource is defined in `resources/app.yml`; runtime is configured in `app.yaml` (uvicorn, PYTHONPATH=src, PGAPPNAME). Python dependencies for the Apps container are in `requirements.txt` at the project root (Databricks installs these during app deployment).
+The app resource is defined in `resources/app.yml`; runtime is configured in `app.yml` (uvicorn, PYTHONPATH=src, PGAPPNAME). Python dependencies for the Apps container are in `requirements.txt` at the project root (Databricks installs these during app deployment).
 
 ## Schema Consistency
 
