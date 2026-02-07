@@ -1,4 +1,5 @@
 import os
+import uuid
 from functools import cached_property
 
 from databricks.sdk import WorkspaceClient
@@ -67,7 +68,8 @@ class Runtime:
 
     def _before_connect(self, dialect, conn_rec, cargs, cparams):
         cred = self.ws.database.generate_database_credential(
-            instance_names=[self.config.db.instance_name]
+            request_id=str(uuid.uuid4()),
+            instance_names=[self.config.db.instance_name],
         )
         cparams["password"] = cred.token
 
@@ -84,6 +86,8 @@ class Runtime:
                 pool_size=4,
             )
         else:
+            # Lakebase: token injected per connection (OAuth expires ~1h). pool_recycle < 1h.
+            # See https://apps-cookbook.dev/docs/fastapi/getting_started/lakebase_connection
             engine = create_engine(
                 self.engine_url,
                 pool_recycle=45 * 60,

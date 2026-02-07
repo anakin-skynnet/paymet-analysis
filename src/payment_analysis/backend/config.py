@@ -69,7 +69,9 @@ class DatabaseConfig(BaseSettings):
         description="The port of the database", default=5432, validation_alias="PGPORT"
     )
     database_name: str = Field(
-        description="The name of the database", default="databricks_postgres"
+        description="Postgres database name inside the Lakebase instance (match bundle lakebase_database_name)",
+        default="payment_analysis",
+        validation_alias="LAKEBASE_DATABASE_NAME",
     )
     instance_name: str = Field(
         default="",

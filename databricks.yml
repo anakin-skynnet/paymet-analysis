@@ -28,7 +28,7 @@ include:
   - resources/genie_spaces.yml
   - resources/dashboards.yml
   # - resources/model_serving.yml  # Uncomment after Step 6 (Train ML Models) so 4 models exist in UC
-  - resources/app.yml
+  - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------
 # Bundle variables (override via --var, BUNDLE_VAR_*, or target variables)
@@ -62,9 +62,9 @@ variables:
   workspace_folder:
     description: Workspace folder name for bundle files (notebooks, dashboards, app)
     default: payment-analysis
-  # Genie space ID for app resource binding. Default empty; do not add genie-space to app resources in app.yml unless this is set (empty space_id causes deploy to fail).
+  # Genie space ID for app resource binding. Default empty; do not add genie-space to app resources in resources/fastapi_app.yml unless this is set (empty space_id causes deploy to fail).
   genie_space_id:
-    description: "Genie space ID (e.g. UUID of 'Approvals domain expert' from Genie UI). Set when uncommenting genie-space in resources/app.yml."
+    description: "Genie space ID (e.g. UUID of 'Approvals domain expert' from Genie UI). Set when uncommenting genie-space in resources/fastapi_app.yml."
     default: ""
 
 # -----------------------------------------------------------------------------

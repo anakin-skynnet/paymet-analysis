@@ -1,6 +1,6 @@
 command:
   - uvicorn
-  - app:payment-analysis
+  - app:fastapi_app
   
 env:
   - name: PYTHONPATH

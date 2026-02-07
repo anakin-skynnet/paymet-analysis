@@ -5,7 +5,7 @@
 # See: https://www.databricks.com/product/lakebase
 #      https://learn.microsoft.com/en-us/azure/databricks/oltp/
 # Deploys a Lakebase Provisioned instance and optionally registers it as a UC catalog.
-# The app connects via PGAPPNAME (set to instance name); bind the app to this DB in app.yml if desired.
+# The app connects via PGAPPNAME (set to instance name); bind the app to this DB in resources/fastapi_app.yml if desired.
 # =============================================================================
 
 resources:

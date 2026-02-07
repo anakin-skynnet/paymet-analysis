@@ -91,7 +91,7 @@ The app (FastAPI + React) is deployed to Databricks Apps via the bundle.
 
 **How the app uses deployed resources:** The bundle deploys jobs, Lakebase, pipelines, SQL warehouse, Genie sync job, dashboards, and the app. The app is *configured* to run jobs, connect to the database, open Genie, and use those resources only when the environment variables above are set. Job/pipeline IDs come from backend defaults or env overrides; after deploying to a new workspace, set warehouse and optionally job/pipeline IDs to match. See [TECHNICAL](TECHNICAL.md).
 
-The app resource is defined in `resources/app.yml`; runtime is configured in **`app.yaml`** at project root (block-sequence `command` and `env`; uvicorn, PYTHONPATH=src, PGAPPNAME). Python dependencies for the Apps container are in `requirements.txt`. App runtime format follows [Configure app execution (app.yaml)](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/databricks-apps/app-runtime) and [FastAPI — Databricks Apps Cookbook](https://apps-cookbook.dev/docs/fastapi/getting_started/create).
+The app resource is defined in `resources/fastapi_app.yml`; runtime is configured in **`app.yaml`** at project root (block-sequence `command` and `env`; uvicorn, PYTHONPATH=src, PGAPPNAME). Python dependencies for the Apps container are in `requirements.txt`. App runtime format follows [Configure app execution (app.yaml)](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/databricks-apps/app-runtime) and [FastAPI — Databricks Apps Cookbook](https://apps-cookbook.dev/docs/fastapi/getting_started/create).
 
 ## Schema Consistency
 
@@ -143,7 +143,7 @@ After deploying the app and setting the required environment variables, confirm:
 
 ## App spec error
 
-If you see **"error loading app spec from app.yml"**: the Apps runtime loads the run spec from the **deployed app root**. Use **`app.yaml`** at project root (block-sequence `command` and `env`). Docs allow `.yaml` or `.yml`; some runtimes look for `app.yml` first — if the error persists, add **`app.yml`** with the same content as `app.yaml`. No conflict with **`resources/app.yml`** (bundle resource, different purpose). After editing, run `./scripts/bundle.sh deploy dev` so the updated file is uploaded.
+If you see **"error loading app spec from app.yml"**: the Apps runtime loads the run spec from the **deployed app root**. Use **`app.yaml`** at project root (block-sequence `command` and `env`). Docs allow `.yaml` or `.yml`; some runtimes look for `app.yml` first — if the error persists, add **`app.yml`** with the same content as `app.yaml`. No conflict with **`resources/fastapi_app.yml`** (bundle resource, different purpose). After editing, run `./scripts/bundle.sh deploy dev` so the updated file is uploaded.
 
 ## Scripts
 

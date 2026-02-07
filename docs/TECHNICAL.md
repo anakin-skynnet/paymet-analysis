@@ -74,7 +74,7 @@ Runs: build, backend import smoke test, dashboard validate-assets, bundle valida
 
 | Requirement | Status | Notes |
 |-------------|--------|--------|
-| **Runtime spec at project root** | OK | `app.yaml` (block-sequence `command` + `env`; add `app.yml` copy if runtime expects it) |
+| **Runtime spec at project root** | OK | `app.yaml` (block-sequence `command` + `env`) |
 | **Command** | OK | `uvicorn app:app --host 0.0.0.0 --workers 1` (no shell; container binding) |
 | **API prefix `/api`** | OK | Required for OAuth2 Bearer; router uses `prefix="/api"` |
 | **requirements.txt** | OK | Only non–pre-installed (pydantic-settings, sqlmodel, psycopg); no fastapi/uvicorn; psycopg without `[binary]` |
@@ -82,7 +82,7 @@ Runs: build, backend import smoke test, dashboard validate-assets, bundle valida
 | **Auth** | OK | `X-Forwarded-Access-Token` for workspace client; platform injects when bound |
 | **Config from env** | OK | `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN` from bound resources; `PGAPPNAME` in app.yaml env |
 | **Database** | OK | Lakebase via `PGAPPNAME`; no localhost in production (only when `APX_DEV_DB_PORT` set) |
-| **Bundle app resource** | OK | `resources/app.yml`: source_code_path, database, sql_warehouse, jobs bound |
+| **Bundle app resource** | OK | `resources/fastapi_app.yml`: source_code_path, database, sql_warehouse, jobs bound |
 | **Node/frontend** | OK | `package.json` engines `>=22.0.0`; TanStack 1.158.1 overrides; `apx build` before deploy populates `__dist__` |
 
 ## Databricks App (deploy)

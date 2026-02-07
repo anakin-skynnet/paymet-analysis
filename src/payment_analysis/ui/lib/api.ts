@@ -2100,6 +2100,29 @@ export function useRunSetupPipeline(options?: { mutation?: UseMutationOptions<{ 
   return useMutation({ mutationFn: (vars) => runSetupPipeline(vars.data, vars.params), ...options?.mutation });
 }
 
+export const health_database_api_v1_health_database_get = async (options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
+  const res = await fetch("/api/v1/health/database", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const health_database_api_v1_health_database_getKey = () => {
+  return ["/api/v1/health/database"] as const;
+};
+
+export function useHealth_database_api_v1_health_database_get<TData = { data: Record<string, unknown> }>(options?: { query?: Omit<UseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: health_database_api_v1_health_database_getKey(), queryFn: () => health_database_api_v1_health_database_get(), ...options?.query });
+}
+
+export function useHealth_database_api_v1_health_database_getSuspense<TData = { data: Record<string, unknown> }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown> }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: health_database_api_v1_health_database_getKey(), queryFn: () => health_database_api_v1_health_database_get(), ...options?.query });
+}
+
 export const healthcheck_api_v1_healthcheck_get = async (options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
   const res = await fetch("/api/v1/healthcheck", { ...options, method: "GET" });
   if (!res.ok) {
