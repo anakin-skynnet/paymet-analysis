@@ -1,22 +1,5 @@
-# =============================================================================
-# Databricks App - Payment Approval Optimization Platform
-# =============================================================================
-# Deploys the app (FastAPI + React UI) to Databricks Apps. After bundle deploy,
-# run the app via Workspace → Apps or: databricks bundle run payment_analysis_app -t dev
-# App URL is shown in bundle summary or in Workspace → Apps.
-# Name: payment-analysis. Source: relative to bundle root (.), uploaded to workspace on deploy.
-#
-# Bound resources (include if required for the app):
-#   - database: Lakebase (rules, experiments, incidents, ML features)
-#   - sql_warehouse: analytics, app_config, gold views
-#   - genie_space: COMMENTED OUT by default (space_id required; empty would fail). Uncomment only when var.genie_space_id is set.
-#   - job (x12): Setup & Run, agents, streaming, Genie sync
-#   - serving_endpoint (x4): COMMENTED OUT by default (endpoints must exist). Uncomment only when resources/model_serving.yml is included.
-#   - uc_securable (reports volume): commented out until schema/volume exist
-#   - secret: optional; add scope/key below if the app needs secrets
-# Not in bundle app.resources: dashboards (link by URL), MLflow experiment (used by job; add in UI if needed),
-#   vector search index, UC function, UC connection (add in Apps UI if needed).
-# =============================================================================
+# Bundle app resource (read by databricks bundle deploy). Defines app name, source_code_path: ., and bindings.
+# Runtime spec is app.yaml at project root. Run app: Workspace → Apps or: databricks bundle run payment_analysis_app -t dev
 
 resources:
   apps:
@@ -140,4 +123,4 @@ resources:
         #   serving_endpoint:
         #     name: "smart-retry-${var.environment}"
         #     permission: CAN_QUERY
-      # PGAPPNAME in root app.yml must match var.lakebase_instance_name (dev target: payment-analysis-db-dev).
+      # PGAPPNAME in root app.yaml must match var.lakebase_instance_name (dev target: payment-analysis-db-dev).

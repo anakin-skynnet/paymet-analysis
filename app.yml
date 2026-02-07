@@ -1,6 +1,0 @@
-command: ['uvicorn', 'app:app', '--host', '0.0.0.0', '--workers', '1']
-env:
-  - name: PYTHONPATH
-    value: src
-  - name: PGAPPNAME
-    value: payment-analysis-db-dev

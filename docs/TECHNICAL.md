@@ -70,15 +70,24 @@ Runs: build, backend import smoke test, dashboard validate-assets, bundle valida
 
 [Lakebase](https://www.databricks.com/product/lakebase): managed Postgres for rules, experiments, incidents. Bundle: `resources/lakebase.yml` — instance `payment_analysis_db`, UC catalog. Set app env **PGAPPNAME** to instance name (dev: `payment-analysis-db-dev`).
 
+## Databricks App compliance checklist
+
+| Requirement | Status | Notes |
+|-------------|--------|--------|
+| **Runtime spec at project root** | OK | `app.yaml` (block-sequence `command` + `env`; add `app.yml` copy if runtime expects it) |
+| **Command** | OK | `uvicorn app:app --host 0.0.0.0 --workers 1` (no shell; container binding) |
+| **API prefix `/api`** | OK | Required for OAuth2 Bearer; router uses `prefix="/api"` |
+| **requirements.txt** | OK | Only non–pre-installed (pydantic-settings, sqlmodel, psycopg); no fastapi/uvicorn; psycopg without `[binary]` |
+| **No system packages / Conda** | OK | Pure Python deps only |
+| **Auth** | OK | `X-Forwarded-Access-Token` for workspace client; platform injects when bound |
+| **Config from env** | OK | `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN` from bound resources; `PGAPPNAME` in app.yaml env |
+| **Database** | OK | Lakebase via `PGAPPNAME`; no localhost in production (only when `APX_DEV_DB_PORT` set) |
+| **Bundle app resource** | OK | `resources/app.yml`: source_code_path, database, sql_warehouse, jobs bound |
+| **Node/frontend** | OK | `package.json` engines `>=22.0.0`; TanStack 1.158.1 overrides; `apx build` before deploy populates `__dist__` |
+
 ## Databricks App (deploy)
 
-**Pre-installed Python** (do not add to requirements.txt): databricks-sql-connector, databricks-sdk, mlflow-skinny, gradio, streamlit, shiny, dash, flask, fastapi, uvicorn, gunicorn, etc. See [system env](https://docs.databricks.com/en/dev-tools/databricks-apps/system-env).
-
-**requirements.txt** adds only: `pydantic-settings==2.6.1`, `sqlmodel==0.0.27`, `psycopg==3.2.3` (pure Python, no `[binary]`).
-
-**Runtime:** `app.yml` — uvicorn, PYTHONPATH=src, one worker. Set **PGAPPNAME** for rules/experiments/incidents. Compliant with [Create a FastAPI app](https://apps-cookbook.dev/docs/fastapi/getting_started/create): API router uses prefix `/api` (required for OAuth2 Bearer); `app.yml` at project root with `command` and `env`.
-
-**Databricks Apps package compatibility:** Runtime Python 3.11, Node.js 22.16, Ubuntu 22.04. No system packages (apt-get, Conda). **Python:** Only add packages not pre-installed; pure-Python drivers. **Node:** Build deps must be in `dependencies`; align TanStack to **1.158.1** with **overrides** for `@tanstack/react-router`, `@tanstack/react-router-devtools`, `@tanstack/router-plugin` to avoid ERESOLVE. Do not commit `package-lock.json`; use `bun.lock`. See [DEPLOYMENT](DEPLOYMENT.md) troubleshooting for install errors.
+**Pre-installed:** databricks-sql-connector, databricks-sdk, fastapi, uvicorn, etc. — do not add to requirements.txt. See [system env](https://docs.databricks.com/en/dev-tools/databricks-apps/system-env). **requirements.txt:** only `pydantic-settings`, `sqlmodel`, `psycopg` (pure Python, no `[binary]`). **Compatibility:** Python 3.11, Node 22.16, Ubuntu 22.04; no apt-get/Conda. TanStack **1.158.1** with overrides; use `bun.lock`. See [DEPLOYMENT](DEPLOYMENT.md) troubleshooting.
 
 ## Bundle & Deploy
 
