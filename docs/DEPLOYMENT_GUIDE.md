@@ -79,6 +79,7 @@ By default: Workspace folder, Lakebase, Jobs (simulator, gold views, ML, agents,
 | Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
 | Error installing packages | TanStack **1.158.1** with overrides; use `bun.lock`. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#databricks-app-deploy) |
 | **Error loading app spec from app.yml** | Ensure **`app.yaml`** and **`app.yml`** exist at project root with same content. Redeploy. |
+| **Failed to export ... type=mlflowExperiment** | MLflow experiment was under the app source path. Training job now uses `.../mlflow_experiments/payment_analysis_models`. If export still fails, in **Workspace** delete the experiment at `.../src/payment_analysis/dashboards/payment_analysis_models` (or the path in the error); then redeploy/export. |
 
 ### App spec error
 
