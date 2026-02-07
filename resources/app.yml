@@ -12,4 +12,4 @@ resources:
       name: payment-analysis
       source_code_path: ..
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
-      # Set PGAPPNAME in the app env (Workspace → Apps → app → Edit → Environment) to the Lakebase instance name (dev: payment-analysis-db-dev).
+      # PGAPPNAME is set in app.yaml for Lakebase (payment-analysis-db-dev).
