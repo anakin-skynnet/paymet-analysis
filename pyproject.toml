@@ -35,7 +35,7 @@ root = "src/payment_analysis/ui"
 "@svgl" = "https://svgl.app/r/{name}.json"
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
+requires = ["hatchling==1.26.0", "uv-dynamic-versioning==0.7.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]

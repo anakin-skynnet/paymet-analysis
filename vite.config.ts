@@ -25,7 +25,7 @@ export default defineConfig({
     },
   },
   define: {
-    __APP_NAME__: JSON.stringify("Risk & Portfolio Intelligence"),
+    __APP_NAME__: JSON.stringify("payment-analysis"),
   },
   build: {
     // Output to the Python package static assets folder
