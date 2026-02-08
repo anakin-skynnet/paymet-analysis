@@ -79,12 +79,17 @@ def get_obo_ws(
 
 
 def _get_obo_token(request: Request) -> str | None:
-    """User token when app is opened from Compute → Apps (OBO). Check common header names."""
-    return (
-        request.headers.get("X-Forwarded-Access-Token")
-        or request.headers.get("x-forwarded-access-token")
-        or None
-    )
+    """User token when app is opened from Compute → Apps (OBO). Check header (case-insensitive)."""
+    # Direct check first (Starlette headers are case-insensitive; both work)
+    v = request.headers.get("X-Forwarded-Access-Token") or request.headers.get("x-forwarded-access-token")
+    if v and str(v).strip():
+        return v.strip()
+    # Fallback: scan all headers in case proxy uses non-standard casing
+    want = "x-forwarded-access-token"
+    for name, value in request.headers.items():
+        if name.lower() == want and value and str(value).strip():
+            return value.strip()
+    return None
 
 
 def get_workspace_client(request: Request) -> WorkspaceClient:
@@ -100,7 +105,7 @@ def get_workspace_client(request: Request) -> WorkspaceClient:
     config = get_config(request)
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
-        raw = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).strip().rstrip("/")
+        raw = workspace_url_from_apps_host(_request_host_for_derivation(request), app_name).strip().rstrip("/")
     token = obo_token or os.environ.get("DATABRICKS_TOKEN")
     if not token:
         raise HTTPException(status_code=401, detail=AUTH_REQUIRED_DETAIL)
@@ -111,6 +116,14 @@ def get_workspace_client(request: Request) -> WorkspaceClient:
         )
     host = ensure_absolute_workspace_url(raw)
     return workspace_client_pat_only(host=host, token=token)
+
+
+def _request_host_for_derivation(request: Request) -> str:
+    """Host value to use for deriving workspace URL (X-Forwarded-Host when present, else Host)."""
+    forwarded = request.headers.get("X-Forwarded-Host") or request.headers.get("x-forwarded-host")
+    if forwarded and str(forwarded).strip():
+        return str(forwarded).strip().split(",")[0].strip()
+    return request.headers.get("host") or ""
 
 
 def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
@@ -124,7 +137,8 @@ def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
     config = get_config(request)
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
-        raw = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).strip().rstrip("/")
+        host_header = _request_host_for_derivation(request)
+        raw = workspace_url_from_apps_host(host_header, app_name).strip().rstrip("/")
     token = obo_token or os.environ.get("DATABRICKS_TOKEN")
     if not token or not raw:
         return None

@@ -34,6 +34,8 @@ type SetupDefaults = {
   jobs: Record<string, string>;
   pipelines: Record<string, string>;
   workspace_host: string;
+  workspace_id?: string;
+  token_received?: boolean;
 };
 
 async function fetchDefaults(): Promise<SetupDefaults> {
@@ -143,9 +145,20 @@ function SetupRun() {
   const openGenie = () => {
     if (host) window.open(`${host}/genie`, "_blank", "noopener,noreferrer");
   };
-  /** Open Databricks workspace in a new tab: Jobs list. */
+  /** Open Databricks workspace Jobs list with asset_type=jobs, o=workspace_id, and tags filter. */
   const openJobsList = () => {
-    if (host) window.open(`${host}/#job`, "_blank", "noopener,noreferrer");
+    if (!host) return;
+    const wid = defaults?.workspace_id?.trim();
+    if (wid) {
+      const params = new URLSearchParams({
+        asset_type: "jobs",
+        o: wid,
+        tags: '"dev":"ariel_hdez"',
+      });
+      window.open(`${host}/jobs?${params.toString()}`, "_blank", "noopener,noreferrer");
+    } else {
+      window.open(`${host}/#job`, "_blank", "noopener,noreferrer");
+    }
   };
   /** Open Databricks workspace in a new tab: Pipelines list. */
   const openPipelinesList = () => {
@@ -368,6 +381,11 @@ function SetupRun() {
         {defaults && !host && (
           <p className="text-sm text-amber-600 dark:text-amber-500">
             Connect to Databricks: open this app from <strong>Workspace → Compute → Apps → payment-analysis</strong> so your token is forwarded (no env vars needed), or set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code> in the app environment.
+          </p>
+        )}
+        {defaults && defaults.token_received === false && (
+          <p className="text-sm text-amber-600 dark:text-amber-500">
+            Token not received: enable <strong>user authorization (on-behalf-of-user)</strong> in <strong>Compute → Apps → payment-analysis → Edit → Configure → Authorization</strong>, add scopes (e.g. <code className="rounded bg-muted px-1">sql</code>, <code className="rounded bg-muted px-1">Jobs</code>, <code className="rounded bg-muted px-1">Pipelines</code>), then open this app again from <strong>Compute → Apps</strong>.
           </p>
         )}
         {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (

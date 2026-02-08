@@ -1,7 +1,8 @@
+import os
+import re
 from importlib import resources
 from pathlib import Path
 from typing import ClassVar
-import os
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -44,30 +45,59 @@ def ensure_absolute_workspace_url(url: str) -> str:
 def workspace_url_from_apps_host(host: str, app_name_with_hyphen: str = "payment-analysis") -> str:
     """
     Derive the Databricks workspace URL from the request Host when the app is served from
-    a Databricks Apps URL (e.g. payment-analysis-984752964297111.11.azure.databricksapps.com).
+    a Databricks Apps URL (e.g. payment-analysis-984752964297111.11.azure.databricksapps.com
+    or payment_analysis-984752964297111.11.azure.databricksapps.com).
     Returns empty string if host is not a recognized Apps host pattern.
     """
     if not host:
         return ""
     host = host.split(":")[0].strip().lower()
     parts = host.split(".")
+    # Try both hyphen and underscore app name (Apps URL may use either)
+    prefixes = [f"{app_name_with_hyphen}-"]
+    if "_" not in app_name_with_hyphen:
+        prefixes.append(f"{app_name_with_hyphen.replace('-', '_')}-")
     # *.azure.databricksapps.com -> https://adb-<id>.<region>.azuredatabricks.net
     if len(parts) >= 5 and parts[-3] == "azure" and parts[-2] == "databricksapps" and parts[-1] == "com":
         first_label = parts[0]
-        prefix = f"{app_name_with_hyphen}-"
-        if first_label.startswith(prefix) and len(first_label) > len(prefix):
-            suffix = first_label[len(prefix):]
-            if len(parts) >= 2:
-                region = parts[1]
-                return f"https://adb-{suffix}.{region}.azuredatabricks.net"
+        for prefix in prefixes:
+            if first_label.startswith(prefix) and len(first_label) > len(prefix):
+                suffix = first_label[len(prefix):]
+                if len(parts) >= 2:
+                    region = parts[1]
+                    return f"https://adb-{suffix}.{region}.azuredatabricks.net"
     # *.databricksapps.com (AWS) - similar pattern if needed
     if len(parts) >= 3 and parts[-2] == "databricksapps" and parts[-1] == "com":
         first_label = parts[0]
-        prefix = f"{app_name_with_hyphen}-"
-        if first_label.startswith(prefix) and len(first_label) > len(prefix):
-            suffix = first_label[len(prefix):]
-            return f"https://{suffix}.cloud.databricks.com"
+        for prefix in prefixes:
+            if first_label.startswith(prefix) and len(first_label) > len(prefix):
+                suffix = first_label[len(prefix):]
+                return f"https://{suffix}.cloud.databricks.com"
     return ""
+
+
+def workspace_id_from_workspace_url(workspace_url: str) -> str | None:
+    """
+    Derive workspace ID from workspace URL when DATABRICKS_WORKSPACE_ID is not set.
+    Azure: https://adb-984752964297111.11.azuredatabricks.net -> 984752964297111
+    AWS: https://dbc-a1b2c3d4-e5f6.cloud.databricks.com -> a1b2c3d4-e5f6 (return as-is).
+    """
+    if not workspace_url:
+        return None
+    host = (workspace_url or "").strip().rstrip("/").lower()
+    if "://" in host:
+        host = host.split("://", 1)[1]
+    host = host.split("/")[0].split(":")[0]
+    # Azure: adb-<number>.<region>.azuredatabricks.net
+    m = re.match(r"^adb-(\d+)\.", host)
+    if m:
+        return m.group(1)
+    # AWS: dbc-xxx-yyy.cloud.databricks.com
+    m = re.match(r"^(dbc-[a-z0-9-]+)\.", host)
+    if m:
+        return m.group(1)
+    return None
+
 
 # Default entity/country code for analytics filters (e.g. reason codes, smart checkout). UI and Lakehouse can override.
 DEFAULT_ENTITY = "BR"

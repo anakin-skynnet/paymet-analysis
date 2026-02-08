@@ -19,12 +19,14 @@ from ..config import (
     WORKSPACE_URL_PLACEHOLDER,
     app_name,
     ensure_absolute_workspace_url,
+    workspace_id_from_workspace_url,
     workspace_url_from_apps_host,
 )
 from ..dependencies import (
     AUTH_REQUIRED_DETAIL,
     _effective_databricks_host,
     _get_obo_token,
+    _request_host_for_derivation,
     get_workspace_client,
     get_workspace_client_optional,
 )
@@ -108,6 +110,8 @@ class SetupDefaultsOut(BaseModel):
     jobs: dict[str, str] = Field(..., description="Job ID by logical name")
     pipelines: dict[str, str] = Field(..., description="Pipeline ID by logical name")
     workspace_host: str = Field(..., description="Databricks workspace URL")
+    workspace_id: str = Field("", description="Workspace ID (for Jobs URL query param o=). From DATABRICKS_WORKSPACE_ID or derived from host.")
+    token_received: bool = Field(False, description="True when X-Forwarded-Access-Token was present (OBO); use to show why Execute is disabled.")
 
     model_config = {"populate_by_name": True}
 
@@ -246,12 +250,14 @@ def get_setup_defaults(
     ws: WorkspaceClient | None = Depends(get_workspace_client_optional),
 ) -> SetupDefaultsOut:
     """Return resource IDs and parameters for Setup & Run. Job/pipeline IDs are only returned when resolved from the workspace (existing resources) so Execute always opens a real job/pipeline in Databricks. Workspace host is always the Databricks workspace URL, never the app URL."""
+    token_received = bool(_get_obo_token(request))
     host = _get_workspace_host().rstrip("/")
     if not host:
-        host = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).rstrip("/")
+        host = workspace_url_from_apps_host(_request_host_for_derivation(request), app_name).rstrip("/")
     if host and "databricksapps" in host.lower():
         host = ""  # Never return app URL; links must open in the Databricks workspace
     host = ensure_absolute_workspace_url(host).rstrip("/") if host else ""
+    workspace_id = (_app_config.databricks.workspace_id or "").strip() or (workspace_id_from_workspace_url(host) or "")
     catalog, schema = _effective_uc_config(request)
     if ws is None:
         jobs = {k: "0" for k in DEFAULT_IDS["jobs"]}
@@ -268,6 +274,8 @@ def get_setup_defaults(
         jobs=jobs,
         pipelines=pipelines,
         workspace_host=host or "",
+        workspace_id=workspace_id,
+        token_received=token_received,
     )
 
 
