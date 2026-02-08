@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Settings2,
 } from "lucide-react";
-import { getWorkspaceUrl } from "@/config/workspace";
+import { ensureAbsoluteWorkspaceUrl, getWorkspaceUrl } from "@/config/workspace";
 
 export const Route = createFileRoute("/_sidebar/setup")({
   component: () => <SetupRun />,
@@ -210,7 +210,11 @@ function SetupRun() {
   };
 
   const pending = runJobMutation.isPending || runPipelineMutation.isPending;
-  const host = defaults?.workspace_host || getWorkspaceUrl();
+  // Always use absolute workspace URL so Open links go to the workspace, never to the app URL (databricksapps.com).
+  const rawHost = defaults?.workspace_host || getWorkspaceUrl();
+  const host = rawHost && !rawHost.includes("databricksapps")
+    ? ensureAbsoluteWorkspaceUrl(rawHost)
+    : "";
   /** Open Databricks workspace in a new tab: job run page (to run or view runs). */
   const openJobRun = (jobKey: string) => {
     const id = defaults?.jobs?.[jobKey];
@@ -279,6 +283,9 @@ function SetupRun() {
           </p>
           <p>
             <strong>2. Personal Access Token (PAT):</strong> In the workspace go to <strong>Settings → Developer → Access tokens</strong>, create a token, then set <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code> in <strong>Compute → Apps → payment-analysis → Edit → Environment</strong>. Also set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_WAREHOUSE_ID</code>.
+          </p>
+          <p className="text-muted-foreground">
+            If you open the app from Compute → Apps (option 1), do <strong>not</strong> set <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_ID</code> or <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_SECRET</code> in the app environment, or Run may fail with OAuth scope errors.
           </p>
           {host && (
             <Button
@@ -462,7 +469,7 @@ function SetupRun() {
         )}
         {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (
           <p className="text-sm text-muted-foreground">
-            Job IDs are resolved from the workspace when you are signed in. If Run is disabled, open the app from <strong>Compute → Apps → payment-analysis</strong> so your token is sent, or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> / <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment after deploy.
+            Job and pipeline IDs are resolved from the workspace when you're signed in. If <strong>Run</strong> is disabled, open this app from <strong>Compute → Apps → payment-analysis</strong> so Databricks forwards your token, or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> and <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment (Compute → Apps → payment-analysis → Edit → Environment) after deploy.
           </p>
         )}
 

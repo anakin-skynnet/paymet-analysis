@@ -13,7 +13,13 @@ from typing import TypedDict
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..config import AppConfig
+from ..config import (
+    AppConfig,
+    WORKSPACE_URL_PLACEHOLDER,
+    app_name,
+    ensure_absolute_workspace_url,
+    workspace_url_from_apps_host,
+)
 from ..dependencies import AUTH_REQUIRED_DETAIL, get_workspace_client, get_workspace_client_optional
 from ..services.databricks_service import DatabricksConfig, DatabricksService
 from databricks.sdk import WorkspaceClient
@@ -36,8 +42,11 @@ class _DefaultIds(TypedDict):
 
 
 def _get_workspace_host() -> str:
-    """Get Databricks workspace host from centralized config / env."""
-    return _app_config.databricks.workspace_url
+    """Get Databricks workspace base URL (absolute) from centralized config / env. Always returns https://... so Open links go to the workspace, not relative to the app. Returns empty when unset (placeholder)."""
+    raw = (_app_config.databricks.workspace_url or "").strip().rstrip("/")
+    if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
+        return ""
+    return ensure_absolute_workspace_url(raw)
 
 
 def _job_id_env_key(key: str) -> str:
@@ -235,6 +244,8 @@ def get_setup_defaults(
 ) -> SetupDefaultsOut:
     """Return default resource IDs and parameters for the Setup & Run form. When credentials are present, resolves job/pipeline IDs from the workspace by name so steps can be run after deploy without setting env vars."""
     host = _get_workspace_host().rstrip("/")
+    if not host:
+        host = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).rstrip("/")
     catalog, schema = _effective_uc_config(request)
     jobs = dict(DEFAULT_IDS["jobs"])
     pipelines = dict(DEFAULT_IDS["pipelines"])
@@ -298,6 +309,9 @@ def run_setup_job(
 ) -> RunJobOut:
     """Run a Databricks job with optional notebook/SQL parameters."""
     host = _get_workspace_host().rstrip("/")
+    if not host:
+        host = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).rstrip("/")
+    host = ensure_absolute_workspace_url(host) if host else ""
     eff_catalog, eff_schema = _effective_uc_config(request)
     catalog = body.catalog or eff_catalog
     schema = body.schema_name or eff_schema
@@ -324,7 +338,7 @@ def run_setup_job(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    run_page_url = f"{host}/#job/{body.job_id}/run/{run_id}"
+    run_page_url = f"{host}/#job/{body.job_id}/run/{run_id}" if host else ""
     return RunJobOut(
         job_id=body.job_id,
         run_id=run_id,
@@ -341,6 +355,9 @@ def run_setup_pipeline(
 ) -> RunPipelineOut:
     """Start a Lakeflow pipeline update."""
     host = _get_workspace_host().rstrip("/")
+    if not host:
+        host = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).rstrip("/")
+    host = ensure_absolute_workspace_url(host) if host else ""
     try:
         update = ws.pipelines.start_update(pipeline_id=body.pipeline_id)
         update_id = update.update_id or "unknown"

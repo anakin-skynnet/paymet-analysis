@@ -8,7 +8,7 @@ interface LogoProps {
 
 export function Logo({ to = "/", className = "", showText = false }: LogoProps) {
   const content = (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex flex-col items-center gap-2 ${className}`}>
       <img
         src="/getnet_logo.png"
         alt="Payment Analysis"

@@ -170,12 +170,12 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 
 **Error:** `Provided OAuth token does not have required scopes` (with `auth_type=pat`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN` set; sometimes `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` are also set).
 
-The app uses your **PAT** (`DATABRICKS_TOKEN`) for SQL execution, warehouse listing, and reading/writing `app_config`. The code now forces PAT auth when `DATABRICKS_TOKEN` is set, but if the SDK still sees **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET** in the environment it can apply OAuth scope checks and fail.
+The app uses your **PAT** (`DATABRICKS_TOKEN`) or the forwarded user token (when you open from **Compute → Apps**) for jobs, SQL, and `app_config`. If **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET** are set in the app environment, the SDK may still apply OAuth scope checks and fail even when using a PAT or forwarded token.
 
 **Fix:**
 
-1. **Use PAT-only auth in the app**  
-   In **Compute → Apps → payment-analysis → Edit → Environment**, **remove** (or leave empty) **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET**. Keep only **DATABRICKS_HOST**, **DATABRICKS_TOKEN**, and **DATABRICKS_WAREHOUSE_ID**. Then **Save** and **restart** the app.
+1. **Remove OAuth client vars when using PAT or OBO**  
+   When you open the app from **Compute → Apps** (user token) or use **DATABRICKS_TOKEN** (PAT), do **not** set **DATABRICKS_CLIENT_ID** or **DATABRICKS_CLIENT_SECRET** in the app environment. In **Compute → Apps → payment-analysis → Edit → Environment**, **remove** (or leave empty) **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET**. Keep **DATABRICKS_HOST**, **DATABRICKS_WAREHOUSE_ID**, and optionally **DATABRICKS_TOKEN**. Then **Save** and **restart** the app.
 
 2. **Create a new PAT with sufficient scope**  
    In the workspace: **Settings** → **Developer** → **Access tokens** → **Generate new token**.  

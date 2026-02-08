@@ -4,7 +4,12 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.iam import User as UserOut
 from fastapi import APIRouter, Depends, Request
 
-from .config import WORKSPACE_URL_PLACEHOLDER
+from .config import (
+    WORKSPACE_URL_PLACEHOLDER,
+    app_name,
+    ensure_absolute_workspace_url,
+    workspace_url_from_apps_host,
+)
 from .dependencies import ConfigDep, get_workspace_client
 from .models import AuthStatusOut, VersionOut, WorkspaceConfigOut
 from .routes.agents import router as agents_router
@@ -46,12 +51,15 @@ async def version():
     response_model=WorkspaceConfigOut,
     operation_id="getWorkspaceConfig",
 )
-def get_workspace_config(config: ConfigDep):
-    """Return workspace base URL for building links to jobs, pipelines, dashboards, etc. Returns empty when unset so the UI can use window.location.origin on Databricks hosts."""
+def get_workspace_config(request: Request, config: ConfigDep):
+    """Return workspace base URL for building links to jobs, pipelines, dashboards, etc. When DATABRICKS_HOST is unset and the request is from a Databricks Apps host, derive workspace URL from the Host header so Open links point to the real workspace."""
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw.rstrip("/") == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
+        derived = workspace_url_from_apps_host(request.headers.get("host") or "", app_name)
+        if derived:
+            return WorkspaceConfigOut(workspace_url=derived)
         return WorkspaceConfigOut(workspace_url="")
-    return WorkspaceConfigOut(workspace_url=raw)
+    return WorkspaceConfigOut(workspace_url=ensure_absolute_workspace_url(raw))
 
 
 @api.get("/auth/status", response_model=AuthStatusOut, operation_id="getAuthStatus")

@@ -5,7 +5,13 @@ from databricks.sdk import WorkspaceClient
 from fastapi import Depends, Header, HTTPException, Request
 from sqlmodel import Session
 
-from .config import AppConfig
+from .config import (
+    AppConfig,
+    WORKSPACE_URL_PLACEHOLDER,
+    app_name,
+    ensure_absolute_workspace_url,
+    workspace_url_from_apps_host,
+)
 from .runtime import Runtime
 from .services.databricks_service import DatabricksConfig, DatabricksService
 
@@ -62,27 +68,36 @@ def get_obo_ws(
             detail="Authentication required: X-Forwarded-Access-Token header is missing",
         )
     config = get_config(request)
-    host = (config.databricks.workspace_url or "").rstrip("/")
-    return WorkspaceClient(host=host or None, token=token, auth_type="pat")
+    raw = (config.databricks.workspace_url or "").strip().rstrip("/")
+    if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
+        raise HTTPException(status_code=503, detail="DATABRICKS_HOST is not set.")
+    host = ensure_absolute_workspace_url(raw)
+    return WorkspaceClient(host=host, token=token, auth_type="pat")
 
 
 def get_workspace_client(request: Request) -> WorkspaceClient:
     """
     Returns a Databricks Workspace client using your credentials when logged in (OBO)
-    or DATABRICKS_TOKEN when set. Use this for run-job, run-pipeline, etc., so no
-    hardcoded token is required when user authorization (OBO) is enabled.
+    or DATABRICKS_TOKEN when set. Use this for run-job, run-pipeline, etc.
+    Host is always absolute (https://...). When DATABRICKS_HOST is unset, derives host
+    from the request when the app is served from a Databricks Apps URL.
+    When using OBO (open app from Compute → Apps), do not set DATABRICKS_CLIENT_ID/SECRET
+    in the app environment or the SDK may trigger OAuth scope errors.
     """
     obo_token = request.headers.get("X-Forwarded-Access-Token")
     config = get_config(request)
-    host = (config.databricks.workspace_url or "").rstrip("/")
+    raw = (config.databricks.workspace_url or "").strip().rstrip("/")
+    if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
+        raw = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).strip().rstrip("/")
     token = obo_token or os.environ.get("DATABRICKS_TOKEN")
     if not token:
         raise HTTPException(status_code=401, detail=AUTH_REQUIRED_DETAIL)
-    if not host:
+    if not raw:
         raise HTTPException(
             status_code=503,
-            detail="DATABRICKS_HOST is not set in the app environment.",
+            detail="DATABRICKS_HOST is not set. Set it in the app environment or open the app from Compute → Apps so the workspace URL can be derived.",
         )
+    host = ensure_absolute_workspace_url(raw)
     return WorkspaceClient(host=host, token=token, auth_type="pat")
 
 
@@ -90,13 +105,17 @@ def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
     """
     Returns a Workspace client when credentials are available; otherwise None.
     Used by GET /setup/defaults to resolve job/pipeline IDs from the workspace when possible.
+    Derives host from request when DATABRICKS_HOST is unset and app is served from Apps URL.
     """
     obo_token = request.headers.get("X-Forwarded-Access-Token")
     config = get_config(request)
-    host = (config.databricks.workspace_url or "").strip().rstrip("/")
+    raw = (config.databricks.workspace_url or "").strip().rstrip("/")
+    if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
+        raw = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).strip().rstrip("/")
     token = obo_token or os.environ.get("DATABRICKS_TOKEN")
-    if not token or not host or "example.databricks.com" in host:
+    if not token or not raw:
         return None
+    host = ensure_absolute_workspace_url(raw)
     return WorkspaceClient(host=host, token=token, auth_type="pat")
 
 

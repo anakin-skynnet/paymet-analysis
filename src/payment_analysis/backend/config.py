@@ -30,6 +30,45 @@ if env_file.exists():
 # Placeholder when DATABRICKS_HOST is unset; API must not return it so the UI can fall back to window.location.origin.
 WORKSPACE_URL_PLACEHOLDER = "https://example.databricks.com"
 
+
+def ensure_absolute_workspace_url(url: str) -> str:
+    """Return workspace URL with scheme. If url is host-only (no scheme), prepend https:// so links open in the workspace, not relative to the app origin."""
+    u = (url or "").strip().rstrip("/")
+    if not u:
+        return u
+    if u.startswith("http://") or u.startswith("https://"):
+        return u
+    return f"https://{u}"
+
+
+def workspace_url_from_apps_host(host: str, app_name_with_hyphen: str = "payment-analysis") -> str:
+    """
+    Derive the Databricks workspace URL from the request Host when the app is served from
+    a Databricks Apps URL (e.g. payment-analysis-984752964297111.11.azure.databricksapps.com).
+    Returns empty string if host is not a recognized Apps host pattern.
+    """
+    if not host:
+        return ""
+    host = host.split(":")[0].strip().lower()
+    parts = host.split(".")
+    # *.azure.databricksapps.com -> https://adb-<id>.<region>.azuredatabricks.net
+    if len(parts) >= 5 and parts[-3] == "azure" and parts[-2] == "databricksapps" and parts[-1] == "com":
+        first_label = parts[0]
+        prefix = f"{app_name_with_hyphen}-"
+        if first_label.startswith(prefix) and len(first_label) > len(prefix):
+            suffix = first_label[len(prefix):]
+            if len(parts) >= 2:
+                region = parts[1]
+                return f"https://adb-{suffix}.{region}.azuredatabricks.net"
+    # *.databricksapps.com (AWS) - similar pattern if needed
+    if len(parts) >= 3 and parts[-2] == "databricksapps" and parts[-1] == "com":
+        first_label = parts[0]
+        prefix = f"{app_name_with_hyphen}-"
+        if first_label.startswith(prefix) and len(first_label) > len(prefix):
+            suffix = first_label[len(prefix):]
+            return f"https://{suffix}.cloud.databricks.com"
+    return ""
+
 # Default entity/country code for analytics filters (e.g. reason codes, smart checkout). UI and Lakehouse can override.
 DEFAULT_ENTITY = "BR"
 

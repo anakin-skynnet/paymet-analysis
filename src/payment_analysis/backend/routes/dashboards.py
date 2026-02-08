@@ -14,6 +14,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from ..config import ensure_absolute_workspace_url
 from ..dependencies import ConfigDep
 
 logger = logging.getLogger(__name__)
@@ -291,8 +292,9 @@ async def get_dashboard_url(
     
     # Relative path; frontend can prepend workspace URL from config
     base_url = dashboard.url_path
-    workspace_host = (config.databricks.workspace_url or "").strip().rstrip("/")
-    is_placeholder = not workspace_host or "example.databricks.com" in workspace_host
+    raw_host = (config.databricks.workspace_url or "").strip().rstrip("/")
+    is_placeholder = not raw_host or "example.databricks.com" in raw_host
+    workspace_host = ensure_absolute_workspace_url(raw_host) if raw_host else ""
 
     if embed:
         # Embed path: optional workspace ID (o=) from DATABRICKS_WORKSPACE_ID so embed works in any workspace
