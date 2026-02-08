@@ -74,7 +74,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
-**Version alignment:** All dependency references use **exactly the same versions** everywhere (no ranges). Python: `pyproject.toml` (pinned `==`) → `uv.lock` → `requirements.txt` via `scripts/sync_requirements_from_lock.py`. Frontend: `package.json` and `bun.lock` use exact versions only (no `^`). Dev deps: `ty==0.0.14`, `apx==0.2.6` in `pyproject.toml` match `uv.lock`. After changing `pyproject.toml` run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. If you see "error installing packages" on deploy, check **Compute → Apps → your app → Logs** for the exact `pip` error.
+**Version alignment:** All dependency references use **exactly the same versions** everywhere (no ranges). Python: `pyproject.toml` (pinned `==`) → `uv.lock` → `requirements.txt` via `scripts/sync_requirements_from_lock.py`. Frontend: `package.json` and `bun.lock` use exact versions only (no `^`). Dev deps: `ty==0.0.14`, `apx==0.2.6` in `pyproject.toml` match `uv.lock`. **Databricks App compatibility:** Runtime is Python 3.11 and Node.js 22.16; the pinned versions in this repo are tested and supported on that environment. After changing `pyproject.toml` run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. If you see "error installing packages" on deploy, check **Compute → Apps → your app → Logs** for the exact `pip` error.
 
 **Version verification (same versions everywhere):**
 
