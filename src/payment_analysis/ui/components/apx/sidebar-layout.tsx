@@ -89,8 +89,8 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="shrink-0 overflow-visible pb-1">
-          <div className="px-4 py-4 min-h-[5.5rem] flex flex-col items-center justify-center">
+        <SidebarHeader className="h-auto shrink-0 overflow-visible pb-1">
+          <div className="h-auto px-4 py-4 min-h-[5.5rem] flex flex-col items-center justify-center">
             <Logo to="/" showText />
           </div>
         </SidebarHeader>

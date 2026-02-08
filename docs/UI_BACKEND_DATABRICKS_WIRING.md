@@ -80,20 +80,14 @@ So: **CRUD for experiments/incidents/decision logs** = UI → FastAPI → Lakeba
 
 ### 4.1 Flow
 
-1. **Setup & Run** page ([setup.tsx](../src/payment_analysis/ui/routes/_sidebar/setup.tsx)) shows steps (Lakehouse Bootstrap, Gold Views, Simulator, ETL, ML, Genie, Agents, Publish dashboards, etc.) and **Run** buttons for jobs and **Run** for pipelines.
-2. **Default job/pipeline IDs** come from `GET /api/setup/defaults`. The backend can resolve IDs from the workspace (when credentials are available) and merge them with bundle/default IDs. See [backend/routes/setup.py](../src/payment_analysis/backend/routes/setup.py).
-3. **Run job**  
-   UI calls `POST /api/setup/run-job` with `{ job_id, catalog?, schema_name?, warehouse_id?, ... }`.  
-   Backend uses **`WorkspaceClient`** (from `get_workspace_client`: OBO token or `DATABRICKS_TOKEN`) and calls **`ws.jobs.run_now(job_id=..., notebook_params={ catalog, schema, ... })`**. Returns run ID and a link to the run page in the workspace.
-4. **Run pipeline**  
-   UI calls `POST /api/setup/run-pipeline` with `{ pipeline_id }`.  
-   Backend uses the same **`WorkspaceClient`** and calls **`ws.pipelines.start_update(pipeline_id=...)`**. Returns update ID and a link to the pipeline page.
+1. **Setup & Run** page ([setup.tsx](../src/payment_analysis/ui/routes/_sidebar/setup.tsx)) shows steps (Lakehouse Bootstrap, Gold Views, Simulator, ETL, ML, Genie, Agents, Publish dashboards, etc.) and an **Execute** button per step.
+2. **Execute** opens the job or pipeline in the Databricks workspace in a new tab (job run page `/#job/{id}/run` or pipeline page `/pipelines/{id}`), ready to run there. No backend run call from the UI.
+3. **Default job/pipeline IDs** come from `GET /api/setup/defaults`. The backend resolves IDs from the workspace when credentials are available and merges with bundle defaults. See [backend/routes/setup.py](../src/payment_analysis/backend/routes/setup.py).
+4. **Optional API:** `POST /api/setup/run-job` and `POST /api/setup/run-pipeline` remain available for programmatic use; the UI does not call them.
 
-So **jobs and pipelines are triggered via the Databricks SDK** (`WorkspaceClient`) in the backend; the UI only invokes the FastAPI endpoints. This aligns with **AI Dev Kit** (jobs, pipelines as first-class resources) and **Cookbook** (FastAPI calling Databricks APIs).
+### 4.2 Execute and quick links (Setup page)
 
-### 4.2 "Open in Databricks" links (Setup page)
-
-On the **Setup & Run** page, each step has an **Open** button that opens the Databricks workspace in a new tab:
+On the **Setup & Run** page, each step has an **Execute** button that opens the Databricks workspace in a new tab:
 
 | Target | URL pattern | Where it goes |
 |--------|-------------|----------------|
@@ -105,9 +99,9 @@ On the **Setup & Run** page, each step has an **Open** button that opens the Dat
 | **Jobs list** | `${workspace_host}/#job` | Jobs list. |
 | **Pipelines list** | `${workspace_host}/pipelines` | Pipelines list. |
 
-- **Job IDs** and **pipeline IDs** come from the same `defaults.jobs` / `defaults.pipelines` returned by `GET /api/setup/defaults` (same IDs used for **Run**).
+- **Job IDs** and **pipeline IDs** come from `defaults.jobs` / `defaults.pipelines` returned by `GET /api/setup/defaults`.
 - **workspace_host** is `defaults.workspace_host` or the cached value from `GET /api/config/workspace`.
-- Open buttons are disabled when the corresponding ID or host is missing. Links use `noopener,noreferrer`.
+- Execute and quick-link buttons are disabled when the corresponding ID or host is missing. Links use `noopener,noreferrer`.
 
 ---
 
@@ -140,7 +134,8 @@ On the **Setup & Run** page, each step has an **Open** button that opens the Dat
 │  - DatabricksService (SQL Warehouse, UC)                                 │
 │    → Rules, app_config, analytics (KPIs, trends, reason codes, etc.)     │
 │  - WorkspaceClient (OBO or DATABRICKS_TOKEN)                              │
-│    → run-job, run-pipeline, dashboard URL, notebooks, agents            │
+│    → setup/defaults (resolve IDs), optional run-job/run-pipeline API,    │
+│      dashboard URL, notebooks, agents                                    │
 └─────────────────────────────────────────────────────────────────────────┘
                     │
         ┌───────────┴───────────┐

@@ -36,56 +36,9 @@ type SetupDefaults = {
   workspace_host: string;
 };
 
-type RunJobResult = {
-  job_id: string;
-  run_id: number;
-  run_page_url: string;
-  message: string;
-};
-
-type RunPipelineResult = {
-  pipeline_id: string;
-  update_id: string;
-  pipeline_page_url: string;
-  message: string;
-};
-
 async function fetchDefaults(): Promise<SetupDefaults> {
   const res = await fetch(`${API_BASE}/defaults`, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-async function runJob(body: {
-  job_id: string;
-  catalog?: string;
-  schema?: string;
-  warehouse_id?: string;
-  events_per_second?: string;
-  duration_minutes?: string;
-}): Promise<RunJobResult> {
-  const res = await fetch(`${API_BASE}/run-job`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
-  return res.json();
-}
-
-async function runPipeline(body: { pipeline_id: string }): Promise<RunPipelineResult> {
-  const res = await fetch(`${API_BASE}/run-pipeline`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
   return res.json();
 }
 
@@ -131,40 +84,6 @@ function SetupRun() {
     }
   }, [defaults]);
 
-  const runJobMutation = useMutation({
-    mutationFn: runJob,
-    onSuccess: (data) => {
-      setLastResult({
-        type: "job",
-        url: data.run_page_url,
-        message: data.message,
-      });
-      setError(null);
-      qc.invalidateQueries({ queryKey: ["setup"] });
-    },
-    onError: (e: Error) => {
-      setError(e.message);
-      setLastResult(null);
-    },
-  });
-
-  const runPipelineMutation = useMutation({
-    mutationFn: runPipeline,
-    onSuccess: (data) => {
-      setLastResult({
-        type: "pipeline",
-        url: data.pipeline_page_url,
-        message: data.message,
-      });
-      setError(null);
-      qc.invalidateQueries({ queryKey: ["setup"] });
-    },
-    onError: (e: Error) => {
-      setError(e.message);
-      setLastResult(null);
-    },
-  });
-
   const updateConfigMutation = useMutation({
     mutationFn: updateConfig,
     onSuccess: () => {
@@ -181,12 +100,6 @@ function SetupRun() {
     },
   });
 
-  const params = {
-    catalog,
-    schema,
-    warehouse_id: warehouseId,
-  };
-
   const isJobConfigured = (jobKey: string) => {
     const id = defaults?.jobs?.[jobKey];
     return !!id && id !== "0";
@@ -196,24 +109,11 @@ function SetupRun() {
     return !!id && id !== "0";
   };
 
-  const triggerJob = (jobKey: string) => {
-    const jobId = defaults?.jobs?.[jobKey];
-    if (!jobId || jobId === "0") return;
-    runJobMutation.mutate({ job_id: jobId, ...params });
-  };
-
-  const triggerPipeline = (pipelineKey: string) => {
-    const pipelineId = defaults?.pipelines?.[pipelineKey];
-    if (!pipelineId || pipelineId === "0") return;
-    runPipelineMutation.mutate({ pipeline_id: pipelineId });
-  };
-
   const saveConfig = () => {
     updateConfigMutation.mutate({ catalog, schema });
   };
 
-  const pending = runJobMutation.isPending || runPipelineMutation.isPending;
-  // Always use absolute workspace URL so Open links go to the workspace, never to the app URL (databricksapps.com).
+  // Always use absolute workspace URL so Execute opens the workspace, never the app URL (databricksapps.com).
   const rawHost = defaults?.workspace_host || getWorkspaceUrl();
   const host = rawHost && !rawHost.includes("databricksapps")
     ? ensureAbsoluteWorkspaceUrl(rawHost)
@@ -265,7 +165,7 @@ function SetupRun() {
       <div>
         <h1 className="text-2xl font-semibold">Setup & Run</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Follow the steps in order: Lakehouse bootstrap, Vector Search, gold views, events simulator, optional real-time streaming, ingestion ETL, ML training, Genie, AI agents, and update dashboards. All jobs and pipelines can be run from this page.
+          Follow the steps in order: Lakehouse bootstrap, Vector Search, gold views, events simulator, optional real-time streaming, ingestion ETL, ML training, Genie, AI agents, and update dashboards. Click **Execute** to open each job or pipeline in the Databricks workspace, ready to run.
         </p>
       </div>
 
@@ -274,10 +174,10 @@ function SetupRun() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Settings2 className="h-4 w-4" />
-            Connect to Databricks (run jobs from UI)
+            Connect to Databricks
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            To trigger jobs and pipelines from this UI, use one of:
+            To open jobs and pipelines in the Databricks workspace, use one of:
           </p>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
@@ -288,7 +188,7 @@ function SetupRun() {
             <strong>2. Personal Access Token (PAT):</strong> In the workspace go to <strong>Settings → Developer → Access tokens</strong>, create a token, then set <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code> in <strong>Compute → Apps → payment-analysis → Edit → Environment</strong>. Also set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_WAREHOUSE_ID</code>.
           </p>
           <p className="text-muted-foreground">
-            If you open the app from Compute → Apps (option 1), do <strong>not</strong> set <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_ID</code> or <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_SECRET</code> in the app environment, or Run may fail with OAuth scope errors.
+            If you open the app from Compute → Apps (option 1), do <strong>not</strong> set <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_ID</code> or <code className="rounded bg-muted px-1">DATABRICKS_CLIENT_SECRET</code> in the app environment.
           </p>
           {host && (
             <Button
@@ -473,7 +373,7 @@ function SetupRun() {
         {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground flex-1 min-w-0">
-              Job and pipeline IDs are resolved from the workspace when you're signed in. If <strong>Run</strong> is disabled, open this app from <strong>Compute → Apps → payment-analysis</strong> so Databricks forwards your token, then click <strong>Refresh job IDs</strong> below. Or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> / <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment (Compute → Apps → payment-analysis → Edit → Environment).
+              Job and pipeline IDs are resolved from the workspace when you're signed in. If <strong>Execute</strong> is disabled, open this app from <strong>Compute → Apps → payment-analysis</strong> so Databricks forwards your token, then click <strong>Refresh job IDs</strong> below. Or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> / <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment (Compute → Apps → payment-analysis → Edit → Environment).
             </p>
             <Button
               variant="outline"
@@ -509,23 +409,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("lakehouse_bootstrap")}
-              disabled={pending || !isJobConfigured("lakehouse_bootstrap")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run Lakehouse Bootstrap
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("lakehouse_bootstrap")}
               disabled={!host || !isJobConfigured("lakehouse_bootstrap")}
             >
-              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
             <Button
               variant="outline"
@@ -560,23 +449,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("vector_search_index")}
-              disabled={pending || !isJobConfigured("vector_search_index")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run Vector Search index job
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("vector_search_index")}
               disabled={!host || !isJobConfigured("vector_search_index")}
             >
-              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -603,23 +481,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("create_gold_views")}
-              disabled={pending || !isJobConfigured("create_gold_views")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run gold views job
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("create_gold_views")}
               disabled={!host || !isJobConfigured("create_gold_views")}
             >
-              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -646,23 +513,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("transaction_stream_simulator")}
-              disabled={pending || !isJobConfigured("transaction_stream_simulator")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run simulator
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("transaction_stream_simulator")}
               disabled={!host || !isJobConfigured("transaction_stream_simulator")}
             >
-              Open in Databricks (simulator job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -689,44 +545,21 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              variant="secondary"
-              onClick={() => triggerPipeline("payment_realtime_pipeline")}
-              disabled={pending || !isPipelineConfigured("payment_realtime_pipeline")}
-            >
-              {runPipelineMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Start real-time pipeline
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openPipeline("payment_realtime_pipeline")}
               disabled={!host || !isPipelineConfigured("payment_realtime_pipeline")}
             >
-              Open in Databricks (pipeline) <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => triggerJob("continuous_stream_processor")}
-              disabled={pending || !isJobConfigured("continuous_stream_processor")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run stream processor
+              <Play className="h-4 w-4 mr-2" />
+              Execute (pipeline)
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => openJobRun("continuous_stream_processor")}
               disabled={!host || !isJobConfigured("continuous_stream_processor")}
             >
-              Open in Databricks (stream processor job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute (stream processor)
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -753,24 +586,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              variant="default"
-              onClick={() => triggerPipeline("payment_analysis_etl")}
-              disabled={pending || !isPipelineConfigured("payment_analysis_etl")}
-            >
-              {runPipelineMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Start ETL pipeline
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openPipeline("payment_analysis_etl")}
               disabled={!host || !isPipelineConfigured("payment_analysis_etl")}
             >
-              Open in Databricks (ETL pipeline) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -797,23 +618,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("train_ml_models")}
-              disabled={pending || !isJobConfigured("train_ml_models")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run ML training
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("train_ml_models")}
               disabled={!host || !isJobConfigured("train_ml_models")}
             >
-              Open in Databricks (ML job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -840,28 +650,17 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("genie_sync")}
-              disabled={pending || !isJobConfigured("genie_sync")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run Genie sync
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("genie_sync")}
               disabled={!host || !isJobConfigured("genie_sync")}
             >
-              Open in Databricks (Genie sync job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 9: Orchestrator agent — click opens job run in Databricks */}
+        {/* Step 9: Orchestrator agent */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("orchestrator_agent")}
@@ -883,28 +682,17 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("orchestrator_agent")}
-              disabled={pending || !isJobConfigured("orchestrator_agent")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run orchestrator
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("orchestrator_agent")}
               disabled={!host || !isJobConfigured("orchestrator_agent")}
             >
-              Open in Databricks (orchestrator job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 9b: Run specialist agents (one-click each) */}
+        {/* Step 9b: Specialist agents */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -926,27 +714,18 @@ function SetupRun() {
               { key: "risk_assessor_agent", label: "Risk Assessor" },
               { key: "performance_recommender_agent", label: "Performance Recommender" },
             ].map(({ key, label }) => (
-              <div key={key} className="flex gap-1 items-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => triggerJob(key)}
-                  disabled={pending || !isJobConfigured(key)}
-                >
-                  {runJobMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Play className="h-3 w-3 mr-1" />}
-                  {label}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2"
-                  onClick={() => openJobRun(key)}
-                  disabled={!host || !isJobConfigured(key)}
-                  title={`Open ${label} job in Databricks`}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </div>
+              <Button
+                key={key}
+                variant="outline"
+                size="sm"
+                onClick={() => openJobRun(key)}
+                disabled={!host || !isJobConfigured(key)}
+                title={`Open ${label} in Databricks to run`}
+              >
+                <Play className="h-3 w-3 mr-1" />
+                {label}
+                <ExternalLink className="ml-1 h-3 w-3" />
+              </Button>
             ))}
           </CardContent>
         </Card>
@@ -973,23 +752,12 @@ function SetupRun() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => triggerJob("publish_dashboards")}
-              disabled={pending || !isJobConfigured("publish_dashboards")}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run publish dashboards
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openJobRun("publish_dashboards")}
               disabled={!host || !isJobConfigured("publish_dashboards")}
             >
-              Open in Databricks (publish dashboards job run) <ExternalLink className="ml-1 h-3 w-3" />
+              <Play className="h-4 w-4 mr-2" />
+              Execute
+              <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>

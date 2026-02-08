@@ -1,3 +1,5 @@
+"""API router: config, auth, and feature routes."""
+
 from typing import Annotated
 
 from databricks.sdk import WorkspaceClient
@@ -14,10 +16,10 @@ from .dependencies import ConfigDep, get_workspace_client
 from .models import AuthStatusOut, VersionOut, WorkspaceConfigOut
 from .routes.agents import router as agents_router
 from .routes.analytics import router as analytics_router
+from .routes.dashboards import router as dashboards_router
 from .routes.decision import router as decision_router
 from .routes.experiments import router as experiments_router
 from .routes.incidents import router as incidents_router
-from .routes.dashboards import router as dashboards_router
 from .routes.notebooks import router as notebooks_router
 from .routes.rules import router as rules_router
 from .routes.setup import router as setup_router
@@ -29,12 +31,15 @@ except Exception:
     _api_prefix = "/api"
 
 api = APIRouter(prefix=_api_prefix)
-api.include_router(decision_router, prefix="/decision")
+
+# Config and auth (no prefix or shared)
+# Feature routes (alphabetical by path prefix)
 api.include_router(agents_router, prefix="/agents")
 api.include_router(analytics_router, prefix="/analytics")
+api.include_router(dashboards_router, prefix="/dashboards")
+api.include_router(decision_router, prefix="/decision")
 api.include_router(experiments_router, prefix="/experiments")
 api.include_router(incidents_router, prefix="/incidents")
-api.include_router(dashboards_router, prefix="/dashboards")
 api.include_router(notebooks_router, prefix="/notebooks")
 api.include_router(rules_router, prefix="/rules")
 api.include_router(setup_router)
@@ -52,7 +57,7 @@ async def version():
     operation_id="getWorkspaceConfig",
 )
 def get_workspace_config(request: Request, config: ConfigDep):
-    """Return workspace base URL for building links to jobs, pipelines, dashboards, etc. When DATABRICKS_HOST is unset and the request is from a Databricks Apps host, derive workspace URL from the Host header so Open links point to the real workspace."""
+    """Return workspace base URL for Execute links and dashboard embed. When DATABRICKS_HOST is unset and the request is from a Databricks Apps host, derive URL from the Host header."""
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw.rstrip("/") == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
         derived = workspace_url_from_apps_host(request.headers.get("host") or "", app_name)
@@ -64,9 +69,12 @@ def get_workspace_config(request: Request, config: ConfigDep):
 
 @api.get("/auth/status", response_model=AuthStatusOut, operation_id="getAuthStatus")
 def auth_status(request: Request) -> AuthStatusOut:
-    """Return whether the request has user credentials (X-Forwarded-Access-Token). Use this to show Sign in with Databricks when false."""
-    token = request.headers.get("X-Forwarded-Access-Token")
-    return AuthStatusOut(authenticated=bool(token and token.strip()))
+    """Return whether the request has user credentials (X-Forwarded-Access-Token). Used to show Sign in with Databricks when false."""
+    token = (
+        request.headers.get("X-Forwarded-Access-Token")
+        or request.headers.get("x-forwarded-access-token")
+    )
+    return AuthStatusOut(authenticated=bool(token and str(token).strip()))
 
 
 @api.get("/current-user", response_model=UserOut, operation_id="currentUser")

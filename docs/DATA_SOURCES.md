@@ -14,7 +14,7 @@ All UI components that show or link to Databricks resources go through the backe
 | **Dashboards list** | `GET /api/dashboards` | Registry of Lakeview dashboards (same IDs as `resources/dashboards.yml`); `url_path` is the workspace-relative path (e.g. `/sql/dashboards/executive_overview`). |
 | **Dashboard embed** | `GET /api/dashboards/:id/url?embed=true` | Returns `full_embed_url` = workspace URL + path + `?o=workspace_id&embed=true` for iframe. Dashboards are the ones deployed in Databricks. |
 | **Genie** | — | No API; `getGenieUrl()` = workspace URL + `/genie`. "Ask Data with Genie" and any Genie link open Databricks Genie in a new tab. |
-| **Jobs / Pipelines** | `GET /api/setup/defaults`, `POST /api/setup/run-job`, `POST /api/setup/run-pipeline` | WorkspaceClient: list jobs/pipelines (resolve IDs), run now, start pipeline. |
+| **Jobs / Pipelines** | `GET /api/setup/defaults`; optional `POST /api/setup/run-job`, `POST /api/setup/run-pipeline` | Setup page uses Execute (open in Databricks). Backend resolves IDs via WorkspaceClient; run endpoints available for API use. |
 | **Rules** | `GET/POST/PATCH/DELETE /api/rules` | DatabricksService: Lakehouse approval_rules table (Unity Catalog). |
 | **Analytics (KPIs, trends, reason codes, etc.)** | `GET /api/analytics/*` | DatabricksService: SQL Warehouse against Unity Catalog views. |
 | **Recommendations / online features** | `GET /api/analytics/recommendations`, `.../online-features` | DatabricksService: Lakehouse / Vector Search. |

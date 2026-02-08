@@ -1,8 +1,9 @@
 """
-Setup & Run API - Trigger jobs and pipelines from the UI.
+Setup & Run API – defaults, config, and optional run endpoints.
 
-Provides endpoints to run Databricks jobs and Lakeflow with configurable
-parameters (catalog, schema, warehouse_id). Used by the Setup & Run page.
+- GET /setup/defaults: resolved job/pipeline IDs and workspace URL (for Execute buttons).
+- PATCH /setup/config: save catalog/schema to app_config table.
+- POST /setup/run-job, POST /setup/run-pipeline: optional API to trigger runs; UI uses Execute (open in Databricks) instead.
 """
 
 from __future__ import annotations

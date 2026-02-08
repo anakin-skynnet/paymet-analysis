@@ -1,10 +1,10 @@
+"""Dependencies for FastAPI: config, runtime, session, Databricks client and service."""
+
 import os
 from typing import Annotated, Generator
 
 from databricks.sdk import WorkspaceClient
 from fastapi import Depends, Header, HTTPException, Request
-
-from .databricks_client_helpers import workspace_client_pat_only
 from sqlmodel import Session
 
 from .config import (
@@ -14,6 +14,7 @@ from .config import (
     ensure_absolute_workspace_url,
     workspace_url_from_apps_host,
 )
+from .databricks_client_helpers import workspace_client_pat_only
 from .runtime import Runtime
 from .services.databricks_service import DatabricksConfig, DatabricksService
 
@@ -89,7 +90,7 @@ def _get_obo_token(request: Request) -> str | None:
 def get_workspace_client(request: Request) -> WorkspaceClient:
     """
     Returns a Databricks Workspace client using your credentials when logged in (OBO)
-    or DATABRICKS_TOKEN when set. Use this for run-job, run-pipeline, etc.
+    or DATABRICKS_TOKEN when set. Used by setup defaults and optional run-job/run-pipeline API.
     Host is always absolute (https://...). When DATABRICKS_HOST is unset, derives host
     from the request when the app is served from a Databricks Apps URL.
     When using OBO (open app from Compute → Apps), do not set DATABRICKS_CLIENT_ID/SECRET
