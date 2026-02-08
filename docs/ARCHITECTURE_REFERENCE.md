@@ -85,18 +85,24 @@ Managed Postgres for rules, experiments, incidents. Bundle: `resources/lakebase.
 
 ## Bundle & deploy
 
-**Included:** unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, streaming_simulator, genie_spaces, dashboards, app. **Optional:** model_serving.yml (uncomment after Step 6). **Not in bundle:** Vector Search — create from `resources/vector_search.yml`. **Variables:** catalog, schema, environment, warehouse_id, lakebase_*, workspace_folder. Commands: [Deployment guide](DEPLOYMENT_GUIDE.md#quick-start).
+**Included:** unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, streaming_simulator, genie_spaces, dashboards, app. **Optional:** model_serving.yml (uncomment after Step 8 — Train ML models). **Not in bundle:** Vector Search — create from `resources/vector_search.yml`. **Variables:** catalog, schema, environment, warehouse_id, lakebase_*, workspace_folder. Commands: [Deployment guide](DEPLOYMENT_GUIDE.md#quick-start).
 
 ## Workspace components ↔ UI mapping
 
-| Component | UI location | One-click |
-|-----------|-------------|-----------|
-| Transaction Stream Simulator | Setup & Run step 1 | Run simulator (creates `payments_stream_input`) |
-| Payment Analysis ETL | Setup & Run step 2 | Start ETL (reads `payments_stream_input`) |
-| Create Gold Views | Setup & Run step 3 | Run job (uses `.build/transform/gold_views.sql`) |
-| Lakehouse Bootstrap | Setup & Run step 4 | Run job (uses `.build/transform/lakehouse_bootstrap.sql`) |
-| Train ML Models | Setup & Run step 5 | Run ML training |
-| Orchestrator + 5 agents | Setup & Run step 6/6b | Run / Open |
+Execution order in **Setup & Run** follows a logical sequence: foundation (Lakehouse, Vector Search, gold views, simulator), then optional real-time streaming, then ETL, ML, Genie, agents, and dashboards.
+
+| Component | Setup & Run step | One-click |
+|-----------|------------------|-----------|
+| Lakehouse Bootstrap | Step 1 | Run job (app_config, rules, recommendations) |
+| Vector Search index | Step 2 | Run job (similar-transaction lookup) |
+| Create Gold Views | Step 3 | Run job (`.build/transform/gold_views.sql`) |
+| Transaction Stream Simulator | Step 4 | Run simulator (creates `payments_stream_input`) |
+| Optional: real-time pipeline + stream processor | Step 5 | Start pipeline / Run job |
+| Payment Analysis ETL | Step 6 | Start pipeline (Bronze → Silver → Gold) |
+| Train ML Models | Step 7 | Run ML training |
+| Genie Space Sync | Step 8 | Run Genie sync |
+| Orchestrator + 5 agents | Step 9 / 9b | Run / Open |
+| Publish Dashboards | Step 10 | Run job (embed credentials for app) |
 | 12 Dashboards | Dashboards page | Card opens in workspace |
 | Rules, Experiments, Incidents | Rules, Experiments, Incidents | CRUD via API |
 

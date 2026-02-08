@@ -1,6 +1,27 @@
 # Data and visualization sources
 
-This document confirms where the app gets its **data** and **visualizations** from. When the Databricks Lakehouse is configured and available, **analytics and reporting data** are fetched from **Databricks** (Unity Catalog views, SQL Warehouse). **Embedded dashboards** are always Databricks SQL (DBSQL) dashboards.
+This document confirms where the app gets its **data** and **visualizations** from. When the Databricks Lakehouse is configured and available, **analytics and reporting data** are fetched from **Databricks** (Unity Catalog views, SQL Warehouse). **Embedded dashboards** are always Databricks Lakeview (DBSQL) dashboards deployed by the bundle. The UI is wired to the backend API, which in turn uses the Databricks SDK and SQL Warehouse for all Databricks resources (see [Apps Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), [ai-dev-kit](https://github.com/databricks-solutions/ai-dev-kit)).
+
+---
+
+## UI ↔ Databricks wiring
+
+All UI components that show or link to Databricks resources go through the backend:
+
+| UI | Backend API | Databricks resource |
+|----|-------------|---------------------|
+| **Workspace URL** | `GET /api/config/workspace` | Returned at app load; bootstrapped in `WorkspaceUrlBootstrapper` so `getWorkspaceUrl()` / `getGenieUrl()` / `getDashboardUrl()` resolve correctly. |
+| **Dashboards list** | `GET /api/dashboards` | Registry of Lakeview dashboards (same IDs as `resources/dashboards.yml`); `url_path` is the workspace-relative path (e.g. `/sql/dashboards/executive_overview`). |
+| **Dashboard embed** | `GET /api/dashboards/:id/url?embed=true` | Returns `full_embed_url` = workspace URL + path + `?o=workspace_id&embed=true` for iframe. Dashboards are the ones deployed in Databricks. |
+| **Genie** | — | No API; `getGenieUrl()` = workspace URL + `/genie`. "Ask Data with Genie" and any Genie link open Databricks Genie in a new tab. |
+| **Jobs / Pipelines** | `GET /api/setup/defaults`, `POST /api/setup/run-job`, `POST /api/setup/run-pipeline` | WorkspaceClient: list jobs/pipelines (resolve IDs), run now, start pipeline. |
+| **Rules** | `GET/POST/PATCH/DELETE /api/rules` | DatabricksService: Lakehouse approval_rules table (Unity Catalog). |
+| **Analytics (KPIs, trends, reason codes, etc.)** | `GET /api/analytics/*` | DatabricksService: SQL Warehouse against Unity Catalog views. |
+| **Recommendations / online features** | `GET /api/analytics/recommendations`, `.../online-features` | DatabricksService: Lakehouse / Vector Search. |
+| **Decision (ML/retry/routing)** | `POST /api/decision/*` | DatabricksService: model serving and rules. |
+| **Agents list / URLs** | `GET /api/agents/agents`, `GET /api/agents/agents/:id/url` | Backend returns workspace URLs for Genie, model serving, and agent notebooks in Databricks. |
+| **Notebooks list / URL** | `GET /api/notebooks/notebooks`, `GET /api/notebooks/notebooks/:id/url` | Backend returns workspace paths; URL = workspace + path. |
+| **Experiments / Incidents** | `GET/POST /api/experiments`, `GET/POST /api/incidents` | Lakebase (Postgres) for operational data. |
 
 ---
 

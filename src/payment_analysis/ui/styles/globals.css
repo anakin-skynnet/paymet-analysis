@@ -158,6 +158,33 @@
   .elevation-1 { box-shadow: var(--elevation-1); }
   .elevation-2 { box-shadow: var(--elevation-2); }
   .elevation-3 { box-shadow: var(--elevation-3); }
+  /* Progress bar fill width from CSS variable (set where used) */
+  .progress-bar-fill {
+    width: var(--progress-pct, 0);
+  }
+  /* Embed container min height for dashboard iframes */
+  .min-h-embed {
+    min-height: 70vh;
+  }
+  /* Bubble background: filter and GPU layer for animations */
+  .bubble-blur {
+    filter: url(#goo) blur(40px);
+  }
+  .gpu-layer {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  /* Sidebar CSS variables (defaults; can be overridden via same vars) */
+  .sidebar-provider {
+    --sidebar-width: 16rem;
+    --sidebar-width-icon: 3rem;
+  }
+  .sidebar-mobile {
+    --sidebar-width: 18rem;
+  }
+  .skeleton-dynamic-width {
+    max-width: var(--skeleton-width);
+  }
 }
 
 @keyframes shimmer {

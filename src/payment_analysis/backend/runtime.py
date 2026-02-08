@@ -23,8 +23,13 @@ class Runtime:
 
     @cached_property
     def ws(self) -> WorkspaceClient:
-        # note - this workspace client is usually an SP-based client
-        # in development it usually uses the DATABRICKS_CONFIG_PROFILE
+        # When PAT is set, use explicit host+token+auth_type=pat so the SDK does not
+        # read DATABRICKS_CLIENT_ID/SECRET from env and trigger OAuth scope errors.
+        host = (self.config.databricks.workspace_url or "").strip().rstrip("/")
+        token = os.environ.get("DATABRICKS_TOKEN")
+        if host and token and "example.databricks.com" not in host:
+            return WorkspaceClient(host=host, token=token, auth_type="pat")
+        # Otherwise use default (e.g. DATABRICKS_CONFIG_PROFILE or OAuth in dev)
         return WorkspaceClient()
 
     def _db_configured(self) -> bool:

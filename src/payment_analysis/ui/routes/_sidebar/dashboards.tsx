@@ -80,7 +80,7 @@ export function Component() {
   const handleDashboardClick = (dashboard: Dashboard) => {
     if (dashboard.url_path) {
       const databricksUrl = `${getWorkspaceUrl()}${dashboard.url_path}`;
-      window.open(databricksUrl, "_blank");
+      window.open(databricksUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -98,7 +98,7 @@ export function Component() {
     e.stopPropagation();
     try {
       const { data } = await getNotebookUrl({ notebook_id: notebookId });
-      window.open(data.url, "_blank");
+      window.open(data.url, "_blank", "noopener,noreferrer");
     } catch (error) {
       console.error("Failed to open notebook:", error);
     }
@@ -142,7 +142,7 @@ export function Component() {
               </span>
             )}
           </div>
-          <div className="rounded-lg border border-border bg-muted/30 overflow-hidden" style={{ minHeight: "70vh" }}>
+          <div className="rounded-lg border border-border bg-muted/30 overflow-hidden min-h-embed">
             {embedLoading ? (
               <div className="flex items-center justify-center h-[70vh]">
                 <Skeleton className="h-full w-full max-w-md" />
@@ -163,14 +163,10 @@ export function Component() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      window.open(
-                        getWorkspaceUrl()
-                          ? `${getWorkspaceUrl()}/sql/dashboards/${embedId}`
-                          : "#",
-                        "_blank"
-                      )
-                    }
+                    onClick={() => {
+                      const u = getWorkspaceUrl() ? `${getWorkspaceUrl()}/sql/dashboards/${embedId}` : null;
+                      if (u) window.open(u, "_blank", "noopener,noreferrer");
+                    }}
                   >
                     Open in new tab
                   </Button>
@@ -498,10 +494,10 @@ export function Component() {
       {/* ML & decision reasoning — click opens Genie in Databricks */}
       <Card
         className="cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => getGenieUrl() && window.open(getGenieUrl(), "_blank")}
+        onClick={() => { const u = getGenieUrl(); if (u) window.open(u, "_blank", "noopener,noreferrer"); }}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && getGenieUrl() && window.open(getGenieUrl(), "_blank")}
+        onKeyDown={(e) => { if (e.key === "Enter") { const u = getGenieUrl(); if (u) window.open(u, "_blank", "noopener,noreferrer"); } }}
       >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

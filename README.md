@@ -28,7 +28,7 @@ Databricks-powered payment approval optimization: real-time analytics, ML models
 ## Quick start
 
 1. **Deploy:** `./scripts/bundle.sh deploy dev` (runs dashboard prepare and deploys bundle).
-2. **Setup & Run (in order):** In the app, run step 1 (Transaction Stream Simulator), step 2 (ETL pipeline), step 3 (Create Gold Views), step 4 (Lakehouse Bootstrap job), step 5 (Train ML models), then optional Orchestrator/agents.
+2. **Setup & Run (in order):** In the app, run step 1 (Lakehouse Bootstrap), step 2 (Vector Search), step 3 (Gold views), step 4 (Simulator), step 5 (Optional real-time streaming), step 6 (ETL), step 7 (Train ML), step 8 (Genie sync), step 9 (Agents), step 10 (Publish dashboards).
 3. **App environment:** **Workspace → Apps** → payment-analysis → Edit → set `PGAPPNAME`, `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN`.
 
 See [Deployment guide](docs/DEPLOYMENT_GUIDE.md) for full steps and troubleshooting.

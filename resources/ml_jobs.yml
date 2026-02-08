@@ -4,6 +4,10 @@
 # Train ML models, create gold views (SQL), dashboard assets, and test the agent framework.
 # Catalog/schema from variables. Gold views job uses SQL warehouse resource.
 #
+# Execution order (Setup & Run in the app): 1 Lakehouse bootstrap, 2 Vector Search, 3 Gold views,
+# 4 Simulator, 5 Optional real-time streaming, 6 ETL pipeline, 7 Train ML, 8 Genie sync, 9 Agents, 10 Publish dashboards.
+# See docs/DEPLOYMENT_GUIDE.md and the Setup & Run page.
+#
 # Dashboard job pipeline (no duplicates; each has a distinct purpose):
 #   1. prepare_dashboards_job  — Generates .build/dashboards/*.json and .build/transform/*.sql
 #      (catalog/schema substitution). Run when catalog/schema or source dashboards change.

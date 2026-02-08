@@ -97,4 +97,4 @@ pydantic, pydantic-core, starlette, sqlalchemy, greenlet, annotated-types, typin
 - **Frontend:** No `^` or `~` in `package.json` dependencies; `bun.lock` holds resolved versions.
 - **Check:** `uv run apx dev check` runs TypeScript and Python checks.
 
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#version-alignment) for deployment and version update steps.
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#app-configuration-and-resource-paths) for deployment and version update steps.

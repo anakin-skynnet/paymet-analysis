@@ -51,22 +51,7 @@ resources:
         #     securable_type: VOLUME
         #     securable_full_name: "${var.catalog}.${var.schema}.reports"
         #     permission: READ_VOLUME
-        # Jobs used by UI (Setup & Run, agents, streaming, Genie sync)
-        - name: job-simulator
-          description: Transaction stream simulator
-          job:
-            id: ${resources.jobs.transaction_stream_simulator.id}
-            permission: CAN_MANAGE_RUN
-        - name: job-stream-processor
-          description: Continuous stream processor
-          job:
-            id: ${resources.jobs.continuous_stream_processor.id}
-            permission: CAN_MANAGE_RUN
-        - name: job-gold-views
-          description: Create gold views
-          job:
-            id: ${resources.jobs.create_gold_views_job.id}
-            permission: CAN_MANAGE_RUN
+        # Jobs used by UI (Setup & Run). Order matches execution steps: bootstrap → vector search → gold views → simulator → optional streaming (realtime pipeline + stream processor) → ETL → ML → Genie → agents → publish dashboards.
         - name: job-lakehouse-bootstrap
           description: Lakehouse bootstrap (app_config, rules, recommendations)
           job:
@@ -77,10 +62,25 @@ resources:
           job:
             id: ${resources.jobs.vector_search_index_job.id}
             permission: CAN_MANAGE_RUN
+        - name: job-gold-views
+          description: Create gold views
+          job:
+            id: ${resources.jobs.create_gold_views_job.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-simulator
+          description: Transaction stream simulator
+          job:
+            id: ${resources.jobs.transaction_stream_simulator.id}
+            permission: CAN_MANAGE_RUN
         - name: job-train-ml
           description: Train ML models
           job:
             id: ${resources.jobs.train_ml_models_job.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-genie-sync
+          description: Genie space sync
+          job:
+            id: ${resources.jobs.genie_sync_job.id}
             permission: CAN_MANAGE_RUN
         - name: job-test-agent
           description: Test agent framework
@@ -117,10 +117,15 @@ resources:
           job:
             id: ${resources.jobs.performance_recommender_agent_job.id}
             permission: CAN_MANAGE_RUN
-        - name: job-genie-sync
-          description: Genie space sync
+        - name: job-publish-dashboards
+          description: Publish dashboards (embed credentials for app UI)
           job:
-            id: ${resources.jobs.genie_sync_job.id}
+            id: ${resources.jobs.publish_dashboards_job.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-stream-processor
+          description: Continuous stream processor
+          job:
+            id: ${resources.jobs.continuous_stream_processor.id}
             permission: CAN_MANAGE_RUN
         # Model serving: commented out so deploy succeeds when model_serving.yml is not included (endpoints don't exist). Uncomment only after including resources/model_serving.yml in databricks.yml.
         # - name: serving-approval-prop

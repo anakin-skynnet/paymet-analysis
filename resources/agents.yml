@@ -1,7 +1,9 @@
 # =============================================================================
 # Agent Jobs (Smart Routing, Retry, Decline, Risk, Performance, Orchestrator)
 # =============================================================================
-# Six agent jobs calling the shared agent_framework notebook with different roles.
+# Seven jobs (orchestrator + six specialists), each calling the same agent_framework notebook
+# with a different agent_role. Kept as separate jobs (not merged) so each can have its own
+# schedule and the UI can run individual agents or the orchestrator on demand.
 # Catalog/schema from variables. All use single-node clusters; schedules are PAUSED by default.
 # Mosaic AI Gateway: configured on model serving endpoints (model_serving.yml) and on LLM endpoints in Serving UI.
 # Reference: https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/

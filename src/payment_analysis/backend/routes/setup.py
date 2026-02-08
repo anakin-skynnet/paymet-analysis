@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..config import AppConfig
-from ..dependencies import AUTH_REQUIRED_DETAIL, get_workspace_client
+from ..dependencies import AUTH_REQUIRED_DETAIL, get_workspace_client, get_workspace_client_optional
 from ..services.databricks_service import DatabricksConfig, DatabricksService
 from databricks.sdk import WorkspaceClient
 
@@ -71,6 +71,7 @@ DEFAULT_IDS: _DefaultIds = {
         "performance_recommender_agent": os.getenv(_job_id_env_key("performance_recommender_agent"), "560263049146932") or "560263049146932",
         "continuous_stream_processor": os.getenv(_job_id_env_key("continuous_stream_processor"), "1124715161556931") or "1124715161556931",
         "test_agent_framework": os.getenv(_job_id_env_key("test_agent_framework"), "0") or "0",
+        "publish_dashboards": os.getenv(_job_id_env_key("publish_dashboards"), "0") or "0",
     },
     "pipelines": {
         "payment_analysis_etl": os.getenv(_pipeline_id_env_key("payment_analysis_etl"), "eb4edb4a-0069-4208-9261-2151f4bf33d9") or "eb4edb4a-0069-4208-9261-2151f4bf33d9",
@@ -145,6 +146,77 @@ class SetupConfigOut(BaseModel):
 
 
 # =============================================================================
+# Resolve job/pipeline IDs by name when env defaults are "0" or missing
+# =============================================================================
+
+# Map logical key -> substring that appears in the deployed job/pipeline name (bundle naming).
+_JOB_NAME_SUBSTRINGS: dict[str, str] = {
+    "lakehouse_bootstrap": "Lakehouse Bootstrap",
+    "vector_search_index": "Vector Search Index",
+    "create_gold_views": "Gold Views",
+    "transaction_stream_simulator": "Transaction Stream Simulator",
+    "train_ml_models": "Train Payment Approval ML Models",
+    "genie_sync": "Genie Space Sync",
+    "orchestrator_agent": "Orchestrator",
+    "smart_routing_agent": "Smart Routing Agent",
+    "smart_retry_agent": "Smart Retry Agent",
+    "decline_analyst_agent": "Decline Analyst Agent",
+    "risk_assessor_agent": "Risk Assessor Agent",
+    "performance_recommender_agent": "Performance Recommender Agent",
+    "continuous_stream_processor": "Continuous Stream Processor",
+    "test_agent_framework": "Test AI Agent Framework",
+    "publish_dashboards": "Publish Dashboards",
+}
+_PIPELINE_NAME_SUBSTRINGS: dict[str, str] = {
+    "payment_analysis_etl": "Payment Analysis ETL",
+    "payment_realtime_pipeline": "Real-Time Stream",
+}
+
+
+def _resolve_job_and_pipeline_ids(ws: WorkspaceClient) -> tuple[dict[str, str], dict[str, str]]:
+    """Resolve job and pipeline IDs by listing workspace and matching names. Returns (jobs, pipelines) with only resolved IDs."""
+    resolved_jobs: dict[str, str] = {}
+    resolved_pipelines: dict[str, str] = {}
+    try:
+        for job in ws.jobs.list():
+            name = (job.settings.name or "") if job.settings else ""
+            for key, substr in _JOB_NAME_SUBSTRINGS.items():
+                if substr in name and job.job_id:
+                    resolved_jobs[key] = str(job.job_id)
+                    break
+    except Exception:
+        pass
+    try:
+        for pipeline in ws.pipelines.list_pipelines():
+            name = (pipeline.name or "") if pipeline else ""
+            for key, substr in _PIPELINE_NAME_SUBSTRINGS.items():
+                if substr in name and pipeline.pipeline_id:
+                    resolved_pipelines[key] = pipeline.pipeline_id
+                    break
+    except Exception:
+        pass
+    return resolved_jobs, resolved_pipelines
+
+
+def _merge_resolved_ids(
+    jobs: dict[str, str],
+    pipelines: dict[str, str],
+    resolved_jobs: dict[str, str],
+    resolved_pipelines: dict[str, str],
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Use resolved ID when current value is missing or '0'."""
+    out_jobs = dict(jobs)
+    for key, rid in resolved_jobs.items():
+        if key in out_jobs and (not out_jobs[key] or out_jobs[key] == "0"):
+            out_jobs[key] = rid
+    out_pipelines = dict(pipelines)
+    for key, rid in resolved_pipelines.items():
+        if key in out_pipelines and (not out_pipelines[key] or out_pipelines[key] == "0"):
+            out_pipelines[key] = rid
+    return out_jobs, out_pipelines
+
+
+# =============================================================================
 # Endpoints
 # =============================================================================
 
@@ -157,16 +229,24 @@ def _effective_uc_config(request: Request) -> tuple[str, str]:
 
 
 @router.get("/defaults", response_model=SetupDefaultsOut, operation_id="getSetupDefaults")
-def get_setup_defaults(request: Request) -> SetupDefaultsOut:
-    """Return default resource IDs and parameters for the Setup & Run form (catalog/schema from app_config)."""
+def get_setup_defaults(
+    request: Request,
+    ws: WorkspaceClient | None = Depends(get_workspace_client_optional),
+) -> SetupDefaultsOut:
+    """Return default resource IDs and parameters for the Setup & Run form. When credentials are present, resolves job/pipeline IDs from the workspace by name so steps can be run after deploy without setting env vars."""
     host = _get_workspace_host().rstrip("/")
     catalog, schema = _effective_uc_config(request)
+    jobs = dict(DEFAULT_IDS["jobs"])
+    pipelines = dict(DEFAULT_IDS["pipelines"])
+    if ws is not None:
+        resolved_jobs, resolved_pipelines = _resolve_job_and_pipeline_ids(ws)
+        jobs, pipelines = _merge_resolved_ids(jobs, pipelines, resolved_jobs, resolved_pipelines)
     return SetupDefaultsOut(
         warehouse_id=DEFAULT_IDS["warehouse_id"],
         catalog=catalog,
         schema_name=schema,
-        jobs=DEFAULT_IDS["jobs"],
-        pipelines=DEFAULT_IDS["pipelines"],
+        jobs=jobs,
+        pipelines=pipelines,
         workspace_host=host,
     )
 

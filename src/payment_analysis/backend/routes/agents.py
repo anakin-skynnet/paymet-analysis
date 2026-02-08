@@ -39,11 +39,11 @@ def get_workspace_url() -> str:
 
 
 def get_notebook_workspace_url(relative_path: str) -> str:
-    """Construct full workspace URL for a notebook."""
+    """Construct full workspace URL for a notebook (path must match bundle sync: /Workspace/Users/.../files/...)."""
     workspace_url = get_workspace_url()
     user_email = os.getenv("DATABRICKS_USER", "user@company.com")
     folder_name = os.getenv("BUNDLE_FOLDER", "payment-analysis")
-    full_path = f"/Users/{user_email}/{folder_name}/files/{relative_path}"
+    full_path = f"/Workspace/Users/{user_email}/{folder_name}/files/{relative_path}"
     return f"{workspace_url}/workspace{full_path}"
 
 

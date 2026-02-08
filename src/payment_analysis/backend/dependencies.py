@@ -86,6 +86,20 @@ def get_workspace_client(request: Request) -> WorkspaceClient:
     return WorkspaceClient(host=host, token=token, auth_type="pat")
 
 
+def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
+    """
+    Returns a Workspace client when credentials are available; otherwise None.
+    Used by GET /setup/defaults to resolve job/pipeline IDs from the workspace when possible.
+    """
+    obo_token = request.headers.get("X-Forwarded-Access-Token")
+    config = get_config(request)
+    host = (config.databricks.workspace_url or "").strip().rstrip("/")
+    token = obo_token or os.environ.get("DATABRICKS_TOKEN")
+    if not token or not host or "example.databricks.com" in host:
+        return None
+    return WorkspaceClient(host=host, token=token, auth_type="pat")
+
+
 def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
     """
     Returns a SQLModel session. Raises 503 if database is not configured (Databricks App: set PGAPPNAME).

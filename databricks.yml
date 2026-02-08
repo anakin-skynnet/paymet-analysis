@@ -17,8 +17,9 @@ workspace:
 
 # Resource modules. Order: UC → warehouse → pipelines → jobs → dashboards → app.
 # Lakebase is required for UI CRUD (rules, experiments, incidents) and ML features.
-# model_serving.yml — uncomment after Step 6 (Train ML Models) so 4 models exist in UC.
+# model_serving.yml — uncomment after Step 8 (Train ML Models) so 4 models exist in UC.
 # Vector Search: create manually from resources/vector_search.yml.
+# Execution order for jobs (Setup & Run): see docs/DEPLOYMENT_GUIDE.md and Setup & Run in the app.
 include:
   - resources/unity_catalog.yml
   - resources/lakebase.yml
@@ -29,7 +30,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  # - resources/model_serving.yml  # Uncomment after Step 6 (Train ML Models) so 4 models exist in UC
+  # - resources/model_serving.yml  # Uncomment after Step 8 (Train ML Models) so 4 models exist in UC
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------

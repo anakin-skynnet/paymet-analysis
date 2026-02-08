@@ -128,6 +128,7 @@ class DatabricksService:
             client = WorkspaceClient(
                 host=self.config.host,
                 token=self.config.token,
+                auth_type="pat",
             )
             logger.info("Databricks client initialized successfully")
             return client
@@ -549,11 +550,40 @@ class DatabricksService:
             logger.warning("Could not read app_config table: %s", e)
         return None
 
+    async def _ensure_app_config_table(self) -> bool:
+        """
+        Create app_config table if it does not exist and seed initial row if empty.
+        Table lives at self.config.full_schema_name (env catalog/schema).
+        Allows "Save catalog & schema" to work before the Lakehouse Bootstrap job has been run.
+        """
+        table = self.config.full_schema_name + ".app_config"
+        create_sql = f"""
+            CREATE TABLE IF NOT EXISTS {table} (
+                id INT NOT NULL DEFAULT 1,
+                catalog STRING NOT NULL,
+                schema STRING NOT NULL,
+                updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+            )
+            USING DELTA
+            TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+        """
+        if not await self.execute_non_query(create_sql):
+            return False
+        seed_sql = f"""
+            INSERT INTO {table} (id, catalog, schema)
+            SELECT 1, '{self._escape_sql_string(self.config.catalog)}', '{self._escape_sql_string(self.config.schema)}'
+            WHERE (SELECT COUNT(*) FROM {table}) = 0
+        """
+        return await self.execute_non_query(seed_sql)
+
     async def write_app_config(self, catalog: str, schema: str) -> bool:
         """
         Write catalog and schema to app_config table (single row id=1).
         Table lives at self.config.full_schema_name (bootstrap from env).
+        Creates the table and seed row if they do not exist (so Save works before Lakehouse Bootstrap).
         """
+        if not await self._ensure_app_config_table():
+            return False
         table = self.config.full_schema_name + ".app_config"
         c, s = self._escape_sql_string(catalog), self._escape_sql_string(schema)
         stmt = f"""

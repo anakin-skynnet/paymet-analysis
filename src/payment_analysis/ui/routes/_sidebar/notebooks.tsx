@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Code2, Bot, Brain, Zap, Database, BarChart3, ExternalLink, PlayCircle } from "lucide-react";
 import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/api";
 import { getWorkspaceUrl } from "@/config/workspace";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_sidebar/notebooks")({
   component: Component,
@@ -28,6 +29,14 @@ const categoryColors: Record<string, string> = {
   streaming: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
   transformation: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
   analytics: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
+};
+
+const categoryBorderLeftClasses: Record<string, string> = {
+  intelligence: "border-l-purple-500",
+  ml_training: "border-l-blue-500",
+  streaming: "border-l-yellow-500",
+  transformation: "border-l-green-500",
+  analytics: "border-l-orange-500",
 };
 
 export function Component() {
@@ -122,8 +131,10 @@ export function Component() {
             return (
               <Card
                 key={notebook.id}
-                className="cursor-pointer hover:shadow-lg transition-all group border-l-4"
-                style={{ borderLeftColor: categoryColor.split(" ")[0].replace("bg-", "").replace("/10", "") }}
+                className={cn(
+                  "cursor-pointer hover:shadow-lg transition-all group border-l-4",
+                  categoryBorderLeftClasses[notebook.category] ?? categoryBorderLeftClasses.analytics,
+                )}
                 onClick={() => handleNotebookClick(notebook.id)}
                 role="button"
                 tabIndex={0}

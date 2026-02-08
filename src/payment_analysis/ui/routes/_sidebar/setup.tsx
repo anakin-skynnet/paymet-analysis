@@ -184,15 +184,24 @@ function SetupRun() {
     warehouse_id: warehouseId,
   };
 
+  const isJobConfigured = (jobKey: string) => {
+    const id = defaults?.jobs?.[jobKey];
+    return !!id && id !== "0";
+  };
+  const isPipelineConfigured = (pipelineKey: string) => {
+    const id = defaults?.pipelines?.[pipelineKey];
+    return !!id && id !== "0";
+  };
+
   const triggerJob = (jobKey: string) => {
     const jobId = defaults?.jobs?.[jobKey];
-    if (!jobId) return;
+    if (!jobId || jobId === "0") return;
     runJobMutation.mutate({ job_id: jobId, ...params });
   };
 
   const triggerPipeline = (pipelineKey: string) => {
     const pipelineId = defaults?.pipelines?.[pipelineKey];
-    if (!pipelineId) return;
+    if (!pipelineId || pipelineId === "0") return;
     runPipelineMutation.mutate({ pipeline_id: pipelineId });
   };
 
@@ -202,13 +211,38 @@ function SetupRun() {
 
   const pending = runJobMutation.isPending || runPipelineMutation.isPending;
   const host = defaults?.workspace_host || getWorkspaceUrl();
+  /** Open Databricks workspace in a new tab: job run page (to run or view runs). */
   const openJobRun = (jobKey: string) => {
     const id = defaults?.jobs?.[jobKey];
-    if (id && host) window.open(`${host}/#job/${id}/run`, "_blank");
+    if (host && id && id !== "0") window.open(`${host}/#job/${id}/run`, "_blank", "noopener,noreferrer");
   };
+  /** Open Databricks workspace in a new tab: pipeline page (to view or start updates). */
   const openPipeline = (pipelineKey: string) => {
     const id = defaults?.pipelines?.[pipelineKey];
-    if (id && host) window.open(`${host}/pipelines/${id}`, "_blank");
+    if (host && id && id !== "0") window.open(`${host}/pipelines/${id}`, "_blank", "noopener,noreferrer");
+  };
+  /** Open Databricks workspace in a new tab: SQL warehouse. */
+  const openWarehouse = () => {
+    const wid = warehouseId || defaults?.warehouse_id;
+    if (host && wid) window.open(`${host}/sql/warehouses/${wid}`, "_blank", "noopener,noreferrer");
+  };
+  /** Open Databricks workspace in a new tab: data explorer for catalog.schema. */
+  const openExploreSchema = () => {
+    const c = catalog || defaults?.catalog;
+    const s = schema || defaults?.schema;
+    if (host && c && s) window.open(`${host}/explore/data/${c}/${s}`, "_blank", "noopener,noreferrer");
+  };
+  /** Open Databricks workspace in a new tab: Genie. */
+  const openGenie = () => {
+    if (host) window.open(`${host}/genie`, "_blank", "noopener,noreferrer");
+  };
+  /** Open Databricks workspace in a new tab: Jobs list. */
+  const openJobsList = () => {
+    if (host) window.open(`${host}/#job`, "_blank", "noopener,noreferrer");
+  };
+  /** Open Databricks workspace in a new tab: Pipelines list. */
+  const openPipelinesList = () => {
+    if (host) window.open(`${host}/pipelines`, "_blank", "noopener,noreferrer");
   };
 
   if (loadingDefaults && !defaults) {
@@ -224,7 +258,7 @@ function SetupRun() {
       <div>
         <h1 className="text-2xl font-semibold">Setup & Run</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Follow the steps in order: deploy bundle first, then data ingestion, ETL, gold views, Lakehouse bootstrap, Vector Search, ML training, Genie space, and AI agents. All jobs and pipelines can be run from this page.
+          Follow the steps in order: Lakehouse bootstrap, Vector Search, gold views, events simulator, optional real-time streaming, ingestion ETL, ML training, Genie, AI agents, and update dashboards. All jobs and pipelines can be run from this page.
         </p>
       </div>
 
@@ -251,7 +285,7 @@ function SetupRun() {
               variant="outline"
               size="sm"
               className="mt-2"
-              onClick={() => window.open(`${host}/#setting/account`, "_blank")}
+              onClick={() => window.open(`${host}/#setting/account`, "_blank", "noopener,noreferrer")}
             >
               Open workspace Settings <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
@@ -407,164 +441,32 @@ function SetupRun() {
               variant="link"
               size="sm"
               className="ml-auto"
-              onClick={() => window.open(lastResult!.url, "_blank")}
+              onClick={() => window.open(lastResult!.url, "_blank", "noopener,noreferrer")}
             >
-              Open <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           )}
         </div>
       )}
 
-      {/* Steps — order matches solution: simulator → ETL → gold → bootstrap → vector search → ML → Genie → agents → pipelines */}
+      {/* Steps — order: bootstrap → vector search → gold views → simulator → optional streaming → ETL → ML → Genie → agents → dashboards */}
       <div className="space-y-4">
         <h2 className="text-lg font-medium">Execution steps (1–10)</h2>
         <p className="text-sm text-muted-foreground">
-          Run in order. Steps 1–4: data and lakehouse; 5–6: Vector Search and ML; 7–8: Genie and AI agents; 9–10: optional streaming pipelines.
+          Run in order. 1–4: Lakehouse bootstrap, Vector Search, gold views, events simulator; 5: optional real-time streaming; 6–9: ingestion ETL, ML training, Genie, AI agents; 10: update dashboards.
         </p>
+        {defaults && !host && (
+          <p className="text-sm text-amber-600 dark:text-amber-500">
+            Connect to Databricks (open this app from <strong>Compute → Apps</strong> or set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code>) so job and pipeline IDs can be resolved and steps can be run from this page.
+          </p>
+        )}
+        {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (
+          <p className="text-sm text-muted-foreground">
+            Job IDs are resolved from the workspace when you are signed in. If Run is disabled, open the app from <strong>Compute → Apps → payment-analysis</strong> so your token is sent, or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> / <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment after deploy.
+          </p>
+        )}
 
-        {/* Step 1: Data ingestion — click opens job run in Databricks */}
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openJobRun("transaction_stream_simulator")}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openJobRun("transaction_stream_simulator")}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                1. Data ingestion (transaction simulator)
-              </CardTitle>
-              <Badge variant="secondary">Job</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Events simulator: generate test payment events (e.g. 1000/sec). Uses catalog and schema above.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button
-              onClick={() => triggerJob("transaction_stream_simulator")}
-              disabled={pending}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run simulator
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.transaction_stream_simulator}/run`,
-                  "_blank"
-                )
-              }
-            >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Step 2: Ingestion / Lakeflow pipeline — click opens pipeline in Databricks */}
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openPipeline("payment_analysis_etl")}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_analysis_etl")}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <GitBranch className="h-4 w-4" />
-                2. Ingestion & ETL (Lakeflow pipeline, Bronze → Silver → Gold)
-              </CardTitle>
-              <Badge variant="secondary">Pipeline</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Ingestion Lakeflow pipeline: process raw data into silver and gold tables. Start a pipeline update.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="default"
-              onClick={() => triggerPipeline("payment_analysis_etl")}
-              disabled={pending}
-            >
-              {runPipelineMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Start ETL pipeline
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/pipelines/${defaults?.pipelines?.payment_analysis_etl}`,
-                  "_blank"
-                )
-              }
-            >
-              Open pipeline <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Step 3: Gold views — click opens job run in Databricks */}
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openJobRun("create_gold_views")}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openJobRun("create_gold_views")}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                3. Create gold views (analytics)
-              </CardTitle>
-              <Badge variant="secondary">Job</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Create 12+ analytical views for dashboards (v_executive_kpis, decline patterns, etc.). Uses warehouse and schema.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button
-              onClick={() => triggerJob("create_gold_views")}
-              disabled={pending}
-            >
-              {runJobMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Run gold views job
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.create_gold_views}/run`,
-                  "_blank"
-                )
-              }
-            >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Step 4: Lakehouse bootstrap (job) — creates app_config, rules, recommendations */}
+        {/* Step 1: Lakehouse bootstrap — creates app_config, rules, recommendations */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("lakehouse_bootstrap")}
@@ -576,18 +478,18 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Database className="h-4 w-4" />
-                4. Lakehouse bootstrap
+                1. Lakehouse bootstrap
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Run once to create app_config, approval_rules, approval_recommendations, and online_features. Enables Rules, Decisioning, and Dashboard.
+              Run once to create app_config, approval_rules, approval_recommendations, and online_features. Enables Rules, Decisioning, and Dashboard. Save catalog &amp; schema above works after this (or table is created on first save).
             </p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("lakehouse_bootstrap")}
-              disabled={pending}
+              disabled={pending || !isJobConfigured("lakehouse_bootstrap")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -599,31 +501,23 @@ function SetupRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.lakehouse_bootstrap}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("lakehouse_bootstrap")}
+              disabled={!host || !isJobConfigured("lakehouse_bootstrap")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/sql/warehouses/${warehouseId || defaults?.warehouse_id}`,
-                  "_blank"
-                )
-              }
+              onClick={openWarehouse}
+              disabled={!host}
             >
-              SQL Warehouse
+              SQL Warehouse <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 5: Vector Search index — similar-transaction lookup */}
+        {/* Step 2: Vector Search index */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("vector_search_index")}
@@ -635,7 +529,7 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Database className="h-4 w-4" />
-                5. Vector Search index
+                2. Vector Search index
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>
@@ -646,7 +540,7 @@ function SetupRun() {
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("vector_search_index")}
-              disabled={pending}
+              disabled={pending || !isJobConfigured("vector_search_index")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -658,19 +552,209 @@ function SetupRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.vector_search_index}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("vector_search_index")}
+              disabled={!host || !isJobConfigured("vector_search_index")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 6: Train ML models — click opens job run in Databricks */}
+        {/* Step 3: Gold views (data repos) */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("create_gold_views")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("create_gold_views")}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                3. Create gold views (data repos)
+              </CardTitle>
+              <Badge variant="secondary">Job</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Create 12+ analytical views for dashboards (v_executive_kpis, decline patterns, etc.). Uses warehouse and schema.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              onClick={() => triggerJob("create_gold_views")}
+              disabled={pending || !isJobConfigured("create_gold_views")}
+            >
+              {runJobMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Run gold views job
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openJobRun("create_gold_views")}
+              disabled={!host || !isJobConfigured("create_gold_views")}
+            >
+              Open in Databricks (job run) <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Step 4: Events producer simulator */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openJobRun("transaction_stream_simulator")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("transaction_stream_simulator")}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                4. Events producer (transaction simulator)
+              </CardTitle>
+              <Badge variant="secondary">Job</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Events simulator: generate test payment events (e.g. 1000/sec). Uses catalog and schema above.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              onClick={() => triggerJob("transaction_stream_simulator")}
+              disabled={pending || !isJobConfigured("transaction_stream_simulator")}
+            >
+              {runJobMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Run simulator
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openJobRun("transaction_stream_simulator")}
+              disabled={!host || !isJobConfigured("transaction_stream_simulator")}
+            >
+              Open in Databricks (simulator job run) <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Step 5: Optional real-time streaming */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openPipeline("payment_realtime_pipeline")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_realtime_pipeline")}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GitBranch className="h-4 w-4" />
+                5. Optional: real-time streaming
+              </CardTitle>
+              <Badge variant="outline">Pipeline / Job</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Real-time Lakeflow pipeline and continuous stream processor for live payment events. Run when you need real-time analytics.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="secondary"
+              onClick={() => triggerPipeline("payment_realtime_pipeline")}
+              disabled={pending || !isPipelineConfigured("payment_realtime_pipeline")}
+            >
+              {runPipelineMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Start real-time pipeline
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openPipeline("payment_realtime_pipeline")}
+              disabled={!host || !isPipelineConfigured("payment_realtime_pipeline")}
+            >
+              Open in Databricks (pipeline) <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => triggerJob("continuous_stream_processor")}
+              disabled={pending || !isJobConfigured("continuous_stream_processor")}
+            >
+              {runJobMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Run stream processor
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openJobRun("continuous_stream_processor")}
+              disabled={!host || !isJobConfigured("continuous_stream_processor")}
+            >
+              Open in Databricks (stream processor job run) <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Step 6: Ingestion Lakeflow ETL pipeline */}
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => openPipeline("payment_analysis_etl")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_analysis_etl")}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GitBranch className="h-4 w-4" />
+                6. Ingestion & ETL (Lakeflow pipeline, Bronze → Silver → Gold)
+              </CardTitle>
+              <Badge variant="secondary">Pipeline</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Ingestion Lakeflow pipeline: process raw data into silver and gold tables and feed Vector Search. Start a pipeline update.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="default"
+              onClick={() => triggerPipeline("payment_analysis_etl")}
+              disabled={pending || !isPipelineConfigured("payment_analysis_etl")}
+            >
+              {runPipelineMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
+              Start ETL pipeline
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openPipeline("payment_analysis_etl")}
+              disabled={!host || !isPipelineConfigured("payment_analysis_etl")}
+            >
+              Open in Databricks (ETL pipeline) <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Step 7: Train ML models */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("train_ml_models")}
@@ -682,7 +766,7 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Brain className="h-4 w-4" />
-                6. Train ML models
+                7. Train ML models
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>
@@ -693,7 +777,7 @@ function SetupRun() {
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("train_ml_models")}
-              disabled={pending}
+              disabled={pending || !isJobConfigured("train_ml_models")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -705,19 +789,15 @@ function SetupRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.train_ml_models}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("train_ml_models")}
+              disabled={!host || !isJobConfigured("train_ml_models")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (ML job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 7: Genie space sync — create/prepare Genie space */}
+        {/* Step 8: Genie space sync — create/prepare Genie space */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("genie_sync")}
@@ -729,7 +809,7 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" />
-                7. Genie space sync
+                8. Genie space sync
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>
@@ -740,7 +820,7 @@ function SetupRun() {
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("genie_sync")}
-              disabled={pending}
+              disabled={pending || !isJobConfigured("genie_sync")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -752,19 +832,15 @@ function SetupRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.genie_sync}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("genie_sync")}
+              disabled={!host || !isJobConfigured("genie_sync")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (Genie sync job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 8: Orchestrator agent — click opens job run in Databricks */}
+        {/* Step 9: Orchestrator agent — click opens job run in Databricks */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openJobRun("orchestrator_agent")}
@@ -776,7 +852,7 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Bot className="h-4 w-4" />
-                8. Run AI orchestrator
+                9. Run AI orchestrator
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>
@@ -787,7 +863,7 @@ function SetupRun() {
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               onClick={() => triggerJob("orchestrator_agent")}
-              disabled={pending}
+              disabled={pending || !isJobConfigured("orchestrator_agent")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -799,25 +875,21 @@ function SetupRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.orchestrator_agent}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("orchestrator_agent")}
+              disabled={!host || !isJobConfigured("orchestrator_agent")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (orchestrator job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
 
-        {/* Step 8b: Run specialist agents (one-click each) */}
+        {/* Step 9b: Run specialist agents (one-click each) */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Bot className="h-4 w-4" />
-                8b. Run specialist agents
+                9b. Run specialist agents
               </CardTitle>
               <Badge variant="secondary">Jobs</Badge>
             </div>
@@ -838,7 +910,7 @@ function SetupRun() {
                   variant="outline"
                   size="sm"
                   onClick={() => triggerJob(key)}
-                  disabled={pending || !defaults?.jobs?.[key]}
+                  disabled={pending || !isJobConfigured(key)}
                 >
                   {runJobMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Play className="h-3 w-3 mr-1" />}
                   {label}
@@ -847,8 +919,9 @@ function SetupRun() {
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2"
-                  onClick={() => defaults?.jobs?.[key] && window.open(`${host}/#job/${defaults.jobs[key]}/run`, "_blank")}
-                  disabled={!defaults?.jobs?.[key]}
+                  onClick={() => openJobRun(key)}
+                  disabled={!host || !isJobConfigured(key)}
+                  title={`Open ${label} job in Databricks`}
                 >
                   <ExternalLink className="h-3 w-3" />
                 </Button>
@@ -857,98 +930,45 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 9: Real-time Lakeflow pipeline (optional) */}
+        {/* Step 10: Publish dashboards (embed credentials for app UI) */}
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openPipeline("payment_realtime_pipeline")}
+          onClick={() => openJobRun("publish_dashboards")}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openPipeline("payment_realtime_pipeline")}
+          onKeyDown={(e) => e.key === "Enter" && openJobRun("publish_dashboards")}
         >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <GitBranch className="h-4 w-4" />
-                9. Real-time streaming (Lakeflow pipeline, optional)
+                <LayoutDashboard className="h-4 w-4" />
+                10. Update dashboards (publish for embed)
               </CardTitle>
-              <Badge variant="outline">Pipeline</Badge>
+              <Badge variant="secondary">Job</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Start the continuous real-time payment stream pipeline in Lakeflow.
+              Publish dashboards with embed credentials so the app can embed Lakeview dashboards. Run after bundle deploy or when you need to refresh published state.
             </p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              variant="secondary"
-              onClick={() => triggerPipeline("payment_realtime_pipeline")}
-              disabled={pending}
-            >
-              {runPipelineMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Play className="h-4 w-4 mr-2" />
-              )}
-              Start real-time pipeline
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/pipelines/${defaults?.pipelines?.payment_realtime_pipeline}`,
-                  "_blank"
-                )
-              }
-            >
-              Open pipeline <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Step 10: Continuous stream processor (optional) */}
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openJobRun("continuous_stream_processor")}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openJobRun("continuous_stream_processor")}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <GitBranch className="h-4 w-4" />
-                10. Continuous stream processor (optional)
-              </CardTitle>
-              <Badge variant="outline">Job (continuous)</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Always-on job that processes streaming payment events in real time. Start from the job run page in the workspace.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="secondary"
-              onClick={() => triggerJob("continuous_stream_processor")}
-              disabled={pending}
+              onClick={() => triggerJob("publish_dashboards")}
+              disabled={pending || !isJobConfigured("publish_dashboards")}
             >
               {runJobMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Play className="h-4 w-4 mr-2" />
               )}
-              Run stream processor
+              Run publish dashboards
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.continuous_stream_processor}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("publish_dashboards")}
+              disabled={!host || !isJobConfigured("publish_dashboards")}
             >
-              Open job (run) <ExternalLink className="ml-1 h-3 w-3" />
+              Open in Databricks (publish dashboards job run) <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
           </CardContent>
         </Card>
@@ -966,85 +986,57 @@ function SetupRun() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/#job`,
-                "_blank"
-              )
-            }
+            onClick={openJobsList}
+            disabled={!host}
           >
             Jobs <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/pipelines`,
-                "_blank"
-              )
-            }
+            onClick={openPipelinesList}
+            disabled={!host}
           >
             Pipelines <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/sql/warehouses/${warehouseId || defaults?.warehouse_id}`,
-                "_blank"
-              )
-            }
+            onClick={openWarehouse}
+            disabled={!host}
           >
-            SQL Warehouse
+            SQL Warehouse <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/explore/data/${catalog || defaults?.catalog}/${schema || defaults?.schema}`,
-                "_blank"
-              )
-            }
+            onClick={openExploreSchema}
+            disabled={!host}
           >
-            Explore schema
+            Explore schema <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/genie`,
-                "_blank"
-              )
-            }
+            onClick={openGenie}
+            disabled={!host}
           >
             Genie (Ask Data) <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              window.open(
-                `${host}/#job/${defaults?.jobs?.continuous_stream_processor}/run`,
-                "_blank"
-              )
-            }
+            onClick={() => openJobRun("continuous_stream_processor")}
+            disabled={!host || !isJobConfigured("continuous_stream_processor")}
           >
-            Stream processor (run)
+            Stream processor (job run) <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
-          {defaults?.jobs?.test_agent_framework && defaults.jobs.test_agent_framework !== "0" && (
+          {isJobConfigured("test_agent_framework") && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.open(
-                  `${host}/#job/${defaults?.jobs?.test_agent_framework}/run`,
-                  "_blank"
-                )
-              }
+              onClick={() => openJobRun("test_agent_framework")}
+              disabled={!host}
             >
               Test Agent Framework <ExternalLink className="ml-1 h-3 w-3" />
             </Button>
@@ -1052,9 +1044,10 @@ function SetupRun() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(`${host}/#job`, "_blank")}
+            onClick={openJobsList}
+            disabled={!host}
           >
-            All jobs
+            All jobs <ExternalLink className="ml-1 h-3 w-3" />
           </Button>
         </CardContent>
       </Card>

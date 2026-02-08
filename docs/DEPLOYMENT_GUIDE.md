@@ -14,27 +14,30 @@ One command deploys the bundle and generates all required files (dashboards and 
 ./scripts/bundle.sh deploy dev
 ```
 
-This runs **prepare** (writes `.build/dashboards/` and `.build/transform/gold_views.sql` + `lakehouse_bootstrap.sql` with catalog/schema) then deploys. After deploy, run steps 2–6 from the app **Setup & Run** in order. To validate without deploying: `./scripts/bundle.sh validate dev`.
+This runs **prepare** (writes `.build/dashboards/` and `.build/transform/gold_views.sql` + `lakehouse_bootstrap.sql` with catalog/schema) then deploys. After deploy, run steps 1–10 from the app **Setup & Run** in order. To validate without deploying: `./scripts/bundle.sh validate dev`.
 
 ## Steps at a glance
+
+Execution order is **logical**: foundation first (Lakehouse, Vector Search, gold views, simulator), then optional real-time streaming, then ingestion ETL, ML, Genie, agents, and dashboards.
 
 | # | Step | Action |
 |---|------|--------|
 | 1 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
-| 2 | Data ingestion | **Setup & Run** → Run **Transaction Stream Simulator** (produces streaming data; run before ETL) |
-| 3 | ETL | **Setup & Run** → Start **Payment Analysis ETL** pipeline (ingests into raw/silver/gold) |
-| 4 | Gold views | **Setup & Run** → Run **Create Payment Analysis Gold Views** |
-| 5 | Lakehouse bootstrap | **Setup & Run** → Run **Lakehouse Bootstrap** (app_config, rules, recommendations; run once) |
-| 6 | Vector Search index | **Setup & Run** → Run **Create Vector Search Index** (similar-transaction lookup; run after bootstrap) |
-| 7 | ML models | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); registers in Unity Catalog |
-| 8 | Genie space | **Setup & Run** → Run **Genie Space Sync** (create/prepare Genie space) |
-| 9 | AI agents | **Setup & Run** → Run **Orchestrator** and specialist agents |
-| 10 | Optional pipelines | **Setup & Run** → Start **Real-time** pipeline and/or **Continuous stream processor** |
+| 2 | Lakehouse bootstrap | **Setup & Run** → Run **Lakehouse Bootstrap** (app_config, rules, recommendations; run once) |
+| 3 | Vector Search index | **Setup & Run** → Run **Create Vector Search Index** (similar-transaction lookup; run after bootstrap) |
+| 4 | Gold views | **Setup & Run** → Run **Create Gold Views** (data repos / analytical views) |
+| 5 | Events producer | **Setup & Run** → Run **Transaction Stream Simulator** (produces streaming data) |
+| 6 | Optional streaming | **Setup & Run** → Start **Real-time** pipeline and/or **Continuous stream processor** |
+| 7 | Ingestion ETL | **Setup & Run** → Start **Payment Analysis ETL** pipeline (Bronze → Silver → Gold, feeds Vector Search) |
+| 8 | ML models | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); registers in Unity Catalog |
+| 9 | Genie space | **Setup & Run** → Run **Genie Space Sync** (create/prepare Genie space) |
+| 10 | AI agents | **Setup & Run** → Run **Orchestrator** and specialist agents |
+| 11 | Publish dashboards | **Setup & Run** → Run **Publish Dashboards** (embed credentials so app can embed Lakeview) |
 | — | Dashboards & app | 12 dashboards + app deployed by bundle |
-| — | Model serving | After step 7: uncomment `resources/model_serving.yml`, redeploy |
+| — | Model serving | After step 8 (ML): uncomment `resources/model_serving.yml`, redeploy |
 | — | Verify | **Dashboard**, **Rules**, **Decisioning**, **ML Models** in app |
 
-All jobs and pipelines can be run from the UI. To connect: use your credentials (open app from **Compute → Apps**) or set **DATABRICKS_TOKEN** (PAT) in the app environment. See **Setup & Run → Connect to Databricks**.
+All jobs and pipelines can be run from the UI. To connect: use your credentials (open app from **Compute → Apps**) or set **DATABRICKS_TOKEN** (PAT) in the app environment. When you open the app from Compute → Apps (or with PAT set), the Setup & Run page resolves job and pipeline IDs from the workspace by name so you can run steps without setting `DATABRICKS_JOB_ID_*` / `DATABRICKS_PIPELINE_ID_*`. See **Setup & Run → Connect to Databricks**.
 
 ## Deploy app as a Databricks App
 
@@ -72,7 +75,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 - Dashboards: `file_path` in `resources/dashboards.yml` is `../.build/dashboards/*.lvdash.json` (relative to `resources/`).  
 - Sync (uploaded to workspace): `.build`, `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`.
 
-**App bindings:** database (Lakebase), sql-warehouse (`payment_analysis_warehouse`), jobs (simulator, stream processor, gold views, **lakehouse bootstrap**, train ML, test agent, 6 agent jobs, genie sync). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
+**App bindings:** database (Lakebase), sql-warehouse (`payment_analysis_warehouse`), jobs in execution order (lakehouse bootstrap, Vector Search, gold views, simulator, optional streaming, ETL, train ML, genie sync, agents, publish dashboards). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
@@ -89,11 +92,11 @@ Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepa
 
 ## Schema consistency
 
-One catalog/schema (defaults: `ahs_demos_catalog`, `payment_analysis`). Effective catalog/schema from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#catalog-and-schema-app_config).
+One catalog/schema (defaults: `ahs_demos_catalog`, `payment_analysis`). Effective catalog/schema from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#catalog-and-schema-verification).
 
 ## Resources in the workspace
 
-By default: Workspace folder, Lakebase, Jobs (simulator, gold views, **lakehouse bootstrap**, ML, agents, stream, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 12 dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 6; create Vector Search manually from `resources/vector_search.yml`.
+By default: Workspace folder, Lakebase, Jobs (lakehouse bootstrap, Vector Search, gold views, simulator, optional streaming, ETL, ML, Genie sync, agents, publish dashboards), 2 pipelines, SQL warehouse, Unity Catalog, 12 dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 8 (ML training); create Vector Search manually from `resources/vector_search.yml`.
 
 ## Where to find resources
 
@@ -152,7 +155,7 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 |-------|--------|
 | Database instance STARTING | Wait, then redeploy |
 | Don't see resources | Redeploy; run `./scripts/bundle.sh validate dev` |
-| Registered model does not exist | Run Step 6, then uncomment `model_serving.yml`, redeploy |
+| Registered model does not exist | Run Step 8 (Train ML models), then uncomment `model_serving.yml`, redeploy |
 | Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
 | Error installing packages (app deploy) | Check **Logs** for the exact pip error. Ensure `requirements.txt` is up to date: run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. See [Databricks Apps compatibility](#databricks-apps-compatibility). |
 | **permission denied for schema public** | App tables use schema `app` by default. Set **LAKEBASE_SCHEMA** (e.g. `app`) in the app environment if needed; the app creates the schema if it has permission. |
@@ -167,12 +170,12 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 
 **Error:** `Provided OAuth token does not have required scopes` (with `auth_type=pat`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN` set; sometimes `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` are also set).
 
-The app uses your **PAT** (`DATABRICKS_TOKEN`) for SQL execution, warehouse listing, and reading/writing `app_config`. This error usually means either the PAT lacks permission or the SDK is confused by OAuth env vars.
+The app uses your **PAT** (`DATABRICKS_TOKEN`) for SQL execution, warehouse listing, and reading/writing `app_config`. The code now forces PAT auth when `DATABRICKS_TOKEN` is set, but if the SDK still sees **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET** in the environment it can apply OAuth scope checks and fail.
 
-**Fix (do both):**
+**Fix:**
 
 1. **Use PAT-only auth in the app**  
-   In **Compute → Apps → payment-analysis → Edit → Environment**, **remove** (or leave empty) **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET**. Keep only **DATABRICKS_HOST**, **DATABRICKS_TOKEN**, and **DATABRICKS_WAREHOUSE_ID**. Having client_id/secret set can trigger OAuth-style scope checks even when using a PAT.
+   In **Compute → Apps → payment-analysis → Edit → Environment**, **remove** (or leave empty) **DATABRICKS_CLIENT_ID** and **DATABRICKS_CLIENT_SECRET**. Keep only **DATABRICKS_HOST**, **DATABRICKS_TOKEN**, and **DATABRICKS_WAREHOUSE_ID**. Then **Save** and **restart** the app.
 
 2. **Create a new PAT with sufficient scope**  
    In the workspace: **Settings** → **Developer** → **Access tokens** → **Generate new token**.  
@@ -205,10 +208,66 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 ## Demo setup & one-click run
 
 1. **Deploy once:** `./scripts/bundle.sh deploy dev` (prepare + build + deploy; all job files present).
-2. **Run in order from the app:** Open the app → **Setup & Run** → run step 2 (Simulator), step 3 (ETL pipeline), step 4 (Gold views), step 5 (Lakehouse Bootstrap), step 6 (Train ML). Optional: steps 6b (agents), step 7 (real-time pipeline).
-3. **Optional:** Set `DATABRICKS_JOB_ID_LAKEHOUSE_BOOTSTRAP` in the app environment to the job ID from **Workflows** if step 5 Run uses a different workspace.
+2. **Run in order from the app:** Open the app → **Setup & Run** → run step 1 (Lakehouse Bootstrap), step 2 (Vector Search), step 3 (Gold views), step 4 (Simulator), step 5 (Optional real-time streaming), step 6 (ETL pipeline), step 7 (Train ML), step 8 (Genie sync), step 9 (Agents), step 10 (Publish dashboards).
+3. **Optional:** Set `DATABRICKS_JOB_ID_*` in the app environment to job IDs from **Workflows** if Run uses a different workspace.
 
 **Estimated time:** 45–60 min. Job/pipeline IDs: **Workflows** / **Lakeflow** or `databricks bundle run <job_name> -t dev`.
+
+## Job inventory and duplicate check
+
+All bundle jobs have been reviewed for duplicates or overlapping functionality. **There are no repeated jobs.** Each job has a single, distinct purpose.
+
+| Job (bundle resource) | Purpose | Notes |
+|----------------------|---------|--------|
+| **ml_jobs.yml** | | |
+| `lakehouse_bootstrap_job` | Run `lakehouse_bootstrap.sql`: app_config, rules, recommendations, online_features | SQL task; run once. |
+| `vector_search_index_job` | Create Vector Search endpoint and index from `transaction_summaries_for_search` | Notebook; run after bootstrap. |
+| `create_gold_views_job` | Run `gold_views.sql`: 12+ analytical views | SQL task; distinct from bootstrap. |
+| `train_ml_models_job` | Train 4 ML models (approval, risk, routing, retry); register in UC | Single notebook. |
+| `prepare_dashboards_job` | Generate `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema | Run when catalog/schema or source dashboards change; not in Setup & Run UI. |
+| `publish_dashboards_job` | Publish dashboards with embed credentials (Lakeview API) for app embedding | Does not run prepare; run after deploy. |
+| `test_agent_framework_job` | Verify agent framework (test_mode); CI/smoke | Same notebook as agents but test-only; not production run. |
+| **agents.yml** | | |
+| `orchestrator_agent_job` | Run orchestrator (coordinates all agents) | One notebook, role `orchestrator`. |
+| `smart_routing_agent_job` | Run smart routing agent only | Same notebook, role `smart_routing`; separate for scheduling. |
+| `smart_retry_agent_job` | Run smart retry agent only | Same notebook, role `smart_retry`. |
+| `decline_analyst_agent_job` | Run decline analyst only | Same notebook, role `decline_analyst`. |
+| `risk_assessor_agent_job` | Run risk assessor only | Same notebook, role `risk_assessor`. |
+| `performance_recommender_agent_job` | Run performance recommender only | Same notebook, role `performance_recommender`. |
+| **streaming_simulator.yml** | | |
+| `transaction_stream_simulator` | Generate synthetic payment events (e.g. 1000/s) | Producer only. |
+| `continuous_stream_processor` | Process streaming events continuously | Consumer; different notebook. |
+| **genie_spaces.yml** | | |
+| `genie_sync_job` | Sync Genie space configuration and sample questions | Single purpose. |
+
+**Why agent jobs are not merged:** The six specialist jobs and the orchestrator all call the same notebook (`agent_framework`) with different `agent_role` (and the orchestrator coordinates them). They are kept as separate jobs so each can have its own schedule (e.g. risk assessor every 2h, decline analyst daily) and so the UI can run individual agents or the orchestrator on demand. Merging them into one multi-task job would remove per-agent scheduling and one-off runs.
+
+**Dashboard jobs:** `prepare_dashboards_job` (generate assets) and `publish_dashboards_job` (publish to Lakeview) are different: prepare writes files; publish calls the API. Both are used; neither is redundant.
+
+## Jobs and notebook/SQL reference
+
+All job notebook and SQL paths are relative to the workspace `file_path` (where the bundle syncs). Each path below is verified to exist in the repo (`.py` or generated under `.build/`).
+
+| Bundle resource (YAML key) | App/backend key | Notebook or SQL path | Source file |
+|----------------------------|-----------------|----------------------|-------------|
+| `lakehouse_bootstrap_job` | `lakehouse_bootstrap` | `.build/transform/lakehouse_bootstrap.sql` | Generated by prepare |
+| `vector_search_index_job` | `vector_search_index` | `src/payment_analysis/vector_search/create_index` | `create_index.py` |
+| `create_gold_views_job` | `create_gold_views` | `.build/transform/gold_views.sql` | Generated by prepare |
+| `transaction_stream_simulator` | `transaction_stream_simulator` | `src/payment_analysis/streaming/transaction_simulator` | `transaction_simulator.py` |
+| `train_ml_models_job` | `train_ml_models` | `src/payment_analysis/ml/train_models` | `train_models.py` |
+| `genie_sync_job` | `genie_sync` | `src/payment_analysis/genie/sync_genie_space` | `sync_genie_space.py` |
+| `orchestrator_agent_job` | `orchestrator_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `smart_routing_agent_job` | `smart_routing_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `smart_retry_agent_job` | `smart_retry_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `decline_analyst_agent_job` | `decline_analyst_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `risk_assessor_agent_job` | `risk_assessor_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `performance_recommender_agent_job` | `performance_recommender_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `test_agent_framework_job` | `test_agent_framework` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| `publish_dashboards_job` | `publish_dashboards` | `src/payment_analysis/transform/publish_dashboards` | `publish_dashboards.py` |
+| `continuous_stream_processor` | `continuous_stream_processor` | `src/payment_analysis/streaming/continuous_processor` | `continuous_processor.py` |
+| `prepare_dashboards_job` | (not in Setup UI) | `src/payment_analysis/transform/prepare_dashboards` | `prepare_dashboards.py` |
+
+**Pipelines** (not jobs): `payment_analysis_etl` uses notebooks `streaming/bronze_ingest`, `transform/silver_transform`, `transform/gold_views`. `payment_realtime_pipeline` uses `streaming/realtime_pipeline`. Sync includes `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`, `vector_search`, so all referenced notebooks are uploaded.
 
 ---
 

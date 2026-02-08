@@ -378,10 +378,8 @@ function Dashboard() {
                     <div className="flex-1 mx-3">
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
-                          className="bg-primary rounded-full h-2 transition-all"
-                          style={{
-                            width: `${Math.min(t.approval_rate_pct, 100)}%`,
-                          }}
+                          className="bg-primary rounded-full h-2 transition-all progress-bar-fill"
+                          style={{ "--progress-pct": `${Math.min(t.approval_rate_pct, 100)}%` } as React.CSSProperties}
                         />
                       </div>
                     </div>
