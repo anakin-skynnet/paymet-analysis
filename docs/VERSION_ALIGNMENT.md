@@ -93,8 +93,20 @@ pydantic, pydantic-core, starlette, sqlalchemy, greenlet, annotated-types, typin
 
 ## Verification
 
-- **Python:** `uv lock` and `uv run python scripts/sync_requirements_from_lock.py` ensure `pyproject.toml` → `uv.lock` → `requirements.txt` are aligned.
-- **Frontend:** No `^` or `~` in `package.json` dependencies; `bun.lock` holds resolved versions.
+- **Python:** `pyproject.toml` (source of truth, all direct deps use `==`) → `uv lock` → `uv run python scripts/sync_requirements_from_lock.py` → `requirements.txt`. Same versions in all three.
+- **Frontend:** `package.json` uses **exact versions only** (no `^` or `~`); `bun.lock` holds resolved versions. All dependency references match the table above.
+- **Runtime:** `.python-version` = 3.11; `package.json` `engines.node` = `>=22.0.0`. Databricks App: Python 3.11, Node.js 22.16.
 - **Check:** `uv run apx dev check` runs TypeScript and Python checks.
+
+### Files that must stay aligned
+
+| File | Role |
+|------|------|
+| `pyproject.toml` | Python direct deps (exact `==`); do not add ranges. |
+| `uv.lock` | Resolved Python deps; run `uv lock` after changing pyproject.toml. |
+| `requirements.txt` | Generated from uv.lock by `scripts/sync_requirements_from_lock.py`; do not edit by hand. |
+| `package.json` | Frontend deps (exact versions only); run `uv run apx bun install` after changes. |
+| `bun.lock` | Resolved frontend deps. |
+| `.python-version` | 3.11 (matches Databricks App). |
 
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md#app-configuration-and-resource-paths) for deployment and version update steps.
