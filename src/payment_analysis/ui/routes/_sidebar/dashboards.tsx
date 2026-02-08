@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight, Globe, LayoutGrid, ArrowLeft } from "lucide-react";
 import { getWorkspaceUrl, getGenieUrl, openWorkspaceUrl } from "@/config/workspace";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
+import { PageHeader } from "@/components/layout";
 import { friendlyReason } from "@/lib/reasoning";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
@@ -181,20 +182,17 @@ export function Component() {
       {/* List view (when not embedding) */}
       {!showEmbedView && (
         <>
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="page-section-title text-3xl font-bold">DBSQL dashboards</h1>
-          <DataSourceBadge />
-        </div>
-        <p className="page-section-description">
-          AI/BI dashboards for executives and operations: approval rate, decline rate, fraud rate, uplift vs. baseline; visuals by geography, merchant segment, issuer, and payment solution. Loaded from your Databricks workspace (Lakeview / DBSQL).
-        </p>
-      </div>
+      <PageHeader
+        sectionLabel="Overview"
+        title="DBSQL dashboards"
+        description="AI/BI dashboards for executives and operations: approval rate, decline rate, fraud rate, uplift vs. baseline; visuals by geography, merchant segment, issuer, and payment solution. Loaded from your Databricks workspace (Lakeview / DBSQL)."
+        badge={<DataSourceBadge />}
+      />
 
       {/* Core executive & operations (6) */}
       {coreDashboards.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <section className="content-section space-y-3">
+          <h2 className="section-label">
             Core executive & operations
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -204,7 +202,7 @@ export function Component() {
               return (
                 <Card
                   key={dashboard.id}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:border-primary/30 group"
+                  className="card-interactive cursor-pointer hover:shadow-lg transition-all hover:border-primary/30 group"
                   onClick={() => handleDashboardClick(dashboard)}
                 >
                   <CardHeader className="pb-2">
@@ -263,7 +261,7 @@ export function Component() {
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Category filter */}
@@ -320,8 +318,8 @@ export function Component() {
       ) : (
         <>
           {selectedCategory === null && otherDashboards.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <section className="content-section space-y-3">
+              <h2 className="section-label">
                 More dashboards
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -331,7 +329,7 @@ export function Component() {
                   return (
                     <Card
                       key={dashboard.id}
-                      className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
+                      className="card-interactive cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
                       onClick={() => handleDashboardClick(dashboard)}
                     >
                       <CardHeader>
@@ -395,7 +393,7 @@ export function Component() {
                   );
                 })}
               </div>
-            </div>
+            </section>
           )}
           {selectedCategory !== null && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

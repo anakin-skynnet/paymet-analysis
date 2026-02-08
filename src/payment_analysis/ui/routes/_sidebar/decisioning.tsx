@@ -74,11 +74,12 @@ function Decisioning() {
   return (
     <div className="space-y-6">
       {/* Hero: recommendations and actions to accelerate approval rates */}
-      <div>
+      <header className="page-header">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold font-heading">Recommendations & decisions</h1>
-            <p className="mt-1 text-sm font-medium text-primary">
+            <p className="section-label text-primary font-semibold mb-1">Decisioning</p>
+            <h1 className="page-section-title text-2xl md:text-3xl font-bold">Recommendations & decisions</h1>
+            <p className="mt-1 text-base font-medium text-primary">
               How to accelerate approval rates — policies, rules, and similar-case recommendations
             </p>
             <p className="text-sm text-muted-foreground mt-2">
@@ -106,15 +107,15 @@ function Decisioning() {
             </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="business-value-card content-section border-l-4 border-l-primary border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="w-4 h-4 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <Target className="w-5 h-5 text-primary shrink-0" />
             How to accelerate approval rates
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base">
             This app automates and recommends actions to increase approvals. Use all of the following:
           </CardDescription>
         </CardHeader>

@@ -90,8 +90,9 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="sidebar-header">
-          <div className="sidebar-header-inner">
+          <div className="sidebar-header-inner flex flex-col gap-0.5">
             <Logo to="/" showText />
+            <p className="text-[11px] font-medium text-primary tracking-wide px-2" aria-hidden>Accelerate approval rates</p>
           </div>
         </SidebarHeader>
         <SidebarContent>{children}</SidebarContent>
@@ -104,7 +105,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen">
-        <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/80 flex h-14 shrink-0 items-center gap-4 px-4 md:px-6 transition-colors duration-200 shadow-sm">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex h-14 min-h-14 shrink-0 items-center gap-4 px-4 md:px-6 transition-colors duration-200 shadow-sm">
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Toggle sidebar" />
           <Breadcrumb />
           <div className="flex-1 min-w-0" />
@@ -116,7 +117,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
         </a>
         <div id="main-content" className="flex flex-1 justify-center overflow-auto min-h-0 main-content-area" tabIndex={-1}>
           <motion.div
-            className="flex flex-1 flex-col gap-6 p-6 md:p-8 max-w-7xl w-full"
+            className="page-container flex flex-1 flex-col gap-6 p-6 md:p-8 w-full"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}

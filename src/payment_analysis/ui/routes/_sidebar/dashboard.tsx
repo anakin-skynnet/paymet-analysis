@@ -179,19 +179,20 @@ function Dashboard() {
     >
       {/* Hero: one place to monitor approval rates and discover what’s delaying them */}
       <motion.div variants={dashboardItem} className="space-y-2">
+        <p className="section-label text-primary font-semibold">Key metrics</p>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="page-section-title text-2xl md:text-3xl font-bold">
-            KPI overview
+            Accelerate approval rates — one place to see what&apos;s working
           </h1>
           <DataSourceBadge />
         </div>
         <p className="page-section-description">
-          Monitor approval rates, discover factors delaying approvals, and see where to act. Portfolio performance in the last 30 days — key metrics, trends, and actionable insights from your Databricks Lakehouse.
+          Portfolio performance in the last 30 days: approval rate, trends, and factors that may be delaying approvals. Act on recommendations to maximize conversion.
         </p>
       </motion.div>
 
       {/* Data flow & storytelling — one system */}
-      <motion.div variants={dashboardItem}>
+      <motion.div variants={dashboardItem} className="content-section">
         <Card className="border-primary/20 bg-muted/30">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -222,7 +223,8 @@ function Dashboard() {
       </motion.div>
 
       {/* Section: Portfolio KPIs */}
-      <motion.div variants={dashboardItem}>
+      <motion.div variants={dashboardItem} className="content-section">
+        <p className="section-label text-muted-foreground mb-1">What&apos;s driving approval rates</p>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="page-section-title">
             Portfolio overview
@@ -468,7 +470,8 @@ function Dashboard() {
 
       {/* Factors that may be delaying approvals — discover conditions and recommended actions */}
       <motion.div variants={dashboardItem}>
-        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/20">
+        <p className="section-label text-muted-foreground mb-1">Recommended actions</p>
+        <Card className="business-value-card border-l-4 border-l-primary border-amber-200/80 dark:border-amber-800/80 bg-amber-50/40 dark:bg-amber-950/30 shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />

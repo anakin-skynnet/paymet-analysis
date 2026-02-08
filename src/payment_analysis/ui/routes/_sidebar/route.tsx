@@ -104,7 +104,7 @@ function Layout() {
   return (
     <SidebarLayout>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Overview
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -118,7 +118,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Reasons & factors
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -132,7 +132,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Recommendations & actions
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -146,7 +146,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Initiatives
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -160,7 +160,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           AI & automation
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -174,7 +174,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Operations
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -188,7 +188,7 @@ function Layout() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <SidebarGroupLabel className="nav-group-label">
           Settings
         </SidebarGroupLabel>
         <SidebarGroupContent>

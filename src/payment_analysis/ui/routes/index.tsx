@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/apx/navbar";
 import Logo from "@/components/apx/logo";
 import { motion } from "motion/react";
-import { BarChart3, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database, MessageSquareText } from "lucide-react";
+import { BarChart3, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database, MessageSquareText, Zap, Shield, LineChart, Eye } from "lucide-react";
 import { BubbleBackground } from "@/components/backgrounds/bubble";
 import { getWorkspaceUrl } from "@/config/workspace";
 import { useGetAuthStatus } from "@/lib/api";
@@ -96,28 +96,45 @@ function Index() {
               </motion.div>
             )}
 
-            {/* North star: accelerate approval rates */}
-            <motion.div variants={item} className="space-y-1">
-              <p className="text-base md:text-lg font-medium text-primary">
-                Accelerate approval rates. Identify what’s delaying them. Act on recommendations.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                One platform for Getnet to maximize conversion and control.
-              </p>
+            <motion.div variants={item} className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">How we accelerate approval rates</span>
             </motion.div>
 
             <motion.h1
               variants={item}
-              className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground leading-tight font-heading"
+              className="hero-impact text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight"
             >
-              Risk & Portfolio Intelligence for Getnet
+              Risk & Portfolio Intelligence
             </motion.h1>
             <motion.p
               variants={item}
-              className="text-sm text-muted-foreground"
+              className="hero-impact-sub text-xl md:text-2xl text-primary max-w-lg"
             >
-              Discover conditions and factors that delay approval rates; get recommendations and automated processes to accelerate them — all in one place. All data and dashboards are loaded from your Databricks workspace.
+              One platform to maximize approvals and control risk.
             </motion.p>
+            <motion.p
+              variants={item}
+              className="text-sm text-muted-foreground max-w-xl"
+            >
+              See what's delaying approval rates, get actionable recommendations, and run smart routing, retry, and risk policies — all in one place. Data and dashboards from your Databricks workspace.
+            </motion.p>
+            <motion.div variants={item} className="grid grid-cols-2 md:flex md:flex-wrap gap-3">
+              {[
+                { icon: LineChart, label: "Smart routing" },
+                { icon: RotateCcw, label: "Retry recovery" },
+                { icon: Shield, label: "Risk control" },
+                { icon: Eye, label: "Full visibility" },
+              ].map(({ icon: Icon, label }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-2 rounded-lg border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
+                >
+                  <Icon className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-xs font-medium text-foreground">{label}</span>
+                </div>
+              ))}
+            </motion.div>
 
             {/* Value proposition */}
             <motion.div variants={item} className="text-left">
@@ -148,56 +165,56 @@ function Index() {
               </span>
             </motion.div>
 
-            {/* Initiative cards — one per business objective */}
+            {/* Initiative cards — business-oriented, impactful */}
             <motion.div variants={item} className="space-y-3">
-              <p className="text-sm font-semibold text-foreground">Key initiatives</p>
-              <div className="grid gap-3 sm:grid-cols-1">
+              <p className="section-label">Key initiatives</p>
+              <div className="grid gap-4 sm:grid-cols-1">
                 {initiatives.map((init) => {
                   const Icon = init.icon;
                   return (
                     <Link
                       key={init.to}
                       to={init.to}
-                      className="group flex items-start gap-4 rounded-xl border border-border/80 bg-card p-4 text-left transition-all hover:border-primary/40 hover:shadow-md hover:bg-card/95"
+                      className="business-value-card card-interactive group flex items-start gap-4 rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-primary/40 hover:bg-card/98"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" />
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20">
+                        <Icon className="h-6 w-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground group-hover:text-primary">
+                        <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
                           {init.title}
                         </p>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
                           {init.description}
                         </p>
                       </div>
-                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                     </Link>
                   );
                 })}
               </div>
             </motion.div>
 
-            {/* Primary CTAs: how to accelerate approval rates */}
+            {/* Primary CTAs — clear, impactful */}
             <motion.div
               variants={item}
               className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start pt-2"
             >
               <Button
                 size="lg"
-                className="gap-2 min-w-[220px] h-12 text-base font-semibold shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all duration-200"
+                className="cta-glow gap-2 min-w-[240px] h-12 text-base font-semibold shadow-lg transition-all duration-200 rounded-xl px-6"
                 asChild
               >
                 <Link to="/dashboard">
                   <BarChart3 className="h-5 w-5" />
-                  See how to accelerate
+                  See how to accelerate approval rates
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="gap-2 min-w-[180px] h-12 text-base font-medium"
+                className="gap-2 min-w-[200px] h-12 text-base font-medium rounded-xl border-2"
                 asChild
               >
                 <Link to="/decisioning">

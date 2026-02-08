@@ -18,23 +18,19 @@ This runs **prepare** (writes `.build/dashboards/` and `.build/transform/gold_vi
 
 ## Steps at a glance
 
-Execution order is **logical**: foundation first (Lakehouse, Vector Search, gold views, simulator), then optional real-time streaming, then ingestion ETL, ML, Genie, agents, and dashboards.
+Jobs are consolidated into **6 numbered steps** (prefix in job name). Run in order: **1 → 2 → 3 → 4 → 5 → 6**. Pipelines (Lakeflow ETL and Real-time) are separate resources; start them when needed.
 
-| # | Step | Action |
-|---|------|--------|
-| 1 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
-| 2 | Lakehouse bootstrap | **Setup & Run** → Run **Lakehouse Bootstrap** (app_config, rules, recommendations; run once) |
-| 3 | Vector Search index | **Setup & Run** → Run **Create Vector Search Index** (similar-transaction lookup; run after bootstrap) |
-| 4 | Gold views | **Setup & Run** → Run **Create Gold Views** (data repos / analytical views) |
-| 5 | Events producer | **Setup & Run** → Run **Transaction Stream Simulator** (produces streaming data) |
-| 6 | Optional streaming | **Setup & Run** → Start **Real-time** pipeline and/or **Continuous stream processor** |
-| 7 | Ingestion ETL | **Setup & Run** → Start **Payment Analysis ETL** pipeline (Bronze → Silver → Gold, feeds Vector Search) |
-| 8 | ML models | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); registers in Unity Catalog |
-| 9 | Genie space | **Setup & Run** → Run **Genie Space Sync** (create/prepare Genie space) |
-| 10 | AI agents | **Setup & Run** → Run **Orchestrator** and specialist agents |
-| 11 | Publish dashboards | **Setup & Run** → Run **Publish Dashboards** (embed credentials so app can embed Lakeview) |
+| # | Job (step) | Action |
+|---|------------|--------|
+| 0 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
+| 1 | **1. Create Data Repositories** | **Setup & Run** → Run **Lakehouse Bootstrap** or **Vector Search Index** (same job: lakehouse, vector search, lakebase; run once) |
+| 2 | **2. Simulate Transaction Events** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines) |
+| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; lakehouse/lakebase/vector search) |
+| 4 | **4. Deploy Dashboards** | **Setup & Run** → Run **Prepare** or **Publish Dashboards** (same job: prepare assets + publish with embed credentials) |
+| 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
+| 6 | **6. Deploy AgentBricks Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
+| — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** and/or **Real-Time Stream** (Lakeflow; optional, when needed) |
 | — | Dashboards & app | 12 dashboards + app deployed by bundle |
-| — | Model serving | After step 8 (ML): uncomment `resources/model_serving.yml`, redeploy |
 | — | Verify | **Dashboard**, **Rules**, **Decisioning**, **ML Models** in app |
 
 All jobs and pipelines can be run from the UI. To connect: use your credentials (open app from **Compute → Apps**) or set **DATABRICKS_TOKEN** (PAT) in the app environment. When you open the app from Compute → Apps (or with PAT set), the Setup & Run page resolves job and pipeline IDs from the workspace by name so you can run steps without setting `DATABRICKS_JOB_ID_*` / `DATABRICKS_PIPELINE_ID_*`. See **Setup & Run → Connect to Databricks**.
@@ -96,7 +92,7 @@ One catalog/schema (defaults: `ahs_demos_catalog`, `payment_analysis`). Effectiv
 
 ## Resources in the workspace
 
-By default: Workspace folder, Lakebase, Jobs (lakehouse bootstrap, Vector Search, gold views, simulator, optional streaming, ETL, ML, Genie sync, agents, publish dashboards), 2 pipelines, SQL warehouse, Unity Catalog, 12 dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 8 (ML training); create Vector Search manually from `resources/vector_search.yml`.
+By default: Workspace folder, Lakebase, Jobs (6 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents), 2 pipelines, SQL warehouse, Unity Catalog, 12 dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 5 (Train ML models); create Vector Search manually from `resources/vector_search.yml` if not in bundle.
 
 ## Where to find resources
 
@@ -155,7 +151,7 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 |-------|--------|
 | Database instance STARTING | Wait, then redeploy |
 | Don't see resources | Redeploy; run `./scripts/bundle.sh validate dev` |
-| Registered model does not exist | Run Step 8 (Train ML models), then uncomment `model_serving.yml`, redeploy |
+| Registered model does not exist | Run Step 5 (Train ML models), then uncomment `model_serving.yml`, redeploy |
 | Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
 | Error installing packages (app deploy) | Check **Logs** for the exact pip error. Ensure `requirements.txt` is up to date: run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. See [Databricks Apps compatibility](#databricks-apps-compatibility). |
 | **permission denied for schema public** | App tables use schema `app` by default. Set **LAKEBASE_SCHEMA** (e.g. `app`) in the app environment if needed; the app creates the schema if it has permission. |
@@ -209,7 +205,7 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 ## Demo setup & one-click run
 
 1. **Deploy once:** `./scripts/bundle.sh deploy dev` (prepare + build + deploy; all job files present).
-2. **Run in order from the app:** Open the app → **Setup & Run** → run step 1 (Lakehouse Bootstrap), step 2 (Vector Search), step 3 (Gold views), step 4 (Simulator), step 5 (Optional real-time streaming), step 6 (ETL pipeline), step 7 (Train ML), step 8 (Genie sync), step 9 (Agents), step 10 (Publish dashboards).
+2. **Run in order from the app:** Open the app → **Setup & Run** → run jobs **1** (Create Data Repositories), **2** (Simulate Transaction Events), **3** (Initialize Ingestion), **4** (Deploy Dashboards), **5** (Train Models & Model Serving), **6** (Deploy AgentBricks Agents). Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
 3. **Optional:** Set `DATABRICKS_JOB_ID_*` in the app environment to job IDs from **Workflows** if Run uses a different workspace.
 
 **Estimated time:** 45–60 min. Job/pipeline IDs: **Workflows** / **Lakeflow** or `databricks bundle run <job_name> -t dev`.

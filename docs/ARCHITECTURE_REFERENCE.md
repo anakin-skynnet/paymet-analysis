@@ -85,7 +85,7 @@ Managed Postgres for rules, experiments, incidents. Bundle: `resources/lakebase.
 
 ## Bundle & deploy
 
-**Included:** unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, streaming_simulator, genie_spaces, dashboards, app. **Optional:** model_serving.yml (uncomment after Step 8 — Train ML models). **Not in bundle:** Vector Search — create from `resources/vector_search.yml`. **Variables:** catalog, schema, environment, warehouse_id, lakebase_*, workspace_folder. Commands: [Deployment guide](DEPLOYMENT_GUIDE.md#quick-start).
+**Included:** unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, streaming_simulator, genie_spaces, dashboards, app. **Optional:** model_serving.yml (uncomment after Step 5 — Train ML models). **Not in bundle:** Vector Search — create from `resources/vector_search.yml` when CLI supports it. **Variables:** catalog, schema, environment, warehouse_id, lakebase_*, workspace_folder. Commands: [Deployment guide](DEPLOYMENT_GUIDE.md#quick-start).
 
 ## Workspace components ↔ UI mapping
 
@@ -100,7 +100,7 @@ Execution order in **Setup & Run** follows a logical sequence: foundation (Lakeh
 | Optional: real-time pipeline + stream processor | Step 5 | Start pipeline / Run job |
 | Payment Analysis ETL | Step 6 | Start pipeline (Bronze → Silver → Gold) |
 | Train ML Models | Step 7 | Run ML training |
-| Genie Space Sync | Step 8 | Run Genie sync |
+| Genie Space Sync | Optional | Run Genie sync (separate job) |
 | Orchestrator + 5 agents | Step 9 / 9b | Run / Open |
 | Publish Dashboards | Step 10 | Run job (embed credentials for app) |
 | 12 Dashboards | Dashboards page | Card opens in workspace |

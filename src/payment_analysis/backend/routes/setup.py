@@ -90,6 +90,7 @@ DEFAULT_IDS: _DefaultIds = {
         "performance_recommender_agent": os.getenv(_job_id_env_key("performance_recommender_agent"), "560263049146932") or "560263049146932",
         "continuous_stream_processor": os.getenv(_job_id_env_key("continuous_stream_processor"), "1124715161556931") or "1124715161556931",
         "test_agent_framework": os.getenv(_job_id_env_key("test_agent_framework"), "0") or "0",
+        "prepare_dashboards": os.getenv(_job_id_env_key("prepare_dashboards"), "0") or "0",
         "publish_dashboards": os.getenv(_job_id_env_key("publish_dashboards"), "0") or "0",
     },
     "pipelines": {
@@ -170,26 +171,26 @@ class SetupConfigOut(BaseModel):
 # =============================================================================
 # Resolve job/pipeline IDs by name when env defaults are "0" or missing
 # =============================================================================
-# Keys must match DEFAULT_IDS["jobs"] / ["pipelines"] and UI setup step keys.
-# Bundle: ml_jobs.yml (create_gold_views_job, lakehouse_bootstrap_job, etc.),
-# agents.yml, streaming_simulator.yml, genie_spaces.yml; pipelines.yml.
-# Map logical key -> substring that appears in the deployed job/pipeline name (bundle naming).
-_JOB_NAME_SUBSTRINGS: dict[str, str] = {
-    "lakehouse_bootstrap": "Lakehouse Bootstrap",
-    "vector_search_index": "Vector Search Index",
-    "create_gold_views": "Gold Views",
-    "transaction_stream_simulator": "Transaction Stream Simulator",
-    "train_ml_models": "Train Payment Approval ML Models",
-    "genie_sync": "Genie Space Sync",
-    "orchestrator_agent": "Orchestrator",
-    "smart_routing_agent": "Smart Routing Agent",
-    "smart_retry_agent": "Smart Retry Agent",
-    "decline_analyst_agent": "Decline Analyst Agent",
-    "risk_assessor_agent": "Risk Assessor Agent",
-    "performance_recommender_agent": "Performance Recommender Agent",
-    "continuous_stream_processor": "Continuous Stream Processor",
-    "test_agent_framework": "Test AI Agent Framework",
-    "publish_dashboards": "Publish Dashboards",
+# Jobs are consolidated into 6 steps (1–6). Each step has one job; multiple logical
+# keys map to the same job_id. Substring must appear in the deployed job name.
+# Bundle: ml_jobs.yml (steps 1,3,4,5), streaming_simulator.yml (step 2), agents.yml (step 6).
+_STEP_JOB_SUBSTRINGS: dict[str, list[str]] = {
+    "1. Create Data Repositories": ["lakehouse_bootstrap", "vector_search_index"],
+    "2. Simulate Transaction Events": ["transaction_stream_simulator"],
+    "3. Initialize Ingestion": ["create_gold_views", "continuous_stream_processor"],
+    "4. Deploy Dashboards": ["prepare_dashboards", "publish_dashboards"],
+    "5. Train Models & Publish to Model Serving": ["train_ml_models"],
+    "6. Deploy AgentBricks Agents": [
+        "orchestrator_agent",
+        "smart_routing_agent",
+        "smart_retry_agent",
+        "decline_analyst_agent",
+        "risk_assessor_agent",
+        "performance_recommender_agent",
+        "test_agent_framework",
+    ],
+    # Optional Genie job (genie_spaces.yml); not part of the 6-step sequence
+    "Genie Space Sync": ["genie_sync"],
 }
 _PIPELINE_NAME_SUBSTRINGS: dict[str, str] = {
     "payment_analysis_etl": "Payment Analysis ETL",
@@ -198,15 +199,19 @@ _PIPELINE_NAME_SUBSTRINGS: dict[str, str] = {
 
 
 def _resolve_job_and_pipeline_ids(ws: WorkspaceClient) -> tuple[dict[str, str], dict[str, str]]:
-    """Resolve job and pipeline IDs by listing workspace and matching names. Returns (jobs, pipelines) with only resolved IDs."""
+    """Resolve job and pipeline IDs by listing workspace and matching step names. Returns (jobs, pipelines) with only resolved IDs. One job can satisfy multiple keys (same step)."""
     resolved_jobs: dict[str, str] = {}
     resolved_pipelines: dict[str, str] = {}
     try:
         for job in ws.jobs.list():
             name = (job.settings.name or "") if job.settings else ""
-            for key, substr in _JOB_NAME_SUBSTRINGS.items():
-                if substr in name and job.job_id:
-                    resolved_jobs[key] = str(job.job_id)
+            if not job.job_id:
+                continue
+            job_id_str = str(job.job_id)
+            for substr, keys in _STEP_JOB_SUBSTRINGS.items():
+                if substr in name:
+                    for key in keys:
+                        resolved_jobs[key] = job_id_str
                     break
     except Exception:
         pass

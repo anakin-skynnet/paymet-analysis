@@ -443,11 +443,11 @@ function SetupRun() {
         </div>
       )}
 
-      {/* Steps — order: bootstrap → vector search → gold views → simulator → optional streaming → ETL → ML → Genie → agents → dashboards */}
+      {/* Steps — jobs 1–6: create repositories → simulate events → initialize ingestion → deploy dashboards → train models → deploy agents; optional Genie and pipelines */}
       <div className="space-y-4">
         <h2 className="text-lg font-medium">Execution steps (1–10)</h2>
         <p className="text-sm text-muted-foreground">
-          Run in order. 1–4: Lakehouse bootstrap, Vector Search, gold views, events simulator; 5: optional real-time streaming; 6–9: ingestion ETL, ML training, Genie, AI agents; 10: update dashboards.
+          Run in order. Jobs 1–6: Create repositories → Simulate events → Initialize ingestion → Deploy dashboards → Train models → Deploy agents. Optionally run Genie sync and start Lakeflow pipelines when needed.
         </p>
         {defaults && !host && (
           <p className="text-sm text-amber-600 dark:text-amber-500">
@@ -754,7 +754,7 @@ function SetupRun() {
           </CardContent>
         </Card>
 
-        {/* Step 8: Genie space sync — create/prepare Genie space */}
+        {/* Optional: Genie space sync — create/prepare Genie space */}
         <Card
           className="card-interactive cursor-pointer"
           onClick={() => openJobPage("genie_sync")}
@@ -766,7 +766,7 @@ function SetupRun() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" />
-                8. Genie space sync
+                Genie space sync (optional)
               </CardTitle>
               <Badge variant="secondary">Job</Badge>
             </div>

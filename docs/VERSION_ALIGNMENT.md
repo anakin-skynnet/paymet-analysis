@@ -49,7 +49,7 @@ pydantic, pydantic-core, starlette, sqlalchemy, greenlet, annotated-types, typin
 
 ## Frontend (UI)
 
-**Source of truth:** `package.json` (all dependencies use exact versions, no `^` or `~`).  
+**Source of truth:** `package.json` (all dependencies use exact versions only; no `^` or `~` — same versions everywhere and compatible with Databricks App).  
 **Lock:** `bun.lock`.
 
 ### Key dependencies (exact versions)
