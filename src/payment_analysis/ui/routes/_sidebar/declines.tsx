@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { declineSummary } from "@/lib/api";
+import { declineSummary, useGetReasonCodeInsightsBr } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Code2, TrendingUp } from "lucide-react";
+import { ExternalLink, Code2, TrendingUp, Target, ArrowRight } from "lucide-react";
 import { getDashboardUrl } from "@/config/workspace";
 
 export const Route = createFileRoute("/_sidebar/declines")({
@@ -32,16 +32,21 @@ function Declines() {
     queryKey: ["declines", "summary"],
     queryFn: () => declineSummary(),
   });
+  const { data: reasonCodeData } = useGetReasonCodeInsightsBr({ params: { limit: 5 } });
+  const recommendedActions = reasonCodeData?.data ?? [];
 
   const buckets = q.data?.data ?? [];
 
   return (
     <div className="space-y-6">
-      {/* Header with Links */}
+      {/* Hero: decline patterns and factors delaying approvals */}
       <div>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h1 className="text-2xl font-bold font-heading">Declines</h1>
+            <p className="mt-1 text-sm font-medium text-primary">
+              Discover conditions and factors delaying approvals
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
               Decline patterns and recovery. Use Reason Codes for issuer vs reason heatmaps and remediation; use Smart Retry for approval with/without retry.
             </p>
@@ -87,6 +92,42 @@ function Declines() {
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-primary" />
+            Recommended actions to accelerate approvals
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Top conditions delaying approvals and what to do. From Reason Codes (Brazil). Apply these and use Decisioning for real-time auth/retry/routing.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {recommendedActions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No reason-code insights yet. Run gold views and open Reason Codes for full insights and recommended actions.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {recommendedActions.map((r) => (
+                <li key={`${r.entry_system}-${r.decline_reason_standard}-${r.priority}`} className="rounded-lg border border-border/60 p-2.5">
+                  <p className="text-sm font-medium">{r.decline_reason_standard}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{r.recommended_action}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/reason-codes">Reason Codes <ArrowRight className="w-3 h-3 ml-1" /></Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/decisioning">Decisioning playground <ArrowRight className="w-3 h-3 ml-1" /></Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

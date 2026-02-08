@@ -9,11 +9,12 @@ import {
   useDecideRouting,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, Code2, Brain, Database, Sparkles } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ExternalLink, Code2, Brain, Database, Sparkles, ArrowRight, Target } from "lucide-react";
 
 export const Route = createFileRoute("/_sidebar/decisioning")({
   component: () => <Decisioning />,
@@ -71,10 +72,18 @@ function Decisioning() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Notebook Links */}
+      {/* Hero: recommendations and actions to accelerate approval rates */}
       <div>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Decisioning playground</h1>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="text-2xl font-bold font-heading">Recommendations & decisions</h1>
+            <p className="mt-1 text-sm font-medium text-primary">
+              How to accelerate approval rates — policies, rules, and similar-case recommendations
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Test ML-powered policies for authentication, retry, and routing. Use Rules (Lakehouse) and similar-case recommendations to accelerate approvals.
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -96,10 +105,37 @@ function Decisioning() {
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-2">
-          Test ML-powered policies for authentication, retry, and routing. Use Rules (Lakehouse) and similar-case recommendations to accelerate approvals.
-        </p>
       </div>
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="w-4 h-4 text-primary" />
+            How to accelerate approval rates
+          </CardTitle>
+          <CardDescription>
+            This app automates and recommends actions to increase approvals. Use all of the following:
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p className="flex items-start gap-2">
+            <span className="font-medium shrink-0">1.</span>
+            <span>Run authentication, retry, and routing decisions below — they apply policies that reduce friction and recover soft declines.</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="font-medium shrink-0">2.</span>
+            <span>Define and apply <Link to="/rules" className="text-primary hover:underline inline-flex items-center gap-1">Rules <ArrowRight className="w-3 h-3" /></Link> (Lakehouse). AI agents and batch jobs use them to accelerate approvals.</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="font-medium shrink-0">3.</span>
+            <span>Follow the <strong>recommendations</strong> in the card below — they come from similar cases (Vector Search) and rules.</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="font-medium shrink-0">4.</span>
+            <span>Act on <Link to="/reason-codes" className="text-primary hover:underline inline-flex items-center gap-1">Reason Codes <ArrowRight className="w-3 h-3" /></Link> insights to fix conditions that delay approvals (e.g. issuer, decline reason).</span>
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

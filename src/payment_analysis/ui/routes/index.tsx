@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/apx/navbar";
 import Logo from "@/components/apx/logo";
 import { motion } from "motion/react";
-import { BarChart3, ShieldAlert, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database } from "lucide-react";
+import { BarChart3, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database, MessageSquareText } from "lucide-react";
 import { BubbleBackground } from "@/components/backgrounds/bubble";
 import { getWorkspaceUrl } from "@/config/workspace";
 import { useGetAuthStatus } from "@/lib/api";
@@ -96,10 +96,10 @@ function Index() {
               </motion.div>
             )}
 
-            {/* Executive message — 1–2 lines, business value */}
+            {/* North star: accelerate approval rates */}
             <motion.div variants={item} className="space-y-1">
               <p className="text-base md:text-lg font-medium text-primary">
-                Higher approval rates. Lower risk. Better portfolio visibility.
+                Accelerate approval rates. Identify what’s delaying them. Act on recommendations.
               </p>
               <p className="text-sm text-muted-foreground">
                 One platform for Getnet to maximize conversion and control.
@@ -112,6 +112,12 @@ function Index() {
             >
               Risk & Portfolio Intelligence for Getnet
             </motion.h1>
+            <motion.p
+              variants={item}
+              className="text-sm text-muted-foreground"
+            >
+              Discover conditions and factors that delay approval rates; get recommendations and automated processes to accelerate them — all in one place.
+            </motion.p>
 
             {/* Value proposition */}
             <motion.div variants={item} className="text-left">
@@ -172,7 +178,7 @@ function Index() {
               </div>
             </motion.div>
 
-            {/* Primary CTAs */}
+            {/* Primary CTAs: how to accelerate approval rates */}
             <motion.div
               variants={item}
               className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start pt-2"
@@ -184,7 +190,7 @@ function Index() {
               >
                 <Link to="/dashboard">
                   <BarChart3 className="h-5 w-5" />
-                  KPI overview
+                  See how to accelerate
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -194,9 +200,9 @@ function Index() {
                 className="gap-2 min-w-[180px] h-12 text-base font-medium"
                 asChild
               >
-                <Link to="/declines">
-                  <ShieldAlert className="h-5 w-5" />
-                  Declines & insights
+                <Link to="/decisioning">
+                  <MessageSquareText className="h-5 w-5" />
+                  Recommendations & actions
                 </Link>
               </Button>
             </motion.div>

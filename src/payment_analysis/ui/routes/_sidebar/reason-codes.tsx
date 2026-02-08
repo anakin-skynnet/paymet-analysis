@@ -54,16 +54,19 @@ function ReasonCodes() {
 
   return (
     <div className="space-y-8">
-      {/* Hero */}
+      {/* Hero: identify reasons and factors impacting approval rates */}
       <div>
         <h1 className="text-2xl font-bold font-heading tracking-tight text-foreground">
           Reason Codes
         </h1>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">
+        <p className="mt-1 text-sm font-medium text-primary">
+          Identify reasons and factors impacting approval rates
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
           Unified decline intelligence · Brazil · Full e‑commerce visibility across entry systems
         </p>
         <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
-          This initiative requires visibility over the full set of e‑commerce transactions to correctly identify decline reasons across the entire approval chain. Data is mapped from four entry systems that act as gates for merchant transactions.
+          Consolidate declines from Checkout, PD, WS, and SEP into one view; standardize reason codes and get recommended actions to accelerate approvals. Data is mapped from four entry systems that act as gates for merchant transactions.
         </p>
       </div>
 

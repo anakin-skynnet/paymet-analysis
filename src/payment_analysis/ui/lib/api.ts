@@ -633,6 +633,10 @@ export interface DeclineSummaryParams {
   limit?: number;
 }
 
+export interface GetFactorsDelayingApprovalParams {
+  limit?: number;
+}
+
 export interface GetFalseInsightsMetricParams {
   days?: number;
 }
@@ -958,6 +962,33 @@ export const ingestAuthEvent = async (data: AuthorizationEvent, options?: Reques
 
 export function useIngestAuthEvent(options?: { mutation?: UseMutationOptions<{ data: AuthorizationEvent }, ApiError, AuthorizationEvent> }) {
   return useMutation({ mutationFn: (data) => ingestAuthEvent(data), ...options?.mutation });
+}
+
+export const getFactorsDelayingApproval = async (params?: GetFactorsDelayingApprovalParams, options?: RequestInit): Promise<{ data: ReasonCodeInsightOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/factors-delaying-approval?${queryString}` : `/api/analytics/factors-delaying-approval`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getFactorsDelayingApprovalKey = (params?: GetFactorsDelayingApprovalParams) => {
+  return ["/api/analytics/factors-delaying-approval", params] as const;
+};
+
+export function useGetFactorsDelayingApproval<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetFactorsDelayingApprovalParams; query?: Omit<UseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getFactorsDelayingApprovalKey(options?.params), queryFn: () => getFactorsDelayingApproval(options?.params), ...options?.query });
+}
+
+export function useGetFactorsDelayingApprovalSuspense<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetFactorsDelayingApprovalParams; query?: Omit<UseSuspenseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getFactorsDelayingApprovalKey(options?.params), queryFn: () => getFactorsDelayingApproval(options?.params), ...options?.query });
 }
 
 export const getFalseInsightsMetric = async (params?: GetFalseInsightsMetricParams, options?: RequestInit): Promise<{ data: FalseInsightsMetricOut[] }> => {

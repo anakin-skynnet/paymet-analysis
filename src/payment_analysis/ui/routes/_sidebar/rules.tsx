@@ -139,13 +139,17 @@ function Rules() {
 
   return (
     <div className="space-y-6">
+      {/* Hero: rules that automatically accelerate approval rates */}
       <div>
         <h1 className="text-2xl font-semibold flex items-center gap-2">
           <Database className="w-6 h-6" />
           Approval rules (Lakehouse)
         </h1>
+        <p className="mt-1 text-sm font-medium text-primary">
+          Conditions and actions that automatically accelerate approval rates or constrain risk
+        </p>
         <p className="text-sm text-muted-foreground mt-2">
-          Write rules into the Lakehouse (run lakehouse_bootstrap.sql in Setup & Run step 4). ML and AI agents use them to accelerate approval rates.
+          Rules are used by the decision engine and AI agents. Write them into the Lakehouse (run lakehouse_bootstrap.sql in Setup & Run step 4).
         </p>
       </div>
 

@@ -80,14 +80,16 @@ async def lifespan(app: FastAPI):
     runtime.initialize_models()
     # When PGAPPNAME is not set (e.g. Databricks App without Lakebase), DB is skipped; app still starts.
 
-    # Load effective Unity Catalog config from app_config table (bootstrap = env)
+    # Load effective Unity Catalog config: from app_config in Lakehouse when env has token, else env defaults (lazy-load from OBO on first request)
     bootstrap = DatabricksConfig.from_environment()
+    app.state.uc_config_from_lakehouse = False
     if bootstrap.host and bootstrap.token and bootstrap.warehouse_id:
         try:
             svc = DatabricksService(config=bootstrap)
             row = await svc.read_app_config()
             if row and row[0] and row[1]:
                 app.state.uc_config = row
+                app.state.uc_config_from_lakehouse = True
                 logger.info("Using catalog/schema from app_config: %s.%s", row[0], row[1])
             else:
                 app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
@@ -97,6 +99,10 @@ async def lifespan(app: FastAPI):
             app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
     else:
         app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
+        app.state.uc_config_lazy_tried = False
+        logger.info(
+            "Unity Catalog config from env (no token at startup). Will use logged-in user token for requests; catalog/schema lazy-loaded from app_config on first request if available."
+        )
 
     # Store in app.state for access via dependencies
     app.state.config = config

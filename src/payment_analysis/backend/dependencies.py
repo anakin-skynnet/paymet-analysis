@@ -105,11 +105,13 @@ def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def get_databricks_service(request: Request) -> DatabricksService:
+async def get_databricks_service(request: Request) -> DatabricksService:
     """
-    Returns a DatabricksService using effective catalog/schema from app_config table.
-    Prefers the logged-in user's token (X-Forwarded-Access-Token) when present, so no
-    hardcoded DATABRICKS_TOKEN is needed when user authorization (OBO) is enabled.
+    Returns a DatabricksService connected to Databricks using the logged-in user's
+    credentials (X-Forwarded-Access-Token) when present, or DATABRICKS_TOKEN when set.
+    Catalog/schema come from app_config in Lakehouse (loaded at startup or lazy on first OBO request).
+    When the app is opened from Databricks (Compute → Apps), the platform forwards the user's
+    token so all API calls (SQL Warehouse, jobs, dashboards) use that identity.
     """
     bootstrap = DatabricksConfig.from_environment()
     obo_token = request.headers.get("X-Forwarded-Access-Token")
@@ -117,6 +119,27 @@ def get_databricks_service(request: Request) -> DatabricksService:
     catalog, schema = getattr(request.app.state, "uc_config", (None, None))
     if not catalog or not schema:
         catalog, schema = bootstrap.catalog, bootstrap.schema
+    # Lazy-load catalog/schema from app_config in Lakehouse once when we have OBO token but didn't load at startup
+    lazy_tried = getattr(request.app.state, "uc_config_lazy_tried", False)
+    if obo_token and not getattr(request.app.state, "uc_config_from_lakehouse", False) and not lazy_tried:
+        if bootstrap.host and bootstrap.warehouse_id:
+            request.app.state.uc_config_lazy_tried = True
+            try:
+                lazy_config = DatabricksConfig(
+                    host=bootstrap.host,
+                    token=obo_token,
+                    warehouse_id=bootstrap.warehouse_id,
+                    catalog=bootstrap.catalog,
+                    schema=bootstrap.schema,
+                )
+                lazy_svc = DatabricksService(config=lazy_config)
+                row = await lazy_svc.read_app_config()
+                if row and row[0] and row[1]:
+                    request.app.state.uc_config = row
+                    request.app.state.uc_config_from_lakehouse = True
+                    catalog, schema = row
+            except Exception:
+                pass
     config = DatabricksConfig(
         host=bootstrap.host,
         token=token,

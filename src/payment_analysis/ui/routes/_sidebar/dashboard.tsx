@@ -17,6 +17,7 @@ import {
   useGetApprovalTrendsSuspense,
   useGetSolutionPerformanceSuspense,
   useRecentDecisionsSuspense,
+  useGetReasonCodeInsightsBr,
 } from "@/lib/api";
 import selector from "@/lib/selector";
 import { friendlyReason } from "@/lib/reasoning";
@@ -32,6 +33,8 @@ import {
   Cpu,
   GitBranch,
   ArrowRight,
+  AlertCircle,
+  Target,
 } from "lucide-react";
 import { getDashboardUrl, getGenieUrl } from "@/config/workspace";
 
@@ -152,6 +155,8 @@ function Dashboard() {
   const { data: decisions } = useRecentDecisionsSuspense({
     params: { limit: 20 },
   });
+  const { data: reasonCodeData } = useGetReasonCodeInsightsBr({ params: { limit: 5 } });
+  const factorsDelayingApproval = reasonCodeData?.data ?? [];
 
   const pct = (kpis.approval_rate * 100).toFixed(2);
   const decisionList = decisions?.data ?? [];
@@ -173,10 +178,13 @@ function Dashboard() {
       initial="hidden"
       animate="show"
     >
-      {/* Welcome / context line */}
+      {/* Hero: one place to monitor approval rates and discover what’s delaying them */}
       <motion.div variants={dashboardItem}>
-        <p className="text-sm text-muted-foreground">
-          Overview of Getnet portfolio performance in the last 30 days. Key metrics, trends, and where to act.
+        <p className="text-base font-medium text-foreground">
+          Monitor approval rates, discover factors delaying approvals, and see where to act.
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Portfolio performance in the last 30 days — key metrics, trends, and actionable insights for the Getnet team.
         </p>
       </motion.div>
 
@@ -456,6 +464,50 @@ function Dashboard() {
           </CardContent>
         </Card>
         </motion.div>
+      </motion.div>
+
+      {/* Factors that may be delaying approvals — discover conditions and recommended actions */}
+      <motion.div variants={dashboardItem}>
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              Factors that may be delaying approvals
+            </CardTitle>
+            <CardDescription>
+              Top conditions from Reason Codes with recommended actions. Act on these to accelerate approval rates.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {factorsDelayingApproval.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No reason-code data yet. Run gold views and Reason Codes pipeline; then open Reason Codes for full insights.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {factorsDelayingApproval.map((r) => (
+                  <li key={`${r.entry_system}-${r.decline_reason_standard}-${r.priority}`} className="flex items-start gap-3 rounded-lg border border-border/60 p-2.5">
+                    <Target className="w-4 h-4 shrink-0 text-primary mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{r.decline_reason_standard}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{r.recommended_action}</p>
+                      {r.estimated_recoverable_value != null && r.estimated_recoverable_value > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Est. recoverable: ${r.estimated_recoverable_value.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button variant="outline" size="sm" className="mt-3" asChild>
+              <Link to="/reason-codes">
+                View all Reason Codes <ArrowRight className="w-3 h-3 ml-1" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Where to act — operations and insights */}

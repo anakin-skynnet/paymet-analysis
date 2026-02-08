@@ -262,8 +262,18 @@ async def list_models(service: DatabricksServiceDep) -> list[ModelOut]:
 
 
 @router.get("/kpis", response_model=KPIOut, operation_id="getKpis")
-def kpis(session: SessionDep) -> KPIOut:
-    """Get KPIs from local database."""
+async def kpis(session: SessionDep, service: DatabricksServiceDep) -> KPIOut:
+    """Get KPIs: from Databricks Unity Catalog when available, otherwise from local database."""
+    if service.is_available:
+        try:
+            data = await service.get_kpis()
+            total = int(data.get("total_transactions", 0))
+            approval_pct = float(data.get("approval_rate", 0.0))
+            approval_rate = (approval_pct / 100.0) if approval_pct > 1 else approval_pct
+            approved = int(data.get("approved_count", total * approval_rate))
+            return KPIOut(total=total, approved=approved, approval_rate=approval_rate)
+        except Exception:
+            pass
     total = session.exec(select(func.count(AuthorizationEvent.id))).one() or 0
     approved = (
         session.exec(
@@ -361,6 +371,23 @@ async def reason_codes_br(service: DatabricksServiceDep, limit: int = 50) -> lis
 async def reason_code_insights_br(service: DatabricksServiceDep, limit: int = 50) -> list[ReasonCodeInsightOut]:
     """Brazil reason-code insights with estimated recoverability (demo heuristic)."""
     limit = max(1, min(limit, 200))
+    data = await service.get_reason_code_insights_br(limit=limit)
+    return [ReasonCodeInsightOut(**row) for row in data]
+
+
+@router.get(
+    "/factors-delaying-approval",
+    response_model=list[ReasonCodeInsightOut],
+    operation_id="getFactorsDelayingApproval",
+)
+async def factors_delaying_approval(
+    service: DatabricksServiceDep,
+    limit: int = Query(10, ge=1, le=50, description="Max number of factors to return"),
+) -> list[ReasonCodeInsightOut]:
+    """
+    Top conditions or factors that delay or reduce approval rates, with recommended actions.
+    Use this to discover what to fix and how to accelerate approvals. Data from Reason Codes (Brazil).
+    """
     data = await service.get_reason_code_insights_br(limit=limit)
     return [ReasonCodeInsightOut(**row) for row in data]
 
@@ -464,8 +491,27 @@ def recent_decisions(
     response_model=list[DeclineBucketOut],
     operation_id="declineSummary",
 )
-def decline_summary(session: SessionDep, limit: int = 20) -> list[DeclineBucketOut]:
-    """Get decline summary from local database."""
+async def decline_summary(
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    limit: int = 20,
+) -> list[DeclineBucketOut]:
+    """Get decline summary: from Databricks Unity Catalog when available, otherwise from local database."""
+    if service.is_available:
+        try:
+            data = await service.get_decline_summary()
+            return [
+                DeclineBucketOut(
+                    key=str(row.get("decline_reason", "unknown")),
+                    count=int(row.get("decline_count", 0)),
+                    pct_of_declines=row.get("pct_of_declines"),
+                    total_value=row.get("total_declined_value"),
+                    recoverable_pct=row.get("recoverable_pct"),
+                )
+                for row in data[:limit]
+            ]
+        except Exception:
+            pass
     limit = max(1, min(limit, 100))
     stmt = (
         select(

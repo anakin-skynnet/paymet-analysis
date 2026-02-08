@@ -58,32 +58,40 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
 function Layout() {
   const location = useLocation();
 
-  // Overview: single place for KPIs and deep-dive dashboards (CEO-friendly)
+  // Overview: portfolio and dashboards (CEO at a glance)
   const overviewItems: NavItem[] = [
     { to: "/dashboard", label: "KPI overview", icon: <BarChart3 size={16} />, match: (p) => p === "/dashboard" },
     { to: "/dashboards", label: "Dashboards", icon: <LayoutDashboard size={16} />, match: (p) => p === "/dashboards" },
   ];
 
-  // Initiatives: Smart Checkout, Reason Codes, Smart Retry (Getnet business objectives)
-  const initiativeItems: NavItem[] = [
-    { to: "/smart-checkout", label: "Smart Checkout", icon: <CreditCard size={16} />, match: (p) => p === "/smart-checkout" },
+  // Reasons & factors: identify what impacts approval rates
+  const reasonsAndFactorsItems: NavItem[] = [
     { to: "/reason-codes", label: "Reason Codes", icon: <ListChecks size={16} />, match: (p) => p === "/reason-codes" },
-    { to: "/smart-retry", label: "Smart Retry", icon: <RotateCcw size={16} />, match: (p) => p === "/smart-retry" },
-    { to: "/declines", label: "Declines & insights", icon: <BadgeX size={16} />, match: (p) => p === "/declines" },
+    { to: "/declines", label: "Declines", icon: <BadgeX size={16} />, match: (p) => p === "/declines" },
   ];
 
-  // AI & decisioning: Genie and agent-driven recommendations
-  const decisioningItems: NavItem[] = [
-    { to: "/decisioning", label: "Decisioning & Genie", icon: <MessageSquareText size={16} />, match: (p) => p === "/decisioning" },
+  // Recommendations & actions: how to accelerate approval rates
+  const recommendationsItems: NavItem[] = [
+    { to: "/decisioning", label: "Recommendations & decisions", icon: <MessageSquareText size={16} />, match: (p) => p === "/decisioning" },
+    { to: "/rules", label: "Rules", icon: <ScrollText size={16} />, match: (p) => p === "/rules" },
+  ];
+
+  // Initiatives: payment conditions and retry analysis
+  const initiativeItems: NavItem[] = [
+    { to: "/smart-checkout", label: "Smart Checkout", icon: <CreditCard size={16} />, match: (p) => p === "/smart-checkout" },
+    { to: "/smart-retry", label: "Smart Retry", icon: <RotateCcw size={16} />, match: (p) => p === "/smart-retry" },
+  ];
+
+  // AI & automation: agents that accelerate approvals
+  const automationItems: NavItem[] = [
     { to: "/ai-agents", label: "AI agents", icon: <Bot size={16} />, match: (p) => p === "/ai-agents" },
   ];
 
-  // Operations: setup, notebooks, models, incidents, experiments, rules
+  // Operations: setup, notebooks, models, incidents, experiments
   const operationsItems: NavItem[] = [
     { to: "/setup", label: "Setup & run", icon: <Rocket size={16} />, match: (p) => p === "/setup" },
     { to: "/notebooks", label: "Notebooks", icon: <Code2 size={16} />, match: (p) => p === "/notebooks" },
     { to: "/models", label: "ML models", icon: <Brain size={16} />, match: (p) => p === "/models" },
-    { to: "/rules", label: "Rules", icon: <ScrollText size={16} />, match: (p) => p === "/rules" },
     { to: "/incidents", label: "Incidents", icon: <AlertTriangle size={16} />, match: (p) => p === "/incidents" },
     { to: "/experiments", label: "Experiments", icon: <FlaskConical size={16} />, match: (p) => p === "/experiments" },
   ];
@@ -110,6 +118,34 @@ function Layout() {
       </SidebarGroup>
       <SidebarGroup>
         <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+          Reasons & factors
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {reasonsAndFactorsItems.map((item) => (
+              <SidebarMenuItem key={item.to}>
+                <NavLink item={item} isActive={item.match(location.pathname)} />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+          Recommendations & actions
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {recommendationsItems.map((item) => (
+              <SidebarMenuItem key={item.to}>
+                <NavLink item={item} isActive={item.match(location.pathname)} />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
           Initiatives
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -124,11 +160,11 @@ function Layout() {
       </SidebarGroup>
       <SidebarGroup>
         <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
-          AI & decisioning
+          AI & automation
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {decisioningItems.map((item) => (
+            {automationItems.map((item) => (
               <SidebarMenuItem key={item.to}>
                 <NavLink item={item} isActive={item.match(location.pathname)} />
               </SidebarMenuItem>

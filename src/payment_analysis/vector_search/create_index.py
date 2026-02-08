@@ -2,8 +2,10 @@
 # MAGIC %md
 # MAGIC # Create Vector Search Endpoint and Index
 # MAGIC
-# MAGIC Creates the vector search endpoint and delta-sync index for similar-transaction lookup.
+# MAGIC Creates the vector search endpoint and delta-sync index for **similar-transaction lookup**.
 # MAGIC Source table: `transaction_summaries_for_search` (from lakehouse_bootstrap). Run after Lakehouse Bootstrap.
+# MAGIC
+# MAGIC **Used to accelerate approval rates:** This index powers similar-case recommendations. AI agents or a scheduled job can query it to find past transactions similar to a given context, then generate recommendations (e.g. retry after 2h; similar cases approved 65%) and write them to `approval_recommendations` with `source_type = 'vector_search'`. The app shows these in the Decisioning page so end-users get actionable recommendations to accelerate approvals.
 
 # COMMAND ----------
 

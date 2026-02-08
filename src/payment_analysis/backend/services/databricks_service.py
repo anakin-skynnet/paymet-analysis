@@ -269,6 +269,7 @@ class DatabricksService:
             row = results[0]
             return {
                 "total_transactions": row.get("total_transactions", 0),
+                "approved_count": row.get("approved_count", 0),
                 "approval_rate": row.get("approval_rate_pct", 0.0),
                 "avg_fraud_score": row.get("avg_fraud_score", 0.0),
                 "total_value": row.get("total_transaction_value", 0.0),
@@ -870,9 +871,12 @@ class MockDataGenerator:
     @staticmethod
     def kpis() -> dict[str, Any]:
         """Generate mock KPI data."""
+        total = 15234
+        approval_pct = 87.5
         return {
-            "total_transactions": 15234,
-            "approval_rate": 87.5,
+            "total_transactions": total,
+            "approved_count": int(total * approval_pct / 100),
+            "approval_rate": approval_pct,
             "avg_fraud_score": 0.12,
             "total_value": 1250000.00,
             "period_start": "2026-01-01",
