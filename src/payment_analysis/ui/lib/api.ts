@@ -543,8 +543,10 @@ export interface SetupDefaultsOut {
   jobs: Record<string, string>;
   pipelines: Record<string, string>;
   schema: string;
+  token_received?: boolean;
   warehouse_id: string;
   workspace_host: string;
+  workspace_id?: string;
 }
 
 export interface SmartCheckoutPathPerformanceOut {
