@@ -179,7 +179,7 @@
     @apply h-auto shrink-0 overflow-visible pb-1;
   }
   .sidebar-header-inner {
-    @apply h-auto px-4 py-4 min-h-[5.5rem] flex flex-col items-center justify-center;
+    @apply h-auto px-4 py-4 min-h-[92px] flex flex-col items-center justify-center;
   }
   /* Sidebar CSS variables (defaults; can be overridden via same vars) */
   .sidebar-provider {
