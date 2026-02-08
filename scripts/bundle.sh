@@ -35,7 +35,7 @@ case "$CMD" in
     if [[ -n "${LAKEBASE_INSTANCE_NAME:-}" ]]; then
       EXTRA_VARS+=(--var "lakebase_instance_name=${LAKEBASE_INSTANCE_NAME}")
     fi
-    databricks bundle deploy -t "$TARGET" --auto-approve "${EXTRA_VARS[@]}"
+    databricks bundle deploy -t "$TARGET" --force --auto-approve "${EXTRA_VARS[@]}"
     echo "Deployment complete!"
     ;;
   verify)
