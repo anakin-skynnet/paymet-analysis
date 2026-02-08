@@ -85,6 +85,37 @@ WHERE is_active = true
 ORDER BY priority ASC, updated_at DESC;
 
 -- ----------------------------------------------------------------------------
+-- 3b. Countries / entities (for UI dropdown filter; editable by users)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS countries (
+    code STRING NOT NULL COMMENT 'ISO-style entity/country code (e.g. BR, MX)',
+    name STRING NOT NULL COMMENT 'Display name for the entity or country',
+    display_order INT NOT NULL DEFAULT 0 COMMENT 'Sort order in dropdown (lower first)',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+    updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
+)
+USING DELTA
+TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+COMMENT 'Countries/entities for the report filter dropdown. Add or remove rows to change options in the UI.';
+
+-- Seed default Getnet entities (insert only when table is empty)
+INSERT INTO countries (code, name, display_order)
+SELECT code, name, display_order FROM (
+    SELECT 'BR' AS code, 'Brazil' AS name, 1 AS display_order
+    UNION ALL SELECT 'MX', 'Mexico', 2
+    UNION ALL SELECT 'AR', 'Argentina', 3
+    UNION ALL SELECT 'CL', 'Chile', 4
+    UNION ALL SELECT 'CO', 'Colombia', 5
+    UNION ALL SELECT 'PE', 'Peru', 6
+    UNION ALL SELECT 'EC', 'Ecuador', 7
+    UNION ALL SELECT 'UY', 'Uruguay', 8
+    UNION ALL SELECT 'PY', 'Paraguay', 9
+    UNION ALL SELECT 'BO', 'Bolivia', 10
+) seed
+WHERE (SELECT COUNT(*) FROM countries) = 0;
+
+-- ----------------------------------------------------------------------------
 -- 4. Online features (ML and AI output for app UI)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS online_features (

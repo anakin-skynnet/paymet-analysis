@@ -30,6 +30,9 @@ if env_file.exists():
 # Placeholder when DATABRICKS_HOST is unset; API must not return it so the UI can fall back to window.location.origin.
 WORKSPACE_URL_PLACEHOLDER = "https://example.databricks.com"
 
+# Default entity/country code for analytics filters (e.g. reason codes, smart checkout). UI and Lakehouse can override.
+DEFAULT_ENTITY = "BR"
+
 
 class DatabricksConfig(BaseSettings):
     """Databricks workspace configuration."""

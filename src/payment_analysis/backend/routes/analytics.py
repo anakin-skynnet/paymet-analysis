@@ -7,6 +7,7 @@ from sqlalchemy import desc, func
 from sqlmodel import select
 from pydantic import BaseModel
 
+from ..config import DEFAULT_ENTITY
 from ..db_models import AuthorizationEvent, DecisionLog
 from ..decisioning.schemas import KPIOut
 from ..dependencies import SessionDep, DatabricksServiceDep
@@ -154,6 +155,12 @@ class EntrySystemDistributionOut(BaseModel):
     total_value: float
 
 
+class CountryOut(BaseModel):
+    """Country/entity row for the filter dropdown (from Lakehouse countries table)."""
+    code: str
+    name: str
+
+
 class DedupCollisionStatsOut(BaseModel):
     colliding_keys: int
     avg_rows_per_key: float
@@ -243,10 +250,23 @@ async def get_recommendations(
     ]
 
 
+@router.get("/countries", response_model=list[CountryOut], operation_id="getCountries")
+async def list_countries(
+    service: DatabricksServiceDep,
+    limit: int = Query(200, ge=1, le=500, description="Max number of countries to return"),
+) -> list[CountryOut]:
+    """List countries/entities from the Lakehouse table for the filter dropdown. Users can add/remove rows in the table to change options."""
+    data = await service.get_countries(limit=limit)
+    return [CountryOut(code=r["code"], name=r["name"]) for r in data]
+
+
 @router.get("/models", response_model=list[ModelOut], operation_id="getModels")
-async def list_models(service: DatabricksServiceDep) -> list[ModelOut]:
+async def list_models(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+) -> list[ModelOut]:
     """List ML models with catalog path and optional metrics from backend (catalog/schema from config)."""
-    data = await service.get_ml_models()
+    data = await service.get_ml_models(entity=entity)
     return [
         ModelOut(
             id=m["id"],
@@ -310,68 +330,82 @@ async def solution_performance(service: DatabricksServiceDep) -> list[SolutionPe
 
 
 @router.get(
-    "/smart-checkout/service-paths/br",
+    "/smart-checkout/service-paths",
     response_model=list[SmartCheckoutServicePathOut],
-    operation_id="getSmartCheckoutServicePathsBr",
+    operation_id="getSmartCheckoutServicePaths",
 )
-async def smart_checkout_service_paths_br(
+async def smart_checkout_service_paths(
     service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
     limit: int = 25,
 ) -> list[SmartCheckoutServicePathOut]:
-    """Brazil payment-link performance by Smart Checkout service path."""
+    """Payment-link performance by Smart Checkout service path for the given entity."""
     limit = max(1, min(limit, 100))
-    data = await service.get_smart_checkout_service_paths_br(limit=limit)
+    data = await service.get_smart_checkout_service_paths(entity=entity, limit=limit)
     return [SmartCheckoutServicePathOut(**row) for row in data]
 
 
 @router.get(
-    "/smart-checkout/path-performance/br",
+    "/smart-checkout/path-performance",
     response_model=list[SmartCheckoutPathPerformanceOut],
-    operation_id="getSmartCheckoutPathPerformanceBr",
+    operation_id="getSmartCheckoutPathPerformance",
 )
-async def smart_checkout_path_performance_br(
+async def smart_checkout_path_performance(
     service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
     limit: int = 20,
 ) -> list[SmartCheckoutPathPerformanceOut]:
-    """Brazil payment-link performance by recommended Smart Checkout path."""
+    """Payment-link performance by recommended Smart Checkout path for the given entity."""
     limit = max(1, min(limit, 50))
-    data = await service.get_smart_checkout_path_performance_br(limit=limit)
+    data = await service.get_smart_checkout_path_performance(entity=entity, limit=limit)
     return [SmartCheckoutPathPerformanceOut(**row) for row in data]
 
 
 @router.get(
-    "/smart-checkout/3ds-funnel/br",
+    "/smart-checkout/3ds-funnel",
     response_model=list[ThreeDSFunnelOut],
-    operation_id="getThreeDsFunnelBr",
+    operation_id="getThreeDsFunnel",
 )
-async def three_ds_funnel_br(service: DatabricksServiceDep, days: int = 30) -> list[ThreeDSFunnelOut]:
-    """Brazil payment-link 3DS funnel metrics by day."""
+async def three_ds_funnel(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    days: int = 30,
+) -> list[ThreeDSFunnelOut]:
+    """Payment-link 3DS funnel metrics by day for the given entity."""
     days = max(1, min(days, 90))
-    data = await service.get_3ds_funnel_br(days=days)
+    data = await service.get_3ds_funnel(entity=entity, days=days)
     return [ThreeDSFunnelOut(**row) for row in data]
 
 
 @router.get(
-    "/reason-codes/br",
+    "/reason-codes",
     response_model=list[ReasonCodeOut],
-    operation_id="getReasonCodesBr",
+    operation_id="getReasonCodes",
 )
-async def reason_codes_br(service: DatabricksServiceDep, limit: int = 50) -> list[ReasonCodeOut]:
-    """Brazil declines consolidated into unified reason-code taxonomy."""
+async def reason_codes(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    limit: int = 50,
+) -> list[ReasonCodeOut]:
+    """Declines consolidated into unified reason-code taxonomy for the given entity."""
     limit = max(1, min(limit, 200))
-    data = await service.get_reason_codes_br(limit=limit)
+    data = await service.get_reason_codes(entity=entity, limit=limit)
     return [ReasonCodeOut(**row) for row in data]
 
 
 @router.get(
-    "/reason-codes/br/insights",
+    "/reason-codes/insights",
     response_model=list[ReasonCodeInsightOut],
-    operation_id="getReasonCodeInsightsBr",
+    operation_id="getReasonCodeInsights",
 )
-async def reason_code_insights_br(service: DatabricksServiceDep, limit: int = 50) -> list[ReasonCodeInsightOut]:
-    """Brazil reason-code insights with estimated recoverability (demo heuristic)."""
+async def reason_code_insights(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    limit: int = 50,
+) -> list[ReasonCodeInsightOut]:
+    """Reason-code insights with estimated recoverability for the given entity (demo heuristic)."""
     limit = max(1, min(limit, 200))
-    data = await service.get_reason_code_insights_br(limit=limit)
+    data = await service.get_reason_code_insights(entity=entity, limit=limit)
     return [ReasonCodeInsightOut(**row) for row in data]
 
 
@@ -382,24 +416,28 @@ async def reason_code_insights_br(service: DatabricksServiceDep, limit: int = 50
 )
 async def factors_delaying_approval(
     service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
     limit: int = Query(10, ge=1, le=50, description="Max number of factors to return"),
 ) -> list[ReasonCodeInsightOut]:
     """
     Top conditions or factors that delay or reduce approval rates, with recommended actions.
-    Use this to discover what to fix and how to accelerate approvals. Data from Reason Codes (Brazil).
+    Use this to discover what to fix and how to accelerate approvals.
     """
-    data = await service.get_reason_code_insights_br(limit=limit)
+    data = await service.get_reason_code_insights(entity=entity, limit=limit)
     return [ReasonCodeInsightOut(**row) for row in data]
 
 
 @router.get(
-    "/reason-codes/br/entry-systems",
+    "/reason-codes/entry-systems",
     response_model=list[EntrySystemDistributionOut],
-    operation_id="getEntrySystemDistributionBr",
+    operation_id="getEntrySystemDistribution",
 )
-async def entry_system_distribution_br(service: DatabricksServiceDep) -> list[EntrySystemDistributionOut]:
-    """Brazil transaction distribution by entry system (coverage check)."""
-    data = await service.get_entry_system_distribution_br()
+async def entry_system_distribution(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+) -> list[EntrySystemDistributionOut]:
+    """Transaction distribution by entry system for the given entity (coverage check)."""
+    data = await service.get_entry_system_distribution(entity=entity)
     return [EntrySystemDistributionOut(**row) for row in data]
 
 

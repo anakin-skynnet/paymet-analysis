@@ -22,6 +22,8 @@ Databricks-powered payment approval optimization: real-time analytics, ML models
 |----------|---------|
 | [Deployment guide](docs/DEPLOYMENT_GUIDE.md) | Deploy steps, app config, env vars, troubleshooting, scripts |
 | [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md) | Architecture, data flow, bundle resources, app compliance |
+| [Data sources](docs/DATA_SOURCES.md) | Where app data comes from (Databricks, Lakehouse tables, fallbacks) |
+| [Version alignment](docs/VERSION_ALIGNMENT.md) | Pinned dependency versions and Databricks App compatibility |
 
 ## Quick start
 

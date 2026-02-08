@@ -30,6 +30,7 @@ import {
   type AgentType,
 } from "@/lib/api";
 import { getGenieUrl } from "@/config/workspace";
+import { useEntity } from "@/contexts/entity-context";
 
 const openInDatabricks = (url: string) => {
   if (url) window.open(url, "_blank");
@@ -78,6 +79,7 @@ const getTypeLabel = (type: string): string =>
   type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
 function AIAgents() {
+  const { entity } = useEntity();
   const [selectedType, setSelectedType] = useState<AgentType | undefined>(
     undefined,
   );
@@ -87,7 +89,7 @@ function AIAgents() {
     isLoading,
     isError,
   } = useListAgents({
-    params: selectedType ? { agent_type: selectedType } : undefined,
+    params: { entity, ...(selectedType ? { agent_type: selectedType } : {}) },
   });
 
   const agents = agentList?.data.agents ?? [];

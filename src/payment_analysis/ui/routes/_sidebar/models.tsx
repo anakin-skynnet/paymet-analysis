@@ -1,32 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, Code2, Brain, TrendingUp, Shield, Waypoints, RotateCcw, AlertCircle } from "lucide-react";
 import { getMLflowUrl, getWorkspaceUrl } from "@/config/workspace";
+import { useGetModels } from "@/lib/api";
+import { useEntity } from "@/contexts/entity-context";
 
 export const Route = createFileRoute("/_sidebar/models")({
   component: () => <Models />,
 });
-
-/** API response shape for GET /api/analytics/models */
-interface ModelOut {
-  id: string;
-  name: string;
-  description: string;
-  model_type: string;
-  features: string[];
-  catalog_path: string;
-  metrics: { name: string; value: string }[];
-}
-
-async function fetchModels(): Promise<ModelOut[]> {
-  const res = await fetch("/api/analytics/models");
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
 
 const openNotebook = async (notebookId: string) => {
   try {
@@ -72,11 +56,9 @@ const modelIdColor: Record<string, string> = {
 };
 
 function Models() {
-  const { data: models, isLoading, isError, error } = useQuery({
-    queryKey: ["analytics", "models"],
-    queryFn: fetchModels,
-  });
-  const modelList = models ?? [];
+  const { entity } = useEntity();
+  const { data, isLoading, isError, error } = useGetModels({ params: { entity } });
+  const modelList = data?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -217,9 +199,9 @@ function Models() {
                 {/* Metrics — from backend (empty until training writes to a view) */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">Performance Metrics</p>
-                  {model.metrics.length > 0 ? (
+                  {(model.metrics?.length ?? 0) > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
-                      {model.metrics.map((metric) => (
+                      {(model.metrics ?? []).map((metric) => (
                         <div key={metric.name} className="bg-muted/50 px-2 py-1.5 rounded text-center">
                           <p className="text-xs text-muted-foreground">{metric.name}</p>
                           <p className="text-sm font-semibold">{metric.value}</p>

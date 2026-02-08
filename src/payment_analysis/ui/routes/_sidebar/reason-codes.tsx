@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  useGetReasonCodeInsightsBr,
-  useGetEntrySystemDistributionBr,
+  useGetReasonCodeInsights,
+  useGetEntrySystemDistribution,
   useGetFalseInsightsMetric,
   useSubmitInsightFeedback,
 } from "@/lib/api";
 import { getDashboardUrl } from "@/config/workspace";
+import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, CheckCircle2, AlertTriangle, Target } from "lucide-react";
 
 const openInDatabricks = (url: string) => {
@@ -37,8 +38,9 @@ const INTELLIGENCE_OUTCOMES = [
 ];
 
 function ReasonCodes() {
-  const entryQ = useGetEntrySystemDistributionBr();
-  const q = useGetReasonCodeInsightsBr({ params: { limit: 30 } });
+  const { entity } = useEntity();
+  const entryQ = useGetEntrySystemDistribution({ params: { entity } });
+  const q = useGetReasonCodeInsights({ params: { entity, limit: 30 } });
   const falseQ = useGetFalseInsightsMetric({ params: { days: 30 } });
   const submitFeedback = useSubmitInsightFeedback();
 

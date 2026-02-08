@@ -24,7 +24,7 @@ function RootErrorFallback({
             </svg>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2" role="alert" aria-live="assertive">
           <h1 className="text-xl font-semibold font-heading">Something went wrong loading this view</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">{error.message}</p>
         </div>

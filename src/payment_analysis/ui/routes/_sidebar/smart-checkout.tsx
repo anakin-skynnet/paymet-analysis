@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  useGetSmartCheckoutServicePathsBr,
-  useGetThreeDsFunnelBr,
-  useGetSmartCheckoutPathPerformanceBr,
+  useGetSmartCheckoutServicePaths,
+  useGetThreeDsFunnel,
+  useGetSmartCheckoutPathPerformance,
 } from "@/lib/api";
 import { getDashboardUrl } from "@/config/workspace";
+import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, Shield, CreditCard, Fingerprint, Key, Database } from "lucide-react";
 
 const openInDatabricks = (url: string) => {
@@ -29,9 +30,10 @@ const PAYMENT_SERVICES = [
 ] as const;
 
 function SmartCheckout() {
-  const servicePathsQ = useGetSmartCheckoutServicePathsBr({ params: { limit: 25 } });
-  const funnelQ = useGetThreeDsFunnelBr({ params: { days: 30 } });
-  const pathPerfQ = useGetSmartCheckoutPathPerformanceBr({ params: { limit: 20 } });
+  const { entity } = useEntity();
+  const servicePathsQ = useGetSmartCheckoutServicePaths({ params: { entity, limit: 25 } });
+  const funnelQ = useGetThreeDsFunnel({ params: { entity, days: 30 } });
+  const pathPerfQ = useGetSmartCheckoutPathPerformance({ params: { entity, limit: 20 } });
 
   const servicePaths = servicePathsQ.data?.data ?? [];
   const funnel = funnelQ.data?.data ?? [];

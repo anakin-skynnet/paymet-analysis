@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { declineSummary, useGetReasonCodeInsightsBr } from "@/lib/api";
+import { declineSummary, useGetReasonCodeInsights, type ReasonCodeInsightOut } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Code2, TrendingUp, Target, ArrowRight } from "lucide-react";
 import { getDashboardUrl } from "@/config/workspace";
+import { useEntity } from "@/contexts/entity-context";
 
 export const Route = createFileRoute("/_sidebar/declines")({
   component: () => <Declines />,
@@ -28,11 +29,12 @@ const openDashboard = () => {
 };
 
 function Declines() {
+  const { entity } = useEntity();
   const q = useQuery({
     queryKey: ["declines", "summary"],
     queryFn: () => declineSummary(),
   });
-  const { data: reasonCodeData } = useGetReasonCodeInsightsBr({ params: { limit: 5 } });
+  const { data: reasonCodeData } = useGetReasonCodeInsights({ params: { entity, limit: 5 } });
   const recommendedActions = reasonCodeData?.data ?? [];
 
   const buckets = q.data?.data ?? [];
@@ -112,7 +114,7 @@ function Declines() {
             </p>
           ) : (
             <ul className="space-y-2">
-              {recommendedActions.map((r) => (
+              {recommendedActions.map((r: ReasonCodeInsightOut) => (
                 <li key={`${r.entry_system}-${r.decline_reason_standard}-${r.priority}`} className="rounded-lg border border-border/60 p-2.5">
                   <p className="text-sm font-medium">{r.decline_reason_standard}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{r.recommended_action}</p>

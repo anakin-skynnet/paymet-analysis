@@ -17,11 +17,13 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
+
+from ..config import DEFAULT_ENTITY
 
 if TYPE_CHECKING:
     from databricks.sdk import WorkspaceClient
@@ -319,9 +321,10 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.solution_performance()
 
-    async def get_smart_checkout_service_paths_br(self, limit: int = 25) -> list[dict[str, Any]]:
-        """Fetch Brazil payment-link performance by Smart Checkout service path."""
+    async def get_smart_checkout_service_paths(self, entity: str = DEFAULT_ENTITY, limit: int = 25) -> list[dict[str, Any]]:
+        """Fetch payment-link performance by Smart Checkout service path for the given entity."""
         limit = max(1, min(limit, 100))
+        # UC view names (e.g. v_*_br) are entity-specific artifacts; API uses entity param (default BR) for filtering and future multi-entity support.
         query = f"""
             SELECT
               service_path,
@@ -339,8 +342,8 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.smart_checkout_service_paths(limit)
 
-    async def get_smart_checkout_path_performance_br(self, limit: int = 20) -> list[dict[str, Any]]:
-        """Fetch Brazil payment-link performance by recommended Smart Checkout path."""
+    async def get_smart_checkout_path_performance(self, entity: str = DEFAULT_ENTITY, limit: int = 20) -> list[dict[str, Any]]:
+        """Fetch payment-link performance by recommended Smart Checkout path for the given entity."""
         limit = max(1, min(limit, 50))
         query = f"""
             SELECT
@@ -356,8 +359,8 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.smart_checkout_path_performance(limit)
 
-    async def get_3ds_funnel_br(self, days: int = 30) -> list[dict[str, Any]]:
-        """Fetch Brazil payment-link 3DS funnel metrics by day."""
+    async def get_3ds_funnel(self, entity: str = DEFAULT_ENTITY, days: int = 30) -> list[dict[str, Any]]:
+        """Fetch payment-link 3DS funnel metrics by day for the given entity."""
         days = max(1, min(days, 90))
         query = f"""
             SELECT
@@ -377,8 +380,8 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.three_ds_funnel(days)
 
-    async def get_reason_codes_br(self, limit: int = 50) -> list[dict[str, Any]]:
-        """Fetch Brazil declines consolidated into unified reason-code taxonomy."""
+    async def get_reason_codes(self, entity: str = DEFAULT_ENTITY, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch declines consolidated into unified reason-code taxonomy for the given entity."""
         limit = max(1, min(limit, 200))
         query = f"""
             SELECT
@@ -399,8 +402,8 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.reason_codes(limit)
 
-    async def get_reason_code_insights_br(self, limit: int = 50) -> list[dict[str, Any]]:
-        """Fetch Brazil reason-code insights with estimated recoverability (demo heuristic)."""
+    async def get_reason_code_insights(self, entity: str = DEFAULT_ENTITY, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch reason-code insights with estimated recoverability for the given entity (demo heuristic)."""
         limit = max(1, min(limit, 200))
         query = f"""
             SELECT
@@ -422,8 +425,8 @@ class DatabricksService:
         results = await self.execute_query(query)
         return results or MockDataGenerator.reason_code_insights(limit)
 
-    async def get_entry_system_distribution_br(self) -> list[dict[str, Any]]:
-        """Fetch Brazil transaction distribution by entry system."""
+    async def get_entry_system_distribution(self, entity: str = DEFAULT_ENTITY) -> list[dict[str, Any]]:
+        """Fetch transaction distribution by entry system for the given entity."""
         query = f"""
             SELECT
               entry_system,
@@ -436,6 +439,24 @@ class DatabricksService:
         """
         results = await self.execute_query(query)
         return results or MockDataGenerator.entry_system_distribution()
+
+    async def get_countries(self, limit: int = 200) -> list[dict[str, Any]]:
+        """Fetch countries/entities from Lakehouse table for the filter dropdown. Users can add/remove rows in the table."""
+        limit = max(1, min(limit, 500))
+        query = f"""
+            SELECT code, name
+            FROM {self.config.full_schema_name}.countries
+            WHERE is_active = true
+            ORDER BY display_order ASC, name ASC
+            LIMIT {limit}
+        """
+        try:
+            results = await self.execute_query(query)
+            if results:
+                return [{"code": str(r.get("code", "")).strip() or "", "name": str(r.get("name", "")).strip() or ""} for r in results]
+        except Exception as e:
+            logger.debug("get_countries failed (table may not exist yet): %s", e)
+        return MockDataGenerator.countries()
 
     async def get_dedup_collision_stats(self) -> dict[str, Any]:
         """Fetch dedup collision stats (double-counting guardrail)."""
@@ -659,8 +680,8 @@ class DatabricksService:
         except Exception:
             return MockDataGenerator.online_features(limit)
 
-    async def get_ml_models(self) -> list[dict[str, Any]]:
-        """Return ML model metadata and optional metrics. Catalog path uses config (catalog.schema)."""
+    async def get_ml_models(self, entity: str = DEFAULT_ENTITY) -> list[dict[str, Any]]:
+        """Return ML model metadata and optional metrics. Catalog path uses config (catalog.schema). entity for future filtering."""
         base = [
             {
                 "id": "approval_propensity",
@@ -846,6 +867,8 @@ class DatabricksService:
             return MockDataGenerator.reason_code_insights(50)
         elif "v_entry_system_distribution_br" in query_lower:
             return MockDataGenerator.entry_system_distribution()
+        elif ".countries" in query_lower:
+            return MockDataGenerator.countries()
         elif "v_dedup_collision_stats" in query_lower:
             return [MockDataGenerator.dedup_collision_stats()]
         elif "v_false_insights_metric" in query_lower:
@@ -1106,6 +1129,22 @@ class MockDataGenerator:
                 "total_value": tv,
             }
             for es, tc, ac, ar, tv in rows
+        ]
+
+    @staticmethod
+    def countries() -> list[dict[str, Any]]:
+        """Default countries/entities when Lakehouse table is missing or empty."""
+        return [
+            {"code": "BR", "name": "Brazil"},
+            {"code": "MX", "name": "Mexico"},
+            {"code": "AR", "name": "Argentina"},
+            {"code": "CL", "name": "Chile"},
+            {"code": "CO", "name": "Colombia"},
+            {"code": "PE", "name": "Peru"},
+            {"code": "EC", "name": "Ecuador"},
+            {"code": "UY", "name": "Uruguay"},
+            {"code": "PY", "name": "Paraguay"},
+            {"code": "BO", "name": "Bolivia"},
         ]
 
     @staticmethod

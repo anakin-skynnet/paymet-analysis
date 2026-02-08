@@ -22,10 +22,10 @@ Catalog and schema (Unity Catalog) are taken from the `app_config` table in the 
 | **KPIs** (Dashboard) | Databricks → fallback local DB | `GET /api/analytics/kpis` prefers Unity Catalog `v_executive_kpis` when Databricks is available |
 | **Approval trends** | Databricks | `v_approval_trends_hourly` |
 | **Solution performance** | Databricks | Unity Catalog views |
-| **Reason codes & insights** | Databricks | Brazil reason-code views |
-| **Factors delaying approval** | Databricks | Same reason-code insights |
+| **Reason codes & insights** | Databricks | Reason-code views; filtered by `entity` (default BR) |
+| **Factors delaying approval** | Databricks | Same reason-code insights; `entity` param (default BR) |
 | **Decline summary** | Databricks → fallback local DB | `GET /api/analytics/declines/summary` prefers `v_top_decline_reasons` when available |
-| **Smart Checkout (paths, 3DS funnel)** | Databricks | Brazil payment-link views |
+| **Smart Checkout (paths, 3DS funnel)** | Databricks | Payment-link views; filtered by `entity` (default BR) |
 | **Smart Retry performance** | Databricks | Retry views |
 | **Recommendations** | Databricks | Lakehouse / Vector Search |
 | **Online features** | Databricks | Lakehouse |
@@ -45,14 +45,15 @@ When the backend has a valid Databricks configuration (host, token, warehouse, c
 - **KPI overview (Dashboard):** `GET /api/analytics/kpis` → Unity Catalog view `v_executive_kpis` (with fallback to local DB if Databricks is unavailable or errors).
 - **Approval trends:** `GET /api/analytics/trends` → `v_approval_trends_hourly`.
 - **Solution performance:** `GET /api/analytics/solutions` → solution performance view.
-- **Reason codes (Brazil):** `GET /api/analytics/reason-codes/br`, `.../reason-codes/br/insights`, `.../reason-codes/br/entry-systems`, `.../factors-delaying-approval` → Unity Catalog reason-code views.
+- **Reason codes:** `GET /api/analytics/reason-codes`, `.../reason-codes/insights`, `.../reason-codes/entry-systems`, `.../factors-delaying-approval` — all accept query param **`entity`** (default `BR`) to filter by Getnet entity/country. Data from Unity Catalog reason-code views.
 - **Decline summary:** `GET /api/analytics/declines/summary` → `v_top_decline_reasons` (with fallback to local DB when Databricks unavailable).
-- **Smart Checkout:** service paths, path performance, 3DS funnel (Brazil) → Databricks views.
+- **Smart Checkout:** `GET /api/analytics/smart-checkout/service-paths`, `.../path-performance`, `.../3ds-funnel` — all accept **`entity`** (default `BR`). Data from Databricks payment-link views.
 - **Smart Retry:** `GET /api/analytics/retry/performance` → retry performance view.
 - **Recommendations:** `GET /api/analytics/recommendations` → Lakehouse / Vector Search.
 - **Online features:** `GET /api/analytics/online-features` → Lakehouse.
 - **ML models:** `GET /api/analytics/models` → Unity Catalog / Model Registry.
 - **Rules:** `GET/POST/PATCH/DELETE /api/rules` → Lakehouse approval rules table.
+- **Countries / entity filter:** `GET /api/analytics/countries` → Lakehouse table **`countries`** (code, name, display_order, is_active). The report filter dropdown is populated from this table; add, remove, or reorder rows in the table to change UI options. Create and seed via `lakehouse_bootstrap.sql` (countries section).
 
 All of the above are implemented in `backend/routes/analytics.py` and `backend/routes/rules.py`, using `DatabricksService` in `backend/services/databricks_service.py`, which runs SQL via the Databricks SQL Warehouse against the configured catalog and schema.
 

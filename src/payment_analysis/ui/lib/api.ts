@@ -144,6 +144,11 @@ export interface ComplexValue {
   value?: string | null;
 }
 
+export interface CountryOut {
+  code: string;
+  name: string;
+}
+
 export const DashboardCategory = {
   executive: "executive",
   operations: "operations",
@@ -614,6 +619,7 @@ export interface WorkspaceConfigOut {
 
 export interface ListAgentsParams {
   agent_type?: AgentType | null;
+  entity?: string | null;
 }
 
 export interface GetAgentParams {
@@ -622,6 +628,10 @@ export interface GetAgentParams {
 
 export interface GetAgentUrlParams {
   agent_id: string;
+}
+
+export interface GetCountriesParams {
+  limit?: number;
 }
 
 export interface RecentDecisionsParams {
@@ -634,6 +644,7 @@ export interface DeclineSummaryParams {
 }
 
 export interface GetFactorsDelayingApprovalParams {
+  entity?: string;
   limit?: number;
 }
 
@@ -641,16 +652,26 @@ export interface GetFalseInsightsMetricParams {
   days?: number;
 }
 
+export interface GetModelsParams {
+  entity?: string;
+}
+
 export interface GetOnlineFeaturesParams {
   source?: string | null;
   limit?: number;
 }
 
-export interface GetReasonCodesBrParams {
+export interface GetReasonCodesParams {
+  entity?: string;
   limit?: number;
 }
 
-export interface GetReasonCodeInsightsBrParams {
+export interface GetEntrySystemDistributionParams {
+  entity?: string;
+}
+
+export interface GetReasonCodeInsightsParams {
+  entity?: string;
   limit?: number;
 }
 
@@ -662,15 +683,18 @@ export interface GetRetryPerformanceParams {
   limit?: number;
 }
 
-export interface GetThreeDsFunnelBrParams {
+export interface GetThreeDsFunnelParams {
+  entity?: string;
   days?: number;
 }
 
-export interface GetSmartCheckoutPathPerformanceBrParams {
+export interface GetSmartCheckoutPathPerformanceParams {
+  entity?: string;
   limit?: number;
 }
 
-export interface GetSmartCheckoutServicePathsBrParams {
+export interface GetSmartCheckoutServicePathsParams {
+  entity?: string;
   limit?: number;
 }
 
@@ -778,6 +802,7 @@ export class ApiError extends Error {
 export const listAgents = async (params?: ListAgentsParams, options?: RequestInit): Promise<{ data: AgentList }> => {
   const searchParams = new URLSearchParams();
   if (params?.agent_type != null) searchParams.set("agent_type", String(params?.agent_type));
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   const queryString = searchParams.toString();
   const url = queryString ? `/api/agents/agents?${queryString}` : `/api/agents/agents`;
   const res = await fetch(url, { ...options, method: "GET" });
@@ -869,6 +894,33 @@ export function useGetAgentUrl<TData = { data: AgentUrlOut }>(options: { params:
 
 export function useGetAgentUrlSuspense<TData = { data: AgentUrlOut }>(options: { params: GetAgentUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: AgentUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getAgentUrlKey(options.params), queryFn: () => getAgentUrl(options.params), ...options?.query });
+}
+
+export const getCountries = async (params?: GetCountriesParams, options?: RequestInit): Promise<{ data: CountryOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/countries?${queryString}` : `/api/analytics/countries`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getCountriesKey = (params?: GetCountriesParams) => {
+  return ["/api/analytics/countries", params] as const;
+};
+
+export function useGetCountries<TData = { data: CountryOut[] }>(options?: { params?: GetCountriesParams; query?: Omit<UseQueryOptions<{ data: CountryOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getCountriesKey(options?.params), queryFn: () => getCountries(options?.params), ...options?.query });
+}
+
+export function useGetCountriesSuspense<TData = { data: CountryOut[] }>(options?: { params?: GetCountriesParams; query?: Omit<UseSuspenseQueryOptions<{ data: CountryOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getCountriesKey(options?.params), queryFn: () => getCountries(options?.params), ...options?.query });
 }
 
 export const recentDecisions = async (params?: RecentDecisionsParams, options?: RequestInit): Promise<{ data: DecisionLog[] }> => {
@@ -966,6 +1018,7 @@ export function useIngestAuthEvent(options?: { mutation?: UseMutationOptions<{ d
 
 export const getFactorsDelayingApproval = async (params?: GetFactorsDelayingApprovalParams, options?: RequestInit): Promise<{ data: ReasonCodeInsightOut[] }> => {
   const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
   const queryString = searchParams.toString();
   const url = queryString ? `/api/analytics/factors-delaying-approval?${queryString}` : `/api/analytics/factors-delaying-approval`;
@@ -1079,8 +1132,12 @@ export function useGetDatabricksKpisSuspense<TData = { data: DatabricksKPIOut }>
   return useSuspenseQuery({ queryKey: getDatabricksKpisKey(), queryFn: () => getDatabricksKpis(), ...options?.query });
 }
 
-export const getModels = async (options?: RequestInit): Promise<{ data: ModelOut[] }> => {
-  const res = await fetch("/api/analytics/models", { ...options, method: "GET" });
+export const getModels = async (params?: GetModelsParams, options?: RequestInit): Promise<{ data: ModelOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/models?${queryString}` : `/api/analytics/models`;
+  const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
     let parsed: unknown;
@@ -1090,16 +1147,16 @@ export const getModels = async (options?: RequestInit): Promise<{ data: ModelOut
   return { data: await res.json() };
 };
 
-export const getModelsKey = () => {
-  return ["/api/analytics/models"] as const;
+export const getModelsKey = (params?: GetModelsParams) => {
+  return ["/api/analytics/models", params] as const;
 };
 
-export function useGetModels<TData = { data: ModelOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getModelsKey(), queryFn: () => getModels(), ...options?.query });
+export function useGetModels<TData = { data: ModelOut[] }>(options?: { params?: GetModelsParams; query?: Omit<UseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getModelsKey(options?.params), queryFn: () => getModels(options?.params), ...options?.query });
 }
 
-export function useGetModelsSuspense<TData = { data: ModelOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getModelsKey(), queryFn: () => getModels(), ...options?.query });
+export function useGetModelsSuspense<TData = { data: ModelOut[] }>(options?: { params?: GetModelsParams; query?: Omit<UseSuspenseQueryOptions<{ data: ModelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getModelsKey(options?.params), queryFn: () => getModels(options?.params), ...options?.query });
 }
 
 export const getOnlineFeatures = async (params?: GetOnlineFeaturesParams, options?: RequestInit): Promise<{ data: OnlineFeatureOut[] }> => {
@@ -1130,11 +1187,12 @@ export function useGetOnlineFeaturesSuspense<TData = { data: OnlineFeatureOut[] 
   return useSuspenseQuery({ queryKey: getOnlineFeaturesKey(options?.params), queryFn: () => getOnlineFeatures(options?.params), ...options?.query });
 }
 
-export const getReasonCodesBr = async (params?: GetReasonCodesBrParams, options?: RequestInit): Promise<{ data: ReasonCodeOut[] }> => {
+export const getReasonCodes = async (params?: GetReasonCodesParams, options?: RequestInit): Promise<{ data: ReasonCodeOut[] }> => {
   const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/analytics/reason-codes/br?${queryString}` : `/api/analytics/reason-codes/br`;
+  const url = queryString ? `/api/analytics/reason-codes?${queryString}` : `/api/analytics/reason-codes`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1145,66 +1203,16 @@ export const getReasonCodesBr = async (params?: GetReasonCodesBrParams, options?
   return { data: await res.json() };
 };
 
-export const getReasonCodesBrKey = (params?: GetReasonCodesBrParams) => {
-  return ["/api/analytics/reason-codes/br", params] as const;
+export const getReasonCodesKey = (params?: GetReasonCodesParams) => {
+  return ["/api/analytics/reason-codes", params] as const;
 };
 
-export function useGetReasonCodesBr<TData = { data: ReasonCodeOut[] }>(options?: { params?: GetReasonCodesBrParams; query?: Omit<UseQueryOptions<{ data: ReasonCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getReasonCodesBrKey(options?.params), queryFn: () => getReasonCodesBr(options?.params), ...options?.query });
+export function useGetReasonCodes<TData = { data: ReasonCodeOut[] }>(options?: { params?: GetReasonCodesParams; query?: Omit<UseQueryOptions<{ data: ReasonCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getReasonCodesKey(options?.params), queryFn: () => getReasonCodes(options?.params), ...options?.query });
 }
 
-export function useGetReasonCodesBrSuspense<TData = { data: ReasonCodeOut[] }>(options?: { params?: GetReasonCodesBrParams; query?: Omit<UseSuspenseQueryOptions<{ data: ReasonCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getReasonCodesBrKey(options?.params), queryFn: () => getReasonCodesBr(options?.params), ...options?.query });
-}
-
-export const getEntrySystemDistributionBr = async (options?: RequestInit): Promise<{ data: EntrySystemDistributionOut[] }> => {
-  const res = await fetch("/api/analytics/reason-codes/br/entry-systems", { ...options, method: "GET" });
-  if (!res.ok) {
-    const body = await res.text();
-    let parsed: unknown;
-    try { parsed = JSON.parse(body); } catch { parsed = body; }
-    throw new ApiError(res.status, res.statusText, parsed);
-  }
-  return { data: await res.json() };
-};
-
-export const getEntrySystemDistributionBrKey = () => {
-  return ["/api/analytics/reason-codes/br/entry-systems"] as const;
-};
-
-export function useGetEntrySystemDistributionBr<TData = { data: EntrySystemDistributionOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: EntrySystemDistributionOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getEntrySystemDistributionBrKey(), queryFn: () => getEntrySystemDistributionBr(), ...options?.query });
-}
-
-export function useGetEntrySystemDistributionBrSuspense<TData = { data: EntrySystemDistributionOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: EntrySystemDistributionOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getEntrySystemDistributionBrKey(), queryFn: () => getEntrySystemDistributionBr(), ...options?.query });
-}
-
-export const getReasonCodeInsightsBr = async (params?: GetReasonCodeInsightsBrParams, options?: RequestInit): Promise<{ data: ReasonCodeInsightOut[] }> => {
-  const searchParams = new URLSearchParams();
-  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
-  const queryString = searchParams.toString();
-  const url = queryString ? `/api/analytics/reason-codes/br/insights?${queryString}` : `/api/analytics/reason-codes/br/insights`;
-  const res = await fetch(url, { ...options, method: "GET" });
-  if (!res.ok) {
-    const body = await res.text();
-    let parsed: unknown;
-    try { parsed = JSON.parse(body); } catch { parsed = body; }
-    throw new ApiError(res.status, res.statusText, parsed);
-  }
-  return { data: await res.json() };
-};
-
-export const getReasonCodeInsightsBrKey = (params?: GetReasonCodeInsightsBrParams) => {
-  return ["/api/analytics/reason-codes/br/insights", params] as const;
-};
-
-export function useGetReasonCodeInsightsBr<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetReasonCodeInsightsBrParams; query?: Omit<UseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getReasonCodeInsightsBrKey(options?.params), queryFn: () => getReasonCodeInsightsBr(options?.params), ...options?.query });
-}
-
-export function useGetReasonCodeInsightsBrSuspense<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetReasonCodeInsightsBrParams; query?: Omit<UseSuspenseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getReasonCodeInsightsBrKey(options?.params), queryFn: () => getReasonCodeInsightsBr(options?.params), ...options?.query });
+export function useGetReasonCodesSuspense<TData = { data: ReasonCodeOut[] }>(options?: { params?: GetReasonCodesParams; query?: Omit<UseSuspenseQueryOptions<{ data: ReasonCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getReasonCodesKey(options?.params), queryFn: () => getReasonCodes(options?.params), ...options?.query });
 }
 
 export const getDedupCollisionStats = async (options?: RequestInit): Promise<{ data: DedupCollisionStatsOut }> => {
@@ -1228,6 +1236,61 @@ export function useGetDedupCollisionStats<TData = { data: DedupCollisionStatsOut
 
 export function useGetDedupCollisionStatsSuspense<TData = { data: DedupCollisionStatsOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: DedupCollisionStatsOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getDedupCollisionStatsKey(), queryFn: () => getDedupCollisionStats(), ...options?.query });
+}
+
+export const getEntrySystemDistribution = async (params?: GetEntrySystemDistributionParams, options?: RequestInit): Promise<{ data: EntrySystemDistributionOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/reason-codes/entry-systems?${queryString}` : `/api/analytics/reason-codes/entry-systems`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getEntrySystemDistributionKey = (params?: GetEntrySystemDistributionParams) => {
+  return ["/api/analytics/reason-codes/entry-systems", params] as const;
+};
+
+export function useGetEntrySystemDistribution<TData = { data: EntrySystemDistributionOut[] }>(options?: { params?: GetEntrySystemDistributionParams; query?: Omit<UseQueryOptions<{ data: EntrySystemDistributionOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getEntrySystemDistributionKey(options?.params), queryFn: () => getEntrySystemDistribution(options?.params), ...options?.query });
+}
+
+export function useGetEntrySystemDistributionSuspense<TData = { data: EntrySystemDistributionOut[] }>(options?: { params?: GetEntrySystemDistributionParams; query?: Omit<UseSuspenseQueryOptions<{ data: EntrySystemDistributionOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getEntrySystemDistributionKey(options?.params), queryFn: () => getEntrySystemDistribution(options?.params), ...options?.query });
+}
+
+export const getReasonCodeInsights = async (params?: GetReasonCodeInsightsParams, options?: RequestInit): Promise<{ data: ReasonCodeInsightOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/reason-codes/insights?${queryString}` : `/api/analytics/reason-codes/insights`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getReasonCodeInsightsKey = (params?: GetReasonCodeInsightsParams) => {
+  return ["/api/analytics/reason-codes/insights", params] as const;
+};
+
+export function useGetReasonCodeInsights<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetReasonCodeInsightsParams; query?: Omit<UseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getReasonCodeInsightsKey(options?.params), queryFn: () => getReasonCodeInsights(options?.params), ...options?.query });
+}
+
+export function useGetReasonCodeInsightsSuspense<TData = { data: ReasonCodeInsightOut[] }>(options?: { params?: GetReasonCodeInsightsParams; query?: Omit<UseSuspenseQueryOptions<{ data: ReasonCodeInsightOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getReasonCodeInsightsKey(options?.params), queryFn: () => getReasonCodeInsights(options?.params), ...options?.query });
 }
 
 export const getRecommendations = async (params?: GetRecommendationsParams, options?: RequestInit): Promise<{ data: RecommendationOut[] }> => {
@@ -1284,11 +1347,12 @@ export function useGetRetryPerformanceSuspense<TData = { data: RetryPerformanceO
   return useSuspenseQuery({ queryKey: getRetryPerformanceKey(options?.params), queryFn: () => getRetryPerformance(options?.params), ...options?.query });
 }
 
-export const getThreeDsFunnelBr = async (params?: GetThreeDsFunnelBrParams, options?: RequestInit): Promise<{ data: ThreeDSFunnelOut[] }> => {
+export const getThreeDsFunnel = async (params?: GetThreeDsFunnelParams, options?: RequestInit): Promise<{ data: ThreeDSFunnelOut[] }> => {
   const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   if (params?.days != null) searchParams.set("days", String(params?.days));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/analytics/smart-checkout/3ds-funnel/br?${queryString}` : `/api/analytics/smart-checkout/3ds-funnel/br`;
+  const url = queryString ? `/api/analytics/smart-checkout/3ds-funnel?${queryString}` : `/api/analytics/smart-checkout/3ds-funnel`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1299,23 +1363,24 @@ export const getThreeDsFunnelBr = async (params?: GetThreeDsFunnelBrParams, opti
   return { data: await res.json() };
 };
 
-export const getThreeDsFunnelBrKey = (params?: GetThreeDsFunnelBrParams) => {
-  return ["/api/analytics/smart-checkout/3ds-funnel/br", params] as const;
+export const getThreeDsFunnelKey = (params?: GetThreeDsFunnelParams) => {
+  return ["/api/analytics/smart-checkout/3ds-funnel", params] as const;
 };
 
-export function useGetThreeDsFunnelBr<TData = { data: ThreeDSFunnelOut[] }>(options?: { params?: GetThreeDsFunnelBrParams; query?: Omit<UseQueryOptions<{ data: ThreeDSFunnelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getThreeDsFunnelBrKey(options?.params), queryFn: () => getThreeDsFunnelBr(options?.params), ...options?.query });
+export function useGetThreeDsFunnel<TData = { data: ThreeDSFunnelOut[] }>(options?: { params?: GetThreeDsFunnelParams; query?: Omit<UseQueryOptions<{ data: ThreeDSFunnelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getThreeDsFunnelKey(options?.params), queryFn: () => getThreeDsFunnel(options?.params), ...options?.query });
 }
 
-export function useGetThreeDsFunnelBrSuspense<TData = { data: ThreeDSFunnelOut[] }>(options?: { params?: GetThreeDsFunnelBrParams; query?: Omit<UseSuspenseQueryOptions<{ data: ThreeDSFunnelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getThreeDsFunnelBrKey(options?.params), queryFn: () => getThreeDsFunnelBr(options?.params), ...options?.query });
+export function useGetThreeDsFunnelSuspense<TData = { data: ThreeDSFunnelOut[] }>(options?: { params?: GetThreeDsFunnelParams; query?: Omit<UseSuspenseQueryOptions<{ data: ThreeDSFunnelOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getThreeDsFunnelKey(options?.params), queryFn: () => getThreeDsFunnel(options?.params), ...options?.query });
 }
 
-export const getSmartCheckoutPathPerformanceBr = async (params?: GetSmartCheckoutPathPerformanceBrParams, options?: RequestInit): Promise<{ data: SmartCheckoutPathPerformanceOut[] }> => {
+export const getSmartCheckoutPathPerformance = async (params?: GetSmartCheckoutPathPerformanceParams, options?: RequestInit): Promise<{ data: SmartCheckoutPathPerformanceOut[] }> => {
   const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/analytics/smart-checkout/path-performance/br?${queryString}` : `/api/analytics/smart-checkout/path-performance/br`;
+  const url = queryString ? `/api/analytics/smart-checkout/path-performance?${queryString}` : `/api/analytics/smart-checkout/path-performance`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1326,23 +1391,24 @@ export const getSmartCheckoutPathPerformanceBr = async (params?: GetSmartCheckou
   return { data: await res.json() };
 };
 
-export const getSmartCheckoutPathPerformanceBrKey = (params?: GetSmartCheckoutPathPerformanceBrParams) => {
-  return ["/api/analytics/smart-checkout/path-performance/br", params] as const;
+export const getSmartCheckoutPathPerformanceKey = (params?: GetSmartCheckoutPathPerformanceParams) => {
+  return ["/api/analytics/smart-checkout/path-performance", params] as const;
 };
 
-export function useGetSmartCheckoutPathPerformanceBr<TData = { data: SmartCheckoutPathPerformanceOut[] }>(options?: { params?: GetSmartCheckoutPathPerformanceBrParams; query?: Omit<UseQueryOptions<{ data: SmartCheckoutPathPerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getSmartCheckoutPathPerformanceBrKey(options?.params), queryFn: () => getSmartCheckoutPathPerformanceBr(options?.params), ...options?.query });
+export function useGetSmartCheckoutPathPerformance<TData = { data: SmartCheckoutPathPerformanceOut[] }>(options?: { params?: GetSmartCheckoutPathPerformanceParams; query?: Omit<UseQueryOptions<{ data: SmartCheckoutPathPerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getSmartCheckoutPathPerformanceKey(options?.params), queryFn: () => getSmartCheckoutPathPerformance(options?.params), ...options?.query });
 }
 
-export function useGetSmartCheckoutPathPerformanceBrSuspense<TData = { data: SmartCheckoutPathPerformanceOut[] }>(options?: { params?: GetSmartCheckoutPathPerformanceBrParams; query?: Omit<UseSuspenseQueryOptions<{ data: SmartCheckoutPathPerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getSmartCheckoutPathPerformanceBrKey(options?.params), queryFn: () => getSmartCheckoutPathPerformanceBr(options?.params), ...options?.query });
+export function useGetSmartCheckoutPathPerformanceSuspense<TData = { data: SmartCheckoutPathPerformanceOut[] }>(options?: { params?: GetSmartCheckoutPathPerformanceParams; query?: Omit<UseSuspenseQueryOptions<{ data: SmartCheckoutPathPerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getSmartCheckoutPathPerformanceKey(options?.params), queryFn: () => getSmartCheckoutPathPerformance(options?.params), ...options?.query });
 }
 
-export const getSmartCheckoutServicePathsBr = async (params?: GetSmartCheckoutServicePathsBrParams, options?: RequestInit): Promise<{ data: SmartCheckoutServicePathOut[] }> => {
+export const getSmartCheckoutServicePaths = async (params?: GetSmartCheckoutServicePathsParams, options?: RequestInit): Promise<{ data: SmartCheckoutServicePathOut[] }> => {
   const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/analytics/smart-checkout/service-paths/br?${queryString}` : `/api/analytics/smart-checkout/service-paths/br`;
+  const url = queryString ? `/api/analytics/smart-checkout/service-paths?${queryString}` : `/api/analytics/smart-checkout/service-paths`;
   const res = await fetch(url, { ...options, method: "GET" });
   if (!res.ok) {
     const body = await res.text();
@@ -1353,16 +1419,16 @@ export const getSmartCheckoutServicePathsBr = async (params?: GetSmartCheckoutSe
   return { data: await res.json() };
 };
 
-export const getSmartCheckoutServicePathsBrKey = (params?: GetSmartCheckoutServicePathsBrParams) => {
-  return ["/api/analytics/smart-checkout/service-paths/br", params] as const;
+export const getSmartCheckoutServicePathsKey = (params?: GetSmartCheckoutServicePathsParams) => {
+  return ["/api/analytics/smart-checkout/service-paths", params] as const;
 };
 
-export function useGetSmartCheckoutServicePathsBr<TData = { data: SmartCheckoutServicePathOut[] }>(options?: { params?: GetSmartCheckoutServicePathsBrParams; query?: Omit<UseQueryOptions<{ data: SmartCheckoutServicePathOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useQuery({ queryKey: getSmartCheckoutServicePathsBrKey(options?.params), queryFn: () => getSmartCheckoutServicePathsBr(options?.params), ...options?.query });
+export function useGetSmartCheckoutServicePaths<TData = { data: SmartCheckoutServicePathOut[] }>(options?: { params?: GetSmartCheckoutServicePathsParams; query?: Omit<UseQueryOptions<{ data: SmartCheckoutServicePathOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getSmartCheckoutServicePathsKey(options?.params), queryFn: () => getSmartCheckoutServicePaths(options?.params), ...options?.query });
 }
 
-export function useGetSmartCheckoutServicePathsBrSuspense<TData = { data: SmartCheckoutServicePathOut[] }>(options?: { params?: GetSmartCheckoutServicePathsBrParams; query?: Omit<UseSuspenseQueryOptions<{ data: SmartCheckoutServicePathOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
-  return useSuspenseQuery({ queryKey: getSmartCheckoutServicePathsBrKey(options?.params), queryFn: () => getSmartCheckoutServicePathsBr(options?.params), ...options?.query });
+export function useGetSmartCheckoutServicePathsSuspense<TData = { data: SmartCheckoutServicePathOut[] }>(options?: { params?: GetSmartCheckoutServicePathsParams; query?: Omit<UseSuspenseQueryOptions<{ data: SmartCheckoutServicePathOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getSmartCheckoutServicePathsKey(options?.params), queryFn: () => getSmartCheckoutServicePaths(options?.params), ...options?.query });
 }
 
 export const getSolutionPerformance = async (options?: RequestInit): Promise<{ data: SolutionPerformanceOut[] }> => {

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import SidebarUserFooter from "@/components/apx/sidebar-user-footer";
 import { ModeToggle } from "@/components/apx/mode-toggle";
+import { CountrySelect } from "@/components/apx/country-select";
 import Logo from "@/components/apx/logo";
 
 const PATH_LABELS: Record<string, string> = {
@@ -72,6 +73,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-md transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
           <Breadcrumb />
           <div className="flex-1 min-w-0" />
+          <CountrySelect className="shrink-0 flex" />
           <ModeToggle />
         </header>
         <div className="flex flex-1 justify-center overflow-auto min-h-0">

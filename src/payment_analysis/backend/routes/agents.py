@@ -16,7 +16,7 @@ import os
 from enum import Enum
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..config import AppConfig
@@ -302,13 +302,15 @@ def _effective_uc(request: Request) -> tuple[str, str]:
 async def list_agents(
     request: Request,
     agent_type: AgentType | None = None,
+    entity: str | None = Query(None, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
 ) -> AgentList:
     """
     List all Databricks AI agents for payment approval optimization.
-    
+
     Args:
         agent_type: Optional filter by agent type
-        
+        entity: Optional entity/country code for filtering (future use)
+
     Returns:
         List of agents with metadata
     """

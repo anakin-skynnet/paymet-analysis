@@ -17,7 +17,8 @@ import {
   useGetApprovalTrendsSuspense,
   useGetSolutionPerformanceSuspense,
   useRecentDecisionsSuspense,
-  useGetReasonCodeInsightsBr,
+  useGetReasonCodeInsightsSuspense,
+  type ReasonCodeInsightOut,
 } from "@/lib/api";
 import selector from "@/lib/selector";
 import { friendlyReason } from "@/lib/reasoning";
@@ -37,6 +38,7 @@ import {
   Target,
 } from "lucide-react";
 import { getDashboardUrl, getGenieUrl } from "@/config/workspace";
+import { useEntity } from "@/contexts/entity-context";
 
 const dashboardStagger = {
   hidden: { opacity: 0, y: 16 },
@@ -149,13 +151,14 @@ function formatDecisionTime(iso: string | undefined): string {
 }
 
 function Dashboard() {
+  const { entity } = useEntity();
   const { data: kpis } = useGetKpisSuspense(selector());
   const { data: trends } = useGetApprovalTrendsSuspense(selector());
   const { data: solutions } = useGetSolutionPerformanceSuspense(selector());
   const { data: decisions } = useRecentDecisionsSuspense({
     params: { limit: 20 },
   });
-  const { data: reasonCodeData } = useGetReasonCodeInsightsBr({ params: { limit: 5 } });
+  const { data: reasonCodeData } = useGetReasonCodeInsightsSuspense({ params: { entity, limit: 5 } });
   const factorsDelayingApproval = reasonCodeData?.data ?? [];
 
   const pct = (kpis.approval_rate * 100).toFixed(2);
@@ -485,7 +488,7 @@ function Dashboard() {
               </p>
             ) : (
               <ul className="space-y-3">
-                {factorsDelayingApproval.map((r) => (
+                {factorsDelayingApproval.map((r: ReasonCodeInsightOut) => (
                   <li key={`${r.entry_system}-${r.decline_reason_standard}-${r.priority}`} className="flex items-start gap-3 rounded-lg border border-border/60 p-2.5">
                     <Target className="w-4 h-4 shrink-0 text-primary mt-0.5" />
                     <div className="min-w-0 flex-1">
