@@ -77,14 +77,25 @@ resources:
 
     lakehouse_bootstrap_job:
       name: "[${var.environment}] Lakehouse Bootstrap (app_config, rules, recommendations)"
-      description: "Run lakehouse_bootstrap.sql once to create app_config, approval_rules, approval_recommendations, online_features. Uses .build/transform/lakehouse_bootstrap.sql (from scripts/dashboards.py prepare)."
+      description: "Run lakehouse_bootstrap.sql once to create app_config, approval_rules, approval_recommendations, online_features. Uses notebook that reads from synced src/payment_analysis/transform/lakehouse_bootstrap.sql (no .build dependency)."
       tasks:
         - task_key: bootstrap
           description: "Create Lakehouse tables and views for Rules, Decisioning, and Dashboard"
-          sql_task:
-            warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
-            file:
-              path: ${workspace.file_path}/.build/transform/lakehouse_bootstrap.sql
+          notebook_task:
+            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_lakehouse_bootstrap
+            base_parameters:
+              workspace_path: ${workspace.file_path}
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
           timeout_seconds: 300
           max_retries: 2
       schedule:
