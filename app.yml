@@ -1,7 +1,7 @@
 # Runtime spec (same as app.yaml). Required at root for "error loading app spec from app.yml".
 # DBA definition lives in resources/fastapi_app.yml (included from databricks.yml). This file only defines how to run the container.
 # When deployed as a Databricks App, the platform runs this in the workspace folder (source_code_path); "Uvicorn running on http://0.0.0.0:8000" in logs is expected — the app binds to that address and the platform proxies traffic to it (not localhost).
-# Single app: payment_analysis.backend.app (PYTHONPATH=src). PGAPPNAME must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
+# Open the app from Workspace → Compute → Apps → payment-analysis so the platform forwards your token (no DATABRICKS_TOKEN needed). Set PGAPPNAME and DATABRICKS_WAREHOUSE_ID in the app Environment; DATABRICKS_HOST is optional when opened from Apps.
 command:
   - uvicorn
   - payment_analysis.backend.app:app

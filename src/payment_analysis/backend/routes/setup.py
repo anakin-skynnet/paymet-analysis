@@ -20,7 +20,13 @@ from ..config import (
     ensure_absolute_workspace_url,
     workspace_url_from_apps_host,
 )
-from ..dependencies import AUTH_REQUIRED_DETAIL, get_workspace_client, get_workspace_client_optional
+from ..dependencies import (
+    AUTH_REQUIRED_DETAIL,
+    _effective_databricks_host,
+    _get_obo_token,
+    get_workspace_client,
+    get_workspace_client_optional,
+)
 from ..services.databricks_service import DatabricksConfig, DatabricksService
 from databricks.sdk import WorkspaceClient
 
@@ -264,7 +270,7 @@ def get_setup_defaults(
 
 @router.patch("/config", response_model=SetupConfigOut, operation_id="updateSetupConfig")
 async def update_setup_config(request: Request, body: SetupConfigIn) -> SetupConfigOut:
-    """Update effective catalog and schema in app_config table and app state. Uses your credentials when logged in (OBO) or DATABRICKS_TOKEN when set."""
+    """Update effective catalog and schema in app_config table and app state. Uses your token when opened from Compute → Apps (OBO) or DATABRICKS_TOKEN when set."""
     catalog = (body.catalog or "").strip()
     schema = (body.schema_name or "").strip()
     if not catalog or not schema:
@@ -273,18 +279,19 @@ async def update_setup_config(request: Request, body: SetupConfigIn) -> SetupCon
             detail="catalog and schema are required and must be non-empty.",
         )
     bootstrap = DatabricksConfig.from_environment()
-    obo_token = request.headers.get("X-Forwarded-Access-Token")
+    obo_token = _get_obo_token(request)
     if not obo_token and not bootstrap.token:
         raise HTTPException(status_code=401, detail=AUTH_REQUIRED_DETAIL)
+    effective_host = _effective_databricks_host(request, bootstrap.host)
     missing = []
-    if not bootstrap.host:
-        missing.append("DATABRICKS_HOST")
+    if not effective_host:
+        missing.append("DATABRICKS_HOST (or open the app from Compute → Apps so the workspace URL can be derived)")
     if not bootstrap.warehouse_id:
         missing.append("DATABRICKS_WAREHOUSE_ID")
     if missing:
         raise HTTPException(status_code=503, detail=f"Set in the app environment: {', '.join(missing)}.")
     config = DatabricksConfig(
-        host=bootstrap.host,
+        host=effective_host,
         token=obo_token or bootstrap.token,
         warehouse_id=bootstrap.warehouse_id,
         catalog=bootstrap.catalog,
@@ -301,6 +308,16 @@ async def update_setup_config(request: Request, body: SetupConfigIn) -> SetupCon
     return SetupConfigOut(catalog=catalog, schema_name=schema)
 
 
+def _run_job_error_status(e: Exception) -> int:
+    """Map job run exception to HTTP status (403 forbidden, 404 not found, else 400)."""
+    msg = str(e).lower()
+    if "not found" in msg or "404" in msg or "no job" in msg:
+        return 404
+    if "forbidden" in msg or "403" in msg or "permission" in msg or "scope" in msg:
+        return 403
+    return 400
+
+
 @router.post("/run-job", response_model=RunJobOut, operation_id="runSetupJob")
 def run_setup_job(
     request: Request,
@@ -308,6 +325,25 @@ def run_setup_job(
     ws: WorkspaceClient = Depends(get_workspace_client),
 ) -> RunJobOut:
     """Run a Databricks job with optional notebook/SQL parameters."""
+    job_id_str = (body.job_id or "").strip()
+    if not job_id_str or job_id_str == "0":
+        raise HTTPException(
+            status_code=400,
+            detail="Job ID is not set. Use Refresh job IDs on this page, or set DATABRICKS_JOB_ID_<name> in the app environment.",
+        )
+    try:
+        job_id_int = int(job_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid job ID: {body.job_id!r}. Must be a numeric Databricks job ID.",
+        ) from None
+    if job_id_int <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Job ID is not set. Use Refresh job IDs on this page, or set DATABRICKS_JOB_ID_<name> in the app environment.",
+        )
+
     host = _get_workspace_host().rstrip("/")
     if not host:
         host = workspace_url_from_apps_host(request.headers.get("host") or "", app_name).rstrip("/")
@@ -328,7 +364,7 @@ def run_setup_job(
 
     try:
         run = ws.jobs.run_now(
-            job_id=int(body.job_id),
+            job_id=job_id_int,
             notebook_params=notebook_params,
             python_params=None,
             jar_params=None,
@@ -336,7 +372,8 @@ def run_setup_job(
         )
         run_id = run.run_id
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        status = _run_job_error_status(e)
+        raise HTTPException(status_code=status, detail=str(e)) from e
 
     run_page_url = f"{host}/#job/{body.job_id}/run/{run_id}" if host else ""
     return RunJobOut(

@@ -467,7 +467,7 @@ function SetupRun() {
         </p>
         {defaults && !host && (
           <p className="text-sm text-amber-600 dark:text-amber-500">
-            Connect to Databricks (open this app from <strong>Compute → Apps</strong> or set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code>) so job and pipeline IDs can be resolved and steps can be run from this page.
+            Connect to Databricks: open this app from <strong>Workspace → Compute → Apps → payment-analysis</strong> so your token is forwarded (no env vars needed), or set <code className="rounded bg-muted px-1">DATABRICKS_HOST</code> and <code className="rounded bg-muted px-1">DATABRICKS_TOKEN</code> in the app environment.
           </p>
         )}
         {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (

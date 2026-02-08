@@ -122,16 +122,14 @@ class DatabricksService:
     
     def _initialize_client(self) -> "WorkspaceClient | None":
         """Initialize the Databricks SDK client with error handling."""
+        host = self.config.host
+        token = self.config.token
+        if not host or not token:
+            return None
         try:
-            from databricks.sdk import WorkspaceClient
-            
-            client = WorkspaceClient(
-                host=self.config.host,
-                token=self.config.token,
-                auth_type="pat",
-                client_id=None,
-                client_secret=None,
-            )
+            from ..databricks_client_helpers import workspace_client_pat_only
+
+            client = workspace_client_pat_only(host=host, token=token)
             logger.info("Databricks client initialized successfully")
             return client
         except ImportError:
@@ -166,7 +164,15 @@ class DatabricksService:
         try:
             return await self._execute_query_internal(query)
         except Exception as e:
-            logger.error(f"Query execution failed: {e}")
+            err_str = str(e).lower()
+            if "invalid scope" in err_str or ("403" in err_str and "forbidden" in err_str):
+                logger.error(
+                    "Query execution failed (likely missing SQL scope): %s. "
+                    "Add the 'sql' scope in Compute → Apps → payment-analysis → Edit → Configure → Authorization scopes, then restart the app.",
+                    e,
+                )
+            else:
+                logger.error(f"Query execution failed: {e}")
             return self._get_mock_data_for_query(query)
     
     async def _execute_query_internal(self, query: str) -> list[dict[str, Any]]:

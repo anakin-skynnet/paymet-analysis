@@ -5,12 +5,12 @@
 # (= ${workspace.root}/files = .../payment-analysis/files), so the app runs from that folder and
 # sees src/, app.yml, etc. There, cwd is .../payment-analysis/files and src/payment_analysis/__dist__ is found.
 #
-# Required environment variables (set in Workspace → Apps → payment-analysis → Edit → Environment):
-#   PGAPPNAME              — Set in app.yaml/app.yml (dev: payment-analysis-db-dev). Must match var.lakebase_instance_name.
-#   DATABRICKS_HOST        — Workspace URL (e.g. https://xxx.azuredatabricks.net).
-#   DATABRICKS_WAREHOUSE_ID — SQL Warehouse ID (from bundle; use deployed payment_analysis_warehouse id).
-#   DATABRICKS_TOKEN       — PAT or OAuth for API calls (notebooks, jobs, dashboards).
-# Optional: DATABRICKS_WORKSPACE_ID (for dashboard URLs); BUNDLE_FOLDER (set if var.workspace_folder != payment-analysis).
+# Environment variables (Workspace → Apps → payment-analysis → Edit → Environment):
+#   PGAPPNAME               — Required. Set in app.yml (dev: payment-analysis-db-dev). Must match var.lakebase_instance_name.
+#   DATABRICKS_WAREHOUSE_ID — Required for SQL/analytics. From bundle or sql-warehouse binding (payment_analysis_warehouse).
+#   DATABRICKS_HOST         — Workspace URL. Optional when opened from Compute → Apps (derived from request).
+#   DATABRICKS_TOKEN        — Optional when using user auth: open the app from Compute → Apps so your token is forwarded; set only for app-only or non-OBO use. Do not set DATABRICKS_CLIENT_ID/SECRET when using the forwarded token.
+# Optional: DATABRICKS_WORKSPACE_ID (dashboard URLs); BUNDLE_FOLDER (if var.workspace_folder != payment-analysis).
 
 resources:
   apps:

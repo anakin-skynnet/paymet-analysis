@@ -28,13 +28,9 @@ class Runtime:
         host = (self.config.databricks.workspace_url or "").strip().rstrip("/")
         token = os.environ.get("DATABRICKS_TOKEN")
         if host and token and "example.databricks.com" not in host:
-            return WorkspaceClient(
-                host=host,
-                token=token,
-                auth_type="pat",
-                client_id=None,
-                client_secret=None,
-            )
+            from .databricks_client_helpers import workspace_client_pat_only
+
+            return workspace_client_pat_only(host=host, token=token)
         # Otherwise use default (e.g. DATABRICKS_CONFIG_PROFILE or OAuth in dev)
         return WorkspaceClient()
 

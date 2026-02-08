@@ -50,13 +50,13 @@ All jobs and pipelines can be run from the UI. To connect: use your credentials 
 
 | Variable | Purpose |
 |----------|---------|
-| **PGAPPNAME** | Lakebase instance (e.g. `payment-analysis-db-dev`) |
-| **DATABRICKS_HOST** | Workspace URL |
-| **DATABRICKS_WAREHOUSE_ID** | SQL Warehouse ID (from bundle summary) |
-| **DATABRICKS_TOKEN** | Optional when **user authorization (OBO)** is enabled. The app uses your credentials when you open it from Compute → Apps (no token in env). Set a PAT only if OBO is not enabled or for app-only operations. If using a PAT, do **not** set DATABRICKS_CLIENT_ID or DATABRICKS_CLIENT_SECRET. |
+| **PGAPPNAME** | Required. Lakebase instance (e.g. `payment-analysis-db-dev`). |
+| **DATABRICKS_WAREHOUSE_ID** | Required for SQL/analytics. SQL Warehouse ID (from bundle or sql-warehouse binding). |
+| **DATABRICKS_HOST** | Optional when opened from **Compute → Apps** (workspace URL derived from request). Set when not using OBO. |
+| **DATABRICKS_TOKEN** | Optional when using OBO. Open from **Compute → Apps** so your token is forwarded; do not set in env. Set only for app-only use; then do **not** set DATABRICKS_CLIENT_ID/SECRET. |
 | **LAKEBASE_SCHEMA** | Optional. Postgres schema for app tables (default `app`). Use when the app has no CREATE on `public`. |
 
-**Use your credentials (no token):** Enable user authorization (OBO) for the app in the workspace; then open the app from **Compute → Apps** so the platform forwards your token on every request. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, jobs, dashboards). The main page shows “Use your Databricks credentials” when no token is present; open the workspace to sign in. Add the **Jobs** (and **Pipelines** if you run pipelines from the UI) scope in **Compute → Apps → payment-analysis → Edit → Configure → Authorization scopes** so the Run buttons can resolve and trigger jobs. If Run stays disabled after opening from Compute → Apps, click **Refresh job IDs** on the Setup page. No PAT needs to be set in the app environment.
+**Use your credentials (recommended):** Open the app from **Workspace → Compute → Apps → payment-analysis**. The platform forwards your token; no DATABRICKS_TOKEN or DATABRICKS_HOST is required in the app environment. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, jobs, dashboards). The main page shows “Use your Databricks credentials” when no token is present; open the workspace to sign in. Enable user authorization (OBO) and add scopes **sql**, **Jobs**, and **Pipelines** (if needed) in **Edit → Configure → Authorization scopes**. If you see 403 Invalid scope, add **sql** and restart. If Run stays disabled, click **Refresh job IDs** on the Setup page.
 
 6. **Optional — override job/pipeline IDs:** Set `DATABRICKS_JOB_ID_*`, `DATABRICKS_PIPELINE_ID_*`, `DATABRICKS_WORKSPACE_ID` per [Architecture & reference](ARCHITECTURE_REFERENCE.md#workspace-components--ui-mapping).
 
@@ -164,6 +164,7 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 | **Web UI shows "API only" / fallback page** | The app could not find `src/payment_analysis/__dist__`. Ensure `source_code_path` is `${workspace.file_path}` (so the app runs from the synced `files/` folder). (1) Run **`uv run apx build`** then **`databricks bundle deploy -t dev`** so `__dist__` is built and synced. (2) Restart the app from **Compute → Apps**. (3) Check app **Logs** for "UI dist candidate" to see which paths were tried. (4) If needed, set **UI_DIST_DIR** in the app Environment to the full path of the `__dist__` folder. |
 | **Logs show "Uvicorn running on http://0.0.0.0:8000"** | This is **expected** when the app runs as a Databricks App. The process binds to `0.0.0.0:8000` inside the app container; the platform proxies requests to it. You are not running on localhost — the app is deployed in Databricks. |
 | **Provided OAuth token does not have required scopes** | PAT lacks permissions or OAuth env vars conflict. See [Fix: PAT / token scopes](#fix-pat--token-scopes) below. |
+| **403 Forbidden / Invalid scope** (SQL or Setup) | User token from Compute → Apps lacks the **sql** scope. In **Compute → Apps → payment-analysis → Edit → Configure → Authorization scopes**, add **sql**, then **Save** and **restart** the app. See [Use your credentials (no token)](#deploy-app-as-a-databricks-app) above. |
 | **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
 
 ### Fix: PAT / token scopes
