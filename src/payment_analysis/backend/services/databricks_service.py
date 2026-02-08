@@ -129,6 +129,8 @@ class DatabricksService:
                 host=self.config.host,
                 token=self.config.token,
                 auth_type="pat",
+                client_id=None,
+                client_secret=None,
             )
             logger.info("Databricks client initialized successfully")
             return client

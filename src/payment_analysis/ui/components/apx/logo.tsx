@@ -8,14 +8,14 @@ interface LogoProps {
 
 export function Logo({ to = "/", className = "", showText = false }: LogoProps) {
   const content = (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
+    <div className={`flex flex-col items-center justify-center gap-2 pt-1 pb-0.5 ${className}`}>
       <img
         src="/getnet_logo.png"
         alt="Payment Analysis"
-        className="h-8 object-contain"
+        className="h-8 w-auto object-contain shrink-0"
       />
       {showText && (
-        <span className="font-semibold text-lg font-heading">{__APP_NAME__}</span>
+        <span className="font-semibold text-lg font-heading leading-tight shrink-0">{__APP_NAME__}</span>
       )}
     </div>
   );

@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Settings2,
+  RefreshCw,
 } from "lucide-react";
 import { ensureAbsoluteWorkspaceUrl, getWorkspaceUrl } from "@/config/workspace";
 
@@ -50,7 +51,7 @@ type RunPipelineResult = {
 };
 
 async function fetchDefaults(): Promise<SetupDefaults> {
-  const res = await fetch(`${API_BASE}/defaults`);
+  const res = await fetch(`${API_BASE}/defaults`, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -105,9 +106,11 @@ async function updateConfig(body: { catalog: string; schema: string }): Promise<
 
 function SetupRun() {
   const qc = useQueryClient();
-  const { data: defaults, isLoading: loadingDefaults } = useQuery({
+  const { data: defaults, isLoading: loadingDefaults, refetch: refetchDefaults, isRefetching: refetchingDefaults } = useQuery({
     queryKey: ["setup", "defaults"],
     queryFn: fetchDefaults,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 
   const [warehouseId, setWarehouseId] = useState("");
@@ -468,9 +471,20 @@ function SetupRun() {
           </p>
         )}
         {defaults && host && (defaults.jobs?.lakehouse_bootstrap === "0" || !defaults.jobs?.lakehouse_bootstrap) && (
-          <p className="text-sm text-muted-foreground">
-            Job and pipeline IDs are resolved from the workspace when you're signed in. If <strong>Run</strong> is disabled, open this app from <strong>Compute → Apps → payment-analysis</strong> so Databricks forwards your token, or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> and <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment (Compute → Apps → payment-analysis → Edit → Environment) after deploy.
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-muted-foreground flex-1 min-w-0">
+              Job and pipeline IDs are resolved from the workspace when you're signed in. If <strong>Run</strong> is disabled, open this app from <strong>Compute → Apps → payment-analysis</strong> so Databricks forwards your token, then click <strong>Refresh job IDs</strong> below. Or set <code className="rounded bg-muted px-1">DATABRICKS_JOB_ID_*</code> / <code className="rounded bg-muted px-1">DATABRICKS_PIPELINE_ID_*</code> in the app environment (Compute → Apps → payment-analysis → Edit → Environment).
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchDefaults()}
+              disabled={refetchingDefaults}
+            >
+              {refetchingDefaults ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Refresh job IDs
+            </Button>
+          </div>
         )}
 
         {/* Step 1: Lakehouse bootstrap — creates app_config, rules, recommendations */}

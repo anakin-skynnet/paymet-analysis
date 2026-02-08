@@ -72,7 +72,22 @@ def get_obo_ws(
     if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
         raise HTTPException(status_code=503, detail="DATABRICKS_HOST is not set.")
     host = ensure_absolute_workspace_url(raw)
-    return WorkspaceClient(host=host, token=token, auth_type="pat")
+    return WorkspaceClient(
+        host=host,
+        token=token,
+        auth_type="pat",
+        client_id=None,
+        client_secret=None,
+    )
+
+
+def _get_obo_token(request: Request) -> str | None:
+    """User token when app is opened from Compute → Apps (OBO). Check common header names."""
+    return (
+        request.headers.get("X-Forwarded-Access-Token")
+        or request.headers.get("x-forwarded-access-token")
+        or None
+    )
 
 
 def get_workspace_client(request: Request) -> WorkspaceClient:
@@ -84,7 +99,7 @@ def get_workspace_client(request: Request) -> WorkspaceClient:
     When using OBO (open app from Compute → Apps), do not set DATABRICKS_CLIENT_ID/SECRET
     in the app environment or the SDK may trigger OAuth scope errors.
     """
-    obo_token = request.headers.get("X-Forwarded-Access-Token")
+    obo_token = _get_obo_token(request)
     config = get_config(request)
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
@@ -98,7 +113,13 @@ def get_workspace_client(request: Request) -> WorkspaceClient:
             detail="DATABRICKS_HOST is not set. Set it in the app environment or open the app from Compute → Apps so the workspace URL can be derived.",
         )
     host = ensure_absolute_workspace_url(raw)
-    return WorkspaceClient(host=host, token=token, auth_type="pat")
+    return WorkspaceClient(
+        host=host,
+        token=token,
+        auth_type="pat",
+        client_id=None,
+        client_secret=None,
+    )
 
 
 def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
@@ -106,8 +127,9 @@ def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
     Returns a Workspace client when credentials are available; otherwise None.
     Used by GET /setup/defaults to resolve job/pipeline IDs from the workspace when possible.
     Derives host from request when DATABRICKS_HOST is unset and app is served from Apps URL.
+    Token is read from X-Forwarded-Access-Token (set when app is opened from Compute → Apps).
     """
-    obo_token = request.headers.get("X-Forwarded-Access-Token")
+    obo_token = _get_obo_token(request)
     config = get_config(request)
     raw = (config.databricks.workspace_url or "").strip().rstrip("/")
     if not raw or raw == WORKSPACE_URL_PLACEHOLDER.rstrip("/"):
@@ -116,7 +138,13 @@ def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
     if not token or not raw:
         return None
     host = ensure_absolute_workspace_url(raw)
-    return WorkspaceClient(host=host, token=token, auth_type="pat")
+    return WorkspaceClient(
+        host=host,
+        token=token,
+        auth_type="pat",
+        client_id=None,
+        client_secret=None,
+    )
 
 
 def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
