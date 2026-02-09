@@ -1,6 +1,6 @@
 # Deployment Guide
 
-How to deploy and configure the Payment Analysis app and bundle (Databricks Apps, Lakebase, jobs, dashboards).
+How to deploy and configure the Payment Analysis app and **Databricks Asset Bundle (DAB)** (Databricks Apps, Lakebase, jobs, dashboards). This project uses [Databricks Asset Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/) for IaC and CI/CD.
 
 ## Prerequisites
 
@@ -265,7 +265,7 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | `create_gold_views_job` | Run `gold_views.sql`: 12+ analytical views | SQL task; distinct from bootstrap. |
 | `train_ml_models_job` | Train 4 ML models (approval, risk, routing, retry); register in UC | Single notebook. |
 | `prepare_dashboards_job` | Generate `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema | Run when catalog/schema or source dashboards change; not in Setup & Run UI. |
-| `publish_dashboards_job` | Publish dashboards with embed credentials (Lakeview API) for app embedding | Does not run prepare; run after deploy. |
+| `publish_dashboards_job` | Publish dashboards with embed credentials (AI/BI Dashboards API) for app embedding | Does not run prepare; run after deploy. |
 | `test_agent_framework_job` | Verify agent framework (test_mode); CI/smoke | Same notebook as agents but test-only; not production run. |
 | **agents.yml** | | |
 | `orchestrator_agent_job` | Run orchestrator (coordinates all agents) | One notebook, role `orchestrator`. |
@@ -282,7 +282,7 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 
 **Why agent jobs are not merged:** The six specialist jobs and the orchestrator all call the same notebook (`agent_framework`) with different `agent_role` (and the orchestrator coordinates them). They are kept as separate jobs so each can have its own schedule (e.g. risk assessor every 2h, decline analyst daily) and so the UI can run individual agents or the orchestrator on demand. Merging them into one multi-task job would remove per-agent scheduling and one-off runs.
 
-**Dashboard jobs:** `prepare_dashboards_job` (generate assets) and `publish_dashboards_job` (publish to Lakeview) are different: prepare writes files; publish calls the API. Both are used; neither is redundant.
+**Dashboard jobs:** `prepare_dashboards_job` (generate assets) and `publish_dashboards_job` (publish to AI/BI Dashboards) are different: prepare writes files; publish calls the API. Both are used; neither is redundant.
 
 ## Jobs and notebook/SQL reference
 

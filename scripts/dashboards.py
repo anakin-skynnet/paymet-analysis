@@ -149,6 +149,7 @@ def cmd_publish(path: str | None, dry_run: bool) -> int:
         if not did:
             continue
         try:
+            # CLI: databricks lakeview (AI/BI Dashboards backend)
             subprocess.run(
                 ["databricks", "lakeview", "publish", did, "--embed-credentials"],
                 check=True,

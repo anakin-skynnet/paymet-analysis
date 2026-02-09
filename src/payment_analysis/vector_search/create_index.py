@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC Creates the vector search endpoint and delta-sync index for **similar-transaction lookup**.
 # MAGIC Source table: `transaction_summaries_for_search` (populated from `payments_enriched_silver`).
-# MAGIC Run after Lakehouse Bootstrap **and** the DLT pipeline so that the silver table has data.
+# MAGIC Run after Lakehouse Bootstrap **and** the Lakeflow pipeline so that the silver table has data.
 # MAGIC
 # MAGIC **Steps performed by this notebook:**
 # MAGIC 1. Populate `transaction_summaries_for_search` from `payments_enriched_silver` (MERGE).
@@ -52,7 +52,7 @@ print(f"Endpoint: {ENDPOINT_NAME}, Index: {INDEX_NAME}, Source: {SOURCE_TABLE}")
 # MAGIC Build a `summary_text` for each transaction by concatenating its key attributes.
 # MAGIC The vector search embedding model will convert this text into a dense vector.
 # MAGIC We use MERGE to avoid duplicates on re-runs. If `payments_enriched_silver` does not exist
-# MAGIC (e.g. DLT pipeline not run yet), we skip the MERGE and still create the endpoint and index
+# MAGIC (e.g. Lakeflow pipeline not run yet), we skip the MERGE and still create the endpoint and index
 # MAGIC so Job 1 can complete; re-run this notebook or Job 3 to sync data later.
 
 # COMMAND ----------

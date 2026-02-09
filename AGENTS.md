@@ -129,11 +129,14 @@ When the user asks to:
 
 | Doc | Purpose |
 |-----|---------|
+| `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
 | `docs/ARCHITECTURE_REFERENCE.md` | Use cases, data flow, resources, verification |
 | `docs/DEPLOYMENT_GUIDE.md` | Deploy steps, env vars, app config, troubleshooting |
 | `docs/CONTROL_PANEL_UI.md` | Setup & Run, dashboards, Genie, agents, rules |
 | `docs/VERSION_ALIGNMENT.md` | Pinned versions, Databricks App compatibility |
 | `.cursor/rules/project.mdc` | Cursor rule set (aligns with this file) |
+
+**External references (best practices):** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit, build, OpenAPI), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).
 
 ---
 

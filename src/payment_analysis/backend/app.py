@@ -2,7 +2,10 @@
 
 Serves the React UI at / and the API at /api. When deployed as a Databricks App,
 the platform proxies requests and sets headers (x-forwarded-access-token, X-Forwarded-Host).
-See: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/configuration
+Patterns aligned with:
+  - https://docs.databricks.com/aws/en/dev-tools/databricks-apps/configuration
+  - https://apps-cookbook.dev/docs/intro (FastAPI recipes)
+  - https://github.com/databricks-solutions/apx
 """
 
 import os

@@ -1,8 +1,10 @@
 """API router: config, auth, and feature routes.
 
 All routes are under /api (required for Databricks Apps token-based auth).
-Auth status and workspace config use Databricks Apps HTTP headers (x-forwarded-access-token,
-X-Forwarded-Host). See: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/http-headers
+Every route uses response_model and operation_id for OpenAPI client generation (apx/cookbook).
+Auth and workspace URL use Databricks Apps headers (x-forwarded-access-token, X-Forwarded-Host).
+See: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/http-headers
+     https://apps-cookbook.dev/docs/category/fastapi
 """
 
 from typing import Annotated

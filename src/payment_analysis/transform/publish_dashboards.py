@@ -2,9 +2,9 @@
 # MAGIC %md
 # MAGIC # Publish Dashboards (Embed Credentials)
 # MAGIC
-# MAGIC Lists dashboards under the given workspace path and publishes each with embed credentials
+# MAGIC Lists AI/BI dashboards under the given workspace path and publishes each with embed credentials
 # MAGIC so they can be embedded in the app UI. Run after bundle deploy or when you need to refresh
-# MAGIC published state.
+# MAGIC published state. Uses Databricks AI/BI Dashboards (see https://learn.microsoft.com/en-us/azure/databricks/ai-bi/).
 # MAGIC
 # MAGIC **Widget:** `dashboards_path` — workspace path to the folder containing dashboard objects (e.g. `/Workspace/Users/.../payment-analysis/dashboards`).
 
@@ -32,6 +32,7 @@ for obj in w.workspace.list(path=dashboards_path):
         did = cast(str, obj.resource_id)
         name = (getattr(obj, "path", None) or "").split("/")[-1] or did
         try:
+            # AI/BI Dashboards API (lakeview namespace in SDK)
             w.lakeview.publish(dashboard_id=did, embed_credentials=True)
             published += 1
             print(f"Published: {name} ({did})")

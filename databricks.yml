@@ -1,6 +1,8 @@
 # =============================================================================
-# Databricks Asset Bundle - Payment Analysis Platform
+# Databricks Asset Bundle (DAB) - Payment Analysis Platform
 # =============================================================================
+# This project is a Databricks Asset Bundle per the official docs:
+#   https://docs.databricks.com/aws/en/dev-tools/bundles/
 # Payment approval optimization: Smart Checkout, Reason Codes, Smart Retry.
 # All parameters have defaults or are set at deployment (target/variables).
 # Docs: docs/ARCHITECTURE_REFERENCE.md

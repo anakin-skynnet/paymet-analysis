@@ -53,9 +53,9 @@ class DashboardList(BaseModel):
 
 
 # =============================================================================
-# Dashboard Registry (Databricks Lakeview)
+# Dashboard Registry (Databricks AI/BI Dashboards)
 # =============================================================================
-# These IDs and url_paths match the Lakeview dashboards deployed by the bundle
+# These IDs and url_paths match the AI/BI dashboards deployed by the bundle
 # (resources/dashboards.yml and resources/dashboards/*.lvdash.json). The app
 # builds full URLs using config.databricks.workspace_url so the UI embeds and
 # opens the actual dashboards in the Databricks workspace.

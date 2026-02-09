@@ -185,7 +185,7 @@ export function Component() {
       <PageHeader
         sectionLabel="Overview"
         title="DBSQL dashboards"
-        description="AI/BI dashboards for executives and operations: approval rate, decline rate, fraud rate, uplift vs. baseline; visuals by geography, merchant segment, issuer, and payment solution. Loaded from your Databricks workspace (Lakeview / DBSQL)."
+        description="AI/BI dashboards for executives and operations: approval rate, decline rate, fraud rate, uplift vs. baseline; visuals by geography, merchant segment, issuer, and payment solution. Loaded from your Databricks workspace (AI/BI Dashboards)."
         badge={<DataSourceBadge />}
       />
 

@@ -34,7 +34,15 @@ See [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md#business-purpose--
 2. **Setup & Run (in order):** In the app, run the 6 jobs in order: **1** Create Data Repositories (Lakehouse, Vector Search), **2** Simulate Transaction Events, **3** Initialize Ingestion (Gold views, Vector Search sync), **4** Deploy Dashboards (Prepare & Publish), **5** Train Models & Model Serving, **6** Deploy AgentBricks Agents. Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
 3. **App environment:** **Workspace → Apps** → payment-analysis → Edit → set `PGAPPNAME`, `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN`.
 
-See [Deployment guide](docs/DEPLOYMENT_GUIDE.md) for full steps and troubleshooting.
+The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment guide](docs/DEPLOYMENT_GUIDE.md) for full steps and troubleshooting.
+
+## References (best practices)
+
+This solution follows patterns from:
+
+- **[Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro)** — FastAPI recipes, healthcheck, tables, and error handling for Databricks Apps.
+- **[apx](https://github.com/databricks-solutions/apx)** — Toolkit for building Databricks Apps (develop, build, deploy); used for UI build, OpenAPI, and dev commands.
+- **[AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit)** — Databricks patterns, skills, and MCP tools for AI-assisted development.
 
 ## Before commit (optional)
 

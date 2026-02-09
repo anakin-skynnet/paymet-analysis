@@ -379,7 +379,7 @@ function SetupRun() {
                 <td className="py-2 align-top">“Similar cases” recommendations for retry and routing in the Decisioning UI.</td>
               </tr>
               <tr>
-                <td className="py-2 pr-4 align-top">Dashboards (11 Lakeview)</td>
+                <td className="py-2 pr-4 align-top">Dashboards (11)</td>
                 <td className="py-2 pr-4 align-top">Monitor KPIs, declines, fraud, and performance.</td>
                 <td className="py-2 align-top">Identify underperforming segments and act on recovery opportunities.</td>
               </tr>
@@ -1047,7 +1047,7 @@ function SetupRun() {
               <Badge variant="secondary">Job</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Publish dashboards with embed credentials so the app can embed Lakeview dashboards. Run after bundle deploy or when you need to refresh published state.
+              Publish dashboards with embed credentials so the app can embed AI/BI dashboards. Run after bundle deploy or when you need to refresh published state.
             </p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
