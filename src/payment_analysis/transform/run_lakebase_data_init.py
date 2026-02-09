@@ -11,7 +11,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install psycopg[binary] databricks-sdk --quiet
+# MAGIC %pip install psycopg[binary] "databricks-sdk>=0.84.0" --quiet
 
 # COMMAND ----------
 
@@ -53,9 +53,26 @@ port = 5432
 
 if use_autoscaling:
     # Lakebase Autoscaling (Postgres API): projects/branches/endpoints
+    postgres_api = getattr(ws, "postgres", None)
+    if postgres_api is None:
+        raise AttributeError(
+            "WorkspaceClient has no attribute 'postgres'. The Postgres (Lakebase Autoscaling) API requires "
+            "databricks-sdk>=0.84.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk>=0.84.0\" --quiet, "
+            "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
+        )
     endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
-    endpoint = ws.postgres.get_endpoint(name=endpoint_name)
-    cred = ws.postgres.generate_database_credential(endpoint=endpoint_name)
+    try:
+        endpoint = postgres_api.get_endpoint(name=endpoint_name)
+        cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+    except Exception as e:
+        if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
+            raise RuntimeError(
+                f"Lakebase project/endpoint not found: {endpoint_name!r}. "
+                "Create a Lakebase (Postgres) project in the workspace (Compute → Lakebase / Postgres), "
+                "or set job parameters lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id to your existing project. "
+                "See https://docs.databricks.com/oltp/projects/"
+            ) from e
+        raise
     token = cred.token
     status = getattr(endpoint, "status", None)
     hosts = getattr(status, "hosts", None) if status else None

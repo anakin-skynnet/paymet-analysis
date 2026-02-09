@@ -40,14 +40,25 @@ dbutils.widgets.text("max_depth_routing", "10")
 dbutils.widgets.text("max_depth_retry", "8")
 dbutils.widgets.text("min_samples_split", "5")
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-N_ESTIMATORS = int(dbutils.widgets.get("n_estimators"))
-MAX_DEPTH_APPROVAL = int(dbutils.widgets.get("max_depth_approval"))
-MAX_DEPTH_RISK = int(dbutils.widgets.get("max_depth_risk"))
-MAX_DEPTH_ROUTING = int(dbutils.widgets.get("max_depth_routing"))
-MAX_DEPTH_RETRY = int(dbutils.widgets.get("max_depth_retry"))
-MIN_SAMPLES_SPLIT = int(dbutils.widgets.get("min_samples_split"))
+
+def _int_widget(name: str, default: int) -> int:
+    v = dbutils.widgets.get(name)  # type: ignore[name-defined]
+    if v is None or v == "None" or (isinstance(v, str) and v.strip() == ""):
+        return default
+    try:
+        return int(v)
+    except ValueError:
+        return default
+
+
+CATALOG = dbutils.widgets.get("catalog") or "ahs_demos_catalog"  # type: ignore[name-defined]
+SCHEMA = dbutils.widgets.get("schema") or "payment_analysis"  # type: ignore[name-defined]
+N_ESTIMATORS = _int_widget("n_estimators", 100)
+MAX_DEPTH_APPROVAL = _int_widget("max_depth_approval", 10)
+MAX_DEPTH_RISK = _int_widget("max_depth_risk", 12)
+MAX_DEPTH_ROUTING = _int_widget("max_depth_routing", 10)
+MAX_DEPTH_RETRY = _int_widget("max_depth_retry", 8)
+MIN_SAMPLES_SPLIT = _int_widget("min_samples_split", 5)
 # Use a path outside the app source tree (e.g. payment-analysis/) so app export does not try to export this MLflow experiment
 EXPERIMENT_PATH = f"/Users/{spark.sql('SELECT current_user()').collect()[0][0]}/mlflow_experiments/payment_analysis_models"
 

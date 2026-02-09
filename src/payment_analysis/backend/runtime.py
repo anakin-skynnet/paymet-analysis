@@ -78,12 +78,18 @@ class Runtime:
         )
 
         if self._use_lakebase_autoscaling():
+            postgres_api = getattr(self.ws, "postgres", None)
+            if postgres_api is None:
+                raise AttributeError(
+                    "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires "
+                    "databricks-sdk>=0.84.0. Upgrade the app's databricks-sdk dependency."
+                )
             endpoint_name = (
                 f"projects/{self.config.db.postgres_project_id}/branches/"
                 f"{self.config.db.postgres_branch_id}/endpoints/{self.config.db.postgres_endpoint_id}"
             )
             logger.info("Using Lakebase Autoscaling (postgres): %s", endpoint_name)
-            endpoint = self.ws.postgres.get_endpoint(name=endpoint_name)
+            endpoint = postgres_api.get_endpoint(name=endpoint_name)
             status = getattr(endpoint, "status", None)
             hosts = getattr(status, "hosts", None) if status else None
             if hosts is not None and isinstance(hosts, list) and len(hosts) > 0:
@@ -111,11 +117,16 @@ class Runtime:
 
     def _before_connect(self, dialect, conn_rec, cargs, cparams):
         if self._use_lakebase_autoscaling():
+            postgres_api = getattr(self.ws, "postgres", None)
+            if postgres_api is None:
+                raise AttributeError(
+                    "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires databricks-sdk>=0.84.0."
+                )
             endpoint_name = (
                 f"projects/{self.config.db.postgres_project_id}/branches/"
                 f"{self.config.db.postgres_branch_id}/endpoints/{self.config.db.postgres_endpoint_id}"
             )
-            cred = self.ws.postgres.generate_database_credential(endpoint=endpoint_name)
+            cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
             cparams["password"] = cred.token
         else:
             db_api = getattr(self.ws, "database", None)
