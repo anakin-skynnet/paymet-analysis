@@ -557,8 +557,6 @@ function SetupRun() {
                         <td className="py-2 px-3">
                           {defaults.lakebase_connection_mode === "autoscaling" ? (
                             <Badge variant="default" className="font-normal">Lakebase Autoscaling</Badge>
-                          ) : defaults.lakebase_connection_mode === "provisioned" ? (
-                            <Badge variant="secondary">Lakebase Provisioned</Badge>
                           ) : (
                             "—"
                           )}

@@ -65,7 +65,6 @@ resources:
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-              lakebase_instance_name: ${var.lakebase_instance_name}
               lakebase_project_id: ${var.lakebase_project_id}
               lakebase_branch_id: ${var.lakebase_branch_id}
               lakebase_endpoint_id: ${var.lakebase_endpoint_id}

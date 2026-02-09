@@ -17,7 +17,7 @@ class HealthDatabaseOut(BaseModel):
     database_instance_exists: bool
     connection_healthy: bool
     status: str
-    lakebase_mode: str = Field("", description="'autoscaling' | 'provisioned' | '' when not configured.")
+    lakebase_mode: str = Field("", description="'autoscaling' when Lakebase Autoscaling is configured, '' otherwise.")
 
 
 @router.get("/healthcheck", response_model=HealthcheckOut, operation_id="healthcheck")
@@ -51,7 +51,7 @@ async def health_database(request: Request) -> HealthDatabaseOut:
             pass
     lakebase_mode = ""
     if instance_exists:
-        lakebase_mode = "autoscaling" if rt._use_lakebase_autoscaling() else "provisioned"
+        lakebase_mode = "autoscaling" if rt._use_lakebase_autoscaling() else ""
     return HealthDatabaseOut(
         database_instance_exists=instance_exists,
         connection_healthy=connection_healthy,

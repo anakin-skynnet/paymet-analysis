@@ -99,7 +99,7 @@ async def lifespan(app: FastAPI):
     runtime = Runtime(config)
     runtime.validate_db()
     runtime.initialize_models()
-    # When PGAPPNAME is not set (e.g. Databricks App without Lakebase), DB is skipped; app still starts.
+    # When LAKEBASE_* env vars are not set, DB is skipped; app still starts (e.g. before Job 1 has run).
 
     # Load config and settings from Lakebase first (backend reads these tables before starting)
     app.state.lakebase_settings = {}

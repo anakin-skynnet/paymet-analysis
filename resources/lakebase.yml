@@ -1,49 +1,21 @@
 # =============================================================================
-# Lakebase (Databricks managed Postgres) - required for UI CRUD and ML features
+# Lakebase Autoscaling (Databricks managed Postgres) - required for UI CRUD and ML
 # =============================================================================
-# Rules, experiments, incidents, and ML features in the app use this database.
-# See: https://www.databricks.com/product/lakebase
-#      https://learn.microsoft.com/en-us/azure/databricks/oltp/instances/create/
+# This solution uses only Lakebase Autoscaling (no Provisioned).
+# Lakebase is created by Job 1: task create_lakebase_autoscaling creates the project,
+# branch, and endpoint; task lakebase_data_init seeds app_config, approval_rules,
+# online_features, app_settings.
 #
-# Lakebase Autoscaling: Job 1 runs create_lakebase_autoscaling (notebook) to create project, branch, endpoint
-# programmatically, then lakebase_data_init seeds app_config, approval_rules, online_features, app_settings.
-# Job params lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id come from bundle vars (default: payment-analysis-db, production, primary).
-# If the bundle CLI reports "unknown field: postgres_project", the create_lakebase_autoscaling task creates them at run time; or run scripts/create_lakebase_autoscaling.py once, then redeploy.
+# Bundle vars (databricks.yml): lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id
+# (defaults: payment-analysis-db, production, primary). Job 1 passes these to the tasks.
 #
-# Fallback: Lakebase Provisioned (database_instances below) when Autoscaling is not
-# used. App uses PGAPPNAME or LAKEBASE_* env when configured.
+# App: set in Environment (Compute → Apps → payment-analysis → Edit → Environment):
+#   LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID
+# so the backend connects to the same Lakebase. Optional: run
+#   uv run python scripts/create_lakebase_autoscaling.py
+# before first Job 1 run to create the project.
+#
+# See: https://docs.databricks.com/oltp/projects/
 # =============================================================================
 
-resources:
-  # Lakebase Autoscaling: project → branch → endpoint (creates DB for lakebase_data_init)
-  postgres_project:
-    payment_analysis_lakebase:
-      project_id: ${var.lakebase_project_id}
-      spec:
-        display_name: Payment Analysis (Lakebase Autoscaling)
-        pg_version: "17"
-
-  postgres_branch:
-    payment_analysis_main:
-      parent: projects/${var.lakebase_project_id}
-      branch_id: ${var.lakebase_branch_id}
-      spec:
-        no_expiry: true
-
-  postgres_endpoint:
-    payment_analysis_primary:
-      parent: projects/${var.lakebase_project_id}/branches/${var.lakebase_branch_id}
-      endpoint_id: ${var.lakebase_endpoint_id}
-      spec: {}
-
-  database_instances:
-    payment_analysis_db:
-      name: ${var.lakebase_instance_name}
-      capacity: ${var.lakebase_capacity}
-
-  database_catalogs:
-    payment_analysis_lakebase_catalog:
-      database_instance_name: ${var.lakebase_instance_name}
-      name: ${var.lakebase_uc_catalog_name}
-      database_name: ${var.lakebase_database_name}
-      create_database_if_not_exists: true
+resources: {}

@@ -169,7 +169,7 @@ def get_workspace_client_optional(request: Request) -> WorkspaceClient | None:
 
 def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
     """
-    Returns a SQLModel session. Raises 503 if database is not configured (Databricks App: set PGAPPNAME).
+    Returns a SQLModel session. Raises 503 if database is not configured (set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment).
     """
     try:
         with rt.get_session() as session:
@@ -178,7 +178,7 @@ def get_session(rt: RuntimeDep) -> Generator[Session, None, None]:
         if "not configured" in str(e).lower():
             raise HTTPException(
                 status_code=503,
-                detail="Database not configured. Set PGAPPNAME to your Lakebase instance name in the app configuration.",
+                detail="Database not configured. Set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in the app Environment (same as Job 1 create_lakebase_autoscaling).",
             ) from e
         raise
 

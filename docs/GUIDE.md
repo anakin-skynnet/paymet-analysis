@@ -166,7 +166,7 @@ All data is **fetched from the Databricks backend** and is **interactive**.
 | API prefix `/api` | OK | Router `prefix="/api"` |
 | requirements.txt | OK | Exact versions from pyproject.toml/uv.lock |
 | No system packages | OK | Pure Python deps; psycopg[binary] for DB |
-| Config from env | OK | DATABRICKS_*, PGAPPNAME |
+| Config from env | OK | DATABRICKS_*, LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID |
 | Bundle app resource | OK | `resources/fastapi_app.yml` |
 | Node/frontend | OK | engines `>=22.0.0`; TanStack overrides |
 
@@ -192,4 +192,4 @@ uv run apx dev check          # TypeScript + Python
 ./scripts/bundle.sh verify dev # Build, smoke test, dashboards, bundle validate
 ```
 
-**Deployment summary:** One command: `./scripts/bundle.sh deploy dev`. App env (required): `PGAPPNAME`, `DATABRICKS_WAREHOUSE_ID`. Optional: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
+**Deployment summary:** One command: `./scripts/bundle.sh deploy dev`. App env (required): `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `DATABRICKS_WAREHOUSE_ID`. Optional: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).

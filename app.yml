@@ -1,7 +1,8 @@
 # Databricks App execution (app.yaml). Required at project root.
 # Docs: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-runtime
 # App definition (resources, bindings): resources/fastapi_app.yml. When deployed, the platform runs this in source_code_path and proxies traffic to the app.
-# User auth: open from Compute → Apps → payment-analysis so the platform forwards your token (x-forwarded-access-token). Set PGAPPNAME and DATABRICKS_WAREHOUSE_ID in app Environment; DATABRICKS_HOST is optional when opened from Apps.
+# User auth: open from Compute → Apps → payment-analysis so the platform forwards your token (x-forwarded-access-token).
+# Lakebase: set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Compute → Apps → Edit → Environment); same values as Job 1 create_lakebase_autoscaling. Set DATABRICKS_WAREHOUSE_ID; DATABRICKS_HOST is optional when opened from Apps.
 command:
   - uvicorn
   - payment_analysis.backend.app:app
@@ -12,5 +13,10 @@ command:
 env:
   - name: PYTHONPATH
     value: src
-  - name: PGAPPNAME
-    value: payment-analysis-db-dev
+  # Lakebase Autoscaling (set in app Environment; example defaults below)
+  - name: LAKEBASE_PROJECT_ID
+    value: payment-analysis-db
+  - name: LAKEBASE_BRANCH_ID
+    value: production
+  - name: LAKEBASE_ENDPOINT_ID
+    value: primary

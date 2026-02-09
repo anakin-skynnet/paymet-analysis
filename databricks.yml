@@ -66,8 +66,8 @@ variables:
     description: "Lakebase Autoscaling endpoint ID (e.g. primary). Must match an endpoint in your project."
     default: primary
   lakebase_instance_name:
-    description: Lakebase Provisioned instance name (PGAPPNAME when not using Autoscaling); must be unique per workspace
-    default: payment-analysis-db
+    description: "(Unused) Lakebase Autoscaling only; kept for backward compatibility."
+    default: ""
   lakebase_capacity:
     description: Lakebase instance capacity (CU_1, CU_2, CU_4, CU_8)
     default: CU_1
@@ -123,12 +123,10 @@ targets:
     variables:
       environment: dev
       warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
-      # Lakebase Autoscaling: required for job 1 lakebase_data_init (avoids WorkspaceClient.database error)
+      # Lakebase Autoscaling: required for job 1 (create_lakebase_autoscaling + lakebase_data_init)
       lakebase_project_id: payment-analysis-db
       lakebase_branch_id: production
       lakebase_endpoint_id: primary
-      # Provisioned fallback; when using Autoscaling the notebook ignores this
-      lakebase_instance_name: payment-analysis-db-dev
     presets:
       name_prefix: "[dev ${workspace.current_user.short_name}] "
       pipelines_development: true

@@ -278,6 +278,7 @@ export interface HTTPValidationError {
 export interface HealthDatabaseOut {
   connection_healthy: boolean;
   database_instance_exists: boolean;
+  lakebase_mode?: string;
   status: string;
 }
 
@@ -541,6 +542,8 @@ export interface SetupConfigOut {
 export interface SetupDefaultsOut {
   catalog: string;
   jobs: Record<string, string>;
+  lakebase_autoscaling?: boolean;
+  lakebase_connection_mode?: string;
   pipelines: Record<string, string>;
   schema: string;
   token_received?: boolean;

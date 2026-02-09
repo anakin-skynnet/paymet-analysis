@@ -4,9 +4,8 @@
 # Runtime: app.yml at project root (command, env). source_code_path = workspace root (sync destination).
 #
 # Environment (Workspace → Apps → payment-analysis → Edit → Environment):
-#   Lakebase: Use either (1) Autoscaling or (2) Provisioned.
-#   (1) Autoscaling (preferred): Set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID (from your Lakebase project). Leave PGAPPNAME unset.
-#   (2) Provisioned: Set PGAPPNAME to var.lakebase_instance_name (dev: payment-analysis-db-dev). Database binding below provides instance_name/database_name.
+#   Lakebase Autoscaling (required): Set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID
+#   to match the Lakebase created by Job 1 (create_lakebase_autoscaling task). Same IDs as bundle vars.
 #   DATABRICKS_WAREHOUSE_ID — Required for SQL/analytics (from sql-warehouse binding).
 #   DATABRICKS_HOST         — Optional when opened from Compute → Apps (workspace URL derived from request headers).
 #   DATABRICKS_TOKEN        — Optional when using user authorization: open from Compute → Apps so token is forwarded (x-forwarded-access-token). Do not set DATABRICKS_CLIENT_ID/SECRET when using forwarded user token.
@@ -18,12 +17,6 @@ resources:
       source_code_path: ${workspace.root_path}
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
       resources:
-        - name: database
-          description: Lakebase instance for rules, experiments, incidents, ML features
-          database:
-            instance_name: ${var.lakebase_instance_name}
-            database_name: ${var.lakebase_database_name}
-            permission: CAN_CONNECT_AND_CREATE
         - name: sql-warehouse
           description: SQL warehouse for analytics, app_config, gold views
           sql_warehouse:
@@ -107,4 +100,4 @@ resources:
         #   serving_endpoint:
         #     name: "smart-retry-${var.environment}"
         #     permission: CAN_QUERY
-      # PGAPPNAME in app.yaml and app.yml at project root must match var.lakebase_instance_name (dev: payment-analysis-db-dev).
+      # Lakebase: app connects via LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID (set in app Environment).

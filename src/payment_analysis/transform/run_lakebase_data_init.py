@@ -2,16 +2,15 @@
 # MAGIC %md
 # MAGIC # Lakebase Data Initialization
 # MAGIC
-# MAGIC Runs **after** the **create_lakebase_autoscaling** task. Connects to the Lakebase (Autoscaling or Provisioned)
-# MAGIC and seeds the database with:
+# MAGIC Runs **after** the **create_lakebase_autoscaling** task. Connects to Lakebase Autoscaling and seeds the database with:
 # MAGIC - **app_config** (catalog, schema for the app)
 # MAGIC - **approval_rules** (default rules: 3DS for high value, retry soft decline, primary acquirer routing)
 # MAGIC - **online_features** (table created; ML/AI features populated by pipelines and app)
 # MAGIC - **app_settings** (warehouse_id, default_events_per_second, default_duration_minutes, etc.)
 # MAGIC Backend reads these tables at startup. Ensures defaults exist before Lakehouse bootstrap and app use.
 # MAGIC
-# MAGIC **Widgets:** `catalog`, `schema`; then either **Lakebase Autoscaling** (`lakebase_project_id`, `lakebase_branch_id`, `lakebase_endpoint_id`) or **Provisioned** (`lakebase_instance_name`). Also `lakebase_database_name`, `lakebase_schema`; optional `warehouse_id`, `default_events_per_second`, `default_duration_minutes` for app_settings.
-# MAGIC See: https://www.databricks.com/product/lakebase and https://learn.microsoft.com/en-us/azure/databricks/oltp/instances/create/
+# MAGIC **Widgets:** `catalog`, `schema`; **Lakebase Autoscaling** (`lakebase_project_id`, `lakebase_branch_id`, `lakebase_endpoint_id`). Also `lakebase_database_name`, `lakebase_schema`; optional `warehouse_id`, `default_events_per_second`, `default_duration_minutes` for app_settings.
+# MAGIC See: https://docs.databricks.com/oltp/projects/
 
 # COMMAND ----------
 
@@ -29,7 +28,6 @@ def _get_widget(name: str, default: str = "") -> str:
 
 catalog = _get_widget("catalog")
 schema = _get_widget("schema")
-lakebase_instance_name = _get_widget("lakebase_instance_name")
 lakebase_project_id = _get_widget("lakebase_project_id")
 lakebase_branch_id = _get_widget("lakebase_branch_id")
 lakebase_endpoint_id = _get_widget("lakebase_endpoint_id")
@@ -41,11 +39,10 @@ default_duration_minutes = _get_widget("default_duration_minutes") or "60"
 
 if not catalog or not schema:
     raise ValueError("Widgets catalog and schema are required")
-use_autoscaling = bool(lakebase_project_id and lakebase_branch_id and lakebase_endpoint_id)
-if not use_autoscaling and not lakebase_instance_name:
+if not lakebase_project_id or not lakebase_branch_id or not lakebase_endpoint_id:
     raise ValueError(
-        "Set either Lakebase Autoscaling (lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id) "
-        "or Provisioned (lakebase_instance_name). Prefer Autoscaling: https://docs.databricks.com/oltp/projects/"
+        "Lakebase Autoscaling required: set lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id "
+        "(from Job 1 create_lakebase_autoscaling). See https://docs.databricks.com/oltp/projects/"
     )
 
 # COMMAND ----------
@@ -55,60 +52,39 @@ from databricks.sdk import WorkspaceClient
 ws = WorkspaceClient()
 port = 5432
 
-if use_autoscaling:
-    # Lakebase Autoscaling (Postgres API): projects/branches/endpoints
-    postgres_api = getattr(ws, "postgres", None)
-    if postgres_api is None:
-        raise AttributeError(
-            "WorkspaceClient has no attribute 'postgres'. The Postgres (Lakebase Autoscaling) API requires "
-            "databricks-sdk==0.84.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.84.0\" --quiet, "
-            "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
-        )
-    endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
-    try:
-        endpoint = postgres_api.get_endpoint(name=endpoint_name)
-        cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
-    except Exception as e:
-        if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
-            raise RuntimeError(
-                f"Lakebase project/endpoint not found: {endpoint_name!r}. "
-                "Create a Lakebase Autoscaling project in the workspace (Compute → Lakebase), then set "
-                "job parameters (or bundle vars) lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id "
-                "to your project's IDs (e.g. deploy with --var lakebase_project_id=<id> --var lakebase_branch_id=<branch> --var lakebase_endpoint_id=<endpoint>). "
-                "See https://docs.databricks.com/oltp/projects/"
-            ) from e
-        raise
-    token = cred.token
-    status = getattr(endpoint, "status", None)
-    hosts = getattr(status, "hosts", None) if status else None
-    if hosts is not None and isinstance(hosts, list) and len(hosts) > 0:
-        host = getattr(hosts[0], "host", None) or getattr(hosts[0], "hostname", None)
-    else:
-        host = getattr(hosts, "host", None) or getattr(hosts, "hostname", None) if hosts else None
-    if not host:
-        raise ValueError("Endpoint has no host; ensure the compute endpoint is running.")
-    # Autoscaling default DB is databricks_postgres (only this DB exists in new projects)
-    dbname = (lakebase_database_name or "").strip() or "databricks_postgres"
-    username = (ws.current_user.me().user_name if ws.current_user else None) or getattr(ws.config, "client_id", None) or "postgres"
-else:
-    # Lakebase Provisioned (Database Instances API)
-    db_api = getattr(ws, "database", None)
-    if db_api is None:
-        raise AttributeError(
-            "WorkspaceClient has no attribute 'database'. Use Lakebase Autoscaling instead by setting "
-            "lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id (create project at "
-            "https://docs.databricks.com/oltp/projects/), or upgrade databricks-sdk to a version that includes "
-            "the Database Instances API."
-        )
-    instance = db_api.get_database_instance(name=lakebase_instance_name)
-    host = instance.read_write_dns
-    cred = db_api.generate_database_credential(
-        request_id=str(uuid.uuid4()),
-        instance_names=[lakebase_instance_name],
+# Lakebase Autoscaling (Postgres API): projects/branches/endpoints
+postgres_api = getattr(ws, "postgres", None)
+if postgres_api is None:
+    raise AttributeError(
+        "WorkspaceClient has no attribute 'postgres'. The Postgres (Lakebase Autoscaling) API requires "
+        "databricks-sdk==0.84.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.84.0\" --quiet, "
+        "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
     )
-    token = cred.token
-    dbname = lakebase_database_name
-    username = getattr(ws.config, "client_id", None) or (ws.current_user.me().user_name if ws.current_user else "postgres")
+endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
+try:
+    endpoint = postgres_api.get_endpoint(name=endpoint_name)
+    cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+except Exception as e:
+    if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
+        raise RuntimeError(
+            f"Lakebase project/endpoint not found: {endpoint_name!r}. "
+            "Run Job 1 task create_lakebase_autoscaling first, or create a Lakebase Autoscaling project in "
+            "Compute → Lakebase and set job parameters (or bundle vars) lakebase_project_id, lakebase_branch_id, "
+            "lakebase_endpoint_id. See https://docs.databricks.com/oltp/projects/"
+        ) from e
+    raise
+token = cred.token
+status = getattr(endpoint, "status", None)
+hosts = getattr(status, "hosts", None) if status else None
+if hosts is not None and isinstance(hosts, list) and len(hosts) > 0:
+    host = getattr(hosts[0], "host", None) or getattr(hosts[0], "hostname", None)
+else:
+    host = getattr(hosts, "host", None) or getattr(hosts, "hostname", None) if hosts else None
+if not host:
+    raise ValueError("Endpoint has no host; ensure the compute endpoint is running.")
+# Autoscaling default DB is databricks_postgres (only this DB exists in new projects)
+dbname = (lakebase_database_name or "").strip() or "databricks_postgres"
+username = (ws.current_user.me().user_name if ws.current_user else None) or getattr(ws.config, "client_id", None) or "postgres"
 
 # COMMAND ----------
 

@@ -47,7 +47,9 @@ All jobs and pipelines can be run from the UI. To connect: use your credentials 
 
 | Variable | Purpose |
 |----------|---------|
-| **PGAPPNAME** | Required. Lakebase instance (e.g. `payment-analysis-db-dev`). |
+| **LAKEBASE_PROJECT_ID** | Required. Lakebase Autoscaling project ID (same as Job 1 create_lakebase_autoscaling; e.g. `payment-analysis-db`). |
+| **LAKEBASE_BRANCH_ID** | Required. Lakebase Autoscaling branch (e.g. `production`). |
+| **LAKEBASE_ENDPOINT_ID** | Required. Lakebase Autoscaling endpoint (e.g. `primary`). |
 | **DATABRICKS_WAREHOUSE_ID** | Required for SQL/analytics. SQL Warehouse ID (from bundle or sql-warehouse binding). |
 | **DATABRICKS_HOST** | Optional when opened from **Compute → Apps** (workspace URL derived from request). Set when not using OBO. |
 | **DATABRICKS_TOKEN** | Optional when using OBO. Open from **Compute → Apps** so your token is forwarded; do not set in env. Set only for app-only use; then do **not** set DATABRICKS_CLIENT_ID/SECRET. |
@@ -72,7 +74,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 - Dashboards: `file_path` in `resources/dashboards.yml` is `../.build/dashboards/*.lvdash.json` (relative to `resources/`).  
 - Sync (uploaded to workspace): `.build`, `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`.
 
-**App bindings:** database (Lakebase), sql-warehouse (`payment_analysis_warehouse`), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
+**App bindings:** sql-warehouse (`payment_analysis_warehouse`), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
@@ -166,7 +168,7 @@ By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simu
 | Database instance STARTING | Wait, then redeploy |
 | Don't see resources | Redeploy; run `./scripts/bundle.sh validate dev` |
 | Registered model does not exist | Run Step 5 (Train ML models), then uncomment `model_serving.yml`, redeploy |
-| Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
+| Lakebase Autoscaling project/endpoint not found | Run Job 1 task **create_lakebase_autoscaling** first, or create a Lakebase project in **Compute → Lakebase** and set bundle vars `lakebase_project_id`, `lakebase_branch_id`, `lakebase_endpoint_id`. |
 | **Lakebase project/endpoint not found** (`projects/…/branches/…/endpoints/…`) | The Autoscaling project does not exist. Create a Lakebase project in **Compute → Lakebase**, then set bundle variables to match. See [Fix: Lakebase project/endpoint not found](#fix-lakebase-projectendpoint-not-found) below. |
 | Error installing packages (app deploy) | Check **Logs** for the exact pip error. Ensure `requirements.txt` is up to date: run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. See [Databricks Apps compatibility](#databricks-apps-compatibility). |
 | **Catalog '…' or schema '…' not found** | The catalog must exist before deploy; the bundle creates the schema. See [Fix: Catalog or schema not found](#fix-catalog-or-schema-not-found) below. |
