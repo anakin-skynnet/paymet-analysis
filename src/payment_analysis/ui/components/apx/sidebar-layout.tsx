@@ -1,3 +1,7 @@
+/**
+ * Sidebar layout and breadcrumb. UI/navigation should match reference:
+ * @see config/ui-reference.ts (PAYMENT_APPROVAL_UI_REFERENCE)
+ */
 import { Outlet, useLocation, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";

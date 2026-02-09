@@ -1,3 +1,7 @@
+/**
+ * Sidebar navigation. Align structure and labels with:
+ * @see config/ui-reference.ts (PAYMENT_APPROVAL_UI_REFERENCE)
+ */
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import {
   AlertTriangle,
