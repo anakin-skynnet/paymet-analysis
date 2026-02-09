@@ -1,4 +1,6 @@
 [project]
+# Pinned versions for Databricks App compatibility. Keep in sync with:
+# resources/ml_jobs.yml (job env), run_lakebase_data_init.py (%pip), requirements.txt (from uv.lock).
 name = "payment-analysis"
 dynamic = ["version"]
 description = "Payment approval rate optimization platform on Databricks — streaming analytics, ML models, and AI agents"
