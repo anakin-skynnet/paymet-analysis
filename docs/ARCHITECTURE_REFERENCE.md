@@ -139,9 +139,15 @@ All UI data goes through the FastAPI backend. No direct Lakebase or Databricks c
 
 **Credentials:** When the app is opened from **Compute → Apps**, the platform forwards the user token (`X-Forwarded-Access-Token`). The backend uses it for Databricks; otherwise `DATABRICKS_TOKEN` from the app environment. Catalog/schema come from `app_config` (Lakebase or Lakehouse), loaded at startup or lazy on first request.
 
-## Cookbook / apx alignment
+## Alignment with Databricks patterns
 
-The app follows [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), and [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) patterns: API prefix `/api` for token-based auth, OBO via `X-Forwarded-Access-Token`, FastAPI routes under `/api`, workspace URL derived from request when served from Apps, and Lakebase for CRUD (experiments, incidents) with Databricks for analytics and rules.
+This solution is built and optimized to align with:
+
+- **[Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro)** — FastAPI structure (app entrypoint, routes under `/api`), [healthcheck](https://apps-cookbook.dev/docs/fastapi/getting_started/create) at `/api/v1/healthcheck`, OAuth2/Bearer via `/api` prefix; tables, ML, and workflows patterns.
+- **[apx](https://github.com/databricks-solutions/apx)** — Full-stack toolkit: FastAPI + React, shadcn/ui, TanStack Router, OpenAPI client generation; `uv run apx dev check` / `apx build`; `pyproject.toml` metadata (`app-entrypoint`, `api-prefix`, UI root); Bun for frontend.
+- **[AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit)** — Databricks SDK usage, MCP/skills-friendly layout, workspace-centric development; compatible with Cursor/Claude and bundle-based deploy.
+
+**Concrete alignments:** API prefix `/api` for Databricks Apps token-based auth; OBO via `X-Forwarded-Access-Token`; FastAPI `title`, `description`, `version` for OpenAPI; all routes use `response_model` and `operation_id` for client generation; versioned health at `/api/v1/healthcheck` and `/api/v1/health/database` (Lakebase); Lakebase for CRUD (rules, experiments, incidents) with Lakehouse for analytics; workspace URL derived from request when served from Compute → Apps.
 
 ---
 

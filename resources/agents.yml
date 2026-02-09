@@ -1,10 +1,9 @@
 # =============================================================================
 # Step 6: Create and deploy Databricks AgentBricks agents
 # =============================================================================
-# One job with seven tasks: orchestrator plus six specialist agents (Smart Routing,
-# Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and a
-# test run of the agent framework. Each task runs the same agent_framework notebook
-# with a different agent_role. Catalog/schema from variables.
+# All tasks use serverless compute. One job with seven tasks: orchestrator plus
+# six specialist agents (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor,
+# Performance Recommender) and a test run of the agent framework.
 # Mosaic AI Gateway: configured on model serving and LLM endpoints in Serving UI.
 # =============================================================================
 
@@ -24,15 +23,6 @@ resources:
               schema: ${var.schema}
               agent_role: "orchestrator"
               query: "Run comprehensive payment analysis (routing, retries, declines, risk, performance)"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 3600
 
         - task_key: run_smart_routing
@@ -44,15 +34,6 @@ resources:
               schema: ${var.schema}
               agent_role: "smart_routing"
               query: "Analyze routing performance and recommend cascade configurations"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
 
         - task_key: run_smart_retry
@@ -64,15 +45,6 @@ resources:
               schema: ${var.schema}
               agent_role: "smart_retry"
               query: "Identify retry opportunities and recovery strategies"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
 
         - task_key: run_decline_analyst
@@ -84,15 +56,6 @@ resources:
               schema: ${var.schema}
               agent_role: "decline_analyst"
               query: "Analyze decline patterns and recovery recommendations"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
 
         - task_key: run_risk_assessor
@@ -104,15 +67,6 @@ resources:
               schema: ${var.schema}
               agent_role: "risk_assessor"
               query: "Identify high-risk transactions and interventions"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
 
         - task_key: run_performance_recommender
@@ -124,15 +78,6 @@ resources:
               schema: ${var.schema}
               agent_role: "performance_recommender"
               query: "Analyze performance and recommend optimizations"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
 
         - task_key: test_agent_framework
@@ -143,17 +88,6 @@ resources:
               catalog: ${var.catalog}
               schema: ${var.schema}
               test_mode: "true"
-          new_cluster:
-            spark_version: "15.4.x-cpu-ml-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            spark_env_vars:
-              MLFLOW_TRACKING_URI: "databricks"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1800
       schedule:
         quartz_cron_expression: "0 0 7 ? * MON"

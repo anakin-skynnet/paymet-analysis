@@ -1,8 +1,8 @@
 # =============================================================================
 # Genie Space Sync Job
 # =============================================================================
-# Syncs Genie space configuration and sample questions for natural language
-# analytics over payment data. Catalog/schema from variables.
+# Serverless compute. Syncs Genie space configuration and sample questions for
+# natural language analytics over payment data. Catalog/schema from variables.
 # =============================================================================
 
 resources:
@@ -18,15 +18,6 @@ resources:
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 600
       schedule:
         quartz_cron_expression: "0 0 5 ? * SUN"

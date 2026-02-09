@@ -63,15 +63,16 @@ function Index() {
     <div className="relative h-screen w-screen overflow-hidden flex flex-col bg-background">
       <Navbar leftContent={<Logo to="/" showText />} />
 
-      <main className="flex-1 grid md:grid-cols-2 min-h-0">
+      <main className="flex-1 grid md:grid-cols-2 min-h-0" id="landing-main" aria-label="Landing page content">
         <BubbleBackground interactive />
 
-        <div className="relative flex flex-col items-center justify-center p-8 md:p-12 lg:p-16 border-l border-border/50 bg-gradient-to-b from-background/98 via-background/95 to-background/98 backdrop-blur-md overflow-y-auto">
+        <div className="relative flex flex-col items-center justify-center p-8 md:p-12 lg:p-16 border-l border-border/50 bg-gradient-to-b from-background/98 via-background/95 to-background/98 backdrop-blur-md overflow-y-auto scrollbar-thin">
           <motion.div
             className="max-w-xl w-full space-y-8 text-center md:text-left"
             variants={container}
             initial="hidden"
             animate="show"
+            role="presentation"
           >
             {showSignIn && (
               <motion.div
@@ -137,7 +138,10 @@ function Index() {
             </motion.div>
 
             {/* Value proposition */}
-            <motion.div variants={item} className="text-left">
+            <motion.section variants={item} className="text-left" aria-labelledby="value-prop-heading">
+              <h2 id="value-prop-heading" className="sr-only">
+                What this solution does
+              </h2>
               <p className="text-sm font-semibold text-foreground mb-3">
                 What this solution does for Getnet
               </p>
@@ -149,7 +153,7 @@ function Index() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </motion.section>
 
             {/* Data foundation & geography */}
             <motion.div
@@ -166,8 +170,8 @@ function Index() {
             </motion.div>
 
             {/* Initiative cards — business-oriented, impactful */}
-            <motion.div variants={item} className="space-y-3">
-              <p className="section-label">Key initiatives</p>
+            <motion.section variants={item} className="space-y-3" aria-labelledby="initiatives-heading">
+              <h2 id="initiatives-heading" className="section-label">Key initiatives</h2>
               <div className="grid gap-4 sm:grid-cols-1">
                 {initiatives.map((init) => {
                   const Icon = init.icon;
@@ -193,7 +197,7 @@ function Index() {
                   );
                 })}
               </div>
-            </motion.div>
+            </motion.section>
 
             {/* Primary CTAs — clear, impactful */}
             <motion.div

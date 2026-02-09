@@ -117,3 +117,5 @@ async def get_items():
 - Components: `src/payment_analysis/ui/components/`
 - Backend: `src/payment_analysis/backend/`
 - Docs: `docs/DEPLOYMENT_GUIDE.md`, `docs/ARCHITECTURE_REFERENCE.md`
+
+**External references:** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI recipes, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit source), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).

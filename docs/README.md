@@ -26,3 +26,9 @@ Single entry point for Payment Analysis docs. The platform’s **main purpose** 
 - **`scripts/`** — bundle.sh (validate/deploy/verify), dashboards.py (prepare/validate-assets), run_and_validate_jobs.py, sync_requirements_from_lock.py  
 
 All of the above support the use cases described in [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md#business-purpose--use-cases).
+
+## References
+
+- [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro) — FastAPI, Streamlit, Dash recipes for Databricks Apps
+- [apx](https://github.com/databricks-solutions/apx) — Toolkit for building Databricks Apps (React + FastAPI)
+- [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) — Databricks SDK, MCP tools, and skills for AI-assisted development

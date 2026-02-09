@@ -1,9 +1,8 @@
 # =============================================================================
 # Step 2: Simulate payment transaction events (producer)
 # =============================================================================
-# Generates synthetic payment events at high volume for real-time pipeline testing.
-# Events are ingested later by Lakeflow pipelines (step 3 / continuous ingestion).
-# Catalog/schema from variables.
+# Serverless compute. Generates synthetic payment events at high volume for
+# real-time pipeline testing. Events are ingested by Lakeflow (step 3).
 # =============================================================================
 
 resources:
@@ -22,17 +21,6 @@ resources:
               events_per_second: "1000"
               duration_minutes: "60"
               output_mode: "delta"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            autoscale:
-              min_workers: 1
-              max_workers: 2
-            spark_conf:
-              spark.databricks.delta.optimizeWrite.enabled: "true"
-              spark.databricks.delta.autoCompact.enabled: "true"
-            spark_env_vars:
-              EVENTS_PER_SECOND: "1000"
           timeout_seconds: 3600
       tags:
         environment: ${var.environment}

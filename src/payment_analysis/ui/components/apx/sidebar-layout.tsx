@@ -105,17 +105,31 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen">
-        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex h-14 min-h-14 shrink-0 items-center gap-4 px-4 md:px-6 transition-colors duration-200 shadow-sm">
+        <header
+          role="banner"
+          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex h-14 min-h-14 shrink-0 items-center gap-4 px-4 md:px-6 transition-colors duration-200 shadow-sm"
+          aria-label="App header"
+        >
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Toggle sidebar" />
           <Breadcrumb />
-          <div className="flex-1 min-w-0" />
-          <CountrySelect className="shrink-0 flex" />
-          <ModeToggle />
+          <div className="flex-1 min-w-0" aria-hidden />
+          <div className="flex items-center gap-2 shrink-0" role="group" aria-label="Workspace and appearance">
+            <CountrySelect className="flex" />
+            <ModeToggle />
+          </div>
         </header>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2.5 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
           Skip to main content
         </a>
-        <div id="main-content" className="flex flex-1 justify-center overflow-auto min-h-0 main-content-area" tabIndex={-1}>
+        <main
+          id="main-content"
+          role="main"
+          className="flex flex-1 justify-center overflow-auto min-h-0 main-content-area scrollbar-thin"
+          tabIndex={-1}
+        >
           <motion.div
             className="page-container flex flex-1 flex-col gap-6 p-6 md:p-8 w-full"
             initial={{ opacity: 0, y: 6 }}
@@ -124,7 +138,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           >
             <Outlet />
           </motion.div>
-        </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -1,6 +1,7 @@
 # =============================================================================
 # ML and Analytics Jobs — Consolidated by logical steps (1, 3, 4, 5)
 # =============================================================================
+# All tasks use serverless compute (no new_cluster); Databricks manages compute.
 # Step 1: Create data repositories (lakehouse, vector search, lakebase).
 # Step 3: Initialize ingestion into lakehouse, lakebase, vector search.
 # Step 4: Create and deploy Databricks dashboards.
@@ -28,15 +29,6 @@ resources:
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 120
           max_retries: 2
 
@@ -55,15 +47,6 @@ resources:
               warehouse_id: ${var.warehouse_id}
               default_events_per_second: "1000"
               default_duration_minutes: "60"
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 300
           max_retries: 2
 
@@ -77,15 +60,6 @@ resources:
               workspace_path: ${workspace.file_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 300
           max_retries: 2
 
@@ -99,15 +73,6 @@ resources:
               catalog: ${var.catalog}
               schema: ${var.schema}
               environment: ${var.environment}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1200
           max_retries: 1
       schedule:
@@ -135,15 +100,6 @@ resources:
               workspace_path: ${workspace.file_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 600
           max_retries: 2
 
@@ -157,15 +113,6 @@ resources:
               catalog: ${var.catalog}
               schema: ${var.schema}
               environment: ${var.environment}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 600
           max_retries: 1
       schedule:
@@ -193,15 +140,6 @@ resources:
               workspace_path: ${workspace.file_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 600
           max_retries: 2
 
@@ -213,15 +151,6 @@ resources:
             notebook_path: ${workspace.file_path}/src/payment_analysis/transform/publish_dashboards
             base_parameters:
               dashboards_path: ${workspace.root_path}/dashboards
-          new_cluster:
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 1200
           max_retries: 1
       schedule:
@@ -248,17 +177,6 @@ resources:
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-          new_cluster:
-            spark_version: "15.4.x-cpu-ml-scala2.12"
-            node_type_id: "Standard_DS3_v2"
-            num_workers: 0
-            spark_conf:
-              spark.databricks.cluster.profile: singleNode
-              spark.master: "local[*]"
-            spark_env_vars:
-              MLFLOW_TRACKING_URI: "databricks"
-            custom_tags:
-              ResourceClass: SingleNode
           timeout_seconds: 5400
           max_retries: 1
       schedule:

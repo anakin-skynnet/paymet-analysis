@@ -103,7 +103,8 @@ function Layout() {
 
   return (
     <SidebarLayout>
-      <SidebarGroup>
+      <nav aria-label="Primary navigation" className="contents">
+      <SidebarGroup aria-label="Overview section">
         <SidebarGroupLabel className="nav-group-label">
           Overview
         </SidebarGroupLabel>
@@ -117,7 +118,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="Reasons and factors section">
         <SidebarGroupLabel className="nav-group-label">
           Reasons & factors
         </SidebarGroupLabel>
@@ -131,7 +132,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="Recommendations and actions section">
         <SidebarGroupLabel className="nav-group-label">
           Recommendations & actions
         </SidebarGroupLabel>
@@ -145,7 +146,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="Initiatives section">
         <SidebarGroupLabel className="nav-group-label">
           Initiatives
         </SidebarGroupLabel>
@@ -159,7 +160,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="AI and automation section">
         <SidebarGroupLabel className="nav-group-label">
           AI & automation
         </SidebarGroupLabel>
@@ -173,7 +174,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="Operations section">
         <SidebarGroupLabel className="nav-group-label">
           Operations
         </SidebarGroupLabel>
@@ -187,7 +188,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup aria-label="Settings section">
         <SidebarGroupLabel className="nav-group-label">
           Settings
         </SidebarGroupLabel>
@@ -201,6 +202,7 @@ function Layout() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+      </nav>
     </SidebarLayout>
   );
 }

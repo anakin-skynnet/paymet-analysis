@@ -27,6 +27,16 @@ except Exception:
     _app_name = "payment-analysis"
     _dist_dir_meta = Path(__file__).resolve().parents[1] / "__dist__"
 
+try:
+    from .. import __version__ as _app_version
+except Exception:
+    _app_version = "0.0.0"
+
+_APP_DESCRIPTION = (
+    "Payment approval rate optimization on Databricks: streaming analytics, ML models, AI agents, "
+    "and decisioning. Serves React UI at / and API at /api (Databricks Apps token-based auth)."
+)
+
 
 def _resolve_ui_dist() -> Path | None:
     """Resolve UI dist directory; try metadata path, env, cwd-based paths (Databricks App vs local)."""
@@ -135,7 +145,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=f"{_app_name}", lifespan=lifespan)
+app = FastAPI(
+    title=_app_name,
+    description=_APP_DESCRIPTION,
+    version=_app_version,
+    lifespan=lifespan,
+)
 
 # note the order of includes and mounts!
 app.include_router(api)

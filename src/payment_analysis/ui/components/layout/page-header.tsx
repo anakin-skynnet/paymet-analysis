@@ -12,6 +12,8 @@ export interface PageHeaderProps {
   actions?: ReactNode;
   /** Optional badge or status next to title */
   badge?: ReactNode;
+  /** Optional id for the h1 (for anchor links or skip target) */
+  titleId?: string;
   /** Extra class for the wrapper */
   className?: string;
 }
@@ -22,6 +24,7 @@ export function PageHeader({
   description,
   actions,
   badge,
+  titleId,
   className,
 }: PageHeaderProps) {
   return (
@@ -34,7 +37,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-section-title text-2xl md:text-3xl font-bold truncate">
+            <h1 id={titleId} className="page-section-title text-2xl md:text-3xl font-bold truncate">
               {title}
             </h1>
             {badge}
