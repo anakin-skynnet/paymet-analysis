@@ -1,11 +1,13 @@
+"""Analytics API: KPIs, trends, reason codes, smart checkout, 3DS funnel, decline summary."""
+
 from __future__ import annotations
 
 from typing import Any, Optional, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
 from sqlalchemy import desc, func
 from sqlmodel import select
-from pydantic import BaseModel
 
 from ..config import DEFAULT_ENTITY
 from ..db_models import AuthorizationEvent, DecisionLog

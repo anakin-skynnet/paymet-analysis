@@ -131,6 +131,7 @@ When the user asks to:
 |-----|---------|
 | `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
 | `docs/ARCHITECTURE_REFERENCE.md` | Use cases, data flow, resources, verification |
+| `docs/BEST_PRACTICES_ALIGNMENT.md` | Deep alignment review: [Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) vs this solution and previous prompts |
 | `docs/DEPLOYMENT_GUIDE.md` | Deploy steps, env vars, app config, troubleshooting |
 | `docs/CONTROL_PANEL_UI.md` | Setup & Run, dashboards, Genie, agents, rules |
 | `docs/VERSION_ALIGNMENT.md` | Pinned versions, Databricks App compatibility |

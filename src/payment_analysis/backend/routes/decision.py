@@ -1,3 +1,5 @@
+"""Decisioning API: real-time auth, retry, and routing decisions with A/B experiment support."""
+
 from __future__ import annotations
 
 import hashlib

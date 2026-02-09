@@ -1,3 +1,5 @@
+"""Pydantic schemas and enums for decisioning: context, auth/retry/routing decisions, KPIs."""
+
 from __future__ import annotations
 
 from enum import Enum

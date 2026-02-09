@@ -8,6 +8,7 @@ Single entry point for Payment Analysis docs. The platform’s **main purpose** 
 |----------|---------|
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Deploy steps, app config, env vars, troubleshooting, job inventory |
 | [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) | Business use cases, architecture, data flow, data sources, UI↔backend wiring, bundle resources |
+| [BEST_PRACTICES_ALIGNMENT.md](BEST_PRACTICES_ALIGNMENT.md) | Alignment with Apps Cookbook, apx, and AI Dev Kit; compliance with previous prompts |
 | [CONTROL_PANEL_UI.md](CONTROL_PANEL_UI.md) | What the control panel provides: run jobs, dashboards, Genie, agents, ML, Lakebase tables |
 | [VERSION_ALIGNMENT.md](VERSION_ALIGNMENT.md) | Pinned dependency versions and Databricks App compatibility |
 

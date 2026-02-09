@@ -1,23 +1,22 @@
-import SidebarLayout from "@/components/apx/sidebar-layout";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   BarChart3,
   BadgeX,
-  FlaskConical,
-  User,
-  LayoutDashboard,
-  Code2,
   Brain,
   Bot,
-  Rocket,
+  Code2,
   CreditCard,
+  FlaskConical,
+  LayoutDashboard,
   ListChecks,
+  MessageSquareText,
+  Rocket,
   RotateCcw,
   ScrollText,
-  MessageSquareText,
+  User,
 } from "lucide-react";
+import SidebarLayout from "@/components/apx/sidebar-layout";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -25,6 +24,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_sidebar")({
   component: () => <Layout />,

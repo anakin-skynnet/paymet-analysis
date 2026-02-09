@@ -169,6 +169,8 @@ class DatabaseConfig(BaseSettings):
 
 
 class AppConfig(BaseSettings):
+    """Application settings: app name, database, and Databricks workspace config."""
+
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         env_file=env_file,
         env_prefix=f"{app_slug.upper()}_",

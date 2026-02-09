@@ -1,3 +1,5 @@
+"""SQLModel entities and shared helpers for app tables (authorization events, decisions, experiments, incidents)."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

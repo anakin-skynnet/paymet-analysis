@@ -1,31 +1,14 @@
 """Application logger.
 
 Logging configuration is handled by APX via uvicorn's log config.
-This module simply exposes a logger instance for the application.
+This module exposes the default app logger.
 """
 
 import logging
-from typing import Optional
 
 try:
     from .._metadata import app_name
 except Exception:
     app_name = "payment-analysis"
 
-# Default logger for the application
 logger = logging.getLogger(app_name)
-
-
-def get_logger(name: Optional[str] = None) -> logging.Logger:
-    """
-    Get a logger instance.
-
-    Args:
-        name: Logger name. If None, returns the default app logger.
-
-    Returns:
-        Logger instance.
-    """
-    if name is None:
-        return logger
-    return logging.getLogger(name)

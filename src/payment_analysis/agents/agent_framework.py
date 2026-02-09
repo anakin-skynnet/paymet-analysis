@@ -730,35 +730,20 @@ For complex queries, engage multiple agents and synthesize responses."""
 
     def handle_query(self, query: str) -> Dict:
         """Route query to appropriate agents and synthesize response."""
-        logger.info(f"Orchestrator received query: '{query}'")
-
         query_lower = query.lower()
         responses = {}
 
-        # Route to appropriate agents based on keywords
         if any(word in query_lower for word in ["routing", "cascade", "processor", "route"]):
-            logger.info("Routing to SmartRoutingAgent")
             responses["smart_routing"] = self.smart_routing.think(query)
-
         if any(word in query_lower for word in ["retry", "recovery", "reprocess", "failed"]):
-            logger.info("Routing to SmartRetryAgent")
             responses["smart_retry"] = self.smart_retry.think(query)
-
         if any(word in query_lower for word in ["decline", "reject", "fail", "denied"]):
-            logger.info("Routing to DeclineAnalystAgent")
             responses["decline_analyst"] = self.decline_analyst.think(query)
-
         if any(word in query_lower for word in ["fraud", "risk", "suspicious", "aml"]):
-            logger.info("Routing to RiskAssessorAgent")
             responses["risk_assessor"] = self.risk_assessor.think(query)
-
         if any(word in query_lower for word in ["performance", "optimize", "improve", "recommend", "kpi"]):
-            logger.info("Routing to PerformanceRecommenderAgent")
             responses["performance_recommender"] = self.performance_recommender.think(query)
-
-        # Default to performance recommender if no specific match
         if not responses:
-            logger.info("Routing to PerformanceRecommenderAgent (default)")
             responses["performance_recommender"] = self.performance_recommender.think(query)
 
         # Synthesize responses
@@ -787,21 +772,8 @@ def setup_agent_framework(
     schema: str = "payment_analysis"
 ) -> OrchestratorAgent:
     """Initialize the multi-agent framework."""
-
-    logger.info("=" * 70)
-    logger.info("PAYMENT ANALYSIS AI AGENT FRAMEWORK")
-    logger.info("=" * 70)
-
     orchestrator = OrchestratorAgent(catalog, schema)
-
-    logger.info("Initialized agents:")
-    logger.info("  - OrchestratorAgent (meta-agent)")
-    logger.info("  - SmartRoutingAgent")
-    logger.info("  - SmartRetryAgent")
-    logger.info("  - DeclineAnalystAgent")
-    logger.info("  - RiskAssessorAgent")
-    logger.info("  - PerformanceRecommenderAgent")
-
+    logger.info("Agent framework initialized (Orchestrator + 5 specialists)")
     return orchestrator
 
 

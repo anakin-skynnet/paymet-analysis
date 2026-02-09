@@ -1,3 +1,5 @@
+"""Incidents API: incident and remediation task CRUD for operations."""
+
 from __future__ import annotations
 
 from typing import Any, Optional, cast

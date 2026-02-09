@@ -1,4 +1,7 @@
+"""Shared API response models: version, workspace config, auth status."""
+
 from pydantic import BaseModel
+
 from .. import __version__
 
 

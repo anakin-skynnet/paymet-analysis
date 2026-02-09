@@ -1,3 +1,5 @@
+"""Experiments API: A/B experiment CRUD and assignment for decisioning."""
+
 from __future__ import annotations
 
 from typing import Any, Optional, cast

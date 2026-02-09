@@ -1,3 +1,5 @@
+"""Decision policies: authentication, retry, and routing rules with A/B variant support."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

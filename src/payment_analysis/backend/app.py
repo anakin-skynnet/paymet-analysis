@@ -76,12 +76,6 @@ def _resolve_ui_dist() -> Path | None:
             p_resolved = p
         exists = p_resolved.exists()
         has_index = (p_resolved / "index.html").exists() if exists else False
-        logger.info(
-            "UI dist candidate: path=%s exists=%s has_index=%s",
-            p_resolved,
-            exists,
-            has_index,
-        )
         if exists and has_index:
             return p_resolved
     logger.warning(
