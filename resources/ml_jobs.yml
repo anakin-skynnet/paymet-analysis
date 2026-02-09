@@ -27,8 +27,8 @@ resources:
           spec:
             environment_version: "4"
             dependencies:
-              - "databricks-sdk>=0.84.0"
-              - "psycopg[binary]"
+              - "databricks-sdk==0.84.0"
+              - "psycopg[binary]==3.2.3"
       tasks:
         - task_key: ensure_catalog_schema
           description: "Create Unity Catalog and schema if they do not exist"
