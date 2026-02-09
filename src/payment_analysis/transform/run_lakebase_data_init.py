@@ -1,0 +1,195 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Lakebase Data Initialization
+# MAGIC
+# MAGIC Seeds the Databricks Lakebase (Postgres) database with default **app_config**, **approval_rules**,
+# MAGIC **online_features**, and **app_settings** (job parameters and config). Backend reads these tables at startup.
+# MAGIC Run as the first task of Job 1 so defaults exist before Lakehouse bootstrap and app use.
+# MAGIC
+# MAGIC **Widgets:** `catalog`, `schema`, `lakebase_instance_name`, `lakebase_database_name`, `lakebase_schema`;
+# MAGIC optional `warehouse_id`, `default_events_per_second`, `default_duration_minutes` for app_settings.
+
+# COMMAND ----------
+
+# MAGIC %pip install psycopg[binary] databricks-sdk --quiet
+
+# COMMAND ----------
+
+import uuid
+
+def _get_widget(name: str, default: str = "") -> str:
+    try:
+        return (dbutils.widgets.get(name) or "").strip()  # type: ignore[name-defined]  # noqa: F821
+    except Exception:
+        return default
+
+catalog = _get_widget("catalog")
+schema = _get_widget("schema")
+lakebase_instance_name = _get_widget("lakebase_instance_name")
+lakebase_database_name = _get_widget("lakebase_database_name") or "payment_analysis"
+lakebase_schema = _get_widget("lakebase_schema") or "app"
+warehouse_id = _get_widget("warehouse_id") or ""
+default_events_per_second = _get_widget("default_events_per_second") or "1000"
+default_duration_minutes = _get_widget("default_duration_minutes") or "60"
+
+if not catalog or not schema or not lakebase_instance_name:
+    raise ValueError("Widgets catalog, schema, and lakebase_instance_name are required")
+
+# COMMAND ----------
+
+from databricks.sdk import WorkspaceClient
+
+ws = WorkspaceClient()
+instance = ws.database.get_database_instance(lakebase_instance_name)
+host = instance.read_write_dns
+port = 5432
+
+cred = ws.database.generate_database_credential(
+    request_id=str(uuid.uuid4()),
+    instance_names=[lakebase_instance_name],
+)
+token = cred.token
+# Lakebase uses the workspace user or client_id as username; password is the short-lived token
+username = getattr(ws.config, "client_id", None) or (ws.current_user.me().user_name if ws.current_user else "postgres")
+
+# COMMAND ----------
+
+import psycopg
+from psycopg.rows import dict_row
+
+conn_str = f"host={host} port={port} dbname={lakebase_database_name} user={username} password={token} sslmode=require"
+print("Connecting to Lakebase (Postgres)...")
+
+with psycopg.connect(conn_str, row_factory=dict_row) as conn:
+    with conn.cursor() as cur:
+        # Create schema if not exists
+        cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{lakebase_schema}"')
+        conn.commit()
+        print(f"Schema {lakebase_schema!r} ensured.")
+
+        # App config: single row (id=1) with catalog and schema for the app
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".app_config (
+                id INT PRIMARY KEY DEFAULT 1,
+                catalog VARCHAR(255) NOT NULL,
+                schema VARCHAR(255) NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        cur.execute(
+            f"""
+            INSERT INTO "{lakebase_schema}".app_config (id, catalog, schema)
+            VALUES (1, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET catalog = EXCLUDED.catalog, schema = EXCLUDED.schema, updated_at = current_timestamp
+            """,
+            (catalog, schema),
+        )
+        conn.commit()
+        print("Default app_config (catalog, schema) inserted or updated.")
+
+        # Approval rules: same shape as Lakehouse table
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".approval_rules (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(500) NOT NULL,
+                rule_type VARCHAR(100) NOT NULL,
+                condition_expression TEXT,
+                action_summary TEXT NOT NULL,
+                priority INT NOT NULL DEFAULT 100,
+                is_active BOOLEAN NOT NULL DEFAULT true,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+
+        # Seed default rules only when table is empty
+        cur.execute(f'SELECT COUNT(*) AS n FROM "{lakebase_schema}".approval_rules')
+        row = cur.fetchone()
+        n = row["n"] if row and isinstance(row, dict) else (row[0] if row else 0)
+        if n == 0:
+            defaults = [
+                (
+                    str(uuid.uuid4()),
+                    "Default 3DS for high value",
+                    "authentication",
+                    "amount_cents >= 50000",
+                    "Require 3DS for transactions >= 500.00; reduces fraud and false declines",
+                    100,
+                ),
+                (
+                    str(uuid.uuid4()),
+                    "Retry after soft decline",
+                    "retry",
+                    "decline_reason IN ('INSUFFICIENT_FUNDS','TEMPORARY_FAILURE')",
+                    "Retry once after 2h for soft declines; improves approval rate",
+                    90,
+                ),
+                (
+                    str(uuid.uuid4()),
+                    "Primary acquirer routing",
+                    "routing",
+                    "merchant_country = 'BR'",
+                    "Route Brazil e-commerce to primary acquirer; fallback to backup on timeout",
+                    110,
+                ),
+            ]
+            for rid, name, rule_type, cond, action, prio in defaults:
+                cur.execute(
+                    f"""
+                    INSERT INTO "{lakebase_schema}".approval_rules (id, name, rule_type, condition_expression, action_summary, priority, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, true)
+                    """,
+                    (rid, name, rule_type, cond, action, prio),
+                )
+            conn.commit()
+            print(f"Inserted {len(defaults)} default approval rules.")
+        else:
+            print("approval_rules already has rows; skipping default rules.")
+
+        # Online features: ML/AI output for app Dashboard (same shape as Lakehouse)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".online_features (
+                id VARCHAR(255) NOT NULL,
+                source VARCHAR(100) NOT NULL,
+                feature_set VARCHAR(255),
+                feature_name VARCHAR(255) NOT NULL,
+                feature_value DOUBLE PRECISION,
+                feature_value_str VARCHAR(500),
+                entity_id VARCHAR(255),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        print("online_features table ensured.")
+
+        # App settings: key-value for job parameters and config (backend reads at startup)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".app_settings (
+                key VARCHAR(255) PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        settings_defaults = [
+            ("catalog", catalog),
+            ("schema", schema),
+            ("warehouse_id", warehouse_id or "148ccb90800933a1"),
+            ("default_events_per_second", default_events_per_second),
+            ("default_duration_minutes", default_duration_minutes),
+        ]
+        for k, v in settings_defaults:
+            cur.execute(
+                f"""
+                INSERT INTO "{lakebase_schema}".app_settings (key, value)
+                VALUES (%s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = current_timestamp
+                """,
+                (k, v),
+            )
+        conn.commit()
+        print(f"app_settings seeded: {[k for k, _ in settings_defaults]}.")
+
+print("Lakebase data initialization completed successfully.")

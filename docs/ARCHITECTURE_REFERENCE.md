@@ -2,6 +2,22 @@
 
 Payment Analysis — architecture, data flow, bundle resources, and technical reference.
 
+## Business purpose & use cases
+
+**Primary goal:** Accelerate approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
+
+| Use case | Scope | How the platform helps |
+|----------|--------|-------------------------|
+| **Smart Retry** | Reattempt logic, timing, cohorts | Retry performance views, ML retry model, Smart Retry agent; recommendations from similar cases (Vector Search). |
+| **Smart Checkout** | Payment links, 3DS, Brazil | 3DS funnel views, service-path performance, antifraud attribution; routing and auth decisions. |
+| **Risk analysis** | Fraud and risk scoring | Risk tier, composite risk score, risk signals views; risk scoring model and Risk Assessor agent. |
+| **Fraud detection** | Antifraud, declines | Fraud score in silver/gold; fraud_risk_analysis dashboard; rules and ML for approve/decline. |
+| **Reason codes & declines** | Unified taxonomy, recovery | Reason-code views, decline summary, factors delaying approval; Decline Analyst agent. |
+| **Routing optimization** | Payment solution, network | Routing performance views, smart routing model and agent; recommendations. |
+| **Decisioning** | Real-time auth/retry/routing | Decision API, rules (Lakebase/Lakehouse), ML models, Vector Search similar cases; 7 AI agents. |
+
+Data flow and technical architecture below support these use cases end-to-end.
+
 ## Architecture
 
 - **Databricks:** Simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog (12+ views, 4 models). MLflow, Model Serving, Genie. 12 dashboards, SQL Warehouse.
@@ -108,6 +124,25 @@ Execution order in **Setup & Run** follows a logical sequence: foundation (Lakeh
 
 Job/pipeline IDs: `GET /api/setup/defaults`; env overrides: [Deployment guide](DEPLOYMENT_GUIDE.md).
 
+## Data sources (UI ↔ Backend ↔ Databricks)
+
+All UI data goes through the FastAPI backend. No direct Lakebase or Databricks calls from the frontend.
+
+| Area | Backend API | Source |
+|------|-------------|--------|
+| KPIs, trends, reason codes, declines, Smart Checkout, Smart Retry, recommendations, online features, models, countries | `GET /api/analytics/*` | Databricks (Unity Catalog views, SQL Warehouse); fallback to app DB when unavailable |
+| Rules | `GET/POST/PATCH/DELETE /api/rules` | Lakebase (if configured) or Lakehouse |
+| Setup defaults, config, settings | `GET /api/setup/*`, `PATCH /api/setup/config` | Lakebase app_config/app_settings + workspace job/pipeline resolution |
+| Dashboards list & embed URL | `GET /api/dashboards/*` | Static registry + workspace URL for embed |
+| Agents list & URLs | `GET /api/agents/*` | Backend → WorkspaceClient |
+| Experiments, incidents, decision logs | `GET/POST /api/experiments`, `/api/incidents` | Lakebase (Postgres) |
+
+**Credentials:** When the app is opened from **Compute → Apps**, the platform forwards the user token (`X-Forwarded-Access-Token`). The backend uses it for Databricks; otherwise `DATABRICKS_TOKEN` from the app environment. Catalog/schema come from `app_config` (Lakebase or Lakehouse), loaded at startup or lazy on first request.
+
+## Cookbook / apx alignment
+
+The app follows [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), and [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) patterns: API prefix `/api` for token-based auth, OBO via `X-Forwarded-Access-Token`, FastAPI routes under `/api`, workspace URL derived from request when served from Apps, and Lakebase for CRUD (experiments, incidents) with Databricks for analytics and rules.
+
 ---
 
-**See also:** [Deployment guide](DEPLOYMENT_GUIDE.md)
+**See also:** [Deployment guide](DEPLOYMENT_GUIDE.md), [Control panel & UI](CONTROL_PANEL_UI.md), [Version alignment](VERSION_ALIGNMENT.md)

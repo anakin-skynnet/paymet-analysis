@@ -209,9 +209,10 @@ async def get_databricks_service(request: Request) -> DatabricksService:
     catalog, schema = getattr(request.app.state, "uc_config", (None, None))
     if not catalog or not schema:
         catalog, schema = bootstrap.catalog, bootstrap.schema
-    # Lazy-load catalog/schema from app_config in Lakehouse once when we have OBO token but didn't load at startup
+    # Lazy-load catalog/schema from app_config in Lakehouse once when we have OBO token but didn't load at startup (skip if already from Lakebase)
     lazy_tried = getattr(request.app.state, "uc_config_lazy_tried", False)
-    if obo_token and not getattr(request.app.state, "uc_config_from_lakehouse", False) and not lazy_tried:
+    from_lakebase = getattr(request.app.state, "uc_config_from_lakebase", False)
+    if obo_token and not from_lakebase and not getattr(request.app.state, "uc_config_from_lakehouse", False) and not lazy_tried:
         if effective_host and bootstrap.warehouse_id:
             request.app.state.uc_config_lazy_tried = True
             try:

@@ -19,7 +19,9 @@ def add_not_found_handler(app: FastAPI, ui_dist_dir: Path | None = None):
 
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         logger.info(
-            f"HTTP exception handler called for request {request.url.path} with status code {exc.status_code}"
+            "HTTP exception handler called for request %s with status code %s",
+            request.url.path,
+            exc.status_code,
         )
         if exc.status_code == 404:
             path = request.url.path

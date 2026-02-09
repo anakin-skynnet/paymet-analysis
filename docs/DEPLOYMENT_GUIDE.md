@@ -4,7 +4,7 @@ How to deploy and configure the Payment Analysis app and bundle (Databricks Apps
 
 ## Prerequisites
 
-Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. **The Unity Catalog** (default `ahs_demos_catalog`) **must exist** in the workspace; the bundle creates the schema and volumes inside it. If your workspace uses a different catalog, deploy with `--var catalog=<your_catalog> --var schema=<your_schema>`. Python 3.10+ with `uv`, Node 18+ with `bun`. `package.json` engines `>=22.0.0`. Permissions: jobs, Lakeflow, model serving; write to catalog; deploy to `/Workspace/Users/<you>/payment-analysis`. **Databricks App:** Only `requirements.txt` and `package.json` deps; no system packages. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#databricks-app-deploy).
+Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. **Catalog and schema:** Either (1) create the **catalog** (default `ahs_demos_catalog`) under **Data → Catalogs** before deploy so the bundle can create the **schema** and volumes, or (2) deploy and run **Job 1** first — its first task creates the catalog and schema if they do not exist (requires metastore admin or CREATE_CATALOG/CREATE_SCHEMA). If you use different names, deploy with `--var catalog=<your_catalog> --var schema=<your_schema>`. Python 3.10+ with `uv`, Node 18+ with `bun`. `package.json` engines `>=22.0.0`. Permissions: jobs, Lakeflow, model serving; write to catalog; deploy to `/Workspace/Users/<you>/payment-analysis`. **Databricks App:** Only `requirements.txt` and `package.json` deps; no system packages. See [Architecture & reference](ARCHITECTURE_REFERENCE.md#databricks-app-deploy).
 
 ## Quick start
 
@@ -23,7 +23,7 @@ Jobs are consolidated into **6 numbered steps** (prefix in job name). Run in ord
 | # | Job (step) | Action |
 |---|------------|--------|
 | 0 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
-| 1 | **1. Create Data Repositories** | **Setup & Run** → Run **Lakehouse Bootstrap** or **Vector Search Index** (same job: lakehouse, vector search, lakebase; run once) |
+| 1 | **1. Create Data Repositories** | **Setup & Run** → Run job 1 (first: ensure catalog & schema; then Lakebase init — default config and rules; then lakehouse bootstrap — tables + seed data; then vector search endpoint & index). Run once. Creates everything needed for later jobs and the app. |
 | 2 | **2. Simulate Transaction Events** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines) |
 | 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; lakehouse/lakebase/vector search) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run **Prepare** or **Publish Dashboards** (same job: prepare assets + publish with embed credentials) |
@@ -40,9 +40,9 @@ All jobs and pipelines can be run from the UI. To connect: use your credentials 
 **Deploy into Databricks App** (create/update the app in the workspace and make the UI available):
 
 1. **Deploy bundle:** Run `./scripts/bundle.sh deploy dev`. This runs prepare (generates `.build/dashboards/`, `.build/transform/gold_views.sql`, `.build/transform/lakehouse_bootstrap.sql`), builds the UI (`uv run apx build` via `artifacts.default.build`), and deploys. All job SQL files exist after deploy.
-3. **Start the app:** In the workspace go to **Compute → Apps → payment-analysis → Start**, or run `databricks bundle run payment_analysis_app -t dev`. The app runs in Databricks (not on your machine). Logs showing **"Uvicorn running on http://0.0.0.0:8000"** are expected: the app binds to that address inside the container and the Databricks platform proxies external traffic to it.
-4. **App URL:** Open the app from the Apps page or use the URL from **databricks bundle summary**.
-5. **Required env (Workspace → Apps → payment-analysis → Edit → Environment):**
+2. **Start the app:** In the workspace go to **Compute → Apps → payment-analysis → Start**, or run `databricks bundle run payment_analysis_app -t dev`. The app runs in Databricks (not on your machine). Logs showing **"Uvicorn running on http://0.0.0.0:8000"** are expected: the app binds to that address inside the container and the Databricks platform proxies external traffic to it.
+3. **App URL:** Open the app from the Apps page or use the URL from **databricks bundle summary**.
+4. **Required env (Workspace → Apps → payment-analysis → Edit → Environment):**
 
 | Variable | Purpose |
 |----------|---------|
@@ -54,7 +54,7 @@ All jobs and pipelines can be run from the UI. To connect: use your credentials 
 
 **Use your credentials (recommended):** Open the app from **Workspace → Compute → Apps → payment-analysis**. The platform forwards your token; no DATABRICKS_TOKEN or DATABRICKS_HOST is required in the app environment. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, jobs, dashboards). The main page shows “Use your Databricks credentials” when no token is present; open the workspace to sign in. Enable user authorization (OBO) and add scopes **sql**, **Jobs**, and **Pipelines** (if needed) in **Edit → Configure → Authorization scopes**. If you see 403 Invalid scope, add **sql** and restart. If Run stays disabled, click **Refresh job IDs** on the Setup page.
 
-6. **Optional — override job/pipeline IDs:** Set `DATABRICKS_JOB_ID_*`, `DATABRICKS_PIPELINE_ID_*`, `DATABRICKS_WORKSPACE_ID` per [Architecture & reference](ARCHITECTURE_REFERENCE.md#workspace-components--ui-mapping).
+5. **Optional — override job/pipeline IDs:** Set `DATABRICKS_JOB_ID_*`, `DATABRICKS_PIPELINE_ID_*`, `DATABRICKS_WORKSPACE_ID` per [Architecture & reference](ARCHITECTURE_REFERENCE.md#workspace-components--ui-mapping).
 
 App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project root. See [App spec error](#app-spec-error).
 
@@ -154,6 +154,7 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 | Registered model does not exist | Run Step 5 (Train ML models), then uncomment `model_serving.yml`, redeploy |
 | Lakebase "Instance name is not unique" | Use unique `lakebase_instance_name` via `--var` or target |
 | Error installing packages (app deploy) | Check **Logs** for the exact pip error. Ensure `requirements.txt` is up to date: run `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. See [Databricks Apps compatibility](#databricks-apps-compatibility). |
+| **Catalog '…' or schema '…' not found** | The catalog must exist before deploy; the bundle creates the schema. See [Fix: Catalog or schema not found](#fix-catalog-or-schema-not-found) below. |
 | **permission denied for schema public** | App tables use schema `app` by default. Set **LAKEBASE_SCHEMA** (e.g. `app`) in the app environment if needed; the app creates the schema if it has permission. |
 | **Databricks credentials not configured; cannot update app_config** | Either enable **user authorization (OBO)** and open the app from Compute → Apps (so your token is used), or set **DATABRICKS_HOST**, **DATABRICKS_WAREHOUSE_ID**, and optionally **DATABRICKS_TOKEN** in the app environment. **Compute → Apps → payment-analysis → Edit → Environment**; add variables, Save, then restart the app. |
 | **Error loading app spec from app.yml** | Ensure **`app.yml`** exists at project root (runtime spec for the app container). Redeploy. |
@@ -162,6 +163,46 @@ After any change to the app or bundle config, **redeploy** and **restart** the a
 | **Provided OAuth token does not have required scopes** | PAT lacks permissions or OAuth env vars conflict. See [Fix: PAT / token scopes](#fix-pat--token-scopes) below. |
 | **403 Forbidden / Invalid scope** (SQL or Setup) | User token from Compute → Apps lacks the **sql** scope. In **Compute → Apps → payment-analysis → Edit → Configure → Authorization scopes**, add **sql**, then **Save** and **restart** the app. See [Use your credentials (no token)](#deploy-app-as-a-databricks-app) above. |
 | **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
+
+### Fix: Catalog or schema not found
+
+**Error:** `Catalog 'ahs_demos_catalog' or schema 'payment_analysis' not found in this workspace. Create the Unity Catalog and schema (see docs/DEPLOYMENT_GUIDE.md), or run the job with notebook_params catalog= schema=.`
+
+The bundle creates the **schema** and volumes; it does **not** create the **catalog**. The catalog must already exist in the workspace.
+
+**Option A — Use the default catalog name**
+
+1. **Create the catalog** (if it does not exist):  
+   In the workspace go to **Data** → **Catalogs** → **Create catalog**.  
+   Name: `ahs_demos_catalog` (or your chosen catalog). Create it.
+2. **Redeploy the bundle** so it can create the schema and volumes in that catalog:  
+   `./scripts/bundle.sh deploy dev`  
+   If you use a different catalog name, deploy with:  
+   `./scripts/bundle.sh deploy dev --var catalog=your_catalog_name --var schema=payment_analysis`
+3. **Run jobs again** from **Setup & Run** (or re-run the job that failed). The app uses the catalog/schema from **Setup & Run** → **Save catalog & schema** or from the job’s notebook params.
+
+**Option B — Use an existing catalog**
+
+1. Deploy (or redeploy) with your existing catalog and schema:  
+   `./scripts/bundle.sh deploy dev --var catalog=YOUR_EXISTING_CATALOG --var schema=payment_analysis`  
+   The bundle will create the `payment_analysis` schema and volumes inside `YOUR_EXISTING_CATALOG` (or use an existing schema name with `--var schema=YOUR_SCHEMA`).
+2. In the app, open **Setup & Run** → set **Catalog** and **Schema** to the same values → **Save catalog & schema**.
+3. Run jobs again.
+
+**Option C — Let Job 1 create catalog and schema**
+
+Job 1’s **first task** (`ensure_catalog_schema`) creates the Unity Catalog and schema if they do not exist. Requires metastore admin or **CREATE_CATALOG** and **CREATE_SCHEMA** privileges. Run **Job 1** once; its first task will create the catalog and schema, then Lakebase init, lakehouse tables (with seed data), and vector search. Subsequent jobs and the app will then have the required catalog, schema, Lakebase tables (config, rules, online_features, app_settings), and lakehouse tables (app_config, approval_rules, countries, transaction_summaries_for_search, etc.).
+
+**From the CLI (run job with custom catalog/schema):**
+
+```bash
+# Example: run job 1 with a specific catalog and schema
+uv run python scripts/run_and_validate_jobs.py --job job_1_create_data_repositories
+# with env set:
+export DATABRICKS_CATALOG=your_catalog
+export DATABRICKS_SCHEMA=payment_analysis
+uv run python scripts/run_and_validate_jobs.py --job job_1_create_data_repositories
+```
 
 ### Fix: PAT / token scopes
 
@@ -217,8 +258,10 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | Job (bundle resource) | Purpose | Notes |
 |----------------------|---------|--------|
 | **ml_jobs.yml** | | |
-| `lakehouse_bootstrap_job` | Run `lakehouse_bootstrap.sql`: app_config, rules, recommendations, online_features | SQL task; run once. |
-| `vector_search_index_job` | Create Vector Search endpoint and index from `transaction_summaries_for_search` | Notebook; run after bootstrap. |
+| `ensure_catalog_schema` (job 1 task 1) | Create Unity Catalog and schema if they do not exist | First task of job 1; idempotent. Requires CREATE_CATALOG/CREATE_SCHEMA or metastore admin. |
+| `lakebase_data_init` (job 1 task 2) | Initialize Lakebase Postgres: app_config, approval_rules, online_features table, app_settings (job params) | Run once. Backend reads these at startup. |
+| `lakehouse_bootstrap` (job 1 task 3) | Run `lakehouse_bootstrap.sql`: app_config, rules, recommendations, countries, online_features; seeds app_config, countries, approval_rules | Run once after Lakebase init. Creates all lakehouse tables and default rules. |
+| `create_vector_search_index` (job 1 task 4) | Create Vector Search endpoint and delta-sync index from `transaction_summaries_for_search`; MERGE from silver when available | Notebook; run after bootstrap. Skips MERGE if silver table missing so job 1 can complete. |
 | `create_gold_views_job` | Run `gold_views.sql`: 12+ analytical views | SQL task; distinct from bootstrap. |
 | `train_ml_models_job` | Train 4 ML models (approval, risk, routing, retry); register in UC | Single notebook. |
 | `prepare_dashboards_job` | Generate `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema | Run when catalog/schema or source dashboards change; not in Setup & Run UI. |
@@ -247,8 +290,10 @@ All job notebook and SQL paths are relative to the workspace `file_path` (where 
 
 | Bundle resource (YAML key) | App/backend key | Notebook or SQL path | Source file |
 |----------------------------|-----------------|----------------------|-------------|
-| `lakehouse_bootstrap_job` | `lakehouse_bootstrap` | `.build/transform/lakehouse_bootstrap.sql` | Generated by prepare |
-| `vector_search_index_job` | `vector_search_index` | `src/payment_analysis/vector_search/create_index` | `create_index.py` |
+| job_1 task `ensure_catalog_schema` | (task 1 of job 1) | `src/payment_analysis/transform/run_ensure_catalog_schema` | `run_ensure_catalog_schema.py` |
+| job_1 task `lakebase_data_init` | (task 2 of job 1) | `src/payment_analysis/transform/run_lakebase_data_init` | `run_lakebase_data_init.py` |
+| job_1 task `lakehouse_bootstrap` | `lakehouse_bootstrap` | `run_lakehouse_bootstrap` reads `lakehouse_bootstrap.sql` from workspace_path | `lakehouse_bootstrap.sql` (transform/) |
+| job_1 task `create_vector_search_index` | `vector_search_index` | `src/payment_analysis/vector_search/create_index` | `create_index.py` |
 | `create_gold_views_job` | `create_gold_views` | `.build/transform/gold_views.sql` | Generated by prepare |
 | `transaction_stream_simulator` | `transaction_stream_simulator` | `src/payment_analysis/streaming/transaction_simulator` | `transaction_simulator.py` |
 | `train_ml_models_job` | `train_ml_models` | `src/payment_analysis/ml/train_models` | `train_models.py` |

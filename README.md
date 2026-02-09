@@ -1,29 +1,32 @@
 # Payment Analysis
 
-Databricks-powered payment approval optimization: real-time analytics, ML models, and AI agents.
+Databricks-powered payment approval optimization: **accelerate approval rates** with smart retry, smart checkout, risk analysis, fraud detection, and AI-backed decisioning.
 
 ## Overview
 
-**Challenge:** Declined legitimate transactions mean lost revenue — false declines, static rules, suboptimal routing.
+**Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Solution:** Real-time ML per transaction, smart routing, intelligent retry, 7 AI agents, Genie. Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app.
+**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search for similar-case recommendations. Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app.
 
-| Initiative | Scope | Deliverables |
-|------------|--------|--------------|
-| Smart Checkout | Payment links, Brazil | 3DS funnel, antifraud attribution |
-| Reason Codes | E-commerce, Brazil | Consolidated declines, unified taxonomy |
-| Smart Retry | Brazil | Reattempt success rate, effectiveness |
+| Use case | Deliverables |
+|----------|----------------|
+| **Smart Retry** | Retry performance, ML retry model, Smart Retry agent, similar-case recommendations |
+| **Smart Checkout** | 3DS funnel, service-path performance, antifraud attribution (Brazil payment links) |
+| **Reason codes** | Consolidated declines, unified taxonomy, recovery opportunities |
+| **Risk & fraud** | Risk tier, fraud score, risk signals, Fraud Risk dashboard, Risk Assessor agent |
+| **Routing** | Routing performance, Smart Routing agent, model serving |
 
-**AI agents (7):** Genie (2), Model Serving (3), [Mosaic AI Gateway](https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/) (2). See [Deployment guide](docs/DEPLOYMENT_GUIDE.md) and [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md).
+See [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md#business-purpose--use-cases) for the full use-case map.
 
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [Deployment guide](docs/DEPLOYMENT_GUIDE.md) | Deploy steps, app config, env vars, troubleshooting, scripts |
-| [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md) | Architecture, data flow, bundle resources, app compliance |
-| [Data sources](docs/DATA_SOURCES.md) | Where app data comes from (Databricks, Lakehouse tables, fallbacks) |
+| [Architecture & reference](docs/ARCHITECTURE_REFERENCE.md) | Business use cases, architecture, data flow, data sources, UI↔backend wiring |
+| [Control panel & UI](docs/CONTROL_PANEL_UI.md) | Run jobs, dashboards, Genie, agents, ML, Lakebase tables in the UI |
 | [Version alignment](docs/VERSION_ALIGNMENT.md) | Pinned dependency versions and Databricks App compatibility |
+| [Docs index](docs/README.md) | Documentation and project structure overview |
 
 ## Quick start
 

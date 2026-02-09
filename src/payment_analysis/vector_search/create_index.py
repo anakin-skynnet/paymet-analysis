@@ -47,58 +47,67 @@ print(f"Endpoint: {ENDPOINT_NAME}, Index: {INDEX_NAME}, Source: {SOURCE_TABLE}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Populate source table from Silver
+# MAGIC ## Step 1 — Populate source table from Silver (if silver table exists)
 # MAGIC
 # MAGIC Build a `summary_text` for each transaction by concatenating its key attributes.
 # MAGIC The vector search embedding model will convert this text into a dense vector.
-# MAGIC We use MERGE to avoid duplicates on re-runs and to pick up new transactions.
+# MAGIC We use MERGE to avoid duplicates on re-runs. If `payments_enriched_silver` does not exist
+# MAGIC (e.g. DLT pipeline not run yet), we skip the MERGE and still create the endpoint and index
+# MAGIC so Job 1 can complete; re-run this notebook or Job 3 to sync data later.
 
 # COMMAND ----------
 
-row_count_before = spark.sql(f"SELECT COUNT(*) AS cnt FROM {SOURCE_TABLE}").first()["cnt"]  # type: ignore[name-defined]
-print(f"Source table row count BEFORE merge: {row_count_before}")
+try:
+    row_count_before = spark.sql(f"SELECT COUNT(*) AS cnt FROM {SOURCE_TABLE}").first()["cnt"]  # type: ignore[name-defined]
+    print(f"Source table row count BEFORE merge: {row_count_before}")
 
-merge_sql = f"""
-MERGE INTO {SOURCE_TABLE} AS target
-USING (
-    SELECT
-        transaction_id,
-        CONCAT(
-            'Transaction ', transaction_id,
-            ': amount=', CAST(amount AS STRING), ' ', currency,
-            ', merchant_segment=', COALESCE(merchant_segment, 'unknown'),
-            ', network=', COALESCE(card_network, 'unknown'),
-            ', payment_solution=', COALESCE(payment_solution, 'unknown'),
-            ', outcome=', CASE WHEN is_approved THEN 'approved'
-                               ELSE CONCAT('declined:', COALESCE(decline_reason, 'unknown')) END,
-            ', fraud_score=', CAST(ROUND(COALESCE(fraud_score, 0), 3) AS STRING),
-            ', risk_tier=', COALESCE(risk_tier, 'unknown'),
-            ', country=', COALESCE(issuer_country, 'unknown'),
-            ', cross_border=', CAST(COALESCE(is_cross_border, false) AS STRING)
-        ) AS summary_text,
-        CASE WHEN is_approved THEN 'approved' ELSE 'declined' END AS outcome,
-        amount,
-        card_network AS network,
-        merchant_segment,
-        COALESCE(event_time, current_timestamp()) AS created_at
-    FROM {SILVER_TABLE}
-) AS source
-ON target.transaction_id = source.transaction_id
-WHEN NOT MATCHED THEN
-    INSERT (transaction_id, summary_text, outcome, amount, network, merchant_segment, created_at)
-    VALUES (source.transaction_id, source.summary_text, source.outcome, source.amount, source.network, source.merchant_segment, source.created_at)
-WHEN MATCHED THEN
-    UPDATE SET
-        summary_text   = source.summary_text,
-        outcome        = source.outcome,
-        amount         = source.amount,
-        network        = source.network,
-        merchant_segment = source.merchant_segment
-"""
-spark.sql(merge_sql)  # type: ignore[name-defined]
+    merge_sql = f"""
+    MERGE INTO {SOURCE_TABLE} AS target
+    USING (
+        SELECT
+            transaction_id,
+            CONCAT(
+                'Transaction ', transaction_id,
+                ': amount=', CAST(amount AS STRING), ' ', currency,
+                ', merchant_segment=', COALESCE(merchant_segment, 'unknown'),
+                ', network=', COALESCE(card_network, 'unknown'),
+                ', payment_solution=', COALESCE(payment_solution, 'unknown'),
+                ', outcome=', CASE WHEN is_approved THEN 'approved'
+                                   ELSE CONCAT('declined:', COALESCE(decline_reason, 'unknown')) END,
+                ', fraud_score=', CAST(ROUND(COALESCE(fraud_score, 0), 3) AS STRING),
+                ', risk_tier=', COALESCE(risk_tier, 'unknown'),
+                ', country=', COALESCE(issuer_country, 'unknown'),
+                ', cross_border=', CAST(COALESCE(is_cross_border, false) AS STRING)
+            ) AS summary_text,
+            CASE WHEN is_approved THEN 'approved' ELSE 'declined' END AS outcome,
+            amount,
+            card_network AS network,
+            merchant_segment,
+            COALESCE(event_time, current_timestamp()) AS created_at
+        FROM {SILVER_TABLE}
+    ) AS source
+    ON target.transaction_id = source.transaction_id
+    WHEN NOT MATCHED THEN
+        INSERT (transaction_id, summary_text, outcome, amount, network, merchant_segment, created_at)
+        VALUES (source.transaction_id, source.summary_text, source.outcome, source.amount, source.network, source.merchant_segment, source.created_at)
+    WHEN MATCHED THEN
+        UPDATE SET
+            summary_text   = source.summary_text,
+            outcome        = source.outcome,
+            amount         = source.amount,
+            network        = source.network,
+            merchant_segment = source.merchant_segment
+    """
+    spark.sql(merge_sql)  # type: ignore[name-defined]
 
-row_count_after = spark.sql(f"SELECT COUNT(*) AS cnt FROM {SOURCE_TABLE}").first()["cnt"]  # type: ignore[name-defined]
-print(f"Source table row count AFTER merge: {row_count_after}  (added {row_count_after - row_count_before} rows)")
+    row_count_after = spark.sql(f"SELECT COUNT(*) AS cnt FROM {SOURCE_TABLE}").first()["cnt"]  # type: ignore[name-defined]
+    print(f"Source table row count AFTER merge: {row_count_after}  (added {row_count_after - row_count_before} rows)")
+except Exception as e:
+    err = str(e).lower()
+    if "table or view not found" in err or "cannot find" in err or "payments_enriched_silver" in err:
+        print(f"Silver table {SILVER_TABLE} not found; skipping MERGE. Endpoint and index will be created with current source table state.")
+    else:
+        raise
 
 # COMMAND ----------
 

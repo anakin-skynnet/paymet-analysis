@@ -33,6 +33,7 @@ package-lock.json
 
 # DABs 
 .databricks
+.databricks_job_runs.json
 
 # apx
 .apx/

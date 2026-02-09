@@ -14,6 +14,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import AppConfig
+from .lakebase_config import load_app_config_and_settings
 from .logger import logger
 from .router import api
 from .runtime import Runtime
@@ -87,28 +88,44 @@ async def lifespan(app: FastAPI):
     runtime.initialize_models()
     # When PGAPPNAME is not set (e.g. Databricks App without Lakebase), DB is skipped; app still starts.
 
-    # Load effective Unity Catalog config: from app_config in Lakehouse when env has token, else env defaults (lazy-load from OBO on first request)
+    # Load config and settings from Lakebase first (backend reads these tables before starting)
+    app.state.lakebase_settings = {}
+    app.state.uc_config_from_lakebase = False
+    uc_from_lakebase = None
+    if runtime._db_configured():
+        try:
+            uc_from_lakebase, app.state.lakebase_settings = load_app_config_and_settings(runtime)
+            if app.state.lakebase_settings:
+                logger.info("Loaded app_settings from Lakebase: %s", list(app.state.lakebase_settings.keys()))
+        except Exception as e:
+            logger.warning("Could not load config from Lakebase: %s", e)
+
+    # Unity Catalog config: prefer Lakebase app_config, then Lakehouse, then env
     bootstrap = DatabricksConfig.from_environment()
     app.state.uc_config_from_lakehouse = False
-    if bootstrap.host and bootstrap.token and bootstrap.warehouse_id:
+    if uc_from_lakebase and uc_from_lakebase[0] and uc_from_lakebase[1]:
+        app.state.uc_config = uc_from_lakebase
+        app.state.uc_config_from_lakebase = True
+        logger.info("Using catalog/schema from Lakebase app_config: %s.%s", uc_from_lakebase[0], uc_from_lakebase[1])
+    elif bootstrap.host and bootstrap.token and bootstrap.warehouse_id:
         try:
             svc = DatabricksService(config=bootstrap)
             row = await svc.read_app_config()
             if row and row[0] and row[1]:
                 app.state.uc_config = row
                 app.state.uc_config_from_lakehouse = True
-                logger.info("Using catalog/schema from app_config: %s.%s", row[0], row[1])
+                logger.info("Using catalog/schema from Lakehouse app_config: %s.%s", row[0], row[1])
             else:
                 app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
                 logger.info("Using catalog/schema from env: %s.%s", bootstrap.catalog, bootstrap.schema)
         except Exception as e:
-            logger.warning("Could not load app_config, using env defaults: %s", e)
+            logger.warning("Could not load app_config from Lakehouse, using env: %s", e)
             app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
     else:
         app.state.uc_config = (bootstrap.catalog, bootstrap.schema)
         app.state.uc_config_lazy_tried = False
         logger.info(
-            "Unity Catalog config from env (no token at startup). Will use logged-in user token for requests; catalog/schema lazy-loaded from app_config on first request if available."
+            "Unity Catalog config from env (no token at startup). Catalog/schema lazy-loaded from app_config on first request if available."
         )
 
     # Store in app.state for access via dependencies

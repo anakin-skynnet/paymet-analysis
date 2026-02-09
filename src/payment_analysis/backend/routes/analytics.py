@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import desc, func
 from sqlmodel import select
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ from ..config import DEFAULT_ENTITY
 from ..db_models import AuthorizationEvent, DecisionLog
 from ..decisioning.schemas import KPIOut
 from ..dependencies import SessionDep, DatabricksServiceDep
+from ..lakebase_config import get_online_features_from_lakebase
 
 router = APIRouter(tags=["analytics"])
 
@@ -209,11 +210,29 @@ class OnlineFeatureOut(BaseModel):
 
 @router.get("/online-features", response_model=list[OnlineFeatureOut], operation_id="getOnlineFeatures")
 async def get_online_features(
+    request: Request,
     service: DatabricksServiceDep,
     source: Optional[str] = Query(None, description="Filter by source: ml or agent"),
     limit: int = Query(100, ge=1, le=500, description="Max number of features to return"),
 ) -> list[OnlineFeatureOut]:
-    """Get online features from the Lakehouse (ML and AI processes). Presented in the UI."""
+    """Get online features from Lakebase (if available) or Lakehouse (ML and AI processes). Presented in the UI."""
+    runtime = getattr(request.app.state, "runtime", None)
+    if runtime and runtime._db_configured():
+        rows = get_online_features_from_lakebase(runtime, source=source, limit=limit)
+        if rows is not None:
+            return [
+                OnlineFeatureOut(
+                    id=r["id"],
+                    source=r["source"],
+                    feature_set=r.get("feature_set"),
+                    feature_name=r["feature_name"],
+                    feature_value=float(r["feature_value"]) if r.get("feature_value") is not None else None,
+                    feature_value_str=r.get("feature_value_str"),
+                    entity_id=r.get("entity_id"),
+                    created_at=str(r["created_at"]) if r.get("created_at") else None,
+                )
+                for r in rows
+            ]
     rows = await service.get_online_features(source=source, limit=limit)
     return [
         OnlineFeatureOut(

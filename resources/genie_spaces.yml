@@ -8,7 +8,7 @@
 resources:
   jobs:
     genie_sync_job:
-      name: "[${var.environment}] 07. Genie Space Sync"
+      name: "[${var.environment}] 7. Genie Space Sync"
       description: "Syncs Genie space configuration and sample questions for natural language analytics"
       tasks:
         - task_key: sync_genie_config

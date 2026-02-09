@@ -550,6 +550,10 @@ export interface SetupDefaultsOut {
   workspace_url_derived?: boolean;
 }
 
+export interface SetupSettingsOut {
+  settings?: Record<string, string>;
+}
+
 export interface SmartCheckoutPathPerformanceOut {
   approval_rate_pct: number;
   approved_count: number;
@@ -2251,6 +2255,29 @@ export const runSetupPipeline = async (data: RunPipelineIn, options?: RequestIni
 
 export function useRunSetupPipeline(options?: { mutation?: UseMutationOptions<{ data: RunPipelineOut }, ApiError, RunPipelineIn> }) {
   return useMutation({ mutationFn: (data) => runSetupPipeline(data), ...options?.mutation });
+}
+
+export const getSetupSettings = async (options?: RequestInit): Promise<{ data: SetupSettingsOut }> => {
+  const res = await fetch("/api/setup/settings", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getSetupSettingsKey = () => {
+  return ["/api/setup/settings"] as const;
+};
+
+export function useGetSetupSettings<TData = { data: SetupSettingsOut }>(options?: { query?: Omit<UseQueryOptions<{ data: SetupSettingsOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getSetupSettingsKey(), queryFn: () => getSetupSettings(), ...options?.query });
+}
+
+export function useGetSetupSettingsSuspense<TData = { data: SetupSettingsOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: SetupSettingsOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getSetupSettingsKey(), queryFn: () => getSetupSettings(), ...options?.query });
 }
 
 export const healthDatabase = async (options?: RequestInit): Promise<{ data: HealthDatabaseOut }> => {

@@ -84,6 +84,24 @@ FROM approval_rules
 WHERE is_active = true
 ORDER BY priority ASC, updated_at DESC;
 
+-- Seed default approval rules only when table is empty (aligned with Lakebase defaults)
+INSERT INTO approval_rules (id, name, rule_type, condition_expression, action_summary, priority, is_active)
+SELECT id, name, rule_type, condition_expression, action_summary, priority, is_active FROM (
+    SELECT 'default-auth-1' AS id, 'Default 3DS for high value' AS name, 'authentication' AS rule_type,
+           'amount_cents >= 50000' AS condition_expression,
+           'Require 3DS for transactions >= 500.00; reduces fraud and false declines' AS action_summary,
+           100 AS priority, true AS is_active
+    UNION ALL
+    SELECT 'default-retry-1', 'Retry after soft decline', 'retry',
+           'decline_reason IN (''INSUFFICIENT_FUNDS'',''TEMPORARY_FAILURE'')',
+           'Retry once after 2h for soft declines; improves approval rate', 90, true
+    UNION ALL
+    SELECT 'default-routing-1', 'Primary acquirer routing', 'routing',
+           'merchant_country = ''BR''',
+           'Route Brazil e-commerce to primary acquirer; fallback to backup on timeout', 110, true
+) seed
+WHERE (SELECT COUNT(*) FROM approval_rules) = 0;
+
 -- ----------------------------------------------------------------------------
 -- 3b. Countries / entities (for UI dropdown filter; editable by users)
 -- ----------------------------------------------------------------------------

@@ -21,13 +21,28 @@ import {
 } from "lucide-react";
 import { ensureAbsoluteWorkspaceUrl, getWorkspaceUrl } from "@/config/workspace";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
-import { runSetupJob, runSetupPipeline, type RunJobOut, type RunPipelineOut } from "@/lib/api";
+import {
+  runSetupJob,
+  runSetupPipeline,
+  useGetCountries,
+  useGetOnlineFeatures,
+  type RunJobOut,
+  type RunPipelineOut,
+} from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/setup")({
   component: () => <SetupRun />,
 });
 
 const API_BASE = "/api/setup";
+
+type SetupSettings = { settings: Record<string, string> };
+
+async function fetchSettings(): Promise<SetupSettings> {
+  const res = await fetch(`${API_BASE}/settings`, { credentials: "include" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
 
 type SetupDefaults = {
   warehouse_id: string;
@@ -70,6 +85,14 @@ function SetupRun() {
     staleTime: 15_000,
     refetchOnWindowFocus: true,
   });
+
+  const { data: settingsData } = useQuery({
+    queryKey: ["setup", "settings"],
+    queryFn: fetchSettings,
+    staleTime: 30_000,
+  });
+  const { data: countriesData } = useGetCountries({ params: {} });
+  const { data: onlineFeaturesData } = useGetOnlineFeatures({ params: { limit: 100 } });
 
   const [warehouseId, setWarehouseId] = useState("");
   const [catalog, setCatalog] = useState("");
@@ -442,6 +465,143 @@ function SetupRun() {
           <span>{lastResult.message}</span>
         </div>
       )}
+
+      {/* Data & config — Lakebase/Lakehouse data fetched from backend for control panel UX */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Data & config
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            App settings (Lakebase), countries, and online features from the Databricks backend. Refreshed when you load or refocus this page.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* App config (current catalog/schema) and App settings (key-value) */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">App config & settings (Lakebase)</h3>
+            <p className="text-xs text-muted-foreground">
+              Effective catalog and schema above are persisted in app_config. Key-value settings below are from app_settings (job defaults, warehouse_id).
+            </p>
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left py-2 px-3 font-medium">Key</th>
+                    <th className="text-left py-2 px-3 font-medium">Value</th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr]:border-b [&_tr]:border-border">
+                  {defaults && (
+                    <>
+                      <tr>
+                        <td className="py-2 px-3 font-medium text-muted-foreground">catalog (effective)</td>
+                        <td className="py-2 px-3">{defaults.catalog || "—"}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-medium text-muted-foreground">schema (effective)</td>
+                        <td className="py-2 px-3">{defaults.schema || "—"}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-medium text-muted-foreground">warehouse_id</td>
+                        <td className="py-2 px-3">{defaults.warehouse_id || "—"}</td>
+                      </tr>
+                    </>
+                  )}
+                  {settingsData?.settings &&
+                    Object.entries(settingsData.settings)
+                      .filter(([k]) => !["catalog", "schema"].includes(k) || !defaults)
+                      .map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="py-2 px-3 font-medium text-muted-foreground">{key}</td>
+                          <td className="py-2 px-3 break-all">{value || "—"}</td>
+                        </tr>
+                      ))}
+                  {(!settingsData?.settings || Object.keys(settingsData.settings).length === 0) &&
+                    (!defaults?.catalog && !defaults?.schema && !defaults?.warehouse_id) && (
+                    <tr>
+                      <td colSpan={2} className="py-4 px-3 text-center text-muted-foreground text-sm">
+                        No app settings loaded. Run Job 1 (Create Data Repositories) to seed Lakebase.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Countries (Lakehouse / Lakebase) */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Countries / entities</h3>
+            <p className="text-xs text-muted-foreground">
+              From Lakehouse countries table (filter dropdown). Fetched from backend.
+            </p>
+            <div className="overflow-x-auto rounded-md border border-border max-h-48 overflow-y-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/50">
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 font-medium">Code</th>
+                    <th className="text-left py-2 px-3 font-medium">Name</th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr]:border-b [&_tr]:border-border">
+                  {(countriesData?.data ?? []).map((c) => (
+                    <tr key={c.code}>
+                      <td className="py-2 px-3">{c.code}</td>
+                      <td className="py-2 px-3">{c.name}</td>
+                    </tr>
+                  ))}
+                  {(!countriesData?.data || countriesData.data.length === 0) && (
+                    <tr>
+                      <td colSpan={2} className="py-4 px-3 text-center text-muted-foreground text-sm">
+                        No countries. Run Job 1 to seed the Lakehouse.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Online features (ML / agent output) */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Online features (last 100)</h3>
+            <p className="text-xs text-muted-foreground">
+              From Lakebase or Lakehouse. ML and AI agent outputs for the app.
+            </p>
+            <div className="overflow-x-auto rounded-md border border-border max-h-64 overflow-y-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/50">
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 font-medium">Source</th>
+                    <th className="text-left py-2 px-3 font-medium">Feature</th>
+                    <th className="text-left py-2 px-3 font-medium">Value</th>
+                    <th className="text-left py-2 px-3 font-medium">Entity</th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr]:border-b [&_tr]:border-border">
+                  {(onlineFeaturesData?.data ?? []).map((f, i) => (
+                    <tr key={f.id + String(i)}>
+                      <td className="py-2 px-3">{f.source}</td>
+                      <td className="py-2 px-3">{f.feature_name}</td>
+                      <td className="py-2 px-3">{f.feature_value != null ? String(f.feature_value) : f.feature_value_str ?? "—"}</td>
+                      <td className="py-2 px-3">{f.entity_id ?? "—"}</td>
+                    </tr>
+                  ))}
+                  {(!onlineFeaturesData?.data || onlineFeaturesData.data.length === 0) && (
+                    <tr>
+                      <td colSpan={4} className="py-4 px-3 text-center text-muted-foreground text-sm">
+                        No online features yet. ML and agents populate this after runs.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Steps — jobs 1–6: create repositories → simulate events → initialize ingestion → deploy dashboards → train models → deploy agents; optional Genie and pipelines */}
       <div className="space-y-4">

@@ -15,14 +15,62 @@
 resources:
   jobs:
     # -------------------------------------------------------------------------
-    # 1. Create data repositories: lakehouse, vector search, lakebase database
+    # 1. Create data repositories: catalog/schema → Lakebase → lakehouse → vector search
     # -------------------------------------------------------------------------
     "job_1_create_data_repositories":
       name: "[${var.environment}] 1. Create Data Repositories (Lakehouse, Vector Search, Lakebase)"
-      description: "Create lakehouse tables (app_config, rules, recommendations), vector search endpoint and index, and ensure Lakebase database is ready. Run once after bundle deploy."
+      description: "Ensure catalog and schema; initialize Lakebase (default config and rules); create lakehouse tables; vector search endpoint and index. Run once after bundle deploy."
       tasks:
+        - task_key: ensure_catalog_schema
+          description: "Create Unity Catalog and schema if they do not exist"
+          notebook_task:
+            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_ensure_catalog_schema
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+          timeout_seconds: 120
+          max_retries: 2
+
+        - task_key: lakebase_data_init
+          description: "Initialize Lakebase Postgres with default app_config and approval_rules"
+          depends_on:
+            - task_key: ensure_catalog_schema
+          notebook_task:
+            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_lakebase_data_init
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              lakebase_instance_name: ${var.lakebase_instance_name}
+              lakebase_database_name: ${var.lakebase_database_name}
+              lakebase_schema: "app"
+              warehouse_id: ${var.warehouse_id}
+              default_events_per_second: "1000"
+              default_duration_minutes: "60"
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+          timeout_seconds: 300
+          max_retries: 2
+
         - task_key: lakehouse_bootstrap
-          description: "Create Lakehouse tables and views for Rules, Decisioning, and Dashboard"
+          description: "Create Lakehouse tables, views, and seed data for Rules, Decisioning, and Dashboard"
+          depends_on:
+            - task_key: lakebase_data_init
           notebook_task:
             notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_lakehouse_bootstrap
             base_parameters:

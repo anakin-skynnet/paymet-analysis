@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..dependencies import DatabricksServiceDep
+from ..lakebase_config import get_approval_rules_from_lakebase
 
 router = APIRouter(tags=["rules"])
 
@@ -62,12 +63,18 @@ def _rule_row_to_out(row: dict) -> ApprovalRuleOut:
 
 @router.get("", response_model=list[ApprovalRuleOut], operation_id="listApprovalRules")
 async def list_approval_rules(
+    request: Request,
     service: DatabricksServiceDep,
     rule_type: Optional[str] = Query(None, description="Filter by rule_type: authentication, retry, or routing"),
     active_only: bool = Query(False, description="Return only active rules"),
     limit: int = Query(200, ge=1, le=500, description="Max number of rules to return"),
 ) -> list[ApprovalRuleOut]:
-    """List approval rules from the Lakehouse. ML and AI agents read these to accelerate approval rates."""
+    """List approval rules from Lakebase (if available) or Lakehouse. ML and AI agents read these to accelerate approval rates."""
+    runtime = getattr(request.app.state, "runtime", None)
+    if runtime and runtime._db_configured():
+        rows = get_approval_rules_from_lakebase(runtime, rule_type=rule_type, active_only=active_only, limit=limit)
+        if rows is not None:
+            return [_rule_row_to_out(r) for r in rows]
     rows = await service.get_approval_rules(rule_type=rule_type, active_only=active_only, limit=limit)
     return [_rule_row_to_out(r) for r in rows]
 

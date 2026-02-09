@@ -31,6 +31,7 @@ from ..dependencies import (
     get_workspace_client,
     get_workspace_client_optional,
 )
+from ..lakebase_config import write_app_config as write_lakebase_app_config
 from ..services.databricks_service import DatabricksConfig, DatabricksService
 from databricks.sdk import WorkspaceClient
 
@@ -78,6 +79,8 @@ DEFAULT_IDS: _DefaultIds = {
     "jobs": {
         "transaction_stream_simulator": os.getenv(_job_id_env_key("transaction_stream_simulator"), "782493643247677") or "782493643247677",
         "create_gold_views": os.getenv(_job_id_env_key("create_gold_views"), "775632375108394") or "775632375108394",
+        "ensure_catalog_schema": os.getenv(_job_id_env_key("ensure_catalog_schema"), "0") or "0",
+        "lakebase_data_init": os.getenv(_job_id_env_key("lakebase_data_init"), "0") or "0",
         "lakehouse_bootstrap": os.getenv(_job_id_env_key("lakehouse_bootstrap"), "0") or "0",
         "vector_search_index": os.getenv(_job_id_env_key("vector_search_index"), "0") or "0",
         "train_ml_models": os.getenv(_job_id_env_key("train_ml_models"), "231255282351595") or "231255282351595",
@@ -168,6 +171,11 @@ class SetupConfigOut(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class SetupSettingsOut(BaseModel):
+    """App settings (key-value) from Lakebase app_settings, read at startup. Used for job defaults and config."""
+    settings: dict[str, str] = Field(default_factory=dict, description="Key-value pairs (e.g. warehouse_id, default_events_per_second)")
+
+
 # =============================================================================
 # Resolve job/pipeline IDs by name when env defaults are "0" or missing
 # =============================================================================
@@ -175,7 +183,7 @@ class SetupConfigOut(BaseModel):
 # keys map to the same job_id. Substring must appear in the deployed job name.
 # Bundle: ml_jobs.yml (steps 1,3,4,5), streaming_simulator.yml (step 2), agents.yml (step 6).
 _STEP_JOB_SUBSTRINGS: dict[str, list[str]] = {
-    "1. Create Data Repositories": ["lakehouse_bootstrap", "vector_search_index"],
+    "1. Create Data Repositories": ["ensure_catalog_schema", "lakebase_data_init", "lakehouse_bootstrap", "vector_search_index"],
     "2. Simulate Transaction Events": ["transaction_stream_simulator"],
     "3. Initialize Ingestion": ["create_gold_views", "continuous_stream_processor"],
     "4. Deploy Dashboards": ["prepare_dashboards", "publish_dashboards"],
@@ -244,11 +252,31 @@ def _merge_resolved_ids(
 # =============================================================================
 
 def _effective_uc_config(request: Request) -> tuple[str, str]:
-    """Return (catalog, schema) from app state (set at startup from app_config table)."""
+    """Return (catalog, schema) from app state (set at startup from Lakebase app_config or Lakehouse)."""
     catalog, schema = getattr(request.app.state, "uc_config", (None, None))
-    if catalog and schema:
-        return (catalog, schema)
-    return (DEFAULT_IDS["catalog"], DEFAULT_IDS["schema"])
+    return (catalog or "", schema or "")
+
+
+def _effective_warehouse_id(request: Request) -> str:
+    """Return warehouse_id from Lakebase app_settings (read at startup) or env defaults."""
+    settings = getattr(request.app.state, "lakebase_settings", None) or {}
+    return (settings.get("warehouse_id") or "").strip() or DEFAULT_IDS["warehouse_id"]
+
+
+def _effective_job_defaults(request: Request) -> tuple[str, str]:
+    """Return (default_events_per_second, default_duration_minutes) from Lakebase app_settings."""
+    settings = getattr(request.app.state, "lakebase_settings", None) or {}
+    return (
+        (settings.get("default_events_per_second") or "").strip() or "1000",
+        (settings.get("default_duration_minutes") or "").strip() or "60",
+    )
+
+
+@router.get("/settings", response_model=SetupSettingsOut, operation_id="getSetupSettings")
+def get_setup_settings(request: Request) -> SetupSettingsOut:
+    """Return app settings (key-value) from Lakebase app_settings, loaded at startup. Used to show default values and config in the control panel."""
+    settings = getattr(request.app.state, "lakebase_settings", None) or {}
+    return SetupSettingsOut(settings=dict(settings))
 
 
 @router.get("/defaults", response_model=SetupDefaultsOut, operation_id="getSetupDefaults")
@@ -276,7 +304,7 @@ def get_setup_defaults(
             resolved_jobs, resolved_pipelines, DEFAULT_IDS["jobs"], DEFAULT_IDS["pipelines"]
         )
     return SetupDefaultsOut(
-        warehouse_id=DEFAULT_IDS["warehouse_id"],
+        warehouse_id=_effective_warehouse_id(request),
         catalog=catalog,
         schema_name=schema,
         jobs=jobs,
@@ -324,6 +352,9 @@ async def update_setup_config(request: Request, body: SetupConfigIn) -> SetupCon
         msg = str(e).strip()
         detail = f"Failed to write app_config: {msg}" if msg else "Failed to write app_config."
         raise HTTPException(status_code=500, detail=detail)
+    runtime = getattr(request.app.state, "runtime", None)
+    if runtime:
+        write_lakebase_app_config(runtime, catalog, schema)
     request.app.state.uc_config = (catalog, schema)
     return SetupConfigOut(catalog=catalog, schema_name=schema)
 
@@ -371,16 +402,23 @@ def run_setup_job(
     eff_catalog, eff_schema = _effective_uc_config(request)
     catalog = body.catalog or eff_catalog
     schema = body.schema_name or eff_schema
-    warehouse_id = body.warehouse_id or DEFAULT_IDS["warehouse_id"]
+    warehouse_id = body.warehouse_id or _effective_warehouse_id(request)
+    default_eps, default_dur = _effective_job_defaults(request)
 
     notebook_params: dict[str, str] = {
         "catalog": catalog,
         "schema": schema,
     }
+    if warehouse_id:
+        notebook_params["warehouse_id"] = warehouse_id
     if body.events_per_second is not None:
         notebook_params["events_per_second"] = body.events_per_second
+    elif default_eps:
+        notebook_params["events_per_second"] = default_eps
     if body.duration_minutes is not None:
         notebook_params["duration_minutes"] = body.duration_minutes
+    elif default_dur:
+        notebook_params["duration_minutes"] = default_dur
 
     try:
         run = ws.jobs.run_now(
