@@ -34,7 +34,7 @@ except Exception as e:
     if "CATALOG_NOT_FOUND" in str(e) or "Schema" in str(e) or "not found" in str(e).lower():
         raise RuntimeError(
             f"Catalog {catalog!r} or schema {schema!r} not found in this workspace. "
-            "Create the Unity Catalog and schema (see docs/DEPLOYMENT_GUIDE.md), or run the job with notebook_params catalog=<your_catalog> schema=<your_schema>."
+            "Create the Unity Catalog and schema (see docs/DEPLOYMENT.md), or run the job with notebook_params catalog=<your_catalog> schema=<your_schema>."
         ) from e
     raise
 

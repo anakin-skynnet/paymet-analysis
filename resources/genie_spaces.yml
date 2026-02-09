@@ -15,7 +15,7 @@ resources:
         - task_key: sync_genie_config
           description: "Sync Genie space configuration"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/genie/sync_genie_space
+            notebook_path: ${workspace.root_path}/src/payment_analysis/genie/sync_genie_space
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

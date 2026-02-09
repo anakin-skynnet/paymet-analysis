@@ -11,7 +11,7 @@
 # Step 6 (deploy agents)   → resources/agents.yml
 # Step 7 (Genie sync)     → resources/genie_spaces.yml
 #
-# Execution order: 1 → 2 → 3 → 4 → 5 → 6 → 7. See docs/DEPLOYMENT_GUIDE.md and Setup & Run.
+# Execution order: 1 → 2 → 3 → 4 → 5 → 6 → 7. See docs/DEPLOYMENT.md and Setup & Run.
 # =============================================================================
 
 resources:
@@ -26,7 +26,7 @@ resources:
         - task_key: ensure_catalog_schema
           description: "Create Unity Catalog and schema if they do not exist"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_ensure_catalog_schema
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_ensure_catalog_schema
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -38,7 +38,7 @@ resources:
           depends_on:
             - task_key: ensure_catalog_schema
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_lakebase_data_init
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_lakebase_data_init
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -56,9 +56,9 @@ resources:
           depends_on:
             - task_key: lakebase_data_init
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_lakehouse_bootstrap
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_lakehouse_bootstrap
             base_parameters:
-              workspace_path: ${workspace.file_path}
+              workspace_path: ${workspace.root_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
           timeout_seconds: 300
@@ -69,7 +69,7 @@ resources:
           depends_on:
             - task_key: lakehouse_bootstrap
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/vector_search/create_index
+            notebook_path: ${workspace.root_path}/src/payment_analysis/vector_search/create_index
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -96,9 +96,9 @@ resources:
         - task_key: create_gold_views
           description: "Create gold-layer analytical views for dashboards and Genie"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/run_gold_views
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_gold_views
             base_parameters:
-              workspace_path: ${workspace.file_path}
+              workspace_path: ${workspace.root_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
           timeout_seconds: 600
@@ -109,7 +109,7 @@ resources:
           depends_on:
             - task_key: create_gold_views
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/vector_search/create_index
+            notebook_path: ${workspace.root_path}/src/payment_analysis/vector_search/create_index
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -136,9 +136,9 @@ resources:
         - task_key: prepare_dashboards
           description: "Prepare dashboard assets (catalog/schema substitution)"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/prepare_dashboards
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/prepare_dashboards
             base_parameters:
-              workspace_path: ${workspace.file_path}
+              workspace_path: ${workspace.root_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
           timeout_seconds: 600
@@ -149,7 +149,7 @@ resources:
           depends_on:
             - task_key: prepare_dashboards
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/transform/publish_dashboards
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/publish_dashboards
             base_parameters:
               dashboards_path: ${workspace.root_path}/dashboards
           timeout_seconds: 1200
@@ -174,7 +174,7 @@ resources:
         - task_key: train_models
           description: "Train all ML models with MLflow tracking"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/ml/train_models
+            notebook_path: ${workspace.root_path}/src/payment_analysis/ml/train_models
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

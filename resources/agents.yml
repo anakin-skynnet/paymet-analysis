@@ -17,7 +17,7 @@ resources:
         - task_key: run_orchestrator
           description: "Run payment analysis orchestrator for all agents"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -28,7 +28,7 @@ resources:
         - task_key: run_smart_routing
           description: "Run Smart Routing agent"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -39,7 +39,7 @@ resources:
         - task_key: run_smart_retry
           description: "Run Smart Retry agent"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -50,7 +50,7 @@ resources:
         - task_key: run_decline_analyst
           description: "Run Decline Analyst agent"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -61,7 +61,7 @@ resources:
         - task_key: run_risk_assessor
           description: "Run Risk Assessor agent"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -72,7 +72,7 @@ resources:
         - task_key: run_performance_recommender
           description: "Run Performance Recommender agent"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -83,7 +83,7 @@ resources:
         - task_key: test_agent_framework
           description: "Test multi-agent framework (orchestrator and specialists)"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/agents/agent_framework
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

@@ -80,9 +80,9 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 ## 7b. Version alignment (from unified chats)
 
-- **Exact versions everywhere:** All dependency references use the **same** versions (no `^` or `~`). Python: `pyproject.toml` (`==`) → `uv.lock` → `requirements.txt` via `scripts/sync_requirements_from_lock.py`. Frontend: `package.json` exact versions only → `bun.lock`. See `docs/VERSION_ALIGNMENT.md`.
+- **Exact versions everywhere:** All dependency references use the **same** versions (no `^` or `~`). Python: `pyproject.toml` (`==`) → `uv.lock` → `requirements.txt` via `scripts/sync_requirements_from_lock.py`. Frontend: `package.json` exact versions only → `bun.lock`. See `docs/DEPLOYMENT.md#version-alignment`.
 - **Do not change dependency versions** unless the user explicitly instructs.
-- **Databricks App compatibility:** Runtime Python 3.11, Node 22.16; versions in VERSION_ALIGNMENT are tested compatible.
+- **Databricks App compatibility:** Runtime Python 3.11, Node 22.16; versions in docs/DEPLOYMENT.md (Version alignment) are tested compatible.
 - **After changing deps:** Python: `uv lock` then `uv run python scripts/sync_requirements_from_lock.py`. Frontend: `uv run apx bun install`.
 
 ---
@@ -121,24 +121,17 @@ When the user asks to:
 - **Work with agents** — Backend: `backend/routes/agents.py` and `AGENTS`; framework: `agents/agent_framework.py` and `resources/agents.yml`.
 - **Change catalog/schema** — Bundle uses `var.catalog` / `var.schema`; app uses Lakebase `app_config`; set via Setup & Run → Save catalog & schema.
 - **Run jobs or pipelines** — From app Setup & Run; jobs 1–6 in order; pipelines (ETL, Real-Time) when needed.
-- **Verify / version alignment / deploy** — Run `uv run apx dev check` and `./scripts/bundle.sh verify dev`; ensure exact dependency versions (see VERSION_ALIGNMENT.md); commit and push to main; deploy with `./scripts/bundle.sh deploy dev` to overwrite existing resources.
+- **Verify / version alignment / deploy** — Run `uv run apx dev check` and `./scripts/bundle.sh verify dev`; ensure exact dependency versions (see docs/DEPLOYMENT.md#version-alignment); commit and push to main; deploy with `./scripts/bundle.sh deploy dev` to overwrite existing resources.
 
 ---
 
 ## 11. Documentation map
 
-**Logical grouping:** Business & impact → [docs/OVERVIEW.md](docs/OVERVIEW.md). Technical guideline → [docs/TECHNICAL_GUIDE.md](docs/TECHNICAL_GUIDE.md). Full index → [docs/README.md](docs/README.md).
-
 | Doc | Purpose |
 |-----|---------|
 | `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
-| `docs/OVERVIEW.md` | Business overview & impact on approval rates (use cases, technology map) |
-| `docs/TECHNICAL_GUIDE.md` | Technical guideline: architecture, structure, deploy summary, version & best practices |
-| `docs/ARCHITECTURE_REFERENCE.md` | Data sources (UI↔backend), workspace↔UI mapping, App compliance |
-| `docs/DEPLOYMENT_GUIDE.md` | Deploy steps, env vars, app config, troubleshooting |
-| `docs/CONTROL_PANEL_UI.md` | Setup & Run, dashboards, Genie, agents, rules |
-| `docs/VERSION_ALIGNMENT.md` | Pinned versions, Databricks App compatibility |
-| `docs/BEST_PRACTICES_ALIGNMENT.md` | Deep alignment: Cookbook, apx, AI Dev Kit vs this solution |
+| `docs/GUIDE.md` | Business overview, architecture, project structure, control panel & UI, best practices alignment |
+| `docs/DEPLOYMENT.md` | Deploy steps, env vars, version alignment, troubleshooting |
 | `.cursor/rules/project.mdc` | Cursor rule set (aligns with this file) |
 
 **External references (best practices):** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit, build, OpenAPI), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).

@@ -30,11 +30,11 @@ resources:
         pipelines.enableAutoOptimize: "true"
       libraries:
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/streaming/bronze_ingest
+            path: ${workspace.root_path}/src/payment_analysis/streaming/bronze_ingest
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/transform/silver_transform
+            path: ${workspace.root_path}/src/payment_analysis/transform/silver_transform
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/transform/gold_views
+            path: ${workspace.root_path}/src/payment_analysis/transform/gold_views
       serverless: true
       continuous: true
       development: true
@@ -56,7 +56,7 @@ resources:
         pipelines.enableAutoOptimize: "true"
       libraries:
         - notebook:
-            path: ${workspace.file_path}/src/payment_analysis/streaming/realtime_pipeline
+            path: ${workspace.root_path}/src/payment_analysis/streaming/realtime_pipeline
       serverless: true
       continuous: true
       development: true

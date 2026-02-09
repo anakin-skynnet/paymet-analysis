@@ -116,6 +116,6 @@ async def get_items():
 - Routes: `src/payment_analysis/ui/routes/`
 - Components: `src/payment_analysis/ui/components/`
 - Backend: `src/payment_analysis/backend/`
-- Docs: `docs/DEPLOYMENT_GUIDE.md`, `docs/ARCHITECTURE_REFERENCE.md`
+- Docs: `docs/DEPLOYMENT.md`, `docs/GUIDE.md`
 
 **External references:** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI recipes, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit source), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).

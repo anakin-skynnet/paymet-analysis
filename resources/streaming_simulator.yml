@@ -14,7 +14,7 @@ resources:
         - task_key: generate_transactions
           description: "Generate synthetic payment events at high volume"
           notebook_task:
-            notebook_path: ${workspace.file_path}/src/payment_analysis/streaming/transaction_simulator
+            notebook_path: ${workspace.root_path}/src/payment_analysis/streaming/transaction_simulator
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

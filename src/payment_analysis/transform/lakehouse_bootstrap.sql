@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Run in SQL Warehouse or a notebook. Order: app_config → vector_search &
 -- recommendations → approval_rules → online_features. Enables Rules, Decisioning
--- recommendations, and Dashboard features. See docs/DEPLOYMENT_GUIDE.md Step 5.
+-- recommendations, and Dashboard features. See docs/DEPLOYMENT.md Step 5.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------

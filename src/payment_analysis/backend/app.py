@@ -44,7 +44,7 @@ _APP_DESCRIPTION = (
 def _resolve_ui_dist() -> Path | None:
     """Resolve UI dist directory; try metadata path, env, cwd-based paths (Databricks App vs local)."""
     cwd = Path.cwd()
-    # Bundle sync uploads to workspace.file_path (e.g. .../payment-analysis/files); app may run with cwd there or at parent.
+    # Bundle sync uploads to workspace.root_path (e.g. .../payment-analysis); app runs with cwd there.
     candidates: list[Path] = [
         _dist_dir_meta.resolve() if not _dist_dir_meta.is_absolute() else _dist_dir_meta,
         Path(__file__).resolve().parents[2] / "payment_analysis" / "__dist__",  # from backend/app.py -> src/payment_analysis/__dist__

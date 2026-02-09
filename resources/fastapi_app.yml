@@ -1,7 +1,7 @@
 # Databricks App resource: name, source path, and resource bindings.
 # Configuration: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/configuration
 # Authorization: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth
-# Runtime: app.yml at project root (command, env). source_code_path = where bundle sync uploads files (workspace.file_path).
+# Runtime: app.yml at project root (command, env). source_code_path = workspace root (sync destination).
 #
 # Environment (Workspace → Apps → payment-analysis → Edit → Environment):
 #   PGAPPNAME               — Required. Match var.lakebase_instance_name (dev: payment-analysis-db-dev).
@@ -13,7 +13,7 @@ resources:
   apps:
     payment_analysis_app:
       name: payment-analysis
-      source_code_path: ${workspace.file_path}
+      source_code_path: ${workspace.root_path}
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
       resources:
         - name: database

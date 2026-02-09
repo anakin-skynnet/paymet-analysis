@@ -8,7 +8,7 @@
 # Mosaic AI Gateway is configured per endpoint (rate limits, usage tracking, guardrails).
 # Reference: https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/
 # For governed LLM endpoints (Payment Intelligence, Risk Advisor), enable Mosaic AI Gateway
-# on your workspace Foundation Model API endpoint in Serving UI. See docs/ARCHITECTURE_REFERENCE.md.
+# on your workspace Foundation Model API endpoint in Serving UI. See docs/GUIDE.md.
 # =============================================================================
 
 resources:

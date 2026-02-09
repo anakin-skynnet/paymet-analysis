@@ -8,19 +8,14 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, and Vector Search — unified in a single decision layer and control panel.
 
-For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/OVERVIEW.md](docs/OVERVIEW.md)**.
+For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
-## Documentation (logical grouping)
+## Documentation
 
 | Purpose | Document |
 |--------|----------|
-| **Business & impact** | [Overview](docs/OVERVIEW.md) — Business purpose, use cases, how technologies accelerate approval rates |
-| **Technical guideline** | [Technical guide](docs/TECHNICAL_GUIDE.md) — Architecture, structure, deployment summary, version & best practices |
-| **Deploy & operate** | [Deployment guide](docs/DEPLOYMENT_GUIDE.md) — Deploy steps, env vars, troubleshooting |
-| **Architecture reference** | [Architecture reference](docs/ARCHITECTURE_REFERENCE.md) — Data sources (UI↔backend), workspace↔UI mapping |
-| **Control panel** | [Control panel & UI](docs/CONTROL_PANEL_UI.md) — Setup & Run, dashboards, Genie, agents in the UI |
-| **Reference** | [Version alignment](docs/VERSION_ALIGNMENT.md) · [Best practices alignment](docs/BEST_PRACTICES_ALIGNMENT.md) |
-| **Doc index** | [docs/README.md](docs/README.md) |
+| **Guide** | [docs/GUIDE.md](docs/GUIDE.md) — Business overview, architecture, project structure, control panel & UI, best practices |
+| **Deploy & operate** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deploy steps, env vars, version alignment, troubleshooting |
 
 ## Quick start
 
@@ -28,7 +23,7 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 2. **Setup & Run (in order):** In the app, run the 6 jobs in order: **1** Create Data Repositories, **2** Simulate Transaction Events, **3** Initialize Ingestion, **4** Deploy Dashboards, **5** Train Models & Model Serving, **6** Deploy AgentBricks Agents. Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
 3. **App environment:** **Workspace → Apps** → payment-analysis → Edit → set `PGAPPNAME`, `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN`.
 
-The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment guide](docs/DEPLOYMENT_GUIDE.md) for full steps and troubleshooting.
+The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 
 ## References (best practices)
 

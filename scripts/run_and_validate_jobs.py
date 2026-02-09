@@ -6,7 +6,7 @@ Uses the same job name matching as the app (setup.py). Runs each job, waits for
 completion, and reports success/failure. Exits with 1 if any run fails.
 
 Prerequisites: Unity Catalog and schema must exist (default ahs_demos_catalog.payment_analysis).
-See docs/DEPLOYMENT_GUIDE.md. Set DATABRICKS_CATALOG / DATABRICKS_SCHEMA if different.
+See docs/DEPLOYMENT.md. Set DATABRICKS_CATALOG / DATABRICKS_SCHEMA if different.
 
 If jobs fail with "Catalog ... or schema ... not found": create the catalog in the workspace
 (or use an existing one via --var catalog=... at deploy), then deploy the bundle so the schema
@@ -138,7 +138,7 @@ def main() -> int:
             print(f"\nFailed jobs: {', '.join(failed)}", file=sys.stderr)
             return 1
         if failed and once:
-            print("\nHint: If failures mention catalog/schema not found, see docs/DEPLOYMENT_GUIDE.md#fix-catalog-or-schema-not-found", file=sys.stderr)
+            print("\nHint: If failures mention catalog/schema not found, see docs/DEPLOYMENT.md#fix-catalog-or-schema-not-found", file=sys.stderr)
         if not once and not failed:
             print("\nAll jobs completed successfully.")
         return 0
@@ -269,7 +269,7 @@ def main() -> int:
                 msg = (run.state.state_message or "") if run.state else ""
                 if "catalog" in msg.lower() and ("not found" in msg.lower() or "cannot be found" in msg.lower()):
                     print(
-                        "\nHint: Catalog/schema not found. Create the Unity Catalog (Data → Catalogs) and redeploy the bundle so the schema exists. See docs/DEPLOYMENT_GUIDE.md#fix-catalog-or-schema-not-found",
+                        "\nHint: Catalog/schema not found. Create the Unity Catalog (Data → Catalogs) and redeploy the bundle so the schema exists. See docs/DEPLOYMENT.md#fix-catalog-or-schema-not-found",
                         file=sys.stderr,
                     )
                     break

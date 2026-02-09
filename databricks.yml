@@ -5,23 +5,22 @@
 #   https://docs.databricks.com/aws/en/dev-tools/bundles/
 # Payment approval optimization: Smart Checkout, Reason Codes, Smart Retry.
 # All parameters have defaults or are set at deployment (target/variables).
-# Docs: docs/ARCHITECTURE_REFERENCE.md
+# Docs: docs/GUIDE.md, docs/DEPLOYMENT.md
 # =============================================================================
 
 bundle:
   name: payment-analysis
 
-# Workspace root for notebooks, jobs, and dashboards (user-scoped).
-# file_path is where bundle sync uploads files; app source_code_path must match so the app finds src/payment_analysis/__dist__ (apx/cookbook: run from synced folder).
+# Workspace root: sync and app both use root_path (apps-cookbook / apx pattern).
+# Single path avoids files/ subfolder and duplicate config; app runs from root_path so src/payment_analysis/__dist__ is found.
 workspace:
   root_path: /Workspace/Users/${workspace.current_user.userName}/${var.workspace_folder}
-  file_path: /Workspace/Users/${workspace.current_user.userName}/${var.workspace_folder}/files
 
 # Resource modules. Order: UC → warehouse → pipelines → jobs → dashboards → app.
 # Lakebase is required for UI CRUD (rules, experiments, incidents) and ML features.
 # model_serving.yml — uncomment after Step 5 (Train ML Models) so 4 models exist in UC.
 # Vector Search: create manually from resources/vector_search.yml.
-# Execution order for jobs (Setup & Run): see docs/DEPLOYMENT_GUIDE.md and Setup & Run in the app.
+# Execution order for jobs (Setup & Run): see docs/DEPLOYMENT.md and Setup & Run in the app.
 #
 # Dashboards: Uncomment resources/dashboards.yml only for a clean workspace (first deploy).
 # If deploy fails with "Node named '...' already exists", dashboards already exist — leave

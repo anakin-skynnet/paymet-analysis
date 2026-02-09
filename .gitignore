@@ -48,3 +48,9 @@ src/payment_analysis/__dist__/
 .mypy_cache/
 .ruff_cache/
 *.log
+
+# Bundle sync mirror / workspace copy — do not commit; single source of truth at repo root
+files/
+
+# Exported/published dashboard copies (display-name filenames); source of truth is resources/dashboards/*.lvdash.json
+dashboards/
