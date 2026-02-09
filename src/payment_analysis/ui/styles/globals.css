@@ -155,6 +155,11 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+  /* Friendly focus for buttons and links (softer than default outline) */
+  button:focus-visible,
+  a:focus-visible {
+    outline-offset: 2px;
+  }
   body {
     @apply bg-background text-foreground antialiased min-h-screen;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -254,12 +259,12 @@
   .cta-glow:hover {
     box-shadow: var(--elevation-glow);
   }
-  /* Main content area — subtle background so content feels contained */
+  /* Main content area — subtle, friendly gradient so content feels contained */
   .main-content-area {
-    background: linear-gradient(to bottom, oklch(0.98 0.005 0 / 0.5), transparent 12rem);
+    background: linear-gradient(to bottom, oklch(0.985 0.004 27 / 0.4), transparent 10rem);
   }
   .dark .main-content-area {
-    background: linear-gradient(to bottom, oklch(0.2 0.015 260 / 0.4), transparent 12rem);
+    background: linear-gradient(to bottom, oklch(0.18 0.012 260 / 0.5), transparent 10rem);
   }
   /* Data source badge (Databricks / live data) */
   .data-source-badge {
@@ -284,12 +289,20 @@
     transform: translateZ(0);
     will-change: transform;
   }
-  /* Sidebar header: height auto so logo is not cut at the top */
+  /* Sidebar header: enough space so logo is never cut; no overflow clip */
   .sidebar-header {
-    @apply h-auto shrink-0 overflow-visible pb-1;
+    @apply shrink-0 overflow-visible border-b border-sidebar-border/60;
+    min-height: 6.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
   .sidebar-header-inner {
-    @apply h-auto px-4 py-4 min-h-[7.5rem] flex flex-col items-center justify-center;
+    @apply flex flex-col items-center justify-center gap-0.5 px-4 py-2 min-w-0;
+    min-height: 5.5rem;
+  }
+  /* In-content links: clear anchor style for readability */
+  .link-anchor {
+    @apply text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded;
   }
   /* Sidebar CSS variables (defaults; can be overridden via same vars) */
   .sidebar-provider {
@@ -302,12 +315,13 @@
   .skeleton-dynamic-width {
     max-width: var(--skeleton-width);
   }
-  /* Page container — max width and padding for main content */
+  /* Page container — max width and padding for main content; prevents overflow */
   .page-container {
     width: 100%;
     max-width: var(--content-max-width);
     margin-left: auto;
     margin-right: auto;
+    min-width: 0;
   }
 }
 

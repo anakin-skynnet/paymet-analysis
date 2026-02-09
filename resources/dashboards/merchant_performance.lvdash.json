@@ -303,6 +303,35 @@
             "width": 12,
             "height": 8
           }
+        },
+        {
+          "widget": {
+            "name": "merchant_metrics_uc",
+            "queries": [
+              {
+                "name": "merchant_metrics_query",
+                "query": {
+                  "datasetName": "merchant_metrics",
+                  "query_text": "SELECT `Merchant Segment`, `Transaction Count`, `Approval Rate Pct`, `Total Value`, `Avg Fraud Score`, `Auth 3DS Usage Pct` FROM merchant_metrics ORDER BY `Transaction Count` DESC"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "Merchant Segment", "displayName": "Segment" },
+                  { "fieldName": "Transaction Count", "displayName": "Transactions" },
+                  { "fieldName": "Approval Rate Pct", "displayName": "Approval %" },
+                  { "fieldName": "Total Value", "displayName": "Total Value" },
+                  { "fieldName": "Avg Fraud Score", "displayName": "Fraud Score" },
+                  { "fieldName": "Auth 3DS Usage Pct", "displayName": "3DS %" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 30, "width": 12, "height": 6 }
         }
       ]
     }
@@ -322,6 +351,11 @@
       "name": "v_performance_by_geography",
       "displayName": "V Performance By Geography",
       "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_performance_by_geography"
+    },
+    {
+      "name": "merchant_metrics",
+      "displayName": "Merchant Metrics (UC)",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.merchant_metrics"
     }
   ]
 }

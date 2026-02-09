@@ -198,6 +198,33 @@
             "width": 12,
             "height": 6
           }
+        },
+        {
+          "widget": {
+            "name": "decline_metrics_uc",
+            "queries": [
+              {
+                "name": "decline_metrics_query",
+                "query": {
+                  "datasetName": "decline_metrics",
+                  "query_text": "SELECT `Decline Reason`, `Decline Count`, `Total Declined Value`, `Avg Fraud Score` FROM decline_metrics ORDER BY `Decline Count` DESC LIMIT 15"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "Decline Reason", "displayName": "Reason" },
+                  { "fieldName": "Decline Count", "displayName": "Count" },
+                  { "fieldName": "Total Declined Value", "displayName": "Declined Value" },
+                  { "fieldName": "Avg Fraud Score", "displayName": "Avg Fraud Score" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 22, "width": 12, "height": 6 }
         }
       ]
     }
@@ -222,6 +249,11 @@
       "name": "v_top_decline_reasons",
       "displayName": "V Top Decline Reasons",
       "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons"
+    },
+    {
+      "name": "decline_metrics",
+      "displayName": "Decline Metrics (UC)",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.decline_metrics"
     }
   ]
 }

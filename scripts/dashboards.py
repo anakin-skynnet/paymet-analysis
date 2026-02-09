@@ -48,6 +48,9 @@ ASSETS = [
     ("v_silver_processed_hourly", "gold_views.sql"),
     ("v_data_quality_summary", "gold_views.sql"),
     ("v_uc_data_quality_metrics", "gold_views.sql"),
+    ("payment_metrics", "gold_views.sql"),
+    ("decline_metrics", "gold_views.sql"),
+    ("merchant_metrics", "gold_views.sql"),
     ("payments_enriched_silver", "Lakeflow pipeline (silver table)"),
 ]
 PUBLISH_TIMEOUT = 60

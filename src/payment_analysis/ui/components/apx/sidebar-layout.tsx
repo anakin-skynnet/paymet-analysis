@@ -61,14 +61,14 @@ function Breadcrumb() {
   const embedLabel = embedId ? DASHBOARD_EMBED_LABELS[embedId] ?? embedId.replace(/_/g, " ") : null;
   const label = embedLabel ? `${baseLabel} / ${embedLabel}` : baseLabel;
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0" aria-label="Breadcrumb">
-      <Link to="/" className="hover:text-foreground transition-colors truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded">
+    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0 flex-1" aria-label="Breadcrumb">
+      <Link to="/" className="link-anchor hover:text-foreground transition-colors truncate max-w-[8rem] sm:max-w-none">
         Home
       </Link>
       <span aria-hidden className="shrink-0">/</span>
       {path === "/dashboards" && embedId ? (
         <>
-          <Link to="/dashboards" className="hover:text-foreground transition-colors truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded">
+          <Link to="/dashboards" className="link-anchor hover:text-foreground transition-colors truncate max-w-[6rem] sm:max-w-none">
             Dashboards
           </Link>
           <span aria-hidden className="shrink-0">/</span>
@@ -90,9 +90,9 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="sidebar-header">
-          <div className="sidebar-header-inner flex flex-col gap-0.5">
+          <div className="sidebar-header-inner">
             <Logo to="/" showText />
-            <p className="text-[11px] font-medium text-primary tracking-wide px-2" aria-hidden>Accelerate approval rates</p>
+            <p className="text-[11px] font-medium text-primary tracking-wide px-2 pt-0.5" aria-hidden>Accelerate approval rates</p>
           </div>
         </SidebarHeader>
         <SidebarContent>{children}</SidebarContent>
@@ -107,7 +107,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
       <SidebarInset className="flex flex-col h-screen">
         <header
           role="banner"
-          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex h-14 min-h-14 shrink-0 items-center gap-4 px-4 md:px-6 transition-colors duration-200 shadow-sm"
+          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex min-h-[3.5rem] shrink-0 items-center gap-3 px-4 md:px-6 py-2 transition-colors duration-200 shadow-sm overflow-visible"
           aria-label="App header"
         >
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Toggle sidebar" />

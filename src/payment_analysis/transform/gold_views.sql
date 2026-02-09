@@ -325,5 +325,140 @@ WHERE rn = 1
 ORDER BY table_name;
 
 -- ===========================================================================
--- SUMMARY: 16 views created for dashboards and analytics
+-- UNITY CATALOG METRIC VIEWS (WITH METRICS LANGUAGE YAML)
+-- ===========================================================================
+-- Semantic layer for dashboards and Genie: dimensions + measures on payment data.
+-- Source: payments_enriched_silver. Query as normal views; dimensions/measures
+-- provide consistent business semantics across dashboards.
+-- ===========================================================================
+
+-- Metric View 1: Payment transaction metrics (executive KPIs, trends, geography)
+CREATE OR REPLACE VIEW payment_metrics
+WITH METRICS
+LANGUAGE YAML
+AS $$
+version: 1.1
+comment: "Payment transaction metrics for approval analysis and executive dashboards"
+source: payments_enriched_silver
+dimensions:
+  - name: Merchant Segment
+    expr: merchant_segment
+    comment: "Merchant segment (e.g. SMB, Enterprise)"
+  - name: Card Network
+    expr: card_network
+    comment: "Card network (Visa, Mastercard, etc.)"
+  - name: Issuer Country
+    expr: issuer_country
+    comment: "Issuer country code"
+  - name: Event Date
+    expr: event_date
+    comment: "Date of the transaction"
+  - name: Decline Reason
+    expr: decline_reason
+    comment: "Reason code when transaction is declined"
+measures:
+  - name: Total Transactions
+    expr: COUNT(1)
+    comment: "Total number of transactions"
+  - name: Approved Count
+    expr: COUNT_IF(is_approved = true)
+    comment: "Number of approved transactions"
+  - name: Declined Count
+    expr: COUNT_IF(is_approved = false)
+    comment: "Number of declined transactions"
+  - name: Approval Rate Pct
+    expr: ROUND(COUNT_IF(is_approved = true) * 100.0 / COUNT(1), 2)
+    comment: "Approval rate percentage"
+  - name: Total Amount
+    expr: ROUND(SUM(amount), 2)
+    comment: "Total transaction value"
+  - name: Approved Value
+    expr: ROUND(SUM(CASE WHEN is_approved THEN amount ELSE 0 END), 2)
+    comment: "Total value of approved transactions"
+  - name: Declined Value
+    expr: ROUND(SUM(CASE WHEN NOT is_approved THEN amount ELSE 0 END), 2)
+    comment: "Total value of declined transactions"
+  - name: Avg Fraud Score
+    expr: ROUND(AVG(fraud_score), 3)
+    comment: "Average fraud risk score"
+  - name: Unique Merchants
+    expr: COUNT(DISTINCT merchant_id)
+    comment: "Number of distinct merchants"
+$$;
+
+-- Metric View 2: Decline-focused metrics (decline analysis dashboard)
+CREATE OR REPLACE VIEW decline_metrics
+WITH METRICS
+LANGUAGE YAML
+AS $$
+version: 1.1
+comment: "Decline-specific metrics for recovery and reason-code analysis"
+source: payments_enriched_silver
+filter: "NOT is_approved"
+dimensions:
+  - name: Decline Reason
+    expr: decline_reason
+    comment: "Reason code for the decline"
+  - name: Merchant Segment
+    expr: merchant_segment
+    comment: "Merchant segment"
+  - name: Card Network
+    expr: card_network
+    comment: "Card network"
+measures:
+  - name: Decline Count
+    expr: COUNT(1)
+    comment: "Number of declines"
+  - name: Total Declined Value
+    expr: ROUND(SUM(amount), 2)
+    comment: "Total value of declined transactions"
+  - name: Avg Fraud Score
+    expr: ROUND(AVG(fraud_score), 3)
+    comment: "Average fraud score for declines"
+  - name: Avg Amount
+    expr: ROUND(AVG(amount), 2)
+    comment: "Average declined transaction amount"
+  - name: Affected Merchants
+    expr: COUNT(DISTINCT merchant_id)
+    comment: "Number of distinct merchants with declines"
+$$;
+
+-- Metric View 3: Merchant segment metrics (merchant performance dashboard)
+CREATE OR REPLACE VIEW merchant_metrics
+WITH METRICS
+LANGUAGE YAML
+AS $$
+version: 1.1
+comment: "Merchant segment performance metrics for segmentation dashboards"
+source: payments_enriched_silver
+dimensions:
+  - name: Merchant Segment
+    expr: merchant_segment
+    comment: "Merchant segment"
+measures:
+  - name: Transaction Count
+    expr: COUNT(1)
+    comment: "Total transactions per segment"
+  - name: Approved Count
+    expr: COUNT_IF(is_approved = true)
+    comment: "Approved transactions per segment"
+  - name: Approval Rate Pct
+    expr: ROUND(COUNT_IF(is_approved = true) * 100.0 / COUNT(1), 2)
+    comment: "Approval rate percentage per segment"
+  - name: Unique Merchants
+    expr: COUNT(DISTINCT merchant_id)
+    comment: "Distinct merchants per segment"
+  - name: Total Value
+    expr: ROUND(SUM(amount), 2)
+    comment: "Total transaction value per segment"
+  - name: Avg Fraud Score
+    expr: ROUND(AVG(fraud_score), 3)
+    comment: "Average fraud score per segment"
+  - name: Auth 3DS Usage Pct
+    expr: ROUND(COUNT_IF(uses_3ds = true) * 100.0 / COUNT(1), 2)
+    comment: "Percentage of transactions using 3DS authentication"
+$$;
+
+-- ===========================================================================
+-- SUMMARY: 16 standard views + 3 metric views for dashboards and analytics
 -- ===========================================================================

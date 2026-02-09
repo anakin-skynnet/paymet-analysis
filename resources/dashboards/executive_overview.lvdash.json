@@ -271,6 +271,56 @@
             "width": 12,
             "height": 8
           }
+        },
+        {
+          "widget": {
+            "name": "payment_metrics_by_segment",
+            "queries": [
+              {
+                "name": "uc_metrics_query",
+                "query": {
+                  "datasetName": "payment_metrics",
+                  "query_text": "SELECT `Merchant Segment`, `Total Transactions`, `Approval Rate Pct`, `Total Amount` FROM payment_metrics ORDER BY `Total Transactions` DESC LIMIT 10"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "Merchant Segment", "displayName": "Segment" },
+                  { "fieldName": "Total Transactions", "displayName": "Transactions" },
+                  { "fieldName": "Approval Rate Pct", "displayName": "Approval %" },
+                  { "fieldName": "Total Amount", "displayName": "Total Value" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 0, "y": 22, "width": 6, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "payment_metrics_by_network",
+            "queries": [
+              {
+                "name": "uc_metrics_network",
+                "query": {
+                  "datasetName": "payment_metrics",
+                  "query_text": "SELECT `Card Network`, `Total Transactions`, `Approval Rate Pct`, `Total Amount` FROM payment_metrics ORDER BY `Total Transactions` DESC LIMIT 8"
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "bar-chart",
+              "encodings": {
+                "x": { "fieldName": "Card Network", "displayName": "Card Network" },
+                "y": [{ "fieldName": "Total Transactions", "displayName": "Transactions" }]
+              }
+            }
+          },
+          "position": { "x": 6, "y": 22, "width": 6, "height": 6 }
         }
       ]
     }
@@ -295,6 +345,11 @@
       "name": "v_top_decline_reasons",
       "displayName": "V Top Decline Reasons",
       "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.v_top_decline_reasons"
+    },
+    {
+      "name": "payment_metrics",
+      "displayName": "Payment Metrics (UC)",
+      "asset_name": "ahs_demos_catalog.ahs_demo_payment_analysis_dev.payment_metrics"
     }
   ]
 }
