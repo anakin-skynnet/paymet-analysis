@@ -1,35 +1,55 @@
 # Documentation
 
-Single entry point for Payment Analysis docs. The platform’s **main purpose** is to **accelerate approval rates** via smart retry, smart checkout, risk analysis, fraud detection, reason codes, routing optimization, and AI-backed decisioning.
+Single entry point for Payment Analysis docs. The platform **accelerates approval rates** via smart retry, smart checkout, risk analysis, fraud detection, reason codes, routing optimization, and AI-backed decisioning.
 
-## Core docs
+---
+
+## Logical grouping
+
+### Business & impact
 
 | Document | Purpose |
 |----------|---------|
-| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Deploy steps, app config, env vars, troubleshooting, job inventory |
-| [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) | Business use cases, architecture, data flow, data sources, UI↔backend wiring, bundle resources |
-| [BEST_PRACTICES_ALIGNMENT.md](BEST_PRACTICES_ALIGNMENT.md) | Alignment with Apps Cookbook, apx, and AI Dev Kit; compliance with previous prompts |
-| [CONTROL_PANEL_UI.md](CONTROL_PANEL_UI.md) | What the control panel provides: run jobs, dashboards, Genie, agents, ML, Lakebase tables |
-| [VERSION_ALIGNMENT.md](VERSION_ALIGNMENT.md) | Pinned dependency versions and Databricks App compatibility |
+| **[OVERVIEW.md](OVERVIEW.md)** | **Business overview & impact on approval rates** — Goal, use cases (Smart Retry, Smart Checkout, Reason codes, Risk, Routing, Decisioning), technology map (how each technology accelerates approvals), high-level flow |
+
+### Technical guideline
+
+| Document | Purpose |
+|----------|---------|
+| **[TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md)** | **Technical guideline** — Architecture, data flow, project structure, bundle resources, deployment summary, version alignment summary, best practices summary, verification commands |
+| **[ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md)** | Data sources (UI ↔ backend ↔ Databricks), workspace ↔ UI mapping, Databricks App compliance checklist, catalog/schema |
+| **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** | Deploy steps, app env vars, paths, troubleshooting, schema consistency |
+| **[VERSION_ALIGNMENT.md](VERSION_ALIGNMENT.md)** | Pinned dependency versions and Databricks App compatibility |
+| **[BEST_PRACTICES_ALIGNMENT.md](BEST_PRACTICES_ALIGNMENT.md)** | Alignment with Apps Cookbook, apx, and AI Dev Kit |
+
+### Operational
+
+| Document | Purpose |
+|----------|---------|
+| **[CONTROL_PANEL_UI.md](CONTROL_PANEL_UI.md)** | Setup & Run, dashboards, Genie, agents, ML, Lakebase data in the UI — what you get and how it works |
+
+---
 
 ## Project structure (logical)
 
 - **`src/payment_analysis/`** — App and bundle code  
-  - **`backend/`** — FastAPI app, config, dependencies, routes (analytics, decision, dashboards, agents, rules, setup, experiments, incidents, notebooks), services (Databricks), Lakebase config  
-  - **`ui/`** — React app: routes (dashboard, dashboards, decisioning, rules, smart-checkout, smart-retry, declines, reason-codes, models, ai-agents, setup, etc.), components, lib (API client)  
-  - **`transform/`** — Lakehouse SQL and job notebooks: lakehouse_bootstrap.sql, gold_views.sql, run_* (ensure_catalog_schema, lakebase_data_init, lakehouse_bootstrap, gold_views), prepare_dashboards, publish_dashboards; Lakeflow: silver_transform, gold_views (pipeline)  
-  - **`streaming/`** — Bronze ingest, realtime pipeline, transaction simulator, continuous processor  
-  - **`ml/`** — Model training (approval, risk, routing, retry)  
+  - **`backend/`** — FastAPI app, config, dependencies, routes (analytics, decision, dashboards, agents, rules, setup, experiments, incidents, notebooks), services, Lakebase config  
+  - **`ui/`** — React app: routes, components, lib (API client)  
+  - **`transform/`** — Lakehouse SQL, gold views, lakehouse bootstrap, prepare/publish dashboards  
+  - **`streaming/`** — Bronze ingest, real-time pipeline, transaction simulator  
+  - **`ml/`** — Model training  
   - **`agents/`** — Agent framework (orchestrator, specialists)  
   - **`genie/`** — Genie space sync  
   - **`vector_search/`** — Vector search index creation  
-- **`resources/`** — Bundle YAML: unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, streaming_simulator, genie_spaces, dashboards, fastapi_app  
-- **`scripts/`** — bundle.sh (validate/deploy/verify), dashboards.py (prepare/validate-assets), run_and_validate_jobs.py, sync_requirements_from_lock.py  
+- **`resources/`** — Bundle YAML (unity_catalog, lakebase, pipelines, sql_warehouse, ml_jobs, agents, dashboards, fastapi_app)  
+- **`scripts/`** — bundle.sh, dashboards.py, sync_requirements_from_lock.py  
 
-All of the above support the use cases described in [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md#business-purpose--use-cases).
+See [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) and [TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md) for details.
+
+---
 
 ## References
 
-- [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro) — FastAPI, Streamlit, Dash recipes for Databricks Apps
-- [apx](https://github.com/databricks-solutions/apx) — Toolkit for building Databricks Apps (React + FastAPI)
-- [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) — Databricks SDK, MCP tools, and skills for AI-assisted development
+- [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro) — FastAPI, Streamlit, Dash recipes for Databricks Apps  
+- [apx](https://github.com/databricks-solutions/apx) — Toolkit for building Databricks Apps (React + FastAPI)  
+- [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) — Databricks SDK, MCP tools, and skills for AI-assisted development  

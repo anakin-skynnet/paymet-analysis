@@ -127,14 +127,18 @@ When the user asks to:
 
 ## 11. Documentation map
 
+**Logical grouping:** Business & impact → [docs/OVERVIEW.md](docs/OVERVIEW.md). Technical guideline → [docs/TECHNICAL_GUIDE.md](docs/TECHNICAL_GUIDE.md). Full index → [docs/README.md](docs/README.md).
+
 | Doc | Purpose |
 |-----|---------|
 | `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
-| `docs/ARCHITECTURE_REFERENCE.md` | Use cases, data flow, resources, verification |
-| `docs/BEST_PRACTICES_ALIGNMENT.md` | Deep alignment review: [Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) vs this solution and previous prompts |
+| `docs/OVERVIEW.md` | Business overview & impact on approval rates (use cases, technology map) |
+| `docs/TECHNICAL_GUIDE.md` | Technical guideline: architecture, structure, deploy summary, version & best practices |
+| `docs/ARCHITECTURE_REFERENCE.md` | Data sources (UI↔backend), workspace↔UI mapping, App compliance |
 | `docs/DEPLOYMENT_GUIDE.md` | Deploy steps, env vars, app config, troubleshooting |
 | `docs/CONTROL_PANEL_UI.md` | Setup & Run, dashboards, Genie, agents, rules |
 | `docs/VERSION_ALIGNMENT.md` | Pinned versions, Databricks App compatibility |
+| `docs/BEST_PRACTICES_ALIGNMENT.md` | Deep alignment: Cookbook, apx, AI Dev Kit vs this solution |
 | `.cursor/rules/project.mdc` | Cursor rule set (aligns with this file) |
 
 **External references (best practices):** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit, build, OpenAPI), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).
