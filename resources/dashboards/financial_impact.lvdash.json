@@ -3,37 +3,37 @@
     {
       "name": "v_daily_trends",
       "displayName": "V Daily Trends",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_daily_trends"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_daily_trends"
     },
     {
       "name": "v_decline_recovery_opportunities",
       "displayName": "V Decline Recovery Opportunities",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_decline_recovery_opportunities"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_decline_recovery_opportunities"
     },
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     },
     {
       "name": "v_merchant_segment_performance",
       "displayName": "V Merchant Segment Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_merchant_segment_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_merchant_segment_performance"
     },
     {
       "name": "v_performance_by_geography",
       "displayName": "V Performance By Geography",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_performance_by_geography"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_performance_by_geography"
     },
     {
       "name": "v_retry_performance",
       "displayName": "V Retry Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_retry_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_retry_performance"
     },
     {
       "name": "v_top_decline_reasons",
       "displayName": "V Top Decline Reasons",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_top_decline_reasons"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_top_decline_reasons"
     }
   ],
   "pages": [

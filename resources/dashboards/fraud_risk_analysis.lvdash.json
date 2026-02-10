@@ -3,32 +3,32 @@
     {
       "name": "v_active_alerts",
       "displayName": "V Active Alerts",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_active_alerts"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_active_alerts"
     },
     {
       "name": "v_approval_trends_hourly",
       "displayName": "V Approval Trends Hourly",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_approval_trends_hourly"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_approval_trends_hourly"
     },
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     },
     {
       "name": "v_last_hour_performance",
       "displayName": "V Last Hour Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_last_hour_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_last_hour_performance"
     },
     {
       "name": "v_merchant_segment_performance",
       "displayName": "V Merchant Segment Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_merchant_segment_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_merchant_segment_performance"
     },
     {
       "name": "v_performance_by_geography",
       "displayName": "V Performance By Geography",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_performance_by_geography"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_performance_by_geography"
     }
   ],
   "pages": [

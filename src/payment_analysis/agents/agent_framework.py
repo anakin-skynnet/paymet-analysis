@@ -956,7 +956,7 @@ For complex queries, engage multiple agents and synthesize responses."""
 
 def setup_agent_framework(
     catalog: str = "ahs_demos_catalog",
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     *,
     lakebase_project_id: str = "",
     lakebase_branch_id: str = "",
@@ -980,7 +980,7 @@ def get_notebook_config() -> Dict[str, Any]:
     """Read job/notebook parameters from Databricks widgets or return defaults. Used as single source for catalog, schema, query, and Lakebase connection."""
     defaults = {
         "catalog": "ahs_demos_catalog",
-        "schema": "payment_analysis",
+        "schema": "dev_ariel_hdez_payment_analysis",
         "query": "Run comprehensive payment analysis: routing, retries, declines, risk, and performance optimizations.",
         "agent_role": "orchestrator",
         "lakebase_project_id": "",

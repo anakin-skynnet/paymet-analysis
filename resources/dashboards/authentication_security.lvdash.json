@@ -3,17 +3,17 @@
     {
       "name": "payments_enriched_silver",
       "displayName": "Payments Enriched Silver",
-      "asset_name": "ahs_demos_catalog.payment_analysis.payments_enriched_silver"
+      "asset_name": "__CATALOG__.__SCHEMA__.payments_enriched_silver"
     },
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     },
     {
       "name": "v_merchant_segment_performance",
       "displayName": "V Merchant Segment Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_merchant_segment_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_merchant_segment_performance"
     }
   ],
   "pages": [

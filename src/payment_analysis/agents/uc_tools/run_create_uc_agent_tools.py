@@ -54,7 +54,7 @@ def main() -> None:
     except NameError:
         pass
     if not catalog or not schema:
-        parser = argparse.ArgumentParser(description="Create UC agent tool functions in catalog.schema (e.g. payment_analysis)")
+        parser = argparse.ArgumentParser(description="Create UC agent tool functions in catalog.schema (e.g. dev_ariel_hdez_payment_analysis)")
         parser.add_argument("--catalog", required=False, default="", help="Unity Catalog name")
         parser.add_argument("--schema", required=False, default="", help="Schema containing payments_enriched_silver and gold views")
         args = parser.parse_args()

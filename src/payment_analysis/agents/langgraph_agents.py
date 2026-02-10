@@ -11,7 +11,7 @@ Dependencies (install in notebook or job cluster):
   %pip install databricks-langchain unitycatalog-langchain[databricks] langgraph langchain-core
   dbutils.library.restartPython()
 
-Requires: UC functions in catalog.schema (e.g. payment_analysis); run run_create_uc_agent_tools first.
+Requires: UC functions in catalog.schema (e.g. dev_ariel_hdez_payment_analysis); run run_create_uc_agent_tools first.
 """
 
 from __future__ import annotations
@@ -161,7 +161,7 @@ Recommendations should include:
 - Priority ranking"""
 
 
-def _toolkit_tools(catalog: str, function_names: List[str], schema: str = "payment_analysis") -> "Any":
+def _toolkit_tools(catalog: str, function_names: List[str], schema: str = "dev_ariel_hdez_payment_analysis") -> "Any":
     """Load UC functions as LangChain tools. Requires databricks-langchain."""
     from databricks_langchain import UCFunctionToolkit
 
@@ -180,7 +180,7 @@ def _llm(endpoint: str = "databricks-meta-llama-3-1-70b-instruct", temperature: 
 def create_decline_analyst_agent(
     catalog: str,
     *,
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
     temperature: float = 0.1,
 ) -> "Any":
@@ -205,7 +205,7 @@ def create_decline_analyst_agent(
 def create_smart_routing_agent(
     catalog: str,
     *,
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
     temperature: float = 0.1,
 ) -> "Any":
@@ -225,7 +225,7 @@ def create_smart_routing_agent(
 def create_smart_retry_agent(
     catalog: str,
     *,
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
     temperature: float = 0.1,
 ) -> "Any":
@@ -245,7 +245,7 @@ def create_smart_retry_agent(
 def create_risk_assessor_agent(
     catalog: str,
     *,
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
     temperature: float = 0.1,
 ) -> "Any":
@@ -265,7 +265,7 @@ def create_risk_assessor_agent(
 def create_performance_recommender_agent(
     catalog: str,
     *,
-    schema: str = "payment_analysis",
+    schema: str = "dev_ariel_hdez_payment_analysis",
     llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
     temperature: float = 0.1,
 ) -> "Any":

@@ -5,7 +5,7 @@ Run and validate all payment-analysis Databricks jobs.
 Uses the same job name matching as the app (setup.py). Runs each job, waits for
 completion, and reports success/failure. Exits with 1 if any run fails.
 
-Prerequisites: Unity Catalog and schema must exist (default ahs_demos_catalog.payment_analysis).
+Prerequisites: Unity Catalog and schema must exist (default ahs_demos_catalog.dev_ariel_hdez_payment_analysis).
 See docs/DEPLOYMENT.md. Set DATABRICKS_CATALOG / DATABRICKS_SCHEMA if different.
 
 If jobs fail with "Catalog ... or schema ... not found": create the catalog in the workspace
@@ -150,7 +150,7 @@ def main() -> int:
         return 1
 
     catalog = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog")
-    schema = os.getenv("DATABRICKS_SCHEMA", "payment_analysis")
+    schema = os.getenv("DATABRICKS_SCHEMA", "dev_ariel_hdez_payment_analysis")
     warehouse_id = os.getenv("DATABRICKS_WAREHOUSE_ID", "")
 
     def _job_id_env(key: str) -> str:

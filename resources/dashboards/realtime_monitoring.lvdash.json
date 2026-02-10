@@ -3,27 +3,27 @@
     {
       "name": "v_active_alerts",
       "displayName": "V Active Alerts",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_active_alerts"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_active_alerts"
     },
     {
       "name": "v_card_network_performance",
       "displayName": "V Card Network Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_card_network_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_card_network_performance"
     },
     {
       "name": "v_last_hour_performance",
       "displayName": "V Last Hour Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_last_hour_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_last_hour_performance"
     },
     {
       "name": "v_merchant_segment_performance",
       "displayName": "V Merchant Segment Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_merchant_segment_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_merchant_segment_performance"
     },
     {
       "name": "v_solution_performance",
       "displayName": "V Solution Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_solution_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_solution_performance"
     }
   ],
   "pages": [

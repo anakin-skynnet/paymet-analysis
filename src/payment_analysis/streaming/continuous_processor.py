@@ -13,7 +13,7 @@ from pyspark.sql.types import *
 
 # Get parameters (when run as job, catalog/schema = bundle var.catalog, var.schema)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
-dbutils.widgets.text("schema", "payment_analysis")
+dbutils.widgets.text("schema", "dev_ariel_hdez_payment_analysis")
 dbutils.widgets.text("checkpoint_location", "/tmp/checkpoints/stream_processor")
 dbutils.widgets.text("trigger_interval", "1 second")
 

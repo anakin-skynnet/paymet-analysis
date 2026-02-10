@@ -3,27 +3,27 @@
     {
       "name": "v_approval_trends_hourly",
       "displayName": "V Approval Trends Hourly",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_approval_trends_hourly"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_approval_trends_hourly"
     },
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     },
     {
       "name": "v_performance_by_geography",
       "displayName": "V Performance By Geography",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_performance_by_geography"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_performance_by_geography"
     },
     {
       "name": "v_top_decline_reasons",
       "displayName": "V Top Decline Reasons",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_top_decline_reasons"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_top_decline_reasons"
     },
     {
       "name": "payment_metrics",
       "displayName": "Payment Metrics (UC)",
-      "asset_name": "ahs_demos_catalog.payment_analysis.payment_metrics"
+      "asset_name": "__CATALOG__.__SCHEMA__.payment_metrics"
     }
   ],
   "pages": [

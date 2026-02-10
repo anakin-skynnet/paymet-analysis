@@ -49,8 +49,8 @@ variables:
     description: Deployment environment identifier (e.g. dev, prod); used in resource names and tags
     default: dev
   schema:
-    description: Unity Catalog schema name; must match Lakeflow outputs and gold views
-    default: payment_analysis
+    description: Unity Catalog schema name; must match Lakeflow outputs and gold views (DAB dev deploys dev_ariel_hdez_payment_analysis)
+    default: dev_ariel_hdez_payment_analysis
   warehouse_id:
     description: SQL Warehouse ID for dashboards and SQL tasks; in dev, set from deployed warehouse resource
     default: "148ccb90800933a1"
@@ -122,6 +122,8 @@ targets:
     default: true
     variables:
       environment: dev
+      # Schema name deployed by DAB in dev (prefix + base); concat catalog.schema = ahs_demos_catalog.dev_ariel_hdez_payment_analysis
+      schema: dev_ariel_hdez_payment_analysis
       warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
       # Lakebase Autoscaling: required for job 1 (create_lakebase_autoscaling + lakebase_data_init)
       lakebase_project_id: payment-analysis-db

@@ -20,9 +20,9 @@ System prompts and tool behavior match the Python agents 1:1.
 | Approach | Use when | Pros | Cons |
 |----------|----------|------|------|
 | **Dedicated schema** (e.g. `agent_tools`) | Multiple teams, strict governance, or you want least-privilege for callers | Clear boundary between “data” and “tools”; grant `EXECUTE` on the tools schema only so callers don’t need direct `SELECT` on tables; easier to audit and hand off agent tool lifecycle | One extra schema to create and maintain; functions reference `catalog.data_schema.*` in SQL |
-| **Same schema as data** (e.g. `payment_analysis`) | Single team, simpler setup, or you prefer all analytics assets in one place | One schema for tables, views, and functions; fewer objects to manage; no cross-schema references in DDL | Callers need both `SELECT` and `EXECUTE` on the same schema; tools and data are mixed for discovery |
+| **Same schema as data** (e.g. `dev_ariel_hdez_payment_analysis`) | Single team, simpler setup, or you prefer all analytics assets in one place | One schema for tables, views, and functions; fewer objects to manage; no cross-schema references in DDL | Callers need both `SELECT` and `EXECUTE` on the same schema; tools and data are mixed for discovery |
 
-**Recommendation:** This project uses the **same schema as data** (`payment_analysis`) for agent tool functions: one schema for tables, views, volumes, and UC functions. Use a dedicated schema (e.g. `agent_tools`) only if you need strict least-privilege or separate governance for agent tools.
+**Recommendation:** This project uses the **same schema as data** (e.g. `dev_ariel_hdez_payment_analysis` in dev) for agent tool functions: one schema for tables, views, volumes, and UC functions. Use a dedicated schema (e.g. `agent_tools`) only if you need strict least-privilege or separate governance for agent tools.
 
 ---
 
@@ -80,7 +80,7 @@ System prompts and tool behavior match the Python agents 1:1.
 
 | Step | What | Where |
 |------|------|--------|
-| 1 | UC functions for tools (in `catalog.schema`, e.g. payment_analysis) | `src/payment_analysis/agents/uc_tools/` |
+| 1 | UC functions for tools (in `catalog.schema`, e.g. dev_ariel_hdez_payment_analysis) | `src/payment_analysis/agents/uc_tools/` |
 | 2 | LangGraph agents (all 5) | `src/payment_analysis/agents/langgraph_agents.py` |
 | 3 | Log & register all to UC | Notebook using get_all_agent_builders() |
 | 4 | Deploy all to Model Serving | Per-agent or loop |
@@ -90,7 +90,7 @@ System prompts and tool behavior match the Python agents 1:1.
 
 ## Step 1: Unity Catalog Functions (Tools)
 
-Create all agent tool functions in the **same schema as your data** (e.g. `payment_analysis`). The SQL substitutes `__CATALOG__` and `__SCHEMA__`; functions are created in `{catalog}.{schema}` and read from `{catalog}.{schema}.payments_enriched_silver` and gold views (e.g. `v_top_decline_reasons`).
+Create all agent tool functions in the **same schema as your data** (e.g. `dev_ariel_hdez_payment_analysis`). The SQL substitutes `__CATALOG__` and `__SCHEMA__`; functions are created in `{catalog}.{schema}` and read from `{catalog}.{schema}.payments_enriched_silver` and gold views (e.g. `v_top_decline_reasons`).
 
 ### Option A: Run from a job
 
@@ -115,7 +115,7 @@ Create all agent tool functions in the **same schema as your data** (e.g. `payme
 ```python
 # In a Databricks notebook (Python)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
-dbutils.widgets.text("schema", "payment_analysis")
+dbutils.widgets.text("schema", "dev_ariel_hdez_payment_analysis")
 
 from payment_analysis.agents.uc_tools.run_create_uc_agent_tools import run
 run(dbutils.widgets.get("catalog"), dbutils.widgets.get("schema"))
@@ -124,7 +124,7 @@ run(dbutils.widgets.get("catalog"), dbutils.widgets.get("schema"))
 ### SQL source
 
 - **File:** `src/payment_analysis/agents/uc_tools/uc_agent_tools.sql`
-- Placeholders `__CATALOG__` and `__SCHEMA__` are replaced with your data catalog and schema (e.g. `ahs_demos_catalog`, `payment_analysis`).
+- Placeholders `__CATALOG__` and `__SCHEMA__` are replaced with your data catalog and schema (e.g. `ahs_demos_catalog`, `dev_ariel_hdez_payment_analysis`).
 - Creates in `{catalog}.{schema}`: `get_decline_trends`, `get_decline_by_segment`, `get_route_performance`, `get_cascade_recommendations`, `get_retry_success_rates`, `get_recovery_opportunities`, `get_high_risk_transactions`, `get_risk_distribution`, `get_kpi_summary`, `get_optimization_opportunities`, `get_trend_analysis`.
 
 ---

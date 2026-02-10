@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 
 # Get parameters from widgets (when run as job, catalog/schema = bundle var.catalog, var.schema)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
-dbutils.widgets.text("schema", "payment_analysis")
+dbutils.widgets.text("schema", "dev_ariel_hdez_payment_analysis")
 dbutils.widgets.text("n_estimators", "100")
 dbutils.widgets.text("max_depth_approval", "10")
 dbutils.widgets.text("max_depth_risk", "12")
@@ -60,7 +60,7 @@ def _str_widget(name: str, default: str) -> str:
 
 
 CATALOG = _str_widget("catalog", "ahs_demos_catalog")
-SCHEMA = _str_widget("schema", "payment_analysis")
+SCHEMA = _str_widget("schema", "dev_ariel_hdez_payment_analysis")
 N_ESTIMATORS = _int_widget("n_estimators", 100)
 MAX_DEPTH_APPROVAL = _int_widget("max_depth_approval", 10)
 MAX_DEPTH_RISK = _int_widget("max_depth_risk", 12)

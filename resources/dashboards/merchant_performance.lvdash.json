@@ -3,22 +3,22 @@
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     },
     {
       "name": "v_merchant_segment_performance",
       "displayName": "V Merchant Segment Performance",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_merchant_segment_performance"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_merchant_segment_performance"
     },
     {
       "name": "v_performance_by_geography",
       "displayName": "V Performance By Geography",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_performance_by_geography"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_performance_by_geography"
     },
     {
       "name": "merchant_metrics",
       "displayName": "Merchant Metrics (UC)",
-      "asset_name": "ahs_demos_catalog.payment_analysis.merchant_metrics"
+      "asset_name": "__CATALOG__.__SCHEMA__.merchant_metrics"
     }
   ],
   "pages": [

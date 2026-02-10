@@ -57,7 +57,7 @@ if postgres_api is None:
 
 # Create project
 print(f"Creating project {lakebase_project_id!r}...")
-project_spec = ProjectSpec(display_name="Payment Analysis (Lakebase Autoscaling)", pg_version=17)
+project_spec = ProjectSpec(display_name="payment-analysis-db", pg_version=17)
 project = Project(spec=project_spec)
 try:
     op = postgres_api.create_project(project=project, project_id=lakebase_project_id)

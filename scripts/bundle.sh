@@ -17,7 +17,8 @@ prepare_dashboards() {
   if [[ "$TARGET" == "prod" ]]; then
     uv run python scripts/dashboards.py prepare --catalog prod_catalog --schema ahs_demo_payment_analysis_prod
   else
-    uv run python scripts/dashboards.py prepare
+    # Dev: catalog.schema = ahs_demos_catalog.dev_ariel_hdez_payment_analysis (same as DAB-deployed schema)
+    uv run python scripts/dashboards.py prepare --catalog ahs_demos_catalog --schema dev_ariel_hdez_payment_analysis
   fi
 }
 
@@ -66,7 +67,7 @@ print('   Backend app and API router import OK.')
     echo ""
     echo "4. Prepare dashboards and validate dashboard assets..."
     prepare_dashboards
-    uv run python scripts/dashboards.py validate-assets --catalog "${DATABRICKS_CATALOG:-ahs_demos_catalog}" --schema "${DATABRICKS_SCHEMA:-payment_analysis}"
+    uv run python scripts/dashboards.py validate-assets --catalog "${DATABRICKS_CATALOG:-ahs_demos_catalog}" --schema "${DATABRICKS_SCHEMA:-dev_ariel_hdez_payment_analysis}"
     echo "   Dashboard assets OK."
     echo ""
     echo "5. Databricks bundle validate..."

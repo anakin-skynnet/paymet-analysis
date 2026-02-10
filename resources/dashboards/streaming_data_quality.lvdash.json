@@ -3,22 +3,22 @@
     {
       "name": "v_data_quality_summary",
       "displayName": "V Data Quality Summary",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_data_quality_summary"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_data_quality_summary"
     },
     {
       "name": "v_silver_processed_hourly",
       "displayName": "V Silver Processed Hourly",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_silver_processed_hourly"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_silver_processed_hourly"
     },
     {
       "name": "v_streaming_ingestion_hourly",
       "displayName": "V Streaming Ingestion Hourly",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_streaming_ingestion_hourly"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_streaming_ingestion_hourly"
     },
     {
       "name": "v_uc_data_quality_metrics",
       "displayName": "V Uc Data Quality Metrics",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_uc_data_quality_metrics"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_uc_data_quality_metrics"
     }
   ],
   "pages": [

@@ -75,7 +75,7 @@ def _pipeline_id_env_key(key: str) -> str:
 DEFAULT_IDS: _DefaultIds = {
     "warehouse_id": os.getenv("DATABRICKS_WAREHOUSE_ID", "148ccb90800933a1") or "",
     "catalog": os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog") or "",
-    "schema": os.getenv("DATABRICKS_SCHEMA", "payment_analysis") or "",
+    "schema": os.getenv("DATABRICKS_SCHEMA", "dev_ariel_hdez_payment_analysis") or "",
     "jobs": {
         "transaction_stream_simulator": os.getenv(_job_id_env_key("transaction_stream_simulator"), "782493643247677") or "782493643247677",
         "create_gold_views": os.getenv(_job_id_env_key("create_gold_views"), "775632375108394") or "775632375108394",

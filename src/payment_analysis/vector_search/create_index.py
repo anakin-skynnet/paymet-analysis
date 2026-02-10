@@ -29,7 +29,7 @@ from databricks.sdk.service.vectorsearch import (
 
 # Get parameters (when run as job: catalog, schema, environment from job base_parameters). dbutils is provided by Databricks runtime.
 dbutils.widgets.text("catalog", "ahs_demos_catalog")  # type: ignore[name-defined]
-dbutils.widgets.text("schema", "payment_analysis")  # type: ignore[name-defined]
+dbutils.widgets.text("schema", "dev_ariel_hdez_payment_analysis")  # type: ignore[name-defined]
 dbutils.widgets.text("environment", "dev")  # type: ignore[name-defined]
 
 CATALOG = dbutils.widgets.get("catalog")  # type: ignore[name-defined]

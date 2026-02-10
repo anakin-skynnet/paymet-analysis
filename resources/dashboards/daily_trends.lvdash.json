@@ -3,12 +3,12 @@
     {
       "name": "v_daily_trends",
       "displayName": "V Daily Trends",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_daily_trends"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_daily_trends"
     },
     {
       "name": "v_executive_kpis",
       "displayName": "V Executive Kpis",
-      "asset_name": "ahs_demos_catalog.payment_analysis.v_executive_kpis"
+      "asset_name": "__CATALOG__.__SCHEMA__.v_executive_kpis"
     }
   ],
   "pages": [

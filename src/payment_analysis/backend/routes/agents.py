@@ -291,7 +291,7 @@ def _effective_uc(request: Request) -> tuple[str, str]:
     uc = getattr(request.app.state, "uc_config", None)
     if uc and len(uc) == 2 and uc[0] and uc[1]:
         return (uc[0], uc[1])
-    return ("ahs_demos_catalog", "payment_analysis")
+    return ("ahs_demos_catalog", "dev_ariel_hdez_payment_analysis")
 
 
 # =============================================================================
