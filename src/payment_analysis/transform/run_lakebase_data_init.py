@@ -61,18 +61,68 @@ if postgres_api is None:
         "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
     )
 endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
-try:
-    endpoint = postgres_api.get_endpoint(name=endpoint_name)
-    cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
-except Exception as e:
-    if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
-        raise RuntimeError(
-            f"Lakebase project/endpoint not found: {endpoint_name!r}. "
-            "Run Job 1 task create_lakebase_autoscaling first, or create a Lakebase Autoscaling project in "
-            "Compute → Lakebase and set job parameters (or bundle vars) lakebase_project_id, lakebase_branch_id, "
-            "lakebase_endpoint_id. See https://docs.databricks.com/oltp/projects/"
-        ) from e
-    raise
+
+def _list_existing_lakebase_ids() -> str:
+    """List existing project/branch/endpoint IDs to show in error messages."""
+    try:
+        projects = list(postgres_api.list_projects())
+        if not projects:
+            return "No Lakebase Autoscaling projects found in this workspace."
+        lines = []
+        for p in projects[:5]:
+            name = getattr(p, "name", None) or str(p)
+            # name is like "projects/foo"
+            project_id = name.split("/")[-1] if "/" in name else name
+            lines.append(f"  project {project_id!r}")
+            try:
+                branches = list(postgres_api.list_branches(parent=f"projects/{project_id}"))
+                for b in branches[:3]:
+                    bname = getattr(b, "name", None) or str(b)
+                    branch_id = bname.split("/")[-1] if "/" in bname else bname
+                    lines.append(f"    branch {branch_id!r}")
+                    try:
+                        endpoints = list(
+                            postgres_api.list_endpoints(parent=f"projects/{project_id}/branches/{branch_id}")
+                        )
+                        for ep in endpoints[:3]:
+                            ename = getattr(ep, "name", None) or str(ep)
+                            endpoint_id = ename.split("/")[-1] if "/" in ename else ename
+                            lines.append(f"      endpoint {endpoint_id!r}")
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        return "Existing Lakebase Autoscaling resources:\n" + "\n".join(lines) if lines else "No projects listed."
+    except Exception as ex:
+        return f"(Could not list projects: {ex})"
+
+# Retry get_endpoint (eventual consistency / endpoint just created)
+import time as _time
+max_attempts = 5
+endpoint = None
+cred = None
+for attempt in range(max_attempts):
+    try:
+        endpoint = postgres_api.get_endpoint(name=endpoint_name)
+        cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+        break
+    except Exception as e:
+        if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
+            if attempt == max_attempts - 1:
+                existing = _list_existing_lakebase_ids()
+                raise RuntimeError(
+                    f"Lakebase project/endpoint not found: {endpoint_name!r}. "
+                    "Run Job 1 task create_lakebase_autoscaling first and use the IDs from that task output, "
+                    "or create a Lakebase Autoscaling project in Compute → Lakebase and set job parameters "
+                    "(lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id) to match the existing IDs. "
+                    f"\n{existing}\n"
+                    "See https://docs.databricks.com/oltp/projects/"
+                ) from e
+            _time.sleep(10 * (attempt + 1))
+            continue
+        raise
+if endpoint is None or cred is None:
+    raise RuntimeError("Failed to get Lakebase endpoint and credential.")
 token = cred.token
 status = getattr(endpoint, "status", None)
 hosts = getattr(status, "hosts", None) if status else None

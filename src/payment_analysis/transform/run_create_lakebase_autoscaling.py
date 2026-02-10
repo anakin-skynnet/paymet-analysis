@@ -83,6 +83,7 @@ except Exception as e:
 
 # Create endpoint (read-write compute)
 parent_branch = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}"
+endpoint_name = f"{parent_branch}/endpoints/{lakebase_endpoint_id}"
 print(f"Creating endpoint {lakebase_endpoint_id!r} in {parent_branch}...")
 endpoint_spec = EndpointSpec(endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE)
 endpoint = Endpoint(spec=endpoint_spec)
@@ -98,10 +99,29 @@ except Exception as e:
     else:
         raise
 
+# Wait for endpoint to be ready (have a host) so lakebase_data_init can connect
+import time
+max_wait_seconds = 300
+poll_interval = 15
+for elapsed in range(0, max_wait_seconds, poll_interval):
+    ep = postgres_api.get_endpoint(name=endpoint_name)
+    status = getattr(ep, "status", None)
+    hosts = getattr(status, "hosts", None) if status else None
+    if hosts and isinstance(hosts, list) and len(hosts) > 0:
+        print(f"  Endpoint ready (host available) after {elapsed}s.")
+        break
+    if elapsed + poll_interval >= max_wait_seconds:
+        raise RuntimeError(
+            f"Endpoint {endpoint_name!r} did not become ready within {max_wait_seconds}s. "
+            "Check Compute → Lakebase in the workspace; the endpoint may still be starting."
+        )
+    print(f"  Waiting for endpoint to be ready ({elapsed + poll_interval}s)...")
+    time.sleep(poll_interval)
+
 # COMMAND ----------
 
 print()
-print("Lakebase Autoscaling ready. Next task (lakebase_data_init) will use:")
+print("Lakebase Autoscaling ready. Next task (lakebase_data_init) will use these IDs:")
 print(f"  lakebase_project_id={lakebase_project_id}")
 print(f"  lakebase_branch_id={lakebase_branch_id}")
 print(f"  lakebase_endpoint_id={lakebase_endpoint_id}")
