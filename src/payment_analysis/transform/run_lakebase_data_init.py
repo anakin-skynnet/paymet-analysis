@@ -14,7 +14,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "psycopg[binary]==3.2.3" "databricks-sdk==0.85.0" --quiet
+# MAGIC %pip install "psycopg[binary]==3.3.2" "databricks-sdk==0.86.0" --quiet
 
 # COMMAND ----------
 
@@ -61,7 +61,7 @@ postgres_api = getattr(ws, "postgres", None)
 if postgres_api is None:
     raise AttributeError(
         "WorkspaceClient has no attribute 'postgres'. The Postgres (Lakebase Autoscaling) API requires "
-        "databricks-sdk==0.85.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.85.0\" --quiet, "
+        "databricks-sdk>=0.86.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.86.0\" --quiet, "
         "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
     )
 endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
@@ -294,4 +294,69 @@ with psycopg.connect(conn_str, row_factory=dict_row) as conn:
         conn.commit()
         print(f"app_settings seeded: {[k for k, _ in settings_defaults]}.")
 
-print("Lakebase data initialization completed successfully.")
+# ---------------------------------------------------------------------------
+# Grant Postgres access to the Databricks App service principal
+#
+# The app runs as its own SP whose OAuth identity must have a Postgres role.
+# We look up the app (by name) → get its SP → create a Lakebase OAuth role
+# and grant full access on the data schema.  This is idempotent.
+# ---------------------------------------------------------------------------
+
+app_name = _get_widget("app_name") or "payment-analysis"
+
+print(f"\nConfiguring Postgres role for Databricks App '{app_name}' service principal...")
+
+_sp_app_id: str | None = None
+try:
+    _app = ws.apps.get(app_name)
+    _sp_id = getattr(_app, "service_principal_id", None)
+    if _sp_id:
+        _sp = ws.service_principals.get(_sp_id)
+        _sp_app_id = getattr(_sp, "application_id", None)
+        print(f"  App SP: {_sp.display_name} (application_id={_sp_app_id})")
+except Exception as e:
+    print(f"  ⚠ Could not look up app '{app_name}': {e}")
+
+if _sp_app_id:
+    with psycopg.connect(conn_str, row_factory=dict_row) as conn2:
+        with conn2.cursor() as cur2:
+            # Ensure the databricks_auth extension is available
+            cur2.execute("CREATE EXTENSION IF NOT EXISTS databricks_auth")
+            conn2.commit()
+
+            # Create OAuth role for the SP (idempotent — catches "already exists")
+            try:
+                cur2.execute(
+                    "SELECT databricks_create_role(%s, 'SERVICE_PRINCIPAL')",
+                    (_sp_app_id,),
+                )
+                conn2.commit()
+                print(f"  ✓ Postgres role created for SP {_sp_app_id}")
+            except Exception as role_err:
+                conn2.rollback()
+                if "already exists" in str(role_err).lower():
+                    print(f"  Postgres role for SP already exists")
+                else:
+                    print(f"  ⚠ Could not create role: {role_err}")
+
+            # Grant privileges on the data schema
+            # (safe: lakebase_schema is validated above against _SAFE_ID_RE)
+            try:
+                cur2.execute(f'GRANT USAGE ON SCHEMA "{lakebase_schema}" TO "{_sp_app_id}"')
+                cur2.execute(f'GRANT CREATE ON SCHEMA "{lakebase_schema}" TO "{_sp_app_id}"')
+                cur2.execute(
+                    f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{lakebase_schema}" TO "{_sp_app_id}"'
+                )
+                cur2.execute(
+                    f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{lakebase_schema}" '
+                    f'GRANT ALL ON TABLES TO "{_sp_app_id}"'
+                )
+                conn2.commit()
+                print(f"  ✓ Granted full access on schema '{lakebase_schema}' to SP")
+            except Exception as grant_err:
+                conn2.rollback()
+                print(f"  ⚠ Could not grant privileges: {grant_err}")
+else:
+    print("  ⚠ Skipped: could not determine app service principal application_id")
+
+print("\nLakebase data initialization completed successfully.")

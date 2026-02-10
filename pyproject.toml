@@ -7,17 +7,17 @@ description = "Payment approval rate optimization platform on Databricks — str
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "databricks-sdk==0.85.0",
-    "fastapi==0.128.6",
-    "psycopg[binary,pool]==3.2.3",
-    "pydantic-settings==2.6.1",
-    "sqlmodel==0.0.27",
+    "databricks-sdk==0.86.0",
+    "fastapi==0.128.7",
+    "psycopg[binary,pool]==3.3.2",
+    "pydantic-settings==2.12.0",
+    "sqlmodel==0.0.32",
     "uvicorn==0.40.0",
 ]
 
 [dependency-groups]
 dev = [
-    "ty==0.0.14",
+    "ty==0.0.15",
     "apx==0.2.6",
 ]
 
@@ -37,7 +37,7 @@ root = "src/payment_analysis/ui"
 "@svgl" = "https://svgl.app/r/{name}.json"
 
 [build-system]
-requires = ["hatchling==1.26.0", "uv-dynamic-versioning==0.7.0"]
+requires = ["hatchling==1.28.0", "uv-dynamic-versioning==0.13.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -68,7 +68,7 @@ version = "{version}"
 artifacts = ["src/payment_analysis/__dist__", "src/payment_analysis/_metadata.py"]
 exclude = ["src/payment_analysis/ui"]
 
-# Exclude Databricks-only notebooks from type checking (dbutils, spark, dlt/Lakeflow are runtime-injected)
+# Exclude Databricks-only notebooks from type checking (dbutils, spark, Lakeflow are runtime-injected)
 # Exclude files/ (bundle sync copy) so ty only checks src/ and resolves imports correctly
 # Exclude LangGraph/UC agent code (Databricks-only: spark/dbutils or optional deps)
 [tool.ty.src]

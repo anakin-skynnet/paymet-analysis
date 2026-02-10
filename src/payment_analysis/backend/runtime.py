@@ -160,8 +160,19 @@ class Runtime:
                 session.connection().execute(text("SELECT 1"))
                 session.close()
 
-        except Exception:
-            raise ConnectionError("Failed to connect to the database")
+        except Exception as db_err:
+            err_msg = str(db_err).lower()
+            if "password authentication failed" in err_msg:
+                raise ConnectionError(
+                    "Postgres authentication failed. The app's service principal likely "
+                    "does not have a Lakebase Postgres role. Re-run Job 1 "
+                    "(lakebase_data_init) to auto-create the role, or manually run: "
+                    "CREATE EXTENSION IF NOT EXISTS databricks_auth; "
+                    "SELECT databricks_create_role('<sp-application-id>', 'SERVICE_PRINCIPAL');"
+                ) from db_err
+            raise ConnectionError(
+                f"Failed to connect to the database: {db_err}"
+            ) from db_err
 
         if self._dev_db_port:
             logger.info("Local dev database connection validated successfully")

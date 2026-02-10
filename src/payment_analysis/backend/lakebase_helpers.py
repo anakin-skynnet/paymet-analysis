@@ -130,7 +130,7 @@ def _get_postgres_api(ws: WorkspaceClient):
     if api is None:
         raise AttributeError(
             "WorkspaceClient has no attribute 'postgres'. "
-            "Lakebase Autoscaling requires databricks-sdk>=0.85.0 and a workspace with Lakebase enabled."
+            "Lakebase Autoscaling requires databricks-sdk>=0.86.0 and a workspace with Lakebase enabled."
         )
     return api
 

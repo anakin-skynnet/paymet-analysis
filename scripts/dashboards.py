@@ -41,7 +41,7 @@ ASSETS = [
     ("v_active_alerts", "gold_views.sql"),
     ("v_solution_performance", "gold_views.sql"),
     ("v_card_network_performance", "gold_views.sql"),
-    ("v_retry_performance", "gold_views.sql"),
+    ("v_retry_performance", "Lakeflow pipeline (gold table)"),
     ("v_merchant_segment_performance", "gold_views.sql"),
     ("v_daily_trends", "gold_views.sql"),
     ("v_streaming_ingestion_hourly", "gold_views.sql"),

@@ -67,18 +67,39 @@ MAX_DEPTH_RISK = _int_widget("max_depth_risk", 12)
 MAX_DEPTH_ROUTING = _int_widget("max_depth_routing", 10)
 MAX_DEPTH_RETRY = _int_widget("max_depth_retry", 8)
 MIN_SAMPLES_SPLIT = _int_widget("min_samples_split", 5)
-# Use a path outside the app source tree (e.g. payment-analysis/) so app export does not try to export this MLflow experiment
-EXPERIMENT_PATH = f"/Users/{spark.sql('SELECT current_user()').collect()[0][0]}/mlflow_experiments/payment_analysis_models"
+# Resolve current user for MLflow experiment path.
+# On serverless, current_user() may return None; fall back to notebook context or /Shared/.
+_user = None
+try:
+    _user = spark.sql("SELECT current_user()").collect()[0][0]  # type: ignore[name-defined]
+except Exception:
+    pass
+if not _user or (isinstance(_user, str) and _user.strip().lower() in ("none", "")):
+    try:
+        _user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore[name-defined]
+    except Exception:
+        pass
+if _user and isinstance(_user, str) and _user.strip().lower() not in ("none", ""):
+    EXPERIMENT_PATH = f"/Users/{_user}/mlflow_experiments/payment_analysis_models"
+else:
+    EXPERIMENT_PATH = "/Shared/mlflow_experiments/payment_analysis_models"
 
 # Set MLflow to use Unity Catalog
 mlflow.set_registry_uri("databricks-uc")
 
-# Create or set experiment
+# Set experiment — mlflow.set_experiment creates it if it doesn't exist.
+# Wrap in try/except because serverless may have restrictions.
 try:
-    mlflow.create_experiment(EXPERIMENT_PATH)
-except Exception:
-    pass  # Experiment already exists
-mlflow.set_experiment(EXPERIMENT_PATH)
+    mlflow.set_experiment(EXPERIMENT_PATH)
+except Exception as exp_err:
+    print(f"⚠ Could not set experiment at {EXPERIMENT_PATH}: {exp_err}")
+    # Try a simple path under /Shared as last resort
+    EXPERIMENT_PATH = f"/Shared/payment_analysis_models_{CATALOG}_{SCHEMA}"
+    try:
+        mlflow.set_experiment(EXPERIMENT_PATH)
+    except Exception as exp_err2:
+        print(f"⚠ Could not set experiment at {EXPERIMENT_PATH} either: {exp_err2}")
+        print("  Continuing without MLflow experiment tracking (models will still be registered)")
 
 print("✓ Configuration complete")
 print(f"  Catalog: {CATALOG}")
@@ -122,6 +143,13 @@ LIMIT 500000
 
 try:
     df = spark.sql(data_query).toPandas()  # type: ignore[name-defined]
+    # Convert boolean columns to int (Spark booleans become pandas BooleanDtype
+    # which can cause issues with sklearn and fillna). Also convert nullable int types.
+    for c in df.columns:
+        if pd.api.types.is_bool_dtype(df[c]) or str(df[c].dtype) == "boolean":
+            df[c] = df[c].astype("Int64").fillna(0).astype(int)
+        elif hasattr(df[c].dtype, "numpy_dtype"):  # nullable Int64, Float64, etc.
+            df[c] = df[c].fillna(0)
     print(f"✓ Loaded {len(df)} transactions from Silver table (capped at 500k)")
     print(f"  Approval rate: {df['is_approved'].mean()*100:.1f}%")
 except Exception as e:

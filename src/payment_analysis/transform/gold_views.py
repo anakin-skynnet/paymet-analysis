@@ -1,8 +1,16 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Gold Layer - Analytics Views
-# MAGIC 
-# MAGIC Create aggregated views optimized for dashboards and Genie queries.
+# MAGIC # Gold Layer — Backend API Tables
+# MAGIC
+# MAGIC Lakeflow-managed materialized gold tables consumed exclusively by the **backend
+# MAGIC FastAPI service** (SQL queries in `databricks_service.py`).
+# MAGIC
+# MAGIC **Ownership:** Lakeflow ETL pipeline (Pipeline 8).
+# MAGIC
+# MAGIC Dashboard, Genie, and Agent gold views live in `gold_views.sql` and are created
+# MAGIC by **Job 3** (`run_gold_views.py`) as lightweight SQL VIEWs.  The two sets use
+# MAGIC **distinct names** so there is never a conflict between Lakeflow tables and
+# MAGIC Job 3 views.
 
 # COMMAND ----------
 
@@ -21,154 +29,13 @@ from pyspark.sql.functions import (  # type: ignore[import-untyped]
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Approval KPIs
-
-# COMMAND ----------
-
-@dlt.table(
-    name="v_approval_kpis",
-    comment="Approval rate KPIs by various dimensions",
-    table_properties={
-        "quality": "gold"
-    }
-)
-def v_approval_kpis():
-    """Executive-level approval KPIs."""
-    
-    payments = dlt.read("payments_enriched_silver")
-    
-    return (
-        payments
-        .groupBy("event_date")
-        .agg(
-            count("*").alias("total_transactions"),
-            sum(when(col("is_approved"), 1).otherwise(0)).alias("approved_count"),
-            sum(when(~col("is_approved"), 1).otherwise(0)).alias("declined_count"),
-            round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
-            round(avg("fraud_score"), 3).alias("avg_fraud_score"),
-            round(sum("amount"), 2).alias("total_value"),
-            countDistinct("merchant_id").alias("unique_merchants")
-        )
-        .orderBy(col("event_date").desc())
-    )
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold View: Decline Patterns
-
-# COMMAND ----------
-
-@dlt.table(
-    name="v_decline_patterns",
-    comment="Decline reason analysis for recovery opportunities",
-    table_properties={
-        "quality": "gold"
-    }
-)
-def v_decline_patterns():
-    """Reason-code-first decline patterns with entry system and flow type segmentation."""
-    
-    payments = dlt.read("payments_enriched_silver")
-    
-    return (
-        payments
-        .filter(~col("is_approved"))
-        .groupBy("decline_reason_standard", "decline_reason_group", "entry_system", "flow_type", "merchant_segment")
-        .agg(
-            count("*").alias("decline_count"),
-            round(avg("fraud_score"), 3).alias("avg_fraud_score"),
-            round(avg("device_trust_score"), 3).alias("avg_device_trust"),
-            round(sum("amount"), 2).alias("total_declined_value"),
-            countDistinct("merchant_id").alias("affected_merchants"),
-            round(avg("composite_risk_score"), 3).alias("avg_composite_risk"),
-        )
-        .withColumn("recovery_potential",
-            when((col("avg_fraud_score") < 0.3) & (col("avg_device_trust") > 0.6), "HIGH")
-            .when((col("avg_fraud_score") < 0.5) & (col("avg_device_trust") > 0.4), "MEDIUM")
-            .otherwise("LOW")
-        )
-        .orderBy(col("decline_count").desc())
-    )
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold View: Risk Signals
-
-# COMMAND ----------
-
-@dlt.table(
-    name="v_risk_signals",
-    comment="Risk signal aggregations for fraud monitoring",
-    table_properties={
-        "quality": "gold"
-    }
-)
-def v_risk_signals():
-    """Risk signals by segment and geography."""
-    
-    payments = dlt.read("payments_enriched_silver")
-    
-    return (
-        payments
-        .groupBy("merchant_segment", "issuer_country", "risk_tier")
-        .agg(
-            count("*").alias("transaction_count"),
-            round(avg("fraud_score"), 3).alias("avg_fraud_score"),
-            round(avg("aml_risk_score"), 3).alias("avg_aml_score"),
-            round(avg("composite_risk_score"), 3).alias("avg_composite_risk"),
-            sum(when(col("is_approved"), 1).otherwise(0)).alias("approved_count"),
-            round(sum("amount"), 2).alias("total_value")
-        )
-        .withColumn("approval_rate_pct",
-            round(col("approved_count") * 100.0 / col("transaction_count"), 2)
-        )
-        .orderBy(col("avg_composite_risk").desc())
-    )
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold View: Routing Performance
-
-# COMMAND ----------
-
-@dlt.table(
-    name="v_routing_performance",
-    comment="Payment solution routing performance metrics",
-    table_properties={
-        "quality": "gold"
-    }
-)
-def v_routing_performance():
-    """Performance metrics by payment solution and network."""
-    
-    payments = dlt.read("payments_enriched_silver")
-    
-    return (
-        payments
-        .groupBy("payment_solution", "card_network")
-        .agg(
-            count("*").alias("transaction_count"),
-            round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
-            round(avg("processing_time_ms"), 2).alias("avg_latency_ms"),
-            round(avg("fraud_score"), 3).alias("avg_fraud_score"),
-            round(sum("amount"), 2).alias("total_value")
-        )
-        .orderBy(col("transaction_count").desc())
-    )
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold View: Retry Performance
+# MAGIC ## Retry Cohort Analysis (backend: `/api/analytics/retry-performance`)
 
 # COMMAND ----------
 
 @dlt.table(
     name="v_retry_performance",
-    comment="Smart retry strategy performance",
+    comment="Smart retry strategy performance by scenario, reason, and retry count",
     table_properties={
         "quality": "gold"
     }
@@ -181,7 +48,7 @@ def v_retry_performance():
     # Baseline: overall approval rate for non-retry transactions (single-row DF, safe cross join)
     baseline = (
         payments
-        .filter(col("is_retry") == False)
+        .filter(~col("is_retry"))
         .agg(
             round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("baseline_approval_pct")
         )
@@ -190,7 +57,7 @@ def v_retry_performance():
     # Retry cohorts with features
     retry_cohorts = (
         payments
-        .filter(col("is_retry") == True)
+        .filter(col("is_retry"))
         .groupBy("retry_scenario", "decline_reason_standard", "retry_count")
         .agg(
             count("*").alias("retry_attempts"),
@@ -220,64 +87,8 @@ def v_retry_performance():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Recommendations
-
-# COMMAND ----------
-
-@dlt.table(
-    name="v_recommendations",
-    comment="AI-generated recommendations for approval rate improvement",
-    table_properties={
-        "quality": "gold"
-    }
-)
-def v_recommendations():
-    """Actionable recommendations based on data patterns."""
-    
-    decline_patterns = dlt.read("v_decline_patterns")
-    
-    return (
-        decline_patterns
-        .filter(col("recovery_potential").isin("HIGH", "MEDIUM"))
-        .withColumn("recommendation",
-            when(col("decline_reason_standard") == "FUNDS_OR_LIMIT", "Enable Smart Retry with 24-48h delay")
-            .when(col("decline_reason_standard") == "ISSUER_TECHNICAL", "Route to alternative network")
-            .when(col("decline_reason_standard") == "CARD_EXPIRED", "Trigger card update notification")
-            .when(col("decline_reason_standard") == "ISSUER_DO_NOT_HONOR", "Try alternative payment solution")
-            .when(col("decline_reason_standard") == "FRAUD_SUSPECTED", "Review antifraud rules; reduce false positives")
-            .when(col("decline_reason_standard") == "SECURITY_CVV", "Request CVV re-entry / step-up auth")
-            .when(col("decline_reason_standard") == "SECURITY_3DS_FAILED", "Fallback to alternate auth path; reduce friction")
-            .otherwise("Manual review recommended")
-        )
-        .withColumn("estimated_recovery_value",
-            round(col("total_declined_value") * 
-                when(col("recovery_potential") == "HIGH", 0.4)
-                .when(col("recovery_potential") == "MEDIUM", 0.2)
-                .otherwise(0.05), 2)
-        )
-        .withColumn("priority",
-            when(col("estimated_recovery_value") > 10000, 1)
-            .when(col("estimated_recovery_value") > 1000, 2)
-            .otherwise(3)
-        )
-        .select(
-            "decline_reason_standard",
-            "decline_reason_group",
-            "merchant_segment",
-            "decline_count",
-            "recovery_potential",
-            "recommendation",
-            "estimated_recovery_value",
-            "priority"
-        )
-        .orderBy("priority", col("estimated_recovery_value").desc())
-    )
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Gold View: Smart Checkout (Brazil / Payment Link) — service-path breakdown
+# MAGIC ## Smart Checkout — Brazil / Payment Link: service-path breakdown
+# MAGIC (backend: `/api/analytics/smart-checkout-service-path-br`)
 
 # COMMAND ----------
 
@@ -319,7 +130,8 @@ def v_smart_checkout_service_path_br():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Smart Checkout (Brazil / Payment Link) — 3DS funnel
+# MAGIC ## Smart Checkout — Brazil / Payment Link: 3DS funnel
+# MAGIC (backend: `/api/analytics/3ds-funnel-br`)
 
 # COMMAND ----------
 
@@ -341,10 +153,10 @@ def v_3ds_funnel_br():
         .groupBy("event_date")
         .agg(
             count("*").alias("total_transactions"),
-            sum(when(col("three_ds_routed") == True, 1).otherwise(0)).alias("three_ds_routed_count"),
-            sum(when(col("three_ds_friction") == True, 1).otherwise(0)).alias("three_ds_friction_count"),
-            sum(when(col("three_ds_authenticated") == True, 1).otherwise(0)).alias("three_ds_authenticated_count"),
-            sum(when((col("three_ds_authenticated") == True) & (col("is_approved") == True), 1).otherwise(0)).alias("issuer_approved_after_auth_count"),
+            sum(when(col("three_ds_routed"), 1).otherwise(0)).alias("three_ds_routed_count"),
+            sum(when(col("three_ds_friction"), 1).otherwise(0)).alias("three_ds_friction_count"),
+            sum(when(col("three_ds_authenticated"), 1).otherwise(0)).alias("three_ds_authenticated_count"),
+            sum(when(col("three_ds_authenticated") & col("is_approved"), 1).otherwise(0)).alias("issuer_approved_after_auth_count"),
         )
         .withColumn(
             "three_ds_friction_rate_pct",
@@ -365,7 +177,8 @@ def v_3ds_funnel_br():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Reason Codes (Brazil) — unified taxonomy and actionability
+# MAGIC ## Reason Codes — Brazil: unified taxonomy
+# MAGIC (backend: `/api/analytics/reason-codes-br`)
 
 # COMMAND ----------
 
@@ -406,7 +219,8 @@ def v_reason_codes_br():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Reason Codes Insights (Brazil) — estimated recovery / uplift (demo)
+# MAGIC ## Reason Code Insights — Brazil: estimated recovery (demo heuristic)
+# MAGIC (backend: `/api/analytics/reason-code-insights-br`)
 
 # COMMAND ----------
 
@@ -445,7 +259,8 @@ def v_reason_code_insights_br():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Brazil entry-system distribution (coverage check)
+# MAGIC ## Entry-System Distribution — Brazil (coverage check)
+# MAGIC (backend: `/api/analytics/entry-system-distribution-br`)
 
 # COMMAND ----------
 
@@ -463,8 +278,8 @@ def v_entry_system_distribution_br():
         br.groupBy("entry_system")
         .agg(
             count("*").alias("transaction_count"),
-            sum(when(col("is_approved") == True, 1).otherwise(0)).alias("approved_count"),
-            round(sum(when(col("is_approved") == True, 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
+            sum(when(col("is_approved"), 1).otherwise(0)).alias("approved_count"),
+            round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
             round(sum("amount"), 2).alias("total_value"),
         )
         .orderBy(col("transaction_count").desc())
@@ -474,7 +289,8 @@ def v_entry_system_distribution_br():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Dedup collision stats (double-counting guardrail)
+# MAGIC ## Dedup Collision Stats (quality guardrail)
+# MAGIC (backend: `/api/analytics/dedup-collision-stats`)
 
 # COMMAND ----------
 
@@ -511,7 +327,8 @@ def v_dedup_collision_stats():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: False Insights counter-metric
+# MAGIC ## False Insights Quality Metric
+# MAGIC (backend: `/api/analytics/false-insights`)
 
 # COMMAND ----------
 
@@ -547,7 +364,8 @@ def v_false_insights_metric():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold View: Smart Checkout (Brazil / Payment Link) — recommended path performance
+# MAGIC ## Smart Checkout — Brazil / Payment Link: recommended path performance
+# MAGIC (backend: `/api/analytics/smart-checkout-path-performance-br`)
 
 # COMMAND ----------
 
@@ -574,8 +392,8 @@ def v_smart_checkout_path_performance_br():
         .groupBy("recommended_path")
         .agg(
             count("*").alias("transaction_count"),
-            sum(when(col("is_approved") == True, 1).otherwise(0)).alias("approved_count"),
-            round(sum(when(col("is_approved") == True, 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
+            sum(when(col("is_approved"), 1).otherwise(0)).alias("approved_count"),
+            round(sum(when(col("is_approved"), 1).otherwise(0)) * 100.0 / count("*"), 2).alias("approval_rate_pct"),
             round(sum("amount"), 2).alias("total_value"),
         )
         .orderBy(col("transaction_count").desc())

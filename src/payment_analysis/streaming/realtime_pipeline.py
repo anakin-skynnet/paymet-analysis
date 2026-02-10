@@ -7,8 +7,22 @@
 # COMMAND ----------
 
 import dlt  # type: ignore[import-untyped]
-from pyspark.sql.functions import *  # type: ignore[import-untyped]
-from pyspark.sql.types import *  # type: ignore[import-untyped]
+from pyspark.sql.functions import (  # type: ignore[import-untyped]
+    approx_count_distinct,
+    avg,
+    col,
+    concat,
+    count,
+    current_timestamp,
+    hour,
+    lit,
+    minute,
+    round,
+    sum,
+    to_date,
+    when,
+    window,
+)
 
 # COMMAND ----------
 
@@ -137,7 +151,7 @@ def payments_stream_metrics_1min():
             sum("amount").alias("total_amount"),
             avg("fraud_score").alias("avg_fraud_score"),
             avg("processing_time_ms").alias("avg_latency_ms"),
-            countDistinct("merchant_id").alias("unique_merchants")
+            approx_count_distinct("merchant_id").alias("unique_merchants")
         )
         .withColumn("approval_rate_pct", 
             round(col("approved_count") / col("transaction_count") * 100, 2)

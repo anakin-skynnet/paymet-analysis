@@ -61,12 +61,16 @@ for part in full_sql.replace("\r\n", "\n").split(";\n"):
         continue
     statements.append(stmt + ";")
 
+print(f"Executing {len(statements)} SQL statements in {catalog}.{schema} ...")
+
 # COMMAND ----------
 
+succeeded = 0
 for i, stmt in enumerate(statements):
     try:
         spark.sql(stmt)  # type: ignore[name-defined]
-        print(f"Executed statement {i + 1}/{len(statements)}")
+        succeeded += 1
+        print(f"  [{succeeded}/{len(statements)}] OK")
     except Exception as e:
         err_msg = str(e)
         if "TABLE_OR_VIEW_NOT_FOUND" in err_msg or "42P01" in err_msg or "cannot be found" in err_msg:
@@ -75,7 +79,7 @@ for i, stmt in enumerate(statements):
                 "Ensure Job 1 (Create Data Repositories) has run and the Lakeflow pipeline has produced "
                 "payments_enriched_silver (and other silver/bronze tables). Then re-run this job."
             ) from e
-        print(f"Statement {i + 1} failed: {stmt[:80]}...")
+        print(f"  [{i + 1}/{len(statements)}] FAILED: {stmt[:80]}...")
         raise
 
-print("Gold views completed successfully.")
+print(f"\n✓ Gold views completed: {succeeded}/{len(statements)} statements executed in {catalog}.{schema}")

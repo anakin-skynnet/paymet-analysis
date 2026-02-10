@@ -1,8 +1,12 @@
 -- ============================================================================
--- Gold Views for Payment Analysis Platform
+-- Gold Views — Dashboards, Genie & Agent Analytics
 -- ============================================================================
--- Catalog: ${catalog}
--- Schema: payment_analysis_${environment}
+-- Lightweight SQL VIEWs created by Job 3 (run_gold_views.py).
+-- Consumed by: dashboards, Genie spaces, agent framework.
+--
+-- Backend API gold tables (retry cohorts, Brazil analytics, quality metrics)
+-- live in gold_views.py and are managed by the Lakeflow ETL pipeline.
+-- The two sets use **distinct names** so they never conflict.
 -- ============================================================================
 
 -- ===========================================================================
@@ -194,28 +198,9 @@ GROUP BY card_network
 ORDER BY transaction_count DESC;
 
 -- ===========================================================================
--- RETRY ANALYTICS VIEWS
+-- NOTE: v_retry_performance is a Lakeflow-managed gold table (gold_views.py).
+-- It is NOT created here to avoid conflicts with the pipeline.
 -- ===========================================================================
-
--- View 10: Retry Performance
-CREATE OR REPLACE VIEW v_retry_performance AS
-SELECT 
-    decline_reason,
-    retry_count,
-    COUNT(*) as retry_attempts,
-    ROUND(SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as retry_success_rate_pct,
-    ROUND(AVG(fraud_score), 3) as avg_fraud_score,
-    ROUND(SUM(CASE WHEN is_approved THEN amount ELSE 0 END), 2) as recovered_value,
-    CASE
-        WHEN AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) > 0.4 THEN 'Effective'
-        WHEN AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) > 0.2 THEN 'Moderate'
-        ELSE 'Low'
-    END as effectiveness
-FROM payments_enriched_silver
-WHERE is_retry = true
-  AND event_date >= CURRENT_DATE() - INTERVAL 30 DAYS
-GROUP BY decline_reason, retry_count
-ORDER BY decline_reason, retry_count;
 
 -- ===========================================================================
 -- MERCHANT SEGMENT VIEWS
@@ -460,5 +445,6 @@ measures:
 $$;
 
 -- ===========================================================================
--- SUMMARY: 16 standard views + 3 metric views for dashboards and analytics
+-- SUMMARY: 15 standard views + 3 metric views for dashboards, Genie & agents
+-- (v_retry_performance is managed by the Lakeflow pipeline — see gold_views.py)
 -- ===========================================================================

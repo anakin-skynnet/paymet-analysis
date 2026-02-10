@@ -189,7 +189,7 @@ NOTEBOOKS = [
     NotebookInfo(
         id="gold_views_sql",
         name="Gold Views SQL Definitions",
-        description="SQL definitions for all gold-layer analytics views (v_executive_kpis, v_decline_patterns, v_routing_performance, etc.).",
+        description="SQL definitions for dashboard, Genie & agent gold views (v_executive_kpis, v_top_decline_reasons, v_solution_performance, etc.).",
         category=NotebookCategory.TRANSFORMATION,
         workspace_path=get_notebook_path("src/payment_analysis/transform/gold_views.sql"),
         job_name="Create Payment Analysis Gold Views",
