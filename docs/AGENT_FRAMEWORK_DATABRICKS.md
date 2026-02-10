@@ -15,6 +15,58 @@ This guide converts **all** payment analysis Python agents (`agent_framework.py`
 
 System prompts and tool behavior match the Python agents 1:1.
 
+---
+
+## Key differences: Custom Python agents vs AgentBricks
+
+| Aspect | Custom Python agents (current) | AgentBricks agents |
+|--------|----------------------------------|---------------------|
+| **Deployment** | Embedded in app / job notebook | Separate Model Serving endpoints |
+| **Scaling** | Limited by app or job compute | Independent auto-scaling per endpoint |
+| **Updates** | Requires app or job redeployment | Update endpoint / model version independently |
+| **Monitoring** | Manual (logs, job runs) | Built-in MLflow tracing and Model Serving metrics |
+| **Cost** | App compute only (or job cluster) | App compute + endpoint compute (pay per endpoint) |
+| **Latency** | Lower (in-process in same job/app) | Higher (network call to Model Serving) |
+
+### Recommended architecture: hybrid approach
+
+- **Deploy specialists to Model Serving** (AgentBricks or Agent Framework).
+- **Keep orchestration and UI in the Databricks App**: routing, business rules, and user experience.
+- **App calls agent endpoints** for AI reasoning and data analysis; agents do not run inside the app process.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Databricks App (FastAPI + React)                      │
+│  - UI/UX (Setup & Run, Rules, Decisioning, Agents)      │
+│  - Orchestration logic (route query → supervisor/agent) │
+│  - Business rules, dashboards, jobs                     │
+└──────────────────────────┬─────────────────────────────┘
+                           │ API calls
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+         ▼                 ▼                 ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Multi-Agent     │ │ Decline Analyst │ │ Smart Routing    │
+│ Supervisor      │ │ Agent Endpoint  │ │ Agent Endpoint   │
+│ (Model Serving) │ │ (Model Serving) │ │ (Model Serving)  │
+└────────┬────────┘ └─────────────────┘ └─────────────────┘
+         │
+         ├──────────────┬──────────────┬──────────────┐
+         ▼              ▼              ▼              ▼
+   Smart Retry   Risk Assessor   Performance   (other specialists)
+   Endpoint      Endpoint        Recommender
+```
+
+**Benefits of the hybrid approach**
+
+- Agents scale independently of the app.
+- Update or A/B test agents without redeploying the app.
+- Built-in monitoring and tracing (MLflow, Model Serving).
+- Reuse the same agent endpoints across multiple apps or jobs.
+- Clear separation: app = UI + orchestration + rules; agents = AI reasoning and data analysis.
+
+---
+
 ## Overview
 
 | Step | What | Where |
