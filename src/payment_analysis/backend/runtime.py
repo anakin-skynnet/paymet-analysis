@@ -7,6 +7,7 @@ from sqlalchemy import Engine, create_engine, event
 from sqlmodel import SQLModel, Session, text
 
 from .config import AppConfig
+from .lakebase_helpers import build_endpoint_name, resolve_endpoint_host, _get_postgres_api
 from .logger import logger
 
 
@@ -47,6 +48,12 @@ class Runtime:
         return self._use_lakebase_autoscaling()
 
     @cached_property
+    def _endpoint_name(self) -> str:
+        """Hierarchical Lakebase endpoint resource name (projects/.../endpoints/...)."""
+        c = self.config.db
+        return build_endpoint_name(c.postgres_project_id, c.postgres_branch_id, c.postgres_endpoint_id)
+
+    @cached_property
     def engine_url(self) -> str:
         # Check if we're in local dev mode with APX_DEV_DB_PORT
         if self._dev_db_port:
@@ -67,6 +74,8 @@ class Runtime:
             )
         prefix = "postgresql+psycopg"
         port = self.config.db.port
+        # Lakebase Autoscaling projects always have a default "databricks_postgres" database.
+        # The config may say "payment_analysis" (the Postgres *schema*); map to the real DB name.
         database = (self.config.db.database_name or "").strip()
         database = "databricks_postgres" if database in ("", "payment_analysis") else database
         username = (
@@ -74,42 +83,14 @@ class Runtime:
             if self.ws.config.client_id
             else (self.ws.current_user.me().user_name if self.ws.current_user else "postgres")
         )
-        postgres_api = getattr(self.ws, "postgres", None)
-        if postgres_api is None:
-            raise AttributeError(
-                "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires "
-                "databricks-sdk==0.85.0. Upgrade the app's databricks-sdk dependency."
-            )
-        endpoint_name = (
-            f"projects/{self.config.db.postgres_project_id}/branches/"
-            f"{self.config.db.postgres_branch_id}/endpoints/{self.config.db.postgres_endpoint_id}"
-        )
-        logger.info("Using Lakebase Autoscaling (postgres): %s", endpoint_name)
-        endpoint = postgres_api.get_endpoint(name=endpoint_name)
-        status = getattr(endpoint, "status", None)
-        # Lakebase Autoscaling uses status.host (singular)
-        host = getattr(status, "host", None) if status else None
-        if not host and status:
-            hosts = getattr(status, "hosts", None)
-            if hosts and isinstance(hosts, list) and len(hosts) > 0:
-                host = getattr(hosts[0], "host", None) or getattr(hosts[0], "hostname", None)
-            elif hosts:
-                host = getattr(hosts, "host", None) or getattr(hosts, "hostname", None)
-        if not host:
-            raise ValueError("Lakebase Autoscaling endpoint has no host; ensure the compute is running.")
+        logger.info("Using Lakebase Autoscaling (postgres): %s", self._endpoint_name)
+        host = resolve_endpoint_host(self.ws, self._endpoint_name)
         return f"{prefix}://{username}:@{host}:{port}/{database}"
 
     def _before_connect(self, dialect, conn_rec, cargs, cparams):
-        postgres_api = getattr(self.ws, "postgres", None)
-        if postgres_api is None:
-            raise AttributeError(
-                "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires databricks-sdk==0.85.0."
-            )
-        endpoint_name = (
-            f"projects/{self.config.db.postgres_project_id}/branches/"
-            f"{self.config.db.postgres_branch_id}/endpoints/{self.config.db.postgres_endpoint_id}"
-        )
-        cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+        """SQLAlchemy ``do_connect`` hook — inject a fresh OAuth token per connection."""
+        postgres_api = _get_postgres_api(self.ws)
+        cred = postgres_api.generate_database_credential(endpoint=self._endpoint_name)
         cparams["password"] = cred.token
 
     @cached_property
@@ -155,16 +136,13 @@ class Runtime:
                 f"Validating local dev database connection at localhost:{self._dev_db_port}"
             )
         else:
-            endpoint_name = (
-                f"projects/{self.config.db.postgres_project_id}/branches/"
-                f"{self.config.db.postgres_branch_id}/endpoints/{self.config.db.postgres_endpoint_id}"
-            )
-            logger.info("Validating Lakebase Autoscaling endpoint: %s", endpoint_name)
+            logger.info("Validating Lakebase Autoscaling endpoint: %s", self._endpoint_name)
             try:
-                self.ws.postgres.get_endpoint(name=endpoint_name)
+                _get_postgres_api(self.ws).get_endpoint(name=self._endpoint_name)
             except NotFound:
                 raise ValueError(
-                    f"Lakebase Autoscaling endpoint does not exist: {endpoint_name}. Run Job 1 create_lakebase_autoscaling first."
+                    f"Lakebase Autoscaling endpoint does not exist: {self._endpoint_name}. "
+                    "Run Job 1 create_lakebase_autoscaling first."
                 )
 
         # check if a connection to the database can be established

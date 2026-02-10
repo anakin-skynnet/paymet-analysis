@@ -104,52 +104,78 @@ def main() -> int:
         )
         return 1
 
+    from databricks.sdk.errors import NotFound
+
+    def _exists(get_fn) -> bool:
+        try:
+            get_fn()
+            return True
+        except NotFound:
+            return False
+
+    def _is_conflict(exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return "already exists" in msg or "409" in msg or "conflict" in msg
+
     if not args.skip_create:
-        # Create project
-        print(f"Creating project {project_id!r}...")
-        project_spec = ProjectSpec(display_name="payment-analysis-db", pg_version=17)
-        project = Project(spec=project_spec)
-        try:
-            op = postgres_api.create_project(project=project, project_id=project_id)
-            result = op.wait()
-            print(f"  Created project: {getattr(result, 'name', project_id)}")
-        except Exception as e:
-            if "already exists" in str(e).lower() or "409" in str(e):
-                print(f"  Project {project_id!r} already exists, skipping.")
-            else:
-                raise
-
-        # Create branch
-        parent_project = f"projects/{project_id}"
-        print(f"Creating branch {branch_id!r} in {parent_project}...")
-        branch_spec = BranchSpec(no_expiry=True)
-        branch = Branch(spec=branch_spec)
-        try:
-            op = postgres_api.create_branch(parent=parent_project, branch=branch, branch_id=branch_id)
-            result = op.wait()
-            print(f"  Created branch: {getattr(result, 'name', branch_id)}")
-        except Exception as e:
-            if "already exists" in str(e).lower() or "409" in str(e):
-                print(f"  Branch {branch_id!r} already exists, skipping.")
-            else:
-                raise
-
-        # Create endpoint (read-write compute)
+        # Resource paths (hierarchical naming per SDK docs)
+        project_name = f"projects/{project_id}"
+        branch_name = f"{project_name}/branches/{branch_id}"
         parent_branch = f"projects/{project_id}/branches/{branch_id}"
+
+        # Create project (idempotent)
+        print(f"Creating project {project_id!r}...")
+        if _exists(lambda: postgres_api.get_project(name=project_name)):
+            print(f"  Project {project_id!r} already exists, skipping.")
+        else:
+            project_spec = ProjectSpec(display_name="payment-analysis-db", pg_version=17)
+            project = Project(spec=project_spec)
+            try:
+                result = postgres_api.create_project(project=project, project_id=project_id).wait()
+                print(f"  ✓ Created project: {getattr(result, 'name', project_id)}")
+            except Exception as e:
+                if _is_conflict(e):
+                    print(f"  Project {project_id!r} already exists, skipping.")
+                else:
+                    raise
+
+        # Create branch (idempotent)
+        print(f"Creating branch {branch_id!r} in {project_name}...")
+        if _exists(lambda: postgres_api.get_branch(name=branch_name)):
+            print(f"  Branch {branch_id!r} already exists, skipping.")
+        else:
+            branch_spec = BranchSpec(no_expiry=True)
+            branch = Branch(spec=branch_spec)
+            try:
+                result = postgres_api.create_branch(parent=project_name, branch=branch, branch_id=branch_id).wait()
+                print(f"  ✓ Created branch: {getattr(result, 'name', branch_id)}")
+            except Exception as e:
+                if _is_conflict(e):
+                    print(f"  Branch {branch_id!r} already exists, skipping.")
+                else:
+                    raise
+
+        # Create endpoint (read-write compute, idempotent)
+        endpoint_name = f"{parent_branch}/endpoints/{endpoint_id}"
         print(f"Creating endpoint {endpoint_id!r} in {parent_branch}...")
-        endpoint_spec = EndpointSpec(endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE)
-        endpoint = Endpoint(spec=endpoint_spec)
-        try:
-            op = postgres_api.create_endpoint(
-                parent=parent_branch, endpoint=endpoint, endpoint_id=endpoint_id
+        if _exists(lambda: postgres_api.get_endpoint(name=endpoint_name)):
+            print(f"  Endpoint {endpoint_id!r} already exists, skipping.")
+        else:
+            endpoint_spec = EndpointSpec(
+                endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE,
+                autoscaling_limit_max_cu=4.0,
             )
-            result = op.wait()
-            print(f"  Created endpoint: {getattr(result, 'name', endpoint_id)}")
-        except Exception as e:
-            if "already exists" in str(e).lower() or "409" in str(e):
-                print(f"  Endpoint {endpoint_id!r} already exists, skipping.")
-            else:
-                raise
+            endpoint = Endpoint(spec=endpoint_spec)
+            try:
+                result = postgres_api.create_endpoint(
+                    parent=parent_branch, endpoint=endpoint, endpoint_id=endpoint_id,
+                ).wait()
+                print(f"  ✓ Created endpoint: {getattr(result, 'name', endpoint_id)}")
+            except Exception as e:
+                if _is_conflict(e):
+                    print(f"  Endpoint {endpoint_id!r} already exists, skipping.")
+                else:
+                    raise
 
     # Output for deploy / job parameters
     print()

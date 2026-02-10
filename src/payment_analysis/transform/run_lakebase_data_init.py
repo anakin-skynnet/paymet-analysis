@@ -47,7 +47,11 @@ if not lakebase_project_id or not lakebase_branch_id or not lakebase_endpoint_id
 
 # COMMAND ----------
 
+import re
+import time as _time
+
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.errors import NotFound
 
 ws = WorkspaceClient()
 port = 5432
@@ -62,81 +66,87 @@ if postgres_api is None:
     )
 endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
 
+
+# ---------------------------------------------------------------------------
+# Validate schema name (prevent SQL injection in f-string queries below)
+# ---------------------------------------------------------------------------
+_SAFE_ID_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
+if not _SAFE_ID_RE.match(lakebase_schema):
+    raise ValueError(f"Invalid lakebase_schema: {lakebase_schema!r}. Must be alphanumeric + underscores.")
+
+
 def _list_existing_lakebase_ids() -> str:
     """List existing project/branch/endpoint IDs to show in error messages."""
     try:
         projects = list(postgres_api.list_projects())
         if not projects:
             return "No Lakebase Autoscaling projects found in this workspace."
-        lines = []
+        lines: list[str] = []
         for p in projects[:5]:
             name = getattr(p, "name", None) or str(p)
-            # name is like "projects/foo"
-            project_id = name.split("/")[-1] if "/" in name else name
-            lines.append(f"  project {project_id!r}")
+            pid = name.split("/")[-1] if "/" in name else name
+            lines.append(f"  project {pid!r}")
             try:
-                branches = list(postgres_api.list_branches(parent=f"projects/{project_id}"))
-                for b in branches[:3]:
+                for b in list(postgres_api.list_branches(parent=f"projects/{pid}"))[:3]:
                     bname = getattr(b, "name", None) or str(b)
-                    branch_id = bname.split("/")[-1] if "/" in bname else bname
-                    lines.append(f"    branch {branch_id!r}")
+                    bid = bname.split("/")[-1] if "/" in bname else bname
+                    lines.append(f"    branch {bid!r}")
                     try:
-                        endpoints = list(
-                            postgres_api.list_endpoints(parent=f"projects/{project_id}/branches/{branch_id}")
-                        )
-                        for ep in endpoints[:3]:
+                        for ep in list(postgres_api.list_endpoints(parent=f"projects/{pid}/branches/{bid}"))[:3]:
                             ename = getattr(ep, "name", None) or str(ep)
-                            endpoint_id = ename.split("/")[-1] if "/" in ename else ename
-                            lines.append(f"      endpoint {endpoint_id!r}")
+                            lines.append(f"      endpoint {ename.split('/')[-1] if '/' in ename else ename!r}")
                     except Exception:
                         pass
             except Exception:
                 pass
-        return "Existing Lakebase Autoscaling resources:\n" + "\n".join(lines) if lines else "No projects listed."
+        return ("Existing Lakebase Autoscaling resources:\n" + "\n".join(lines)) if lines else "No projects listed."
     except Exception as ex:
         return f"(Could not list projects: {ex})"
 
+
+# ---------------------------------------------------------------------------
 # Retry get_endpoint (eventual consistency / endpoint just created)
-import time as _time
+# Use the proper NotFound exception type instead of string matching.
+# ---------------------------------------------------------------------------
 max_attempts = 5
 endpoint = None
 cred = None
+
 for attempt in range(max_attempts):
     try:
         endpoint = postgres_api.get_endpoint(name=endpoint_name)
         cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
         break
-    except Exception as e:
-        if "NotFound" in type(e).__name__ or "not found" in str(e).lower():
-            if attempt == max_attempts - 1:
-                existing = _list_existing_lakebase_ids()
-                raise RuntimeError(
-                    f"Lakebase project/endpoint not found: {endpoint_name!r}. "
-                    "Run Job 1 task create_lakebase_autoscaling first and use the IDs from that task output, "
-                    "or create a Lakebase Autoscaling project in Compute → Lakebase and set job parameters "
-                    "(lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id) to match the existing IDs. "
-                    f"\n{existing}\n"
-                    "See https://docs.databricks.com/oltp/projects/"
-                ) from e
-            _time.sleep(10 * (attempt + 1))
-            continue
+    except NotFound:
+        if attempt == max_attempts - 1:
+            existing = _list_existing_lakebase_ids()
+            raise RuntimeError(
+                f"Lakebase project/endpoint not found: {endpoint_name!r}. "
+                "Run Job 1 task create_lakebase_autoscaling first and use the IDs from that task output, "
+                "or create a Lakebase Autoscaling project in Compute → Lakebase and set job parameters "
+                "(lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id) to match the existing IDs. "
+                f"\n{existing}\n"
+                "See https://docs.databricks.com/oltp/projects/"
+            )
+        print(f"  Endpoint not found (attempt {attempt + 1}/{max_attempts}), retrying in {10 * (attempt + 1)}s...")
+        _time.sleep(10 * (attempt + 1))
+    except Exception:
         raise
+
 if endpoint is None or cred is None:
     raise RuntimeError("Failed to get Lakebase endpoint and credential.")
+
 token = cred.token
-status = getattr(endpoint, "status", None)
-# Lakebase Autoscaling uses status.host (singular)
-host = getattr(status, "host", None) if status else None
-if not host and status:
-    hosts = getattr(status, "hosts", None)
-    if hosts and isinstance(hosts, list) and len(hosts) > 0:
-        host = getattr(hosts[0], "host", None) or getattr(hosts[0], "hostname", None)
-    elif hosts:
-        host = getattr(hosts, "host", None) or getattr(hosts, "hostname", None)
+
+# Resolve host: endpoint.status.hosts.host (hosts is an object, not a list)
+# Canonical impl: src/payment_analysis/backend/lakebase_helpers.py
+host = getattr(getattr(getattr(endpoint, "status", None), "hosts", None), "host", None)
 if not host:
     raise ValueError("Endpoint has no host; ensure the compute endpoint is running.")
-# Autoscaling default DB is databricks_postgres (only this DB exists in new projects)
-dbname = (lakebase_database_name or "").strip() or "databricks_postgres"
+
+# Autoscaling projects always have a "databricks_postgres" database.
+# The lakebase_database_name widget may say "payment_analysis" — that's the Postgres schema, not the DB.
+dbname = "databricks_postgres"
 username = (ws.current_user.me().user_name if ws.current_user else None) or getattr(ws.config, "client_id", None) or "postgres"
 
 # COMMAND ----------
