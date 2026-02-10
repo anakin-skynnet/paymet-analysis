@@ -125,7 +125,9 @@ artifacts:
 # -----------------------------------------------------------------------------
 targets:
   dev:
-    mode: development
+    # NOTE: "mode: development" is NOT used because it forces a name_prefix
+    # (e.g. "[dev ariel_hdez]") on every resource and schema. Instead, we
+    # replicate the development-mode presets manually with no name prefix.
     default: true
     variables:
       environment: dev
@@ -136,7 +138,6 @@ targets:
       lakebase_branch_id: production
       lakebase_endpoint_id: primary
     presets:
-      name_prefix: "[dev ${workspace.current_user.short_name}] "
       pipelines_development: true
       jobs_max_concurrent_runs: 1
       trigger_pause_status: PAUSED
