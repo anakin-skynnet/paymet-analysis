@@ -103,31 +103,37 @@ except Exception as e:
         raise
 
 # Wait for endpoint to be visible (get_endpoint) and ready (host available) so lakebase_data_init can connect
-max_wait = 300
-interval = 15
+max_wait = 600
+interval = 10
 elapsed = 0
+
+print("Waiting for endpoint to be ready...")
+
 while elapsed < max_wait:
     try:
         ep = postgres_api.get_endpoint(name=endpoint_name)
 
-        # For Lakebase Autoscaling, check 'host' (singular)
-        status = getattr(ep, "status", None)
-        host = getattr(status, "host", None) if status else None
+        # Endpoint found - check if it has a host
+        host = getattr(ep.status, "host", None) if hasattr(ep, "status") else None
+        state = getattr(ep.status, "state", "UNKNOWN") if hasattr(ep, "status") else "UNKNOWN"
+
+        print(f"  [{elapsed}s] State: {state}, Host: {host or 'not assigned yet'}")
+
         if host:
-            print(f"✓ Endpoint ready after {elapsed}s")
-            print(f"  Host: {host}")
+            print(f"✓ Endpoint ready after {elapsed}s!")
+            print(f"  Connection host: {host}")
             break
 
-        state = getattr(status, "state", "unknown") if status else "unknown"
-        print(f"  State: {state} - waiting... ({elapsed}s)")
-
     except NotFound:
-        print(f"  Endpoint not registered yet ({elapsed}s)")
+        print(f"  [{elapsed}s] Endpoint not found in registry yet")
+    except Exception as e:
+        print(f"  [{elapsed}s] Error: {e}")
 
     time.sleep(interval)
     elapsed += interval
 else:
-    print(f"⚠ Timeout after {max_wait}s - check Lakebase UI")
+    print(f"⚠ Timeout after {max_wait}s")
+    print(f"Check Lakebase UI: Compute → Lakebase → {lakebase_project_id}")
     raise RuntimeError(
         f"Endpoint {endpoint_name!r} did not become ready within {max_wait}s. "
         "Check Compute → Lakebase in the workspace; the endpoint may still be starting."

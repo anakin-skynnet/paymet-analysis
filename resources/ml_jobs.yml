@@ -52,7 +52,7 @@ resources:
               lakebase_project_id: ${var.lakebase_project_id}
               lakebase_branch_id: ${var.lakebase_branch_id}
               lakebase_endpoint_id: ${var.lakebase_endpoint_id}
-          timeout_seconds: 300
+          timeout_seconds: 700
           max_retries: 2
 
         - task_key: lakebase_data_init
