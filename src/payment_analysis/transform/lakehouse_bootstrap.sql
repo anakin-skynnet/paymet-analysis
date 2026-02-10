@@ -16,7 +16,10 @@ CREATE TABLE IF NOT EXISTS app_config (
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
 )
 USING DELTA
-TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
 COMMENT 'Single-row config: catalog and schema for the Payment Approval app. Updated via UI or API.';
 
 INSERT INTO app_config (id, catalog, schema)
@@ -38,7 +41,8 @@ CREATE TABLE IF NOT EXISTS transaction_summaries_for_search (
 USING DELTA
 TBLPROPERTIES (
     'delta.enableChangeDataFeed' = 'true',
-    'delta.autoOptimize.optimizeWrite' = 'true'
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
 )
 COMMENT 'Source for Vector Search index. Create index from resources/vector_search.yml if needed.';
 
@@ -51,7 +55,10 @@ CREATE TABLE IF NOT EXISTS approval_recommendations (
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
 )
 USING DELTA
-TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')
+TBLPROPERTIES (
+    'delta.enableChangeDataFeed' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
 COMMENT 'Recommendations from similar transactions and rules; shown in app Decisioning.';
 
 CREATE OR REPLACE VIEW v_recommendations_from_lakehouse AS
@@ -75,7 +82,10 @@ CREATE TABLE IF NOT EXISTS approval_rules (
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
 )
 USING DELTA
-TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
 COMMENT 'Business rules for approval/retry/routing. Written from the app; consumed by decision API and AI agents.';
 
 CREATE OR REPLACE VIEW v_approval_rules_active AS
@@ -114,7 +124,10 @@ CREATE TABLE IF NOT EXISTS countries (
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
 )
 USING DELTA
-TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
 COMMENT 'Countries/entities for the report filter dropdown. Add or remove rows to change options in the UI.';
 
 -- Seed default Getnet entities (insert only when table is empty)
@@ -147,7 +160,10 @@ CREATE TABLE IF NOT EXISTS online_features (
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp()
 )
 USING DELTA
-TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true')
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
 COMMENT 'Online features from ML and AI; presented in the app Dashboard.';
 
 CREATE OR REPLACE VIEW v_online_features_latest AS

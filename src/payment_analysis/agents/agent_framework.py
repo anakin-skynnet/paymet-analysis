@@ -218,10 +218,22 @@ class BaseAgent:
             if postgres_api is None:
                 logger.warning("WorkspaceClient has no 'postgres'; cannot read from Lakebase.")
                 return []
-            endpoint_name = (
+            # Discover actual endpoint name — Lakebase auto-generates names like
+            # ep-xxx when a project is created, so the configured endpoint_id
+            # (e.g. 'primary') may not match. Try configured name first, then list.
+            configured_endpoint_name = (
                 f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
                 f"/endpoints/{self.lakebase_endpoint_id}"
             )
+            branch_path = f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
+            from databricks.sdk.errors import NotFound as _NotFound
+            try:
+                postgres_api.get_endpoint(name=configured_endpoint_name)
+                endpoint_name = configured_endpoint_name
+            except _NotFound:
+                eps = list(postgres_api.list_endpoints(parent=branch_path))
+                endpoint_name = getattr(eps[0], "name", configured_endpoint_name) if eps else configured_endpoint_name
+
             endpoint = postgres_api.get_endpoint(name=endpoint_name)
             cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
             # Resolve host: endpoint.status.hosts.host (hosts is an object, not a list)

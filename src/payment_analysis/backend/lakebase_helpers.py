@@ -31,6 +31,48 @@ def build_endpoint_name(project_id: str, branch_id: str, endpoint_id: str) -> st
 
 
 # ---------------------------------------------------------------------------
+# Endpoint discovery
+# ---------------------------------------------------------------------------
+
+def discover_endpoint_name(
+    ws: WorkspaceClient,
+    project_id: str,
+    branch_id: str,
+    endpoint_id: str,
+) -> str:
+    """Discover the actual endpoint name on the given branch.
+
+    Lakebase auto-generates endpoint names (e.g. ``ep-broad-forest-xxx``) when a
+    project is created.  The configured ``endpoint_id`` (e.g. ``'primary'``) may
+    not match the actual name.  Tries the configured name first; if not found,
+    lists endpoints on the branch and returns the first one.
+
+    Raises ``ValueError`` if no endpoints exist on the branch.
+    """
+    from databricks.sdk.errors import NotFound
+
+    postgres_api = _get_postgres_api(ws)
+    configured_name = build_endpoint_name(project_id, branch_id, endpoint_id)
+
+    try:
+        postgres_api.get_endpoint(name=configured_name)
+        return configured_name
+    except NotFound:
+        pass
+
+    # List endpoints on the branch and pick the first one
+    branch_path = f"projects/{project_id}/branches/{branch_id}"
+    endpoints = list(postgres_api.list_endpoints(parent=branch_path))
+    if endpoints:
+        return getattr(endpoints[0], "name", configured_name)
+
+    raise ValueError(
+        f"No endpoints found on branch {branch_path!r}. "
+        "Run Job 1 (create_lakebase_autoscaling) or create an endpoint in Compute → Lakebase."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Host resolution
 # ---------------------------------------------------------------------------
 

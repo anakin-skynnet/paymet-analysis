@@ -7,7 +7,7 @@ from sqlalchemy import Engine, create_engine, event
 from sqlmodel import SQLModel, Session, text
 
 from .config import AppConfig
-from .lakebase_helpers import build_endpoint_name, resolve_endpoint_host, _get_postgres_api
+from .lakebase_helpers import discover_endpoint_name, resolve_endpoint_host, _get_postgres_api
 from .logger import logger
 
 
@@ -49,9 +49,14 @@ class Runtime:
 
     @cached_property
     def _endpoint_name(self) -> str:
-        """Hierarchical Lakebase endpoint resource name (projects/.../endpoints/...)."""
+        """Actual Lakebase endpoint resource name (auto-discovers if configured name doesn't match).
+
+        Lakebase auto-generates endpoint names (e.g. ep-xxx) when a project is
+        created. The configured endpoint_id may not match, so we discover the
+        actual endpoint name on the branch.
+        """
         c = self.config.db
-        return build_endpoint_name(c.postgres_project_id, c.postgres_branch_id, c.postgres_endpoint_id)
+        return discover_endpoint_name(self.ws, c.postgres_project_id, c.postgres_branch_id, c.postgres_endpoint_id)
 
     @cached_property
     def engine_url(self) -> str:

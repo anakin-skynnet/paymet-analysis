@@ -155,27 +155,43 @@ def main() -> int:
                 else:
                     raise
 
-        # Create endpoint (read-write compute, idempotent)
+        # Discover or create endpoint (read-write compute, idempotent)
+        # Lakebase auto-generates endpoint names (e.g. ep-xxx) when a project
+        # is created, so the configured endpoint_id may not match. Discover first.
         endpoint_name = f"{parent_branch}/endpoints/{endpoint_id}"
-        print(f"Creating endpoint {endpoint_id!r} in {parent_branch}...")
+        print(f"Checking endpoint {endpoint_id!r} in {parent_branch}...")
         if _exists(lambda: postgres_api.get_endpoint(name=endpoint_name)):
-            print(f"  Endpoint {endpoint_id!r} already exists, skipping.")
+            print(f"  Endpoint {endpoint_id!r} exists.")
         else:
-            endpoint_spec = EndpointSpec(
-                endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE,
-                autoscaling_limit_max_cu=4.0,
-            )
-            endpoint = Endpoint(spec=endpoint_spec)
-            try:
-                result = postgres_api.create_endpoint(
-                    parent=parent_branch, endpoint=endpoint, endpoint_id=endpoint_id,
-                ).wait()
-                print(f"  ✓ Created endpoint: {getattr(result, 'name', endpoint_id)}")
-            except Exception as e:
-                if _is_conflict(e):
-                    print(f"  Endpoint {endpoint_id!r} already exists, skipping.")
-                else:
-                    raise
+            # Check for auto-generated endpoints on the branch
+            existing_eps = list(postgres_api.list_endpoints(parent=parent_branch))
+            if existing_eps:
+                actual_name = getattr(existing_eps[0], "name", endpoint_name)
+                actual_id = actual_name.split("/")[-1] if "/" in actual_name else actual_name
+                print(f"  Endpoint {endpoint_id!r} not found, but found existing: {actual_id!r}. Using it.")
+                endpoint_name = actual_name
+            else:
+                print(f"  No endpoints found. Creating endpoint {endpoint_id!r}...")
+                endpoint_spec = EndpointSpec(
+                    endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE,
+                    autoscaling_limit_max_cu=4.0,
+                )
+                endpoint = Endpoint(spec=endpoint_spec)
+                try:
+                    result = postgres_api.create_endpoint(
+                        parent=parent_branch, endpoint=endpoint, endpoint_id=endpoint_id,
+                    ).wait()
+                    endpoint_name = getattr(result, "name", endpoint_name)
+                    print(f"  ✓ Created endpoint: {endpoint_name}")
+                except Exception as e:
+                    if _is_conflict(e):
+                        print(f"  Endpoint already exists (race). Re-listing...")
+                        existing_eps = list(postgres_api.list_endpoints(parent=parent_branch))
+                        if existing_eps:
+                            endpoint_name = getattr(existing_eps[0], "name", endpoint_name)
+                        print(f"  Using endpoint: {endpoint_name}")
+                    else:
+                        raise
 
     # Output for deploy / job parameters
     print()

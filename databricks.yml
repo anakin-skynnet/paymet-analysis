@@ -11,6 +11,13 @@
 bundle:
   name: payment-analysis
 
+# Prevent DAB from adding name_prefix to Unity Catalog schema names.
+# In development mode, DAB auto-prefixes resource names (e.g. "dev_ariel_hdez_").
+# Since var.schema already contains the full name (e.g. dev_ariel_hdez_payment_analysis),
+# skip the prefix for schemas to avoid doubling (dev_ariel_hdez_dev_ariel_hdez_...).
+experimental:
+  skip_name_prefix_for_schema: true
+
 # Workspace root: sync and app both use root_path (apps-cookbook / apx pattern).
 # Single path avoids files/ subfolder and duplicate config; app runs from root_path so src/payment_analysis/__dist__ is found.
 workspace:

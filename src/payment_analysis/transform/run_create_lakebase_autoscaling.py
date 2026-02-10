@@ -120,30 +120,64 @@ else:
             raise RuntimeError(f"Failed to create branch {lakebase_branch_id!r}: {e}") from e
 
 # ---------------------------------------------------------------------------
-# 3. Create endpoint / compute (idempotent, read-write)
-# SDK: postgres_api.get_endpoint(name="projects/.../endpoints/{id}")
-# SDK: postgres_api.create_endpoint(parent, endpoint, endpoint_id) → LRO
-# Docs recommend setting autoscaling_limit_max_cu in EndpointSpec.
+# 3. Discover or create endpoint / compute (idempotent, read-write)
+#
+# When a Lakebase project is created, a default endpoint is auto-created with
+# an auto-generated name (e.g. "ep-broad-forest-e1dqz0rd"), NOT with the
+# user-supplied endpoint_id. So we first check if the requested endpoint
+# exists; if not, we list existing endpoints on the branch and use the first
+# active one. Only if no endpoints exist at all do we create a new one.
 # ---------------------------------------------------------------------------
-print(f"Creating endpoint {lakebase_endpoint_id!r} in {branch_name}...")
+print(f"Checking endpoint {lakebase_endpoint_id!r} in {branch_name}...")
+
+actual_endpoint_name = endpoint_name  # default: use the configured name
+
 if _resource_exists(lambda: postgres_api.get_endpoint(name=endpoint_name)):
-    print(f"  Endpoint {lakebase_endpoint_id!r} already exists, skipping.")
+    print(f"  Endpoint {lakebase_endpoint_id!r} exists.")
 else:
-    endpoint_spec = EndpointSpec(
-        endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE,
-        autoscaling_limit_max_cu=4.0,
-    )
-    endpoint = Endpoint(spec=endpoint_spec)
-    try:
-        result = postgres_api.create_endpoint(
-            parent=branch_name, endpoint=endpoint, endpoint_id=lakebase_endpoint_id,
-        ).wait()
-        print(f"  ✓ Created endpoint: {getattr(result, 'name', lakebase_endpoint_id)}")
-    except Exception as e:
-        if _is_already_exists(e):
-            print(f"  Endpoint {lakebase_endpoint_id!r} already exists (race), skipping.")
-        else:
-            raise RuntimeError(f"Failed to create endpoint {lakebase_endpoint_id!r}: {e}") from e
+    # The configured endpoint_id may not match the auto-generated name.
+    # List all endpoints on this branch and pick the first active read-write one.
+    print(f"  Endpoint {lakebase_endpoint_id!r} not found. Discovering existing endpoints...")
+    existing_endpoints = list(postgres_api.list_endpoints(parent=branch_name))
+
+    found = False
+    for ep_item in existing_endpoints:
+        ep_name = getattr(ep_item, "name", "")
+        ep_status = getattr(ep_item, "status", None)
+        ep_type = getattr(ep_status, "endpoint_type", "") if ep_status else ""
+        ep_state = getattr(ep_status, "current_state", "") if ep_status else ""
+        print(f"    Found endpoint: {ep_name} (type={ep_type}, state={ep_state})")
+        # Use it if it's a read-write endpoint (or any endpoint if only one exists)
+        if not found:
+            actual_endpoint_name = ep_name
+            found = True
+
+    if found:
+        actual_ep_id = actual_endpoint_name.split("/")[-1] if "/" in actual_endpoint_name else actual_endpoint_name
+        print(f"  Using existing endpoint: {actual_ep_id!r}")
+    else:
+        # No endpoints at all — create one
+        print(f"  No endpoints found on branch. Creating endpoint {lakebase_endpoint_id!r}...")
+        endpoint_spec = EndpointSpec(
+            endpoint_type=EndpointType.ENDPOINT_TYPE_READ_WRITE,
+            autoscaling_limit_max_cu=4.0,
+        )
+        endpoint = Endpoint(spec=endpoint_spec)
+        try:
+            result = postgres_api.create_endpoint(
+                parent=branch_name, endpoint=endpoint, endpoint_id=lakebase_endpoint_id,
+            ).wait()
+            actual_endpoint_name = getattr(result, "name", endpoint_name)
+            print(f"  ✓ Created endpoint: {actual_endpoint_name}")
+        except Exception as e:
+            if _is_already_exists(e):
+                print(f"  Endpoint already exists (race). Re-listing...")
+                existing_endpoints = list(postgres_api.list_endpoints(parent=branch_name))
+                if existing_endpoints:
+                    actual_endpoint_name = getattr(existing_endpoints[0], "name", endpoint_name)
+                print(f"  Using endpoint: {actual_endpoint_name}")
+            else:
+                raise RuntimeError(f"Failed to create endpoint {lakebase_endpoint_id!r}: {e}") from e
 
 # ---------------------------------------------------------------------------
 # 4. Wait for endpoint to be ready (host assigned)
@@ -159,11 +193,11 @@ max_wait = 600
 interval = 10
 elapsed = 0
 
-print(f"Waiting for endpoint to be ready: {endpoint_name}")
+print(f"Waiting for endpoint to be ready: {actual_endpoint_name}")
 
 while elapsed < max_wait:
     try:
-        ep = postgres_api.get_endpoint(name=endpoint_name)
+        ep = postgres_api.get_endpoint(name=actual_endpoint_name)
 
         # Safety: status might not be populated yet
         if not hasattr(ep, "status") or ep.status is None:
@@ -193,7 +227,7 @@ while elapsed < max_wait:
         state_upper = str(state).upper()
         if "FAILED" in state_upper or "ERROR" in state_upper:
             raise RuntimeError(
-                f"Endpoint {endpoint_name!r} entered failed state: {state}. "
+                f"Endpoint {actual_endpoint_name!r} entered failed state: {state}. "
                 "Check Compute → Lakebase in the workspace for details."
             )
 
@@ -211,7 +245,7 @@ else:
     print(f"⚠ Timeout after {max_wait}s")
     print(f"Check Lakebase UI: Compute → Lakebase → {lakebase_project_id}")
     try:
-        ep = postgres_api.get_endpoint(name=endpoint_name)
+        ep = postgres_api.get_endpoint(name=actual_endpoint_name)
         if hasattr(ep, "status") and ep.status:
             hosts_obj = getattr(ep.status, "hosts", None)
             final_host = getattr(hosts_obj, "host", None) if hosts_obj else None
@@ -221,7 +255,7 @@ else:
         print(f"  Could not retrieve final status: {ex}")
 
     raise RuntimeError(
-        f"Endpoint {endpoint_name!r} did not become ready within {max_wait}s. "
+        f"Endpoint {actual_endpoint_name!r} did not become ready within {max_wait}s. "
         "Check Compute → Lakebase in the workspace; the endpoint may still be starting. "
         f"Project: {lakebase_project_id}, Branch: {lakebase_branch_id}, Endpoint: {lakebase_endpoint_id}"
     )

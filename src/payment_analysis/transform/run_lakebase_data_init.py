@@ -65,6 +65,7 @@ if postgres_api is None:
         "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
     )
 endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"
+branch_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -75,57 +76,61 @@ if not _SAFE_ID_RE.match(lakebase_schema):
     raise ValueError(f"Invalid lakebase_schema: {lakebase_schema!r}. Must be alphanumeric + underscores.")
 
 
-def _list_existing_lakebase_ids() -> str:
-    """List existing project/branch/endpoint IDs to show in error messages."""
+def _discover_endpoint() -> str:
+    """Discover the actual endpoint name on this branch.
+
+    Lakebase auto-generates endpoint names (e.g. ep-broad-forest-xxx) when a
+    project is created.  The configured lakebase_endpoint_id (e.g. 'primary')
+    may not match the actual name.  Try the configured name first; if not
+    found, list endpoints on the branch and use the first one."""
+    # 1. Try configured name
     try:
-        projects = list(postgres_api.list_projects())
-        if not projects:
-            return "No Lakebase Autoscaling projects found in this workspace."
-        lines: list[str] = []
-        for p in projects[:5]:
-            name = getattr(p, "name", None) or str(p)
-            pid = name.split("/")[-1] if "/" in name else name
-            lines.append(f"  project {pid!r}")
-            try:
-                for b in list(postgres_api.list_branches(parent=f"projects/{pid}"))[:3]:
-                    bname = getattr(b, "name", None) or str(b)
-                    bid = bname.split("/")[-1] if "/" in bname else bname
-                    lines.append(f"    branch {bid!r}")
-                    try:
-                        for ep in list(postgres_api.list_endpoints(parent=f"projects/{pid}/branches/{bid}"))[:3]:
-                            ename = getattr(ep, "name", None) or str(ep)
-                            lines.append(f"      endpoint {ename.split('/')[-1] if '/' in ename else ename!r}")
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-        return ("Existing Lakebase Autoscaling resources:\n" + "\n".join(lines)) if lines else "No projects listed."
-    except Exception as ex:
-        return f"(Could not list projects: {ex})"
+        postgres_api.get_endpoint(name=endpoint_name)
+        return endpoint_name
+    except NotFound:
+        pass
+
+    # 2. List endpoints on the branch and pick the first one
+    print(f"  Endpoint {lakebase_endpoint_id!r} not found. Discovering existing endpoints on {branch_name}...")
+    endpoints = list(postgres_api.list_endpoints(parent=branch_name))
+    for ep_item in endpoints:
+        ep_n = getattr(ep_item, "name", "")
+        ep_st = getattr(ep_item, "status", None)
+        state = getattr(ep_st, "current_state", "?") if ep_st else "?"
+        print(f"    Found: {ep_n} (state={state})")
+
+    if endpoints:
+        actual = getattr(endpoints[0], "name", "")
+        print(f"  Using endpoint: {actual}")
+        return actual
+
+    raise RuntimeError(
+        f"No endpoints found on branch {branch_name!r}. "
+        "Run Job 1 task create_lakebase_autoscaling first, or create a Lakebase endpoint "
+        "in Compute → Lakebase. See https://docs.databricks.com/oltp/projects/"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Retry get_endpoint (eventual consistency / endpoint just created)
-# Use the proper NotFound exception type instead of string matching.
+# Uses endpoint discovery to handle auto-generated endpoint names.
 # ---------------------------------------------------------------------------
 max_attempts = 5
 endpoint = None
 cred = None
+actual_endpoint_name = None
 
 for attempt in range(max_attempts):
     try:
-        endpoint = postgres_api.get_endpoint(name=endpoint_name)
-        cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+        actual_endpoint_name = _discover_endpoint()
+        endpoint = postgres_api.get_endpoint(name=actual_endpoint_name)
+        cred = postgres_api.generate_database_credential(endpoint=actual_endpoint_name)
         break
     except NotFound:
         if attempt == max_attempts - 1:
-            existing = _list_existing_lakebase_ids()
             raise RuntimeError(
-                f"Lakebase project/endpoint not found: {endpoint_name!r}. "
-                "Run Job 1 task create_lakebase_autoscaling first and use the IDs from that task output, "
-                "or create a Lakebase Autoscaling project in Compute → Lakebase and set job parameters "
-                "(lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id) to match the existing IDs. "
-                f"\n{existing}\n"
+                f"Lakebase endpoint not found after {max_attempts} attempts: {endpoint_name!r}. "
+                "Run Job 1 task create_lakebase_autoscaling first. "
                 "See https://docs.databricks.com/oltp/projects/"
             )
         print(f"  Endpoint not found (attempt {attempt + 1}/{max_attempts}), retrying in {10 * (attempt + 1)}s...")
