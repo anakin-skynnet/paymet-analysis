@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Silver Layer - Payment Data Transformation
-# MAGIC 
+# MAGIC
 # MAGIC Clean, validate, and enrich payment data for analytics.
 
 # COMMAND ----------

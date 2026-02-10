@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Real-Time Payment Processing Pipeline
-# MAGIC 
+# MAGIC
 # MAGIC Lakeflow for continuous streaming processing of payment events.
 
 # COMMAND ----------

@@ -1,13 +1,13 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Payment Approval ML Models Training
-# MAGIC 
+# MAGIC
 # MAGIC Train all 4 ML models for the Payment Analysis Platform:
 # MAGIC 1. Approval Propensity Model
 # MAGIC 2. Risk Scoring Model
 # MAGIC 3. Smart Routing Policy
 # MAGIC 4. Smart Retry Policy
-# MAGIC 
+# MAGIC
 # MAGIC All models are trained using data from Unity Catalog and registered to Unity Catalog.
 
 # COMMAND ----------
