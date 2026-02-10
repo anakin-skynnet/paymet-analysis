@@ -247,7 +247,7 @@ def _merge_resolved_ids(
 # =============================================================================
 
 def _effective_uc_config(request: Request) -> tuple[str, str]:
-    """Return (catalog, schema) from app state (set at startup from Lakebase app_config or Lakehouse). Fallback to default catalog and DAB-style schema (dev_{user}_payment_analysis)."""
+    """Return (catalog, schema) from app state (set at startup from Lakebase app_config or Lakehouse). Fallback to default catalog and schema (payment_analysis)."""
     catalog, schema = getattr(request.app.state, "uc_config", (None, None))
     catalog = (catalog or "").strip() or DEFAULT_IDS["catalog"]
     schema = (schema or "").strip() or get_default_schema()

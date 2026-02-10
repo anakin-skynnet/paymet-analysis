@@ -128,30 +128,22 @@ All dependency references use **exactly the same versions** everywhere (no range
 | `bun.lock` | Resolved frontend deps. |
 | `.python-version` | 3.11 (matches Databricks App). |
 
-## Schema consistency (parametrized; DAB dev naming)
+## Schema consistency
 
-Base schema name is **`payment_analysis`**. DAB dev deployments use **"dev" + current_user + name** (e.g. `dev_ariel_hdez_payment_analysis`). The same convention is used wherever the schema is referenced.
+Schema name is always **`payment_analysis`** — the same in dev and prod. DAB schema prefixing is disabled via `experimental.skip_name_prefix_for_schema: true` in `databricks.yml`.
 
 | Where | How it's set |
 |-------|--------------|
-| Bundle `var.schema` (root) | Default **`payment_analysis`** |
-| Bundle `var.schema` (dev target) | **`dev_${workspace.current_user.short_name}_payment_analysis`** (parametrized; same as DAB-deployed schema name) |
-| Job notebook params | `${var.schema}` → resolved by bundle (e.g. `dev_ariel_hdez_payment_analysis` in dev) |
+| Bundle `var.schema` (root default) | **`payment_analysis`** |
+| Bundle `var.schema` (dev target) | **`payment_analysis`** |
+| Bundle `var.schema` (prod target) | **`payment_analysis`** |
+| Job notebook params | `${var.schema}` → always `payment_analysis` |
 | Lakebase Postgres | `lakebase_schema: "payment_analysis"` in job params; `LAKEBASE_SCHEMA` env default `payment_analysis` |
-| Backend | `get_default_schema()`: uses `DATABRICKS_SCHEMA` if set; else in dev with `DATABRICKS_CURRENT_USER_SHORT_NAME` builds **`dev_{user}_payment_analysis`**; else **`payment_analysis`** |
-| Dashboard prepare | Placeholder **`__CATALOG__.__SCHEMA__`**; `bundle.sh` for dev resolves schema via **`scripts/resolve_bundle_schema.py`** (same as bundle validate) and passes to prepare |
+| Backend | `get_default_schema()`: uses `DATABRICKS_SCHEMA` if set; else **`payment_analysis`** |
+| Dashboard prepare | Placeholder **`__CATALOG__.__SCHEMA__`**; `bundle.sh` passes `payment_analysis` to prepare |
 | Notebook widget defaults | **`payment_analysis`** (jobs override via params) |
 
-Effective catalog/schema for the app come from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. For dev, save with schema = **`dev_{your_short_name}_payment_analysis`** (e.g. from **`uv run python scripts/resolve_bundle_schema.py dev`**) so dashboards and jobs align. Prod target uses `schema: ahs_demo_payment_analysis_prod` (see [Guide — Catalog and schema](GUIDE.md#5-data-sources-ui--backend--databricks)).
-
-### DAB dev naming: `dev` + current_user + name
-
-In **dev** the bundle sets **`var.schema`** to **`dev_${workspace.current_user.short_name}_payment_analysis`** so that:
-
-- The schema name matches the one DAB creates when deploying in development mode.
-- **Dashboard prepare** (from `bundle.sh`) resolves the same schema via **`scripts/resolve_bundle_schema.py`** (runs `databricks bundle validate -t dev -o json` and reads `variables.schema.value`), so prepared asset names match the deployed catalog.schema.
-
-In **production** (`-t prod`) the target sets `schema: ahs_demo_payment_analysis_prod`; there is no dev-style prefix.
+Effective catalog/schema for the app come from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. Save with schema = **`payment_analysis`** so dashboards and jobs align.
 
 ## Resources in the workspace
 
@@ -224,13 +216,13 @@ Or set them in **databricks.yml** under `targets.dev.variables`. Then run Job 1 
 
 ### Fix: Catalog or schema not found
 
-**Error:** `Catalog 'ahs_demos_catalog' or schema '...' not found in this workspace.` (Schema in dev is `dev_{user}_payment_analysis`.) Create the Unity Catalog and schema (see this guide), or run the job with notebook_params catalog= schema=.
+**Error:** `Catalog 'ahs_demos_catalog' or schema '...' not found in this workspace.` Create the Unity Catalog and schema (see this guide), or run the job with notebook_params catalog= schema=.
 
 The bundle creates the **schema** and volumes; it does **not** create the **catalog**. The catalog must already exist in the workspace.
 
-**Option A — Use the default catalog name:** (1) Create the catalog in **Data** → **Catalogs** → **Create catalog** (e.g. `ahs_demos_catalog`). (2) Redeploy: `./scripts/bundle.sh deploy dev` (schema is parametrized: `dev_{user}_payment_analysis` in dev). (3) Run jobs again from **Setup & Run**.
+**Option A — Use the default catalog name:** (1) Create the catalog in **Data** → **Catalogs** → **Create catalog** (e.g. `ahs_demos_catalog`). (2) Redeploy: `./scripts/bundle.sh deploy dev` (schema = `payment_analysis`). (3) Run jobs again from **Setup & Run**.
 
-**Option B — Use an existing catalog:** Deploy with `./scripts/bundle.sh deploy dev --var catalog=YOUR_EXISTING_CATALOG` (schema in dev stays `dev_{user}_payment_analysis`). In the app, **Setup & Run** → set **Catalog** and **Schema** → **Save catalog & schema**. Run jobs again.
+**Option B — Use an existing catalog:** Deploy with `./scripts/bundle.sh deploy dev --var catalog=YOUR_EXISTING_CATALOG` (schema = `payment_analysis`). In the app, **Setup & Run** → set **Catalog** and **Schema** → **Save catalog & schema**. Run jobs again.
 
 **Option C — Let Job 1 create catalog and schema:** Job 1’s first task (`ensure_catalog_schema`) creates the Unity Catalog and schema if they do not exist. Requires metastore admin or CREATE_CATALOG/CREATE_SCHEMA. Run **Job 1** once; its first task will create the catalog and schema, then Lakebase init, lakehouse tables, and vector search.
 

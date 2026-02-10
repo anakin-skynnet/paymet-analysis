@@ -141,14 +141,18 @@ class Runtime:
                 f"Validating local dev database connection at localhost:{self._dev_db_port}"
             )
         else:
-            logger.info("Validating Lakebase Autoscaling endpoint: %s", self._endpoint_name)
+            # _endpoint_name uses discover_endpoint_name() which already
+            # validates the endpoint exists (tries configured name, then
+            # lists endpoints on the branch). If it raises ValueError,
+            # no endpoints exist at all.
             try:
-                _get_postgres_api(self.ws).get_endpoint(name=self._endpoint_name)
-            except NotFound:
+                endpoint_name = self._endpoint_name
+            except ValueError as e:
                 raise ValueError(
-                    f"Lakebase Autoscaling endpoint does not exist: {self._endpoint_name}. "
+                    f"Lakebase Autoscaling endpoint not found. {e} "
                     "Run Job 1 create_lakebase_autoscaling first."
-                )
+                ) from e
+            logger.info("Validating Lakebase Autoscaling endpoint: %s", endpoint_name)
 
         # check if a connection to the database can be established
         try:

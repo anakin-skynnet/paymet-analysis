@@ -12,9 +12,9 @@ bundle:
   name: payment-analysis
 
 # Prevent DAB from adding name_prefix to Unity Catalog schema names.
-# In development mode, DAB auto-prefixes resource names (e.g. "dev_ariel_hdez_").
-# Since var.schema already contains the full name (e.g. dev_ariel_hdez_payment_analysis),
-# skip the prefix for schemas to avoid doubling (dev_ariel_hdez_dev_ariel_hdez_...).
+# In development mode, DAB auto-prefixes resource names (e.g. "dev_<user>_").
+# We always use "payment_analysis" as the schema name, so skip the prefix to
+# avoid DAB turning it into "dev_<user>_payment_analysis".
 experimental:
   skip_name_prefix_for_schema: true
 
@@ -56,7 +56,7 @@ variables:
     description: Deployment environment identifier (e.g. dev, prod); used in resource names and tags
     default: dev
   schema:
-    description: Unity Catalog schema name (base name). In dev DAB uses "dev" + current_user + name; set in dev target.
+    description: Unity Catalog schema name. Always "payment_analysis" (same in dev and prod).
     default: payment_analysis
   warehouse_id:
     description: SQL Warehouse ID for dashboards and SQL tasks; in dev, set from deployed warehouse resource
@@ -129,8 +129,7 @@ targets:
     default: true
     variables:
       environment: dev
-      # DAB dev naming: "dev" + current_user + base name → same as deployed schema
-      schema: dev_${workspace.current_user.short_name}_payment_analysis
+      schema: payment_analysis
       warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
       # Lakebase Autoscaling: required for job 1 (create_lakebase_autoscaling + lakebase_data_init)
       lakebase_project_id: payment-analysis-db
@@ -147,7 +146,7 @@ targets:
     variables:
       environment: prod
       catalog: prod_catalog
-      schema: ahs_demo_payment_analysis_prod
+      schema: payment_analysis
       warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
     presets:
       name_prefix: "[PROD] "

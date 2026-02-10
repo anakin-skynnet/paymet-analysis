@@ -109,19 +109,15 @@ def workspace_id_from_workspace_url(workspace_url: str) -> str | None:
 # Default entity/country code for analytics filters (e.g. reason codes, smart checkout). UI and Lakehouse can override.
 DEFAULT_ENTITY = "BR"
 
-# Base schema name; DAB dev uses "dev" + current_user + this name (e.g. dev_ariel_hdez_payment_analysis).
+# Canonical schema name — always "payment_analysis" (no per-user prefix).
 SCHEMA_BASE_NAME = "payment_analysis"
 
 
 def get_default_schema() -> str:
-    """Unity Catalog schema name. Uses DATABRICKS_SCHEMA if set; else in dev builds dev_{current_user}_payment_analysis (DAB convention)."""
+    """Unity Catalog schema name. Uses DATABRICKS_SCHEMA env var if set; else returns 'payment_analysis'."""
     explicit = os.getenv("DATABRICKS_SCHEMA", "").strip()
     if explicit:
         return explicit
-    env = (os.getenv("DATABRICKS_ENVIRONMENT") or "").strip().lower()
-    short_name = (os.getenv("DATABRICKS_CURRENT_USER_SHORT_NAME") or "").strip()
-    if env == "dev" and short_name:
-        return f"dev_{short_name}_{SCHEMA_BASE_NAME}"
     return SCHEMA_BASE_NAME
 
 

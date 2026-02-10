@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Resolve the schema name for a bundle target (same as DAB uses when deploying).
+"""Resolve the schema name for a bundle target.
 
-DAB dev naming: "dev" + current_user + base name (payment_analysis).
+Schema is always "payment_analysis" (no per-user prefix).
 Usage: uv run python scripts/resolve_bundle_schema.py [target]
   target: dev (default) or prod
-Prints the resolved schema name to stdout (e.g. dev_ariel_hdez_payment_analysis for dev).
+Prints the resolved schema name to stdout (e.g. payment_analysis).
 """
 from __future__ import annotations
 
@@ -15,32 +15,15 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# Canonical schema name — same for all targets unless overridden in the bundle.
+DEFAULT_SCHEMA = "payment_analysis"
+
 
 def resolve_schema(target: str) -> str:
-    """Resolve schema from bundle validate output, or fallback to env/convention."""
-    if target != "dev":
-        # Prod uses var from bundle or default
-        try:
-            result = subprocess.run(
-                ["databricks", "bundle", "validate", "-t", target, "-o", "json"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                cwd=REPO_ROOT,
-            )
-            if result.returncode == 0 and result.stdout:
-                data = json.loads(result.stdout)
-                schema = (data.get("variables") or {}).get("schema") or {}
-                if isinstance(schema, dict) and schema.get("value"):
-                    return schema["value"]
-        except Exception:
-            pass
-        return "ahs_demo_payment_analysis_prod" if target == "prod" else "payment_analysis"
-
-    # Dev: resolve from bundle validate (same as DAB: dev_${workspace.current_user.short_name}_payment_analysis)
+    """Resolve schema from bundle validate output, or fallback to default."""
     try:
         result = subprocess.run(
-            ["databricks", "bundle", "validate", "-t", "dev", "-o", "json"],
+            ["databricks", "bundle", "validate", "-t", target, "-o", "json"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -53,15 +36,12 @@ def resolve_schema(target: str) -> str:
                 return schema["value"]
     except Exception:
         pass
-    # Fallback: env or convention
+    # Fallback: env var or default
     import os
     explicit = os.getenv("DATABRICKS_SCHEMA", "").strip()
     if explicit:
         return explicit
-    short = (os.getenv("DATABRICKS_CURRENT_USER_SHORT_NAME") or "").strip()
-    if short:
-        return f"dev_{short}_payment_analysis"
-    return "payment_analysis"
+    return DEFAULT_SCHEMA
 
 
 def main() -> int:

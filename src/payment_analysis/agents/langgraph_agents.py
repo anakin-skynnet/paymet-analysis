@@ -11,7 +11,7 @@ Dependencies (install in notebook or job cluster):
   %pip install databricks-langchain unitycatalog-langchain[databricks] langgraph langchain-core
   dbutils.library.restartPython()
 
-Requires: UC functions in catalog.schema (e.g. payment_analysis or dev_{user}_payment_analysis in dev); run run_create_uc_agent_tools first.
+Requires: UC functions in catalog.schema (e.g. ahs_demos_catalog.payment_analysis); run run_create_uc_agent_tools first.
 """
 
 from __future__ import annotations

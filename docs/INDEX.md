@@ -10,7 +10,7 @@ Single entry point for all documentation. Use this page to find where each topic
 |------|---------|
 | **Goal** | Accelerate payment approval rates; reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. |
 | **Stack** | Databricks (Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie), Lakebase (Postgres), FastAPI + React app, 7 AI agents, 12 dashboards. |
-| **Schema** | Base **`payment_analysis`**. Dev: DAB uses **dev** + current_user + name (e.g. `dev_ariel_hdez_payment_analysis`). Parametrized in bundle (`dev_${workspace.current_user.short_name}_payment_analysis`) and scripts/backend. |
+| **Schema** | Always **`payment_analysis`** (same in dev and prod). DAB schema prefixing is disabled via `experimental.skip_name_prefix_for_schema: true`. |
 | **Deploy** | `./scripts/bundle.sh deploy dev` (prepare + build + deploy). Then run jobs 1→7 from the app **Setup & Run**. |
 | **App env** | `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `DATABRICKS_WAREHOUSE_ID`; optional `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. |
 | **Check** | `uv run apx dev check` (TS + Python). Full verify: `./scripts/bundle.sh verify dev`. |
@@ -23,8 +23,8 @@ Single entry point for all documentation. Use this page to find where each topic
 |----------|---------|-------------|
 | **[README.md](../README.md)** | Project intro, quick start, doc links. | First open; share with others. |
 | **[GUIDE.md](GUIDE.md)** | **What** the platform does, **how** it’s built. Business overview, use cases, technology map, component impact on approval rates, architecture, project structure, workspace ↔ UI mapping, data sources, control panel, best practices, verification. | Understand scope, architecture, and where things live. |
-| **[DEPLOYMENT.md](DEPLOYMENT.md)** | **Deploy & operate.** Prerequisites, quick start, 7 steps, app config and paths, version alignment, schema consistency (payment_analysis; dev = dev_{user}_payment_analysis), troubleshooting, scripts, job inventory, fixes (Lakebase, catalog/schema, PAT, UI, dashboards). | Deploy, configure env, fix errors. |
-| **[AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md)** | **AgentBricks.** Convert Python agents to MLflow + LangGraph + UC functions; single schema for tools (payment_analysis or dev_{user}_payment_analysis); log/register, deploy to Model Serving, Multi-Agent Supervisor; custom vs AgentBricks comparison; best practice (same schema as data). | Use or migrate to AgentBricks. |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | **Deploy & operate.** Prerequisites, quick start, 7 steps, app config and paths, version alignment, schema consistency (`payment_analysis`), troubleshooting, scripts, job inventory, fixes (Lakebase, catalog/schema, PAT, UI, dashboards). | Deploy, configure env, fix errors. |
+| **[AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md)** | **AgentBricks.** Convert Python agents to MLflow + LangGraph + UC functions; single schema for tools (`payment_analysis`); log/register, deploy to Model Serving, Multi-Agent Supervisor; custom vs AgentBricks comparison; best practice (same schema as data). | Use or migrate to AgentBricks. |
 | **[AGENTS.md](../AGENTS.md)** | **AI agent (Cursor) rules.** Solution scope, do’s and don’ts, package management, project structure, models & API, frontend rules, dev commands, version alignment, MCP reference. For the AI working on the repo. | When editing code; align with project rules. |
 
 ---
@@ -54,7 +54,7 @@ Single entry point for all documentation. Use this page to find where each topic
 - **Details:** [DEPLOYMENT.md](DEPLOYMENT.md) (full steps, env, troubleshooting).
 
 ### Schema & catalog
-- **Parametrized:** Base schema **`payment_analysis`**. Dev: **dev** + current_user + **payment_analysis** (e.g. `dev_ariel_hdez_payment_analysis`). Bundle and `scripts/resolve_bundle_schema.py` use same convention.
+- **Fixed name:** Schema is always **`payment_analysis`** (dev and prod). DAB schema prefixing is disabled. Bundle variable `var.schema` defaults to `payment_analysis`.
 - **Catalog/schema set via:** Setup & Run → Save catalog & schema (persisted in app_config).
 - **Details:** [DEPLOYMENT.md § Schema consistency](DEPLOYMENT.md#schema-consistency-payment_analysis).
 
@@ -65,7 +65,7 @@ Single entry point for all documentation. Use this page to find where each topic
 
 ### Agents
 - **Current (Job 6):** Python notebook `agent_framework.py` — orchestrator + 5 specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender).
-- **AgentBricks path:** UC functions in same schema as data (payment_analysis or dev_{user}_payment_analysis), LangGraph agents, MLflow register, Model Serving, Multi-Agent Supervisor. Same schema as data.
+- **AgentBricks path:** UC functions in same schema as data (`payment_analysis`), LangGraph agents, MLflow register, Model Serving, Multi-Agent Supervisor. Same schema as data.
 - **Details:** [AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md).
 
 ### Commands
@@ -92,8 +92,8 @@ Single entry point for all documentation. Use this page to find where each topic
 
 - **README.md** — Project name and goal (accelerate payment approval rates); high-level approach (ML, agents, rules, dashboards); doc table; quick start (deploy, run jobs 1–6, set app env); references (Apps Cookbook, apx, AI Dev Kit); optional pre-commit build.
 - **GUIDE.md** — Business overview and use cases (Smart Retry, Smart Checkout, declines, risk, routing, decisioning); technology map and component impact; architecture (Databricks, FastAPI + React); project structure and bundle resources; workspace ↔ UI mapping; data sources and catalog/schema; control panel (Setup & Run, dashboards, rules, agents); best practices and verification.
-- **DEPLOYMENT.md** — Prerequisites; one-command deploy (`bundle.sh deploy dev`); 7 steps (jobs 1–7, pipelines); app env (LAKEBASE_*, DATABRICKS_WAREHOUSE_ID); version alignment (Python/frontend exact versions); schema consistency (dev = `dev_ariel_hdez_payment_analysis`); troubleshooting and fixes (Lakebase, catalog/schema, PAT, UI); scripts; job inventory and notebook paths.
-- **AGENT_FRAMEWORK_DATABRICKS.md** — Map Python agents to AgentBricks; same schema as data (e.g. `dev_ariel_hdez_payment_analysis`); UC functions as tools; LangGraph agents; log/register and Model Serving; Multi-Agent Supervisor; custom vs AgentBricks comparison; hybrid app + endpoints.
+- **DEPLOYMENT.md** — Prerequisites; one-command deploy (`bundle.sh deploy dev`); 7 steps (jobs 1–7, pipelines); app env (LAKEBASE_*, DATABRICKS_WAREHOUSE_ID); version alignment (Python/frontend exact versions); schema consistency (`payment_analysis`); troubleshooting and fixes (Lakebase, catalog/schema, PAT, UI); scripts; job inventory and notebook paths.
+- **AGENT_FRAMEWORK_DATABRICKS.md** — Map Python agents to AgentBricks; same schema as data (`payment_analysis`); UC functions as tools; LangGraph agents; log/register and Model Serving; Multi-Agent Supervisor; custom vs AgentBricks comparison; hybrid app + endpoints.
 - **AGENTS.md** — Single source of truth for the AI agent on the repo: solution scope, do's and don'ts, package management (uv, apx bun), project structure, models & API, frontend rules, dev commands, version alignment, MCP reference; verify on main.
 
 ---

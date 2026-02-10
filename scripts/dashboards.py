@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # Placeholder in source dashboard JSONs (resources/dashboards/*.lvdash.json); replaced with catalog.schema during prepare.
-# Replaced with catalog.schema during prepare. Dev: bundle.sh resolves schema via resolve_bundle_schema.py (DAB: dev_{user}_payment_analysis).
+# Replaced with catalog.schema during prepare. Schema is always "payment_analysis".
 CATALOG_SCHEMA_PLACEHOLDER = "__CATALOG__.__SCHEMA__"
 SOURCE_DIR = REPO_ROOT / "resources" / "dashboards"
 OUT_DIR = REPO_ROOT / "dashboards"
