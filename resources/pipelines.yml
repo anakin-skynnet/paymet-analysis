@@ -24,8 +24,6 @@ resources:
         # Write and compaction
         spark.databricks.delta.optimizeWrite.enabled: "true"
         spark.databricks.delta.autoCompact.enabled: "true"
-        # Streaming checkpoint
-        spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled: "true"
         pipelines.trigger.interval: "2 seconds"
         pipelines.enableAutoOptimize: "true"
       libraries:
@@ -51,7 +49,6 @@ resources:
         schema_name: ${var.schema}
         spark.databricks.delta.optimizeWrite.enabled: "true"
         spark.databricks.delta.autoCompact.enabled: "true"
-        spark.databricks.streaming.statefulOperator.asyncCheckpoint.enabled: "true"
         pipelines.trigger.interval: "2 seconds"
         pipelines.enableAutoOptimize: "true"
       libraries:

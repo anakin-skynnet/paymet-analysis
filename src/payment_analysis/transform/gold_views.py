@@ -240,10 +240,13 @@ def v_recommendations():
         decline_patterns
         .filter(col("recovery_potential").isin("HIGH", "MEDIUM"))
         .withColumn("recommendation",
-            when(col("decline_reason") == "INSUFFICIENT_FUNDS", "Enable Smart Retry with 24-48h delay")
-            .when(col("decline_reason") == "ISSUER_UNAVAILABLE", "Route to alternative network")
-            .when(col("decline_reason") == "CARD_EXPIRED", "Trigger card update notification")
-            .when(col("decline_reason") == "DO_NOT_HONOR", "Try alternative payment solution")
+            when(col("decline_reason_standard") == "FUNDS_OR_LIMIT", "Enable Smart Retry with 24-48h delay")
+            .when(col("decline_reason_standard") == "ISSUER_TECHNICAL", "Route to alternative network")
+            .when(col("decline_reason_standard") == "CARD_EXPIRED", "Trigger card update notification")
+            .when(col("decline_reason_standard") == "ISSUER_DO_NOT_HONOR", "Try alternative payment solution")
+            .when(col("decline_reason_standard") == "FRAUD_SUSPECTED", "Review antifraud rules; reduce false positives")
+            .when(col("decline_reason_standard") == "SECURITY_CVV", "Request CVV re-entry / step-up auth")
+            .when(col("decline_reason_standard") == "SECURITY_3DS_FAILED", "Fallback to alternate auth path; reduce friction")
             .otherwise("Manual review recommended")
         )
         .withColumn("estimated_recovery_value",
@@ -258,7 +261,8 @@ def v_recommendations():
             .otherwise(3)
         )
         .select(
-            "decline_reason",
+            "decline_reason_standard",
+            "decline_reason_group",
             "merchant_segment",
             "decline_count",
             "recovery_potential",

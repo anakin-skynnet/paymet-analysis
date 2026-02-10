@@ -53,9 +53,9 @@ from pyspark.sql.window import Window  # type: ignore[import-untyped]
 @dlt.expect_or_drop("valid_transaction_id", "transaction_id IS NOT NULL")
 @dlt.expect_or_drop("valid_amount", "amount > 0")
 @dlt.expect_or_fail("valid_merchant", "merchant_id IS NOT NULL")
-@dlt.expect_or_warn("valid_entry_system", "entry_system IN ('PD', 'WS', 'SEP', 'CHECKOUT')")
-@dlt.expect_or_warn("has_response_code", "decline_code_raw IS NOT NULL OR is_approved = true")
-@dlt.expect_or_warn("has_geo_country", "geo_country IS NOT NULL")
+@dlt.expect("valid_entry_system", "entry_system IN ('PD', 'WS', 'SEP', 'CHECKOUT')")
+@dlt.expect("has_response_code", "decline_code_raw IS NOT NULL OR is_approved = true")
+@dlt.expect("has_geo_country", "geo_country IS NOT NULL")
 def payments_enriched_silver():
     """
     Enrich payment events with:
