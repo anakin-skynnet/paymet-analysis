@@ -130,7 +130,7 @@ function AIAgents() {
                 >
                   Mosaic AI Gateway
                 </a>{" "}
-                (LLM) agents. Agent jobs are in agents.yml; run Orchestrator from Setup & Run (step 6); agents use Lakehouse Rules to accelerate approvals.
+                (LLM) agents. Run the agent framework from Setup & Run (step 6); one task runs the orchestrator and all specialists. Agents use approval rules from Lakebase when configured.
               </p>
             </div>
           </div>

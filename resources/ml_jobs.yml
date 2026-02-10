@@ -177,6 +177,8 @@ resources:
             notebook_path: ${workspace.root_path}/src/payment_analysis/transform/publish_dashboards
             base_parameters:
               dashboards_path: ${workspace.root_path}/dashboards
+              catalog: ${var.catalog}
+              schema: ${var.schema}
           timeout_seconds: 1200
           max_retries: 1
       schedule:

@@ -1,94 +1,41 @@
 # =============================================================================
-# Step 6: Create and deploy Databricks AgentBricks agents
+# Step 6: Deploy AgentBricks agents (unified)
 # =============================================================================
-# All tasks use serverless compute. One job with seven tasks: orchestrator plus
-# six specialist agents (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor,
-# Performance Recommender) and a test run of the agent framework.
-# Mosaic AI Gateway: configured on model serving and LLM endpoints in Serving UI.
+# Single task runs the full agent framework: Orchestrator + all specialists
+# (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender).
+# One notebook run builds the framework and executes one comprehensive query;
+# the orchestrator routes to the appropriate specialists and synthesizes the response.
+# Approval rules from OLTP Lakebase Autoscaling when lakebase_* params are set.
 # =============================================================================
 
 resources:
   jobs:
     "job_6_deploy_agents":
       name: "[${var.environment}] 6. Deploy AgentBricks Agents (Orchestrator & Specialists)"
-      description: "Create and deploy AgentBricks agents: orchestrator and specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Includes agent framework test."
+      description: "Run the payment analysis agent framework: orchestrator coordinates Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, and Performance Recommender. Single task runs one comprehensive analysis. Approval rules from Lakebase when configured."
       max_concurrent_runs: 1
+      environments:
+        - environment_key: lakebase_sdk
+          spec:
+            environment_version: "4"
+            dependencies:
+              - "databricks-sdk==0.84.0"
+              - "psycopg[binary]==3.2.3"
       tasks:
-        - task_key: run_orchestrator
-          description: "Run payment analysis orchestrator for all agents"
+        - task_key: run_agent_framework
+          description: "Run full agent framework (orchestrator + all specialists) with one comprehensive query"
+          environment_key: lakebase_sdk
           notebook_task:
             notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
-              agent_role: "orchestrator"
-              query: "Run comprehensive payment analysis (routing, retries, declines, risk, performance)"
+              lakebase_project_id: ${var.lakebase_project_id}
+              lakebase_branch_id: ${var.lakebase_branch_id}
+              lakebase_endpoint_id: ${var.lakebase_endpoint_id}
+              lakebase_schema: "payment_analysis"
+              query: "Run comprehensive payment analysis: routing, retries, declines, risk, and performance optimizations."
           timeout_seconds: 3600
-
-        - task_key: run_smart_routing
-          description: "Run Smart Routing agent"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              agent_role: "smart_routing"
-              query: "Analyze routing performance and recommend cascade configurations"
-          timeout_seconds: 1800
-
-        - task_key: run_smart_retry
-          description: "Run Smart Retry agent"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              agent_role: "smart_retry"
-              query: "Identify retry opportunities and recovery strategies"
-          timeout_seconds: 1800
-
-        - task_key: run_decline_analyst
-          description: "Run Decline Analyst agent"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              agent_role: "decline_analyst"
-              query: "Analyze decline patterns and recovery recommendations"
-          timeout_seconds: 1800
-
-        - task_key: run_risk_assessor
-          description: "Run Risk Assessor agent"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              agent_role: "risk_assessor"
-              query: "Identify high-risk transactions and interventions"
-          timeout_seconds: 1800
-
-        - task_key: run_performance_recommender
-          description: "Run Performance Recommender agent"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              agent_role: "performance_recommender"
-              query: "Analyze performance and recommend optimizations"
-          timeout_seconds: 1800
-
-        - task_key: test_agent_framework
-          description: "Test multi-agent framework (orchestrator and specialists)"
-          notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
-            base_parameters:
-              catalog: ${var.catalog}
-              schema: ${var.schema}
-              test_mode: "true"
-          timeout_seconds: 1800
       schedule:
         quartz_cron_expression: "0 0 7 ? * MON"
         timezone_id: "UTC"

@@ -72,12 +72,21 @@ class BaseAgent:
         role: AgentRole,
         catalog: str,
         schema: str,
-        llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct"
+        llm_endpoint: str = "databricks-meta-llama-3-1-70b-instruct",
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
     ):
         self.role = role
         self.catalog = catalog
         self.schema = schema
         self.llm_endpoint = llm_endpoint
+        self.lakebase_project_id = (lakebase_project_id or "").strip()
+        self.lakebase_branch_id = (lakebase_branch_id or "").strip()
+        self.lakebase_endpoint_id = (lakebase_endpoint_id or "").strip()
+        self.lakebase_schema = (lakebase_schema or "payment_analysis").strip() or "payment_analysis"
         self.status = AgentStatus.IDLE
         self.conversation_history: List[AgentMessage] = []
         self.tools: List[AgentTool] = []
@@ -192,12 +201,83 @@ class BaseAgent:
             logger.error(f"SQL execution error: {e}")
             return []
 
-    def get_lakehouse_approval_rules(self, rule_type: Optional[str] = None) -> List[Dict]:
+    def _get_approval_rules_from_lakebase(self, rule_type: Optional[str] = None) -> List[Dict]:
         """
-        Load active approval rules from the Lakehouse (approval_rules table).
-        Rules are written from the app (Rules page) and used here to accelerate approval rates.
+        Load active approval rules from the OLTP Lakebase Autoscaling Postgres database.
         Returns list of dicts with keys: name, rule_type, action_summary, condition_expression, priority.
         """
+        if not (self.lakebase_project_id and self.lakebase_branch_id and self.lakebase_endpoint_id):
+            return []
+        try:
+            from databricks.sdk import WorkspaceClient
+            import psycopg
+            from psycopg.rows import dict_row
+
+            ws = WorkspaceClient()
+            postgres_api = getattr(ws, "postgres", None)
+            if postgres_api is None:
+                logger.warning("WorkspaceClient has no 'postgres'; cannot read from Lakebase.")
+                return []
+            endpoint_name = (
+                f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
+                f"/endpoints/{self.lakebase_endpoint_id}"
+            )
+            endpoint = postgres_api.get_endpoint(name=endpoint_name)
+            cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
+            status = getattr(endpoint, "status", None)
+            hosts = getattr(status, "hosts", None) if status else None
+            if hosts and isinstance(hosts, list) and len(hosts) > 0:
+                host = getattr(hosts[0], "host", None) or getattr(hosts[0], "hostname", None)
+            else:
+                host = getattr(hosts, "host", None) or getattr(hosts, "hostname", None) if hosts else None
+            if not host:
+                logger.warning("Lakebase endpoint has no host.")
+                return []
+            schema_name = self.lakebase_schema or "payment_analysis"
+            username = (
+                (ws.current_user.me().user_name if ws.current_user else None)
+                or getattr(ws.config, "client_id", None)
+                or "postgres"
+            )
+            conn_str = (
+                f"host={host} port=5432 dbname=databricks_postgres user={username} "
+                f"password={cred.token} sslmode=require"
+            )
+            allowed = ("authentication", "retry", "routing")
+            filter_type = rule_type if rule_type and rule_type in allowed else None
+            with psycopg.connect(conn_str, row_factory=dict_row) as conn:  # type: ignore[arg-type]
+                with conn.cursor() as cur:
+                    if filter_type:
+                        q = (
+                            f'SELECT name, rule_type, action_summary, condition_expression, priority '
+                            f'FROM "{schema_name}".approval_rules '
+                            f'WHERE is_active = true AND rule_type = %s ORDER BY priority ASC LIMIT 50'
+                        )
+                        cur.execute(q, (filter_type,))  # type: ignore[arg-type]
+                    else:
+                        q = (
+                            f'SELECT name, rule_type, action_summary, condition_expression, priority '
+                            f'FROM "{schema_name}".approval_rules '
+                            f'WHERE is_active = true ORDER BY priority ASC LIMIT 50'
+                        )
+                        cur.execute(q)  # type: ignore[arg-type]
+                    rows = cur.fetchall()
+            return [dict(r) for r in rows]
+        except Exception as e:
+            logger.warning("Could not load approval rules from Lakebase: %s", e)
+            return []
+
+    def get_lakehouse_approval_rules(self, rule_type: Optional[str] = None) -> List[Dict]:
+        """
+        Load active approval rules from the OLTP Lakebase Autoscaling Postgres database when
+        lakebase_project_id, lakebase_branch_id, lakebase_endpoint_id are set; otherwise fall back
+        to the Lakehouse view. Rules are written from the app (Rules page) and used here to
+        accelerate approval rates. Returns list of dicts with keys: name, rule_type, action_summary,
+        condition_expression, priority.
+        """
+        rules = self._get_approval_rules_from_lakebase(rule_type=rule_type)
+        if rules:
+            return rules
         try:
             allowed = ("authentication", "retry", "routing")
             if rule_type and rule_type not in allowed:
@@ -212,15 +292,32 @@ class BaseAgent:
             """
             return self._execute_sql(query)
         except Exception as e:
-            logger.warning(f"Could not load Lakehouse approval rules: {e}")
+            logger.warning("Could not load Lakehouse approval rules: %s", e)
             return []
 
 
 class SmartRoutingAgent(BaseAgent):
     """Agent for smart payment routing and cascading decisions."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.SMART_ROUTING, catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.SMART_ROUTING,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
         self._register_tools()
 
     def get_system_prompt(self) -> str:
@@ -308,8 +405,25 @@ Always provide:
 class SmartRetryAgent(BaseAgent):
     """Agent for intelligent payment retry decisions."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.SMART_RETRY, catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.SMART_RETRY,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
         self._register_tools()
 
     def get_system_prompt(self) -> str:
@@ -411,8 +525,25 @@ Always provide:
 class DeclineAnalystAgent(BaseAgent):
     """Agent specialized in analyzing decline patterns."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.DECLINE_ANALYST, catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.DECLINE_ANALYST,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
         self._register_tools()
 
     def get_system_prompt(self) -> str:
@@ -487,8 +618,25 @@ Provide actionable insights:
 class RiskAssessorAgent(BaseAgent):
     """Agent for fraud detection and risk assessment."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.RISK_ASSESSOR, catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.RISK_ASSESSOR,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
         self._register_tools()
 
     def get_system_prompt(self) -> str:
@@ -572,8 +720,25 @@ while protecting against actual fraud."""
 class PerformanceRecommenderAgent(BaseAgent):
     """Agent for performance optimization recommendations."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.PERFORMANCE_RECOMMENDER, catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.PERFORMANCE_RECOMMENDER,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
         self._register_tools()
 
     def get_system_prompt(self) -> str:
@@ -693,15 +858,37 @@ Recommendations should include:
 class OrchestratorAgent(BaseAgent):
     """Meta-agent that coordinates all specialized agents."""
 
-    def __init__(self, catalog: str, schema: str):
-        super().__init__(AgentRole.ORCHESTRATOR, catalog, schema)
-        
-        # Initialize all specialist agents
-        self.smart_routing = SmartRoutingAgent(catalog, schema)
-        self.smart_retry = SmartRetryAgent(catalog, schema)
-        self.decline_analyst = DeclineAnalystAgent(catalog, schema)
-        self.risk_assessor = RiskAssessorAgent(catalog, schema)
-        self.performance_recommender = PerformanceRecommenderAgent(catalog, schema)
+    def __init__(
+        self,
+        catalog: str,
+        schema: str,
+        *,
+        lakebase_project_id: str = "",
+        lakebase_branch_id: str = "",
+        lakebase_endpoint_id: str = "",
+        lakebase_schema: str = "payment_analysis",
+    ):
+        super().__init__(
+            AgentRole.ORCHESTRATOR,
+            catalog,
+            schema,
+            lakebase_project_id=lakebase_project_id,
+            lakebase_branch_id=lakebase_branch_id,
+            lakebase_endpoint_id=lakebase_endpoint_id,
+            lakebase_schema=lakebase_schema,
+        )
+        lakebase_kw = {
+            "lakebase_project_id": lakebase_project_id,
+            "lakebase_branch_id": lakebase_branch_id,
+            "lakebase_endpoint_id": lakebase_endpoint_id,
+            "lakebase_schema": lakebase_schema,
+        }
+        # Initialize all specialist agents (approval rules from Lakebase when IDs set)
+        self.smart_routing = SmartRoutingAgent(catalog, schema, **lakebase_kw)
+        self.smart_retry = SmartRetryAgent(catalog, schema, **lakebase_kw)
+        self.decline_analyst = DeclineAnalystAgent(catalog, schema, **lakebase_kw)
+        self.risk_assessor = RiskAssessorAgent(catalog, schema, **lakebase_kw)
+        self.performance_recommender = PerformanceRecommenderAgent(catalog, schema, **lakebase_kw)
 
     def get_system_prompt(self) -> str:
         return """You are the Orchestrator Agent for Payment Analysis.
@@ -769,67 +956,114 @@ For complex queries, engage multiple agents and synthesize responses."""
 
 def setup_agent_framework(
     catalog: str = "ahs_demos_catalog",
-    schema: str = "payment_analysis"
+    schema: str = "payment_analysis",
+    *,
+    lakebase_project_id: str = "",
+    lakebase_branch_id: str = "",
+    lakebase_endpoint_id: str = "",
+    lakebase_schema: str = "payment_analysis",
 ) -> OrchestratorAgent:
-    """Initialize the multi-agent framework."""
-    orchestrator = OrchestratorAgent(catalog, schema)
+    """Initialize the multi-agent framework. When Lakebase IDs are set, approval rules are read from OLTP Lakebase Postgres."""
+    orchestrator = OrchestratorAgent(
+        catalog,
+        schema,
+        lakebase_project_id=lakebase_project_id,
+        lakebase_branch_id=lakebase_branch_id,
+        lakebase_endpoint_id=lakebase_endpoint_id,
+        lakebase_schema=lakebase_schema,
+    )
     logger.info("Agent framework initialized (Orchestrator + 5 specialists)")
     return orchestrator
 
 
-# Databricks notebook entry point
-if __name__ == "__main__":
-    # Get parameters
-    catalog = "ahs_demos_catalog"
-    schema = "payment_analysis"
-    test_mode = "true"
-    agent_role = "orchestrator"
-    query = "What optimizations do you recommend?"
-    
-    # Try to get from dbutils if running in Databricks (when run as job, catalog/schema = bundle var.catalog, var.schema)
+def get_notebook_config() -> Dict[str, Any]:
+    """Read job/notebook parameters from Databricks widgets or return defaults. Used as single source for catalog, schema, query, and Lakebase connection."""
+    defaults = {
+        "catalog": "ahs_demos_catalog",
+        "schema": "payment_analysis",
+        "query": "Run comprehensive payment analysis: routing, retries, declines, risk, and performance optimizations.",
+        "agent_role": "orchestrator",
+        "lakebase_project_id": "",
+        "lakebase_branch_id": "",
+        "lakebase_endpoint_id": "",
+        "lakebase_schema": "payment_analysis",
+    }
     try:
         from databricks.sdk.runtime import dbutils
-        dbutils.widgets.text("catalog", "ahs_demos_catalog")
-        dbutils.widgets.text("schema", "payment_analysis")
-        dbutils.widgets.text("test_mode", "true")
-        dbutils.widgets.text("agent_role", "orchestrator")
-        dbutils.widgets.text("query", "What optimizations do you recommend?")
-        
-        catalog = dbutils.widgets.get("catalog")
-        schema = dbutils.widgets.get("schema")
-        test_mode = dbutils.widgets.get("test_mode")
-        agent_role = dbutils.widgets.get("agent_role")
-        query = dbutils.widgets.get("query")
-    except Exception:
-        pass  # Running outside Databricks; use defaults
-    
-    print(f"\nAgent Role: {agent_role}")
-    print(f"Query: {query}")
-    print("=" * 70)
-    
-    # Select and run the appropriate agent based on role
-    if agent_role == AgentRole.ORCHESTRATOR.value or agent_role == "orchestrator":
-        # Use orchestrator for multi-agent coordination
-        orchestrator = setup_agent_framework(catalog, schema)
-        result = orchestrator.handle_query(query)
-        print(f"\nAgents Used: {result['agents_used']}")
-        print(f"\nSynthesis:\n{result['synthesis']}")
-    else:
-        # Run specific agent based on role
-        agent_map = {
-            AgentRole.SMART_ROUTING.value: SmartRoutingAgent,
-            AgentRole.SMART_RETRY.value: SmartRetryAgent,
-            AgentRole.DECLINE_ANALYST.value: DeclineAnalystAgent,
-            AgentRole.RISK_ASSESSOR.value: RiskAssessorAgent,
-            AgentRole.PERFORMANCE_RECOMMENDER.value: PerformanceRecommenderAgent,
+        dbutils.widgets.text("catalog", defaults["catalog"])
+        dbutils.widgets.text("schema", defaults["schema"])
+        dbutils.widgets.text("query", defaults["query"])
+        dbutils.widgets.text("agent_role", defaults["agent_role"])
+        dbutils.widgets.text("lakebase_project_id", defaults["lakebase_project_id"])
+        dbutils.widgets.text("lakebase_branch_id", defaults["lakebase_branch_id"])
+        dbutils.widgets.text("lakebase_endpoint_id", defaults["lakebase_endpoint_id"])
+        dbutils.widgets.text("lakebase_schema", defaults["lakebase_schema"])
+        return {
+            "catalog": dbutils.widgets.get("catalog") or defaults["catalog"],
+            "schema": dbutils.widgets.get("schema") or defaults["schema"],
+            "query": dbutils.widgets.get("query") or defaults["query"],
+            "agent_role": (dbutils.widgets.get("agent_role") or defaults["agent_role"]).strip(),
+            "lakebase_project_id": (dbutils.widgets.get("lakebase_project_id") or "").strip(),
+            "lakebase_branch_id": (dbutils.widgets.get("lakebase_branch_id") or "").strip(),
+            "lakebase_endpoint_id": (dbutils.widgets.get("lakebase_endpoint_id") or "").strip(),
+            "lakebase_schema": (dbutils.widgets.get("lakebase_schema") or defaults["lakebase_schema"]).strip() or "payment_analysis",
         }
-        
-        agent_class = agent_map.get(agent_role)
-        if agent_class:
-            print(f"Running dedicated {agent_class.__name__}...")
-            agent = agent_class(catalog, schema)
-            response = agent.think(query)
-            print(f"\nAgent Response:\n{response}")
-        else:
-            print(f"Unknown agent role: {agent_role}")
-            print(f"Valid roles: {[r.value for r in AgentRole]}")
+    except Exception:
+        return defaults
+
+
+def run_framework(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Run the agent framework: build orchestrator (and all specialists) and execute the query.
+    This is the single entry point for the Job 6 task. Returns the orchestrator result dict.
+    """
+    catalog = config["catalog"]
+    schema = config["schema"]
+    query = config["query"]
+    agent_role = (config.get("agent_role") or "orchestrator").strip().lower()
+    lakebase_kw = {
+        "lakebase_project_id": config.get("lakebase_project_id") or "",
+        "lakebase_branch_id": config.get("lakebase_branch_id") or "",
+        "lakebase_endpoint_id": config.get("lakebase_endpoint_id") or "",
+        "lakebase_schema": config.get("lakebase_schema") or "payment_analysis",
+    }
+
+    if agent_role == "orchestrator":
+        orchestrator = setup_agent_framework(catalog, schema, **lakebase_kw)
+        return orchestrator.handle_query(query)
+
+    # Optional: run a single specialist (e.g. for ad-hoc or debug)
+    specialist_map = {
+        "smart_routing": SmartRoutingAgent,
+        "smart_retry": SmartRetryAgent,
+        "decline_analyst": DeclineAnalystAgent,
+        "risk_assessor": RiskAssessorAgent,
+        "performance_recommender": PerformanceRecommenderAgent,
+    }
+    agent_class = specialist_map.get(agent_role)
+    if agent_class:
+        agent = agent_class(catalog, schema, **lakebase_kw)
+        response = agent.think(query)
+        return {"query": query, "agents_used": [agent_role], "agent_responses": {agent_role: response}, "synthesis": response}
+    raise ValueError(f"Unknown agent_role={agent_role!r}. Use one of: orchestrator, {', '.join(specialist_map)}")
+
+
+# Databricks notebook entry point (Job 6: single task run_agent_framework)
+if __name__ == "__main__":
+    config = get_notebook_config()
+    query = config["query"]
+    agent_role = config["agent_role"]
+
+    print("\n" + "=" * 70)
+    print("Payment Analysis Agent Framework")
+    print("=" * 70)
+    print(f"Mode:    {agent_role}")
+    print(f"Query:   {query}")
+    print("=" * 70)
+
+    result = run_framework(config)
+
+    print("\nAgents used:", result.get("agents_used", []))
+    print("\n--- Synthesis ---")
+    print(result.get("synthesis", ""))
+    print("\n--- Done ---")

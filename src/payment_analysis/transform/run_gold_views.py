@@ -38,6 +38,15 @@ except Exception as e:
         ) from e
     raise
 
+# Gold views depend on the silver table produced by the Lakeflow ETL pipeline
+if not spark.catalog.tableExists("payments_enriched_silver"):  # type: ignore[name-defined]
+    raise RuntimeError(
+        f"The table payments_enriched_silver was not found in {catalog}.{schema}. "
+        "Gold views require the silver table from the Lakeflow pipeline. "
+        "Run the pipeline 'Payment Analysis ETL' (Step 8 in Setup & Run, or pipelines payment_analysis_etl) so that "
+        "payments_enriched_silver (and payments_raw_bronze) exist in this catalog and schema, then re-run this job."
+    )
+
 header = f"USE CATALOG {catalog};\nUSE SCHEMA {schema};\n\n"
 full_sql = header + content
 

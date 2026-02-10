@@ -51,8 +51,16 @@ def _int_widget(name: str, default: int) -> int:
         return default
 
 
-CATALOG = dbutils.widgets.get("catalog") or "ahs_demos_catalog"  # type: ignore[name-defined]
-SCHEMA = dbutils.widgets.get("schema") or "payment_analysis"  # type: ignore[name-defined]
+def _str_widget(name: str, default: str) -> str:
+    """Get widget value; treat None, empty, and literal 'None' as missing so bundle var substitution issues don't pass 'None' through."""
+    v = dbutils.widgets.get(name)  # type: ignore[name-defined]
+    if v is None or (isinstance(v, str) and (v.strip() == "" or v.strip().lower() == "none")):
+        return default
+    return v.strip()
+
+
+CATALOG = _str_widget("catalog", "ahs_demos_catalog")
+SCHEMA = _str_widget("schema", "payment_analysis")
 N_ESTIMATORS = _int_widget("n_estimators", 100)
 MAX_DEPTH_APPROVAL = _int_widget("max_depth_approval", 10)
 MAX_DEPTH_RISK = _int_widget("max_depth_risk", 12)

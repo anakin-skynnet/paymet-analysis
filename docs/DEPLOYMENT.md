@@ -25,12 +25,13 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | 0 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
 | 1 | **1. Create Data Repositories** | **Setup & Run** → Run job 1 (ensure catalog & schema → **create Lakebase Autoscaling** project/branch/endpoint → **Lakebase data init** — app_config, approval_rules, online_features, app_settings → lakehouse bootstrap → vector search). Run once. Creates everything needed for later jobs and the app. |
 | 2 | **2. Simulate Transaction Events** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines) |
-| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; lakehouse/lakebase/vector search) |
+| — | **Pipeline (before Step 3)** | Start **Payment Analysis ETL** (Lakeflow) at least once so it creates `payments_enriched_silver` (and `payments_raw_bronze`) in the catalog/schema. Step 3 (Gold Views) depends on this table. |
+| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; requires pipeline to have run so `payments_enriched_silver` exists) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
 | 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
 | 6 | **6. Deploy AgentBricks Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
 | 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
-| — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** and/or **Real-Time Stream** (Lakeflow; optional, when needed) |
+| — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
 | — | Dashboards & app | 12 dashboards + app deployed by bundle |
 | — | Verify | **Dashboard**, **Rules**, **Decisioning**, **ML Models** in app |
 
@@ -268,21 +269,15 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | `train_ml_models_job` | Train 4 ML models (approval, risk, routing, retry); register in UC | Single notebook. |
 | `prepare_dashboards_job` | Generate `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema | Run when catalog/schema or source dashboards change; not in Setup & Run UI. |
 | `publish_dashboards_job` | Publish dashboards with embed credentials (AI/BI Dashboards API) for app embedding | Does not run prepare; run after deploy. |
-| `test_agent_framework_job` | Verify agent framework (test_mode); CI/smoke | Same notebook as agents but test-only; not production run. |
 | **agents.yml** | | |
-| `orchestrator_agent_job` | Run orchestrator (coordinates all agents) | One notebook, role `orchestrator`. |
-| `smart_routing_agent_job` | Run smart routing agent only | Same notebook, role `smart_routing`; separate for scheduling. |
-| `smart_retry_agent_job` | Run smart retry agent only | Same notebook, role `smart_retry`. |
-| `decline_analyst_agent_job` | Run decline analyst only | Same notebook, role `decline_analyst`. |
-| `risk_assessor_agent_job` | Run risk assessor only | Same notebook, role `risk_assessor`. |
-| `performance_recommender_agent_job` | Run performance recommender only | Same notebook, role `performance_recommender`. |
+| `run_agent_framework` (job 6) | Run full agent framework: orchestrator + all specialists (Smart Routing, Retry, Decline Analyst, Risk, Performance) with one query | Single task; one notebook run builds the framework and executes comprehensive analysis. |
 | **streaming_simulator.yml** | | |
 | `transaction_stream_simulator` | Generate synthetic payment events (e.g. 1000/s) | Producer only. |
 | `continuous_stream_processor` | Process streaming events continuously | Consumer; different notebook. |
 | **genie_spaces.yml** | | |
 | `job_7_genie_sync` | Sync Genie space configuration and sample questions | Single purpose; optional. |
 
-**Why agent jobs are not merged:** The six specialist jobs and the orchestrator all call the same notebook (`agent_framework`) with different `agent_role`. They are kept as separate jobs so each can have its own schedule and so the UI can run individual agents or the orchestrator on demand.
+**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`).
 
 **Dashboard jobs:** Job 4 (Deploy Dashboards) has two tasks: prepare (generate assets) and publish (AI/BI Dashboards API with embed credentials). Genie sync is a separate job (job 7 in `genie_spaces.yml`).
 
@@ -300,13 +295,7 @@ All job notebook and SQL paths are relative to the workspace `root_path` (where 
 | `transaction_stream_simulator` | `transaction_stream_simulator` | `src/payment_analysis/streaming/transaction_simulator` | `transaction_simulator.py` |
 | `train_ml_models_job` | `train_ml_models` | `src/payment_analysis/ml/train_models` | `train_models.py` |
 | job_7 task `sync_genie_config` | `genie_sync` | `src/payment_analysis/genie/sync_genie_space` | `sync_genie_space.py` (genie_spaces.yml) |
-| `orchestrator_agent_job` | `orchestrator_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `smart_routing_agent_job` | `smart_routing_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `smart_retry_agent_job` | `smart_retry_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `decline_analyst_agent_job` | `decline_analyst_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `risk_assessor_agent_job` | `risk_assessor_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `performance_recommender_agent_job` | `performance_recommender_agent` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
-| `test_agent_framework_job` | `test_agent_framework` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| job_6 task `run_agent_framework` | `run_agent_framework`, `orchestrator_agent`, `test_agent_framework` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
 | `publish_dashboards_job` | `publish_dashboards` | `src/payment_analysis/transform/publish_dashboards` | `publish_dashboards.py` |
 | `continuous_stream_processor` | `continuous_stream_processor` | `src/payment_analysis/streaming/continuous_processor` | `continuous_processor.py` |
 | `prepare_dashboards_job` | (not in Setup UI) | `src/payment_analysis/transform/prepare_dashboards` | `prepare_dashboards.py` |
