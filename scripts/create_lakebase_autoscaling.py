@@ -99,7 +99,7 @@ def main() -> int:
     if postgres_api is None:
         print(
             "Error: WorkspaceClient has no 'postgres' (Lakebase Autoscaling API). "
-            "Ensure databricks-sdk==0.84.0 and the workspace supports Lakebase Autoscaling.",
+            "Ensure databricks-sdk==0.85.0 and the workspace supports Lakebase Autoscaling.",
             file=sys.stderr,
         )
         return 1

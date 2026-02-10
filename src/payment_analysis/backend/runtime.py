@@ -78,7 +78,7 @@ class Runtime:
         if postgres_api is None:
             raise AttributeError(
                 "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires "
-                "databricks-sdk==0.84.0. Upgrade the app's databricks-sdk dependency."
+                "databricks-sdk==0.85.0. Upgrade the app's databricks-sdk dependency."
             )
         endpoint_name = (
             f"projects/{self.config.db.postgres_project_id}/branches/"
@@ -104,7 +104,7 @@ class Runtime:
         postgres_api = getattr(self.ws, "postgres", None)
         if postgres_api is None:
             raise AttributeError(
-                "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires databricks-sdk==0.84.0."
+                "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling requires databricks-sdk==0.85.0."
             )
         endpoint_name = (
             f"projects/{self.config.db.postgres_project_id}/branches/"

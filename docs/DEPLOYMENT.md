@@ -102,7 +102,7 @@ All dependency references use **exactly the same versions** everywhere (no range
 
 **Source of truth:** `pyproject.toml` (all direct deps use `==`). **Lock:** `uv.lock`. **App deploy:** `requirements.txt` is generated from `uv.lock` by `scripts/sync_requirements_from_lock.py`.
 
-**Direct dependencies (exact versions):** databricks-sdk 0.84.0, fastapi 0.128.0, uvicorn 0.40.0, pydantic-settings 2.6.1, sqlmodel 0.0.27, psycopg[binary,pool] 3.2.3. Dev: ty 0.0.14, apx 0.2.6. Transitive versions are fixed in `uv.lock` and reflected in `requirements.txt` by the sync script.
+**Direct dependencies (exact versions):** databricks-sdk 0.85.0, fastapi 0.128.6, uvicorn 0.40.0, pydantic-settings 2.6.1, sqlmodel 0.0.27, psycopg[binary,pool] 3.2.3. Dev: ty 0.0.14, apx 0.2.6. Transitive versions are fixed in `uv.lock` and reflected in `requirements.txt` by the sync script.
 
 ### Frontend (UI)
 
@@ -150,7 +150,7 @@ By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simu
 
 **Environment (official):** Python 3.11, Ubuntu 22.04 LTS, Node.js 22.16. [Pre-installed Python libraries](https://docs.databricks.com/en/dev-tools/databricks-apps/system-env#pre-installed-python-libraries) include databricks-sdk 0.33.0, fastapi 0.115.0, uvicorn[standard] 0.30.6, and others (streamlit, dash, flask, etc.).
 
-**Our `requirements.txt`:** Overrides three pre-installed packages (databricks-sdk → 0.84.0, fastapi → 0.128.0, uvicorn → 0.40.0) and adds pydantic-settings, sqlmodel, psycopg[binary] plus transitive pins. Overriding is supported; pinning exact versions is recommended by Databricks. Our overrides are within the same major/minor line and are tested.
+**Our `requirements.txt`:** Overrides three pre-installed packages (databricks-sdk → 0.85.0, fastapi → 0.128.6, uvicorn → 0.40.0) and adds pydantic-settings, sqlmodel, psycopg[binary] plus transitive pins. Overriding is supported; pinning exact versions is recommended by Databricks. Our overrides are within the same major/minor line and are tested.
 
 **If you see "error installing packages":** (1) Check **Compute → Apps → your app → Logs** for the exact `pip` or install failure. (2) Regenerate: `uv run python scripts/sync_requirements_from_lock.py` then redeploy.
 

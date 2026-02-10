@@ -625,6 +625,8 @@ export const UserSchema = {
 export type UserSchema = (typeof UserSchema)[keyof typeof UserSchema];
 
 export interface ValidationError {
+  ctx?: Record<string, unknown>;
+  input?: unknown;
   loc: (string | number)[];
   msg: string;
   type: string;

@@ -11,7 +11,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "databricks-sdk==0.84.0" --quiet
+# MAGIC %pip install "databricks-sdk==0.85.0" --quiet
 
 # COMMAND ----------
 
@@ -48,7 +48,7 @@ ws = WorkspaceClient()
 postgres_api = getattr(ws, "postgres", None)
 if postgres_api is None:
     raise AttributeError(
-        "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling API requires databricks-sdk==0.84.0 "
+        "WorkspaceClient has no attribute 'postgres'. Lakebase Autoscaling API requires databricks-sdk==0.85.0 "
         "and a workspace with Lakebase Autoscaling enabled."
     )
 

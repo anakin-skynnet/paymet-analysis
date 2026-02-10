@@ -19,7 +19,7 @@ resources:
           spec:
             environment_version: "4"
             dependencies:
-              - "databricks-sdk==0.84.0"
+              - "databricks-sdk==0.85.0"
               - "psycopg[binary]==3.2.3"
       tasks:
         - task_key: run_agent_framework
