@@ -104,4 +104,4 @@ This file consolidates knowledge and context from all conversation prompts so th
 
 ---
 
-*Last consolidated: Command Center (0.5s chart/alerts refresh, entry-throughput API, Alerts/Data Quality/Top Decline cards), package.json pinned versions, run_and_validate_jobs status hint fix; dashboards, orchestrator, deploy flow. No open TODO/FIXME in codebase.*
+*Last consolidated: Command Center (0.5s chart/alerts refresh, entry-throughput API, Alerts/Data Quality/Top Decline cards), package.json pinned versions, run_and_validate_jobs status hint fix; dashboards (reference Lakeview v3 URL for Executive Overview when workspace matches adb-984752964297111); orchestrator, deploy flow. No open TODO/FIXME in codebase.*
