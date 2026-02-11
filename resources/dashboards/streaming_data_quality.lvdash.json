@@ -14,6 +14,11 @@
       "name": "ds_silver_hourly",
       "displayName": "Silver Processed Hourly",
       "query": "SELECT hour, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_hourly ORDER BY hour DESC LIMIT 168"
+    },
+    {
+      "name": "ds_volume_per_second",
+      "displayName": "Incoming volume per second",
+      "query": "SELECT hour, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY hour DESC LIMIT 168"
     }
   ],
   "pages": [
@@ -234,6 +239,10 @@
                       "expression": "`silver_last_24h`"
                     },
                     {
+                      "name": "retention_pct_24h",
+                      "expression": "`retention_pct_24h`"
+                    },
+                    {
                       "name": "latest_bronze_ingestion",
                       "expression": "`latest_bronze_ingestion`"
                     },
@@ -252,59 +261,52 @@
               "encodings": {
                 "columns": [
                   {
+                    "name": "bronze_last_24h",
                     "fieldName": "bronze_last_24h",
-                    "displayName": "Incoming (24h)",
-                    "booleanValues": ["false", "true"],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
+                    "displayName": "bronze_last_24h",
+                    "title": "bronze_last_24h",
                     "order": 0,
-                    "title": "Incoming (24h)",
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "name": "bronze_last_24h"
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "silver_last_24h",
                     "fieldName": "silver_last_24h",
-                    "displayName": "Processed & stored (24h)",
-                    "booleanValues": ["false", "true"],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
+                    "displayName": "silver_last_24h",
+                    "title": "silver_last_24h",
                     "order": 1,
-                    "title": "Processed & stored (24h)",
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "name": "silver_last_24h"
-                  },
-                  {
-                    "fieldName": "latest_bronze_ingestion",
-                    "displayName": "Latest ingestion",
-                    "booleanValues": ["false", "true"],
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
                     "imageWidth": "",
@@ -312,24 +314,27 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "retention_pct_24h",
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "retention_pct_24h",
+                    "title": "retention_pct_24h",
                     "order": 2,
-                    "title": "Latest ingestion",
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "name": "latest_bronze_ingestion"
-                  },
-                  {
-                    "fieldName": "latest_silver_event",
-                    "displayName": "Latest stored event",
-                    "booleanValues": ["false", "true"],
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
                     "imageWidth": "",
@@ -337,25 +342,69 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_bronze_ingestion",
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "latest_bronze_ingestion",
+                    "title": "latest_bronze_ingestion",
+                    "order": 3,
+                    "visible": true,
                     "type": "string",
                     "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "Latest stored event",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "name": "latest_silver_event"
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_silver_event",
+                    "fieldName": "latest_silver_event",
+                    "displayName": "latest_silver_event",
+                    "title": "latest_silver_event",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   }
                 ]
               },
               "frame": {
                 "showTitle": true,
-                "title": "Real-time volume – Incoming & stored events",
+                "title": "Real-time volume \u2013 Incoming & stored events",
                 "showDescription": false
               }
             }
@@ -365,6 +414,61 @@
             "y": 0,
             "width": 6,
             "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "line_volume_per_second",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_volume_per_second",
+                  "fields": [
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "sum(records_per_second)",
+                      "expression": "SUM(`records_per_second`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Hour"
+                },
+                "y": {
+                  "fieldName": "sum(records_per_second)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Records Per Second"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Incoming streaming volume (records per second)",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 5
           }
         },
         {
@@ -381,87 +485,43 @@
                       "expression": "`hour`"
                     },
                     {
-                      "name": "bronze_record_count",
-                      "expression": "`bronze_record_count`"
+                      "name": "sum(bronze_record_count)",
+                      "expression": "SUM(`bronze_record_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "line",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "hour",
-                    "displayName": "hour",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "hour",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "hour"
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "temporal"
                   },
-                  {
-                    "fieldName": "bronze_record_count",
-                    "displayName": "bronze_record_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "bronze_record_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "bronze_record_count"
-                  }
-                ]
+                  "displayName": "Hour"
+                },
+                "y": {
+                  "fieldName": "sum(bronze_record_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Bronze Record Count"
+                }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_bronze_hourly",
+                "title": "Bronze ingestion hourly",
                 "showDescription": false
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 5,
+            "y": 11,
             "width": 6,
             "height": 4
           }
@@ -480,87 +540,43 @@
                       "expression": "`hour`"
                     },
                     {
-                      "name": "silver_record_count",
-                      "expression": "`silver_record_count`"
+                      "name": "sum(silver_record_count)",
+                      "expression": "SUM(`silver_record_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "line",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "hour",
-                    "displayName": "hour",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "hour",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "hour"
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "temporal"
                   },
-                  {
-                    "fieldName": "silver_record_count",
-                    "displayName": "silver_record_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "silver_record_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "silver_record_count"
-                  }
-                ]
+                  "displayName": "Hour"
+                },
+                "y": {
+                  "fieldName": "sum(silver_record_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Silver Record Count"
+                }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_silver_hourly",
+                "title": "Silver processed hourly",
                 "showDescription": false
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 10,
+            "y": 16,
             "width": 6,
             "height": 4
           }

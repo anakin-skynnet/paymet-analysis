@@ -94,8 +94,20 @@
               "encodings": {
                 "columns": [
                   {
+                    "name": "total_transactions",
                     "fieldName": "total_transactions",
                     "displayName": "total_transactions",
+                    "title": "total_transactions",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -107,23 +119,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "total_transactions",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_transactions"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "approved_count",
                     "fieldName": "approved_count",
                     "displayName": "approved_count",
+                    "title": "approved_count",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -135,23 +147,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "approved_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_count"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "declined_count",
                     "fieldName": "declined_count",
                     "displayName": "declined_count",
+                    "title": "declined_count",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -163,23 +175,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "declined_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "declined_count"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "approval_rate_pct",
                     "fieldName": "approval_rate_pct",
                     "displayName": "approval_rate_pct",
+                    "title": "approval_rate_pct",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -191,23 +203,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "approval_rate_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approval_rate_pct"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "avg_fraud_score",
                     "fieldName": "avg_fraud_score",
                     "displayName": "avg_fraud_score",
+                    "title": "avg_fraud_score",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -219,23 +231,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "avg_fraud_score",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_fraud_score"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "total_transaction_value",
                     "fieldName": "total_transaction_value",
                     "displayName": "total_transaction_value",
+                    "title": "total_transaction_value",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -247,23 +259,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 5,
-                    "title": "total_transaction_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_transaction_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "approved_value",
                     "fieldName": "approved_value",
                     "displayName": "approved_value",
+                    "title": "approved_value",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -275,23 +287,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 6,
-                    "title": "approved_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "declined_value",
                     "fieldName": "declined_value",
                     "displayName": "declined_value",
+                    "title": "declined_value",
+                    "order": 7,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -303,23 +315,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 7,
-                    "title": "declined_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "declined_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "avg_transaction_amount",
                     "fieldName": "avg_transaction_amount",
                     "displayName": "avg_transaction_amount",
+                    "title": "avg_transaction_amount",
+                    "order": 8,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -331,23 +343,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 8,
-                    "title": "avg_transaction_amount",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_transaction_amount"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "auth_3ds_usage_pct",
                     "fieldName": "auth_3ds_usage_pct",
                     "displayName": "auth_3ds_usage_pct",
+                    "title": "auth_3ds_usage_pct",
+                    "order": 9,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -359,23 +371,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 9,
-                    "title": "auth_3ds_usage_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "auth_3ds_usage_pct"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "period_start",
                     "fieldName": "period_start",
                     "displayName": "period_start",
+                    "title": "period_start",
+                    "order": 10,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -387,23 +399,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 10,
-                    "title": "period_start",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "period_start"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "period_end",
                     "fieldName": "period_end",
                     "displayName": "period_end",
+                    "title": "period_end",
+                    "order": 11,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -415,19 +427,7 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 11,
-                    "title": "period_end",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "period_end"
+                    "linkOpenInNewTab": true
                   }
                 ]
               },
@@ -459,236 +459,32 @@
                       "expression": "`hour`"
                     },
                     {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
-                    },
-                    {
-                      "name": "approved_count",
-                      "expression": "`approved_count`"
-                    },
-                    {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "total_value",
-                      "expression": "`total_value`"
-                    },
-                    {
-                      "name": "active_segments",
-                      "expression": "`active_segments`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "line",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "hour",
-                    "displayName": "hour",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "hour",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "hour"
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "temporal"
                   },
-                  {
-                    "fieldName": "transaction_count",
-                    "displayName": "transaction_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "transaction_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "transaction_count"
+                  "displayName": "Hour"
+                },
+                "y": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "approved_count",
-                    "displayName": "approved_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "approved_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_count"
-                  },
-                  {
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "approval_rate_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "approval_rate_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approval_rate_pct"
-                  },
-                  {
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "avg_fraud_score",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "avg_fraud_score",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_fraud_score"
-                  },
-                  {
-                    "fieldName": "total_value",
-                    "displayName": "total_value",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 5,
-                    "title": "total_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_value"
-                  },
-                  {
-                    "fieldName": "active_segments",
-                    "displayName": "active_segments",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 6,
-                    "title": "active_segments",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "active_segments"
-                  }
-                ]
+                  "displayName": "Transaction Count"
+                }
               },
               "frame": {
                 "showTitle": true,
@@ -718,268 +514,32 @@
                       "expression": "`payment_solution`"
                     },
                     {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
-                    },
-                    {
-                      "name": "approved_count",
-                      "expression": "`approved_count`"
-                    },
-                    {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "avg_amount",
-                      "expression": "`avg_amount`"
-                    },
-                    {
-                      "name": "total_value",
-                      "expression": "`total_value`"
-                    },
-                    {
-                      "name": "avg_latency_ms",
-                      "expression": "`avg_latency_ms`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "pie",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "payment_solution",
-                    "displayName": "payment_solution",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "payment_solution",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "payment_solution"
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "transaction_count",
-                    "displayName": "transaction_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "transaction_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "transaction_count"
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical"
                   },
-                  {
-                    "fieldName": "approved_count",
-                    "displayName": "approved_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "approved_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_count"
-                  },
-                  {
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "approval_rate_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "approval_rate_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approval_rate_pct"
-                  },
-                  {
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "avg_fraud_score",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "avg_fraud_score",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_fraud_score"
-                  },
-                  {
-                    "fieldName": "avg_amount",
-                    "displayName": "avg_amount",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 5,
-                    "title": "avg_amount",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_amount"
-                  },
-                  {
-                    "fieldName": "total_value",
-                    "displayName": "total_value",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 6,
-                    "title": "total_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_value"
-                  },
-                  {
-                    "fieldName": "avg_latency_ms",
-                    "displayName": "avg_latency_ms",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 7,
-                    "title": "avg_latency_ms",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_latency_ms"
-                  }
-                ]
+                  "displayName": "Payment Solution"
+                }
               },
               "frame": {
                 "showTitle": true,
@@ -1009,204 +569,32 @@
                       "expression": "`country`"
                     },
                     {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
-                    },
-                    {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "total_transaction_value",
-                      "expression": "`total_transaction_value`"
-                    },
-                    {
-                      "name": "unique_merchants",
-                      "expression": "`unique_merchants`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "pie",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "country",
-                    "displayName": "country",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "country",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "country"
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "transaction_count",
-                    "displayName": "transaction_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "transaction_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "transaction_count"
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "country",
+                  "scale": {
+                    "type": "categorical"
                   },
-                  {
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "approval_rate_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "approval_rate_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approval_rate_pct"
-                  },
-                  {
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "avg_fraud_score",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "avg_fraud_score",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_fraud_score"
-                  },
-                  {
-                    "fieldName": "total_transaction_value",
-                    "displayName": "total_transaction_value",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "total_transaction_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_transaction_value"
-                  },
-                  {
-                    "fieldName": "unique_merchants",
-                    "displayName": "unique_merchants",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 5,
-                    "title": "unique_merchants",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "unique_merchants"
-                  }
-                ]
+                  "displayName": "Country"
+                }
               },
               "frame": {
                 "showTitle": true,

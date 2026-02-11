@@ -30,140 +30,32 @@
                       "expression": "`payment_solution`"
                     },
                     {
-                      "name": "avg_latency_ms",
-                      "expression": "`avg_latency_ms`"
-                    },
-                    {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
-                    },
-                    {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "pie",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "payment_solution",
-                    "displayName": "payment_solution",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "payment_solution",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "payment_solution"
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "avg_latency_ms",
-                    "displayName": "avg_latency_ms",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "avg_latency_ms",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_latency_ms"
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical"
                   },
-                  {
-                    "fieldName": "transaction_count",
-                    "displayName": "transaction_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "transaction_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "transaction_count"
-                  },
-                  {
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "approval_rate_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "approval_rate_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approval_rate_pct"
-                  }
-                ]
+                  "displayName": "Payment Solution"
+                }
               },
               "frame": {
                 "showTitle": true,
@@ -193,108 +85,32 @@
                       "expression": "`card_network`"
                     },
                     {
-                      "name": "avg_latency_ms",
-                      "expression": "`avg_latency_ms`"
-                    },
-                    {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "pie",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "card_network",
-                    "displayName": "card_network",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "card_network",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "card_network"
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "avg_latency_ms",
-                    "displayName": "avg_latency_ms",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "avg_latency_ms",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_latency_ms"
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "card_network",
+                  "scale": {
+                    "type": "categorical"
                   },
-                  {
-                    "fieldName": "transaction_count",
-                    "displayName": "transaction_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "transaction_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "transaction_count"
-                  }
-                ]
+                  "displayName": "Card Network"
+                }
               },
               "frame": {
                 "showTitle": true,

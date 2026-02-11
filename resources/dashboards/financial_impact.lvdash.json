@@ -64,8 +64,20 @@
               "encodings": {
                 "columns": [
                   {
+                    "name": "total_transaction_value",
                     "fieldName": "total_transaction_value",
                     "displayName": "total_transaction_value",
+                    "title": "total_transaction_value",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -77,23 +89,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "total_transaction_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_transaction_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "approved_value",
                     "fieldName": "approved_value",
                     "displayName": "approved_value",
+                    "title": "approved_value",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -105,23 +117,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "approved_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "declined_value",
                     "fieldName": "declined_value",
                     "displayName": "declined_value",
+                    "title": "declined_value",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -133,23 +145,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "declined_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "declined_value"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "avg_transaction_amount",
                     "fieldName": "avg_transaction_amount",
                     "displayName": "avg_transaction_amount",
+                    "title": "avg_transaction_amount",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -161,23 +173,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "avg_transaction_amount",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "avg_transaction_amount"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "total_transactions",
                     "fieldName": "total_transactions",
                     "displayName": "total_transactions",
+                    "title": "total_transactions",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -189,23 +201,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "total_transactions",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_transactions"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "approved_count",
                     "fieldName": "approved_count",
                     "displayName": "approved_count",
+                    "title": "approved_count",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -217,23 +229,23 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 5,
-                    "title": "approved_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "approved_count"
+                    "linkOpenInNewTab": true
                   },
                   {
+                    "name": "declined_count",
                     "fieldName": "declined_count",
                     "displayName": "declined_count",
+                    "title": "declined_count",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
                     "booleanValues": [
                       "false",
                       "true"
@@ -245,19 +257,7 @@
                     "linkUrlTemplate": "{{ @ }}",
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 6,
-                    "title": "declined_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "declined_count"
+                    "linkOpenInNewTab": true
                   }
                 ]
               },
@@ -289,140 +289,32 @@
                       "expression": "`decline_reason`"
                     },
                     {
-                      "name": "total_declined_value",
-                      "expression": "`total_declined_value`"
-                    },
-                    {
-                      "name": "decline_count",
-                      "expression": "`decline_count`"
-                    },
-                    {
-                      "name": "recoverable_pct",
-                      "expression": "`recoverable_pct`"
+                      "name": "sum(total_declined_value)",
+                      "expression": "SUM(`total_declined_value`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "pie",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "decline_reason",
-                    "displayName": "decline_reason",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 0,
-                    "title": "decline_reason",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "decline_reason"
+                "angle": {
+                  "fieldName": "sum(total_declined_value)",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "total_declined_value",
-                    "displayName": "total_declined_value",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "total_declined_value",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "total_declined_value"
+                  "displayName": "Total Declined Value"
+                },
+                "color": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical"
                   },
-                  {
-                    "fieldName": "decline_count",
-                    "displayName": "decline_count",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "decline_count",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "decline_count"
-                  },
-                  {
-                    "fieldName": "recoverable_pct",
-                    "displayName": "recoverable_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "recoverable_pct",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "name": "recoverable_pct"
-                  }
-                ]
+                  "displayName": "Decline Reason"
+                }
               },
               "frame": {
                 "showTitle": true,

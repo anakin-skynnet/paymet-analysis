@@ -53,6 +53,7 @@ ASSETS = [
     ("v_merchant_segment_performance", "gold_views.sql"),
     ("v_daily_trends", "gold_views.sql"),
     ("v_streaming_ingestion_hourly", "gold_views.sql"),
+    ("v_streaming_volume_per_second", "gold_views.sql"),
     ("v_silver_processed_hourly", "gold_views.sql"),
     ("v_data_quality_summary", "gold_views.sql"),
     ("v_uc_data_quality_metrics", "gold_views.sql"),
@@ -223,13 +224,16 @@ def cmd_check_widgets() -> int:
                             if dn not in dataset_names:
                                 errors.append(f"{path.name}: widget references unknown dataset '{dn}'")
                             else:
-                                # Columns and values MUST exist in the dataset
+                                # Columns and values MUST exist in the dataset (allow aggregate names like sum(col) → col)
                                 ds = datasets_by_name.get(dn)
                                 if ds:
                                     ds_columns = set(_select_columns_from_query(ds.get("query", "")))
                                     widget_fields = [f.get("name") for f in query.get("fields", []) if f.get("name")]
                                     if ds_columns and widget_fields:
-                                        missing_in_ds = [f for f in widget_fields if f not in ds_columns]
+                                        def _base_column(f: str) -> str:
+                                            m = re.match(r"(sum|avg|count|min|max)\s*\(\s*([^)]+)\s*\)", f, re.IGNORECASE)
+                                            return m.group(2).strip("` ") if m else f
+                                        missing_in_ds = [f for f in widget_fields if _base_column(f) not in ds_columns]
                                         if missing_in_ds:
                                             errors.append(
                                                 f"{path.name}: page[{pidx}] layout[{lidx}] widget fields not in dataset '{dn}': {missing_in_ds}"
@@ -290,6 +294,215 @@ def _dataset_by_name(data: dict, name: str) -> dict | None:
         if ds.get("name") == name:
             return ds
     return None
+
+
+# Names that suggest a numeric value column for charts (Y-axis or value). Use word boundaries so "country" doesn't match "count".
+_NUMERIC_LIKE = re.compile(
+    r"\b(count|pct|rate|value|amount|score|ms|cost|total|avg|sum|volume|records_per|transaction_count|approved_count|declined_count)\b",
+    re.IGNORECASE,
+)
+# Only these column names are treated as time dimensions (line chart X-axis). Avoid false matches like "transactions_last_hour".
+_TIME_DIMENSION_NAMES = frozenset(("hour", "date", "day", "period_start", "event_timestamp", "first_detected"))
+# Categorical columns that work well for bar/pie (category + metric).
+_CATEGORICAL_LIKE = re.compile(
+    r"reason|country|solution|network|segment|type|severity|template|source|device|alert|metric"
+)
+
+
+def _display_name(col: str) -> str:
+    """Human-readable display name for a column (dbdemos style)."""
+    return col.replace("_", " ").title()
+
+
+def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[str], dict]:
+    """Recommend best widget type and encodings from dataset columns (dbdemos-style).
+    Aligns with AI/BI visualization catalog: line (metrics over time), pie/bar (proportionality/categories),
+    table (multi-column detail), counter (single value). See resources/dashboards/README.md and
+    https://learn.microsoft.com/en-us/azure/databricks/dashboards/visualization-types . Returns (widget_type, fields, encodings)."""
+    if not columns:
+        return "table", [], {"columns": []}
+    q_lower = (query or "").lower()
+    has_limit_1 = bool(re.search(r"\blimit\s+1\b", q_lower))  # exact "LIMIT 1", not "LIMIT 168"
+    # Single numeric KPI only → counter
+    if len(columns) == 1 and (_NUMERIC_LIKE.search(columns[0]) or has_limit_1):
+        c = columns[0]
+        return "counter", [c], {"value": {"fieldName": c, "displayName": _display_name(c)}}
+    # Single-row (LIMIT 1) with multiple columns → table so all KPIs visible (not one counter)
+    if has_limit_1 and len(columns) > 2:
+        fields = columns
+        return "table", fields, {"columns": [_table_column_spec(c, i) for i, c in enumerate(columns)]}
+    if has_limit_1 and len(columns) >= 1 and any(_NUMERIC_LIKE.search(c) for c in columns):
+        c = next((x for x in columns if _NUMERIC_LIKE.search(x)), columns[0])
+        return "counter", [c], {"value": {"fieldName": c, "displayName": _display_name(c)}}
+    # Time series: only real time dimensions (hour, date, …) → line chart
+    time_cols = [c for c in columns if c in _TIME_DIMENSION_NAMES]
+    if time_cols and len(columns) >= 2:
+        x_col = time_cols[0]
+        rest = [c for c in columns if c != x_col]
+        y_col = next((c for c in rest if _NUMERIC_LIKE.search(c)), rest[0] if rest else columns[0])
+        fields = [x_col, y_col]
+        encodings = {
+            "x": {"fieldName": x_col, "scale": {"type": "temporal"}, "displayName": _display_name(x_col)},
+            "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
+        }
+        return "line", fields, encodings
+    # Categorical + numeric → bar or pie (only when first column is clearly categorical, not a metric)
+    if not has_limit_1 and len(columns) >= 2:
+        first, second = columns[0], columns[1]
+        first_looks_numeric = _NUMERIC_LIKE.search(first)  # e.g. transactions_last_hour, approval_rate_pct
+        first_cat = not first_looks_numeric and (
+            first.lower() in (
+                "decline_reason", "country", "payment_solution", "card_network", "merchant_segment",
+                "segment", "alert_type", "severity", "metric_name", "template", "source", "device",
+            )
+            or _CATEGORICAL_LIKE.search(first)
+        )
+        if ( _NUMERIC_LIKE.search(second) or first_cat ) and first_cat:
+            x_col = first
+            y_col = next((c for c in columns[1:] if _NUMERIC_LIKE.search(c)), second)
+            fields = [x_col, y_col]
+            # Pie for distribution (angle + color) when category name suggests segment/type
+            use_pie = bool(
+                _CATEGORICAL_LIKE.search(first)
+                or first.lower() in ("payment_solution", "card_network", "country", "alert_type", "severity")
+            )
+            if use_pie:
+                encodings = {
+                    "angle": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
+                    "color": {"fieldName": x_col, "scale": {"type": "categorical"}, "displayName": _display_name(x_col)},
+                }
+                return "pie", fields, encodings
+            encodings = {
+                "x": {
+                    "fieldName": x_col,
+                    "scale": {"type": "categorical", "sort": {"by": "y-reversed"}},
+                    "displayName": _display_name(x_col),
+                },
+                "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
+            }
+            return "bar", fields, encodings
+    # Default: table
+    fields = columns
+    encodings = {"columns": [_table_column_spec(c, i) for i, c in enumerate(columns)]}
+    return "table", fields, encodings
+
+
+def cmd_best_widgets() -> int:
+    """Set each widget to the best type (line/bar/table) and configure encodings from dataset columns."""
+    updated = 0
+    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            print(f"Error reading {path}: {e}", file=sys.stderr)
+            return 1
+        datasets_by_name = {ds.get("name"): ds for ds in data.get("datasets", []) if ds.get("name")}
+        changed = False
+        for page in data.get("pages", []):
+            for item in page.get("layout", []):
+                w = item.get("widget", {})
+                queries = w.get("queries", [])
+                main_query = next((q.get("query", {}) for q in queries if q.get("query", {}).get("datasetName")), None)
+                if not main_query:
+                    continue
+                dataset_name = main_query.get("datasetName")
+                dataset = datasets_by_name.get(dataset_name)
+                if not dataset:
+                    continue
+                ds_query = dataset.get("query", "")
+                columns = _select_columns_from_query(ds_query)
+                if not columns:
+                    existing = [f.get("name") for f in main_query.get("fields", []) if f.get("name")]
+                    columns = existing or [dataset.get("displayName", dataset_name)]
+                widget_type, fields, encodings = _recommend_widget_type(columns, ds_query)
+                # Build query.fields (dbdemos: counter = one field; line/bar/pie = x + SUM(y), disaggregated false)
+                if widget_type == "counter":
+                    new_fields = [{"name": fields[0], "expression": f"`{fields[0]}`"}]
+                    main_query["disaggregated"] = True
+                elif widget_type in ("line", "bar", "pie"):
+                    x_col, y_col = fields[0], fields[1]
+                    new_fields = [
+                        {"name": x_col, "expression": f"`{x_col}`"},
+                        {"name": f"sum({y_col})", "expression": f"SUM(`{y_col}`)"},
+                    ]
+                    main_query["disaggregated"] = False
+                else:
+                    new_fields = [{"name": f, "expression": f"`{f}`"} for f in fields]
+                if main_query.get("fields") != new_fields:
+                    main_query["fields"] = new_fields
+                    changed = True
+                spec = w.get("spec", {})
+                if spec.get("widgetType") != widget_type:
+                    spec["widgetType"] = widget_type
+                    changed = True
+                # dbdemos: version 2 for counter, 3 for bar/line/pie
+                want_version = 2 if widget_type == "counter" else (3 if widget_type in ("line", "bar", "pie") else 1)
+                if spec.get("version") != want_version:
+                    spec["version"] = want_version
+                    changed = True
+                enc = spec.get("encodings") or {}
+                if spec.get("encodings") is None:
+                    spec["encodings"] = enc
+                if widget_type == "table":
+                    want_cols = encodings.get("columns", [])
+                    existing_names = [c.get("fieldName") or c.get("name") for c in (enc.get("columns") or [])]
+                    want_names = [c.get("fieldName") or c.get("name") for c in want_cols]
+                    if existing_names != want_names:
+                        enc["columns"] = want_cols
+                        changed = True
+                    if "x" in enc or "y" in enc or "value" in enc:
+                        enc.pop("x", None)
+                        enc.pop("y", None)
+                        enc.pop("value", None)
+                        changed = True
+                elif widget_type == "counter":
+                    want_value = encodings.get("value", {})
+                    if enc.get("value") != want_value:
+                        enc["value"] = want_value
+                        changed = True
+                    if "x" in enc or "y" in enc or "angle" in enc or "color" in enc or "columns" in enc:
+                        enc.pop("x", None)
+                        enc.pop("y", None)
+                        enc.pop("angle", None)
+                        enc.pop("color", None)
+                        enc.pop("columns", None)
+                        changed = True
+                elif widget_type == "pie":
+                    if enc.get("angle") != encodings.get("angle") or enc.get("color") != encodings.get("color"):
+                        enc["angle"] = encodings.get("angle")
+                        enc["color"] = encodings.get("color")
+                        changed = True
+                    enc.pop("x", None)
+                    enc.pop("y", None)
+                    enc.pop("value", None)
+                    if "columns" in enc:
+                        del enc["columns"]
+                        changed = True
+                else:
+                    # line/bar: encodings x and y as single objects (dbdemos style)
+                    if enc.get("x") != encodings.get("x") or enc.get("y") != encodings.get("y"):
+                        enc["x"] = encodings.get("x")
+                        enc["y"] = encodings.get("y")
+                        changed = True
+                    enc.pop("value", None)
+                    enc.pop("angle", None)
+                    enc.pop("color", None)
+                    if "columns" in enc:
+                        del enc["columns"]
+                        changed = True
+                # Ensure frame with title (dbdemos pattern)
+                frame = spec.get("frame") or {}
+                if not frame.get("title") and dataset:
+                    frame["showTitle"] = frame.get("showTitle", True)
+                    frame["title"] = frame.get("title") or dataset.get("displayName", dataset_name)
+                    spec["frame"] = frame
+                    changed = True
+        if changed:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            print(f"Best widgets: {path.name}")
+            updated += 1
+    print(f"Updated {updated} dashboard(s) with best widget type and required columns.")
+    return 0
 
 
 def cmd_fix_visualization_fields() -> int:
@@ -571,7 +784,9 @@ def main() -> int:
     # check-widgets
     sub.add_parser("check-widgets", help="Verify widgets reference datasets in the same file and every dataset has a widget")
     # fix-visualization-fields
-    sub.add_parser("fix-visualization-fields", help="Add 'name' to table columns so Lakeview does not show 'no fields selected'")
+    sub.add_parser("fix-visualization-fields", help="Set widget columns/values from dataset query (table widgets)")
+    # best-widgets
+    sub.add_parser("best-widgets", help="Set best widget type (line/bar/table) and required columns from dataset")
     # delete-workspace-dashboards
     p_del = sub.add_parser("delete-workspace-dashboards", help="Delete workspace .../dashboards so deploy recreates them from config")
     p_del.add_argument("--path", default=None, help="Workspace root path")
@@ -592,6 +807,8 @@ def main() -> int:
         return cmd_check_widgets()
     if args.cmd == "fix-visualization-fields":
         return cmd_fix_visualization_fields()
+    if args.cmd == "best-widgets":
+        return cmd_best_widgets()
     if args.cmd == "delete-workspace-dashboards":
         return cmd_delete_workspace_dashboards(args.path, recursive=not getattr(args, "no_recursive", False))
     return 1

@@ -264,6 +264,15 @@ WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 7 DAYS
 GROUP BY DATE_TRUNC('hour', event_timestamp)
 ORDER BY hour DESC;
 
+-- View 14b: Incoming streaming volume per second (rate from hourly bronze ingestion)
+CREATE OR REPLACE VIEW v_streaming_volume_per_second AS
+SELECT
+    hour,
+    ROUND(bronze_record_count / 3600.0, 2) AS records_per_second
+FROM v_streaming_ingestion_hourly
+ORDER BY hour DESC
+LIMIT 168;
+
 -- View 15: Data quality summary (single row: volumes and retention)
 CREATE OR REPLACE VIEW v_data_quality_summary AS
 SELECT
