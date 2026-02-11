@@ -619,6 +619,8 @@ def cmd_link_widgets() -> int:
 
 def cmd_prepare(catalog: str, schema: str) -> None:
     catalog_schema = f"{catalog}.{schema}"
+    if not catalog or not schema:
+        raise SystemExit("prepare requires non-empty --catalog and --schema (or set BUNDLE_VAR_catalog / BUNDLE_VAR_schema)")
     BUILD_DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     count = 0
@@ -626,6 +628,11 @@ def cmd_prepare(catalog: str, schema: str) -> None:
         content = path.read_text(encoding="utf-8")
         if CATALOG_SCHEMA_PLACEHOLDER in content:
             content = content.replace(CATALOG_SCHEMA_PLACEHOLDER, catalog_schema)
+        if CATALOG_SCHEMA_PLACEHOLDER in content:
+            raise SystemExit(
+                f"prepare: {path.name} still contains {CATALOG_SCHEMA_PLACEHOLDER!r} after replace. "
+                "Check source JSON for typos or different placeholder."
+            )
         (BUILD_DASHBOARDS_DIR / path.name).write_text(content, encoding="utf-8")
         (OUT_DIR / path.name).write_text(content, encoding="utf-8")
         count += 1
