@@ -170,8 +170,8 @@ import mlflow
 from payment_analysis.agents.langgraph_agents import get_all_agent_builders
 
 mlflow.set_registry_uri("databricks-uc")
-catalog = "ahs_demos_catalog"  # or var
-model_catalog = "payment_analysis_uc"  # UC catalog for registered models
+catalog = "ahs_demos_catalog"  # or var.catalog (same as data catalog)
+model_registry_schema = "agents"  # Bundle creates this schema (unity_catalog.yml agents_schema)
 llm_endpoint = "databricks-meta-llama-3-1-70b-instruct"
 
 for create_fn, name in get_all_agent_builders():
@@ -184,11 +184,11 @@ for create_fn, name in get_all_agent_builders():
         )
         mlflow.register_model(
             model_uri=logged.model_uri,
-            name=f"{model_catalog}.agents.{name}",
+            name=f"{catalog}.{model_registry_schema}.{name}",
         )
 ```
 
-Registered names: `payment_analysis_uc.agents.decline_analyst`, `.agents.smart_routing`, `.agents.smart_retry`, `.agents.risk_assessor`, `.agents.performance_recommender`. Adjust `model_catalog` to your UC model catalog.
+Registered names: `{catalog}.agents.decline_analyst`, `.agents.smart_routing`, `.agents.smart_retry`, `.agents.risk_assessor`, `.agents.performance_recommender`. Job 6 passes `model_registry_catalog` and `model_registry_schema` (default: same catalog, schema `agents`). The bundle creates the `agents` schema in the catalog (resources/unity_catalog.yml).
 
 ---
 

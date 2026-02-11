@@ -6,13 +6,17 @@
 # One notebook run builds the framework and executes one comprehensive query;
 # the orchestrator routes to the appropriate specialists and synthesizes the response.
 # Approval rules from OLTP Lakebase Autoscaling when lakebase_* params are set.
+#
+# Model registry: AgentBricks/LangGraph agents are registered in Unity Catalog at
+# {model_registry_catalog}.{model_registry_schema}.{agent_name} (e.g. catalog.agents.decline_analyst).
+# Use the same catalog as data so one catalog holds tables, views, and agent models.
 # =============================================================================
 
 resources:
   jobs:
     "job_6_deploy_agents":
       name: "[${var.environment}] 6. Deploy AgentBricks Agents (Orchestrator & Specialists)"
-      description: "Run the payment analysis agent framework: orchestrator coordinates Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, and Performance Recommender. Single task runs one comprehensive analysis. Approval rules from Lakebase when configured."
+      description: "Run the payment analysis agent framework: orchestrator coordinates Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, and Performance Recommender. Single task runs one comprehensive analysis. Approval rules from Lakebase when configured. Model registry: catalog.agents (e.g. catalog.agents.decline_analyst)."
       max_concurrent_runs: 1
       environments:
         - environment_key: lakebase_sdk
@@ -34,6 +38,9 @@ resources:
               lakebase_branch_id: ${var.lakebase_branch_id}
               lakebase_endpoint_id: ${var.lakebase_endpoint_id}
               lakebase_schema: "payment_analysis"
+              model_registry_catalog: ${var.catalog}
+              model_registry_schema: "agents"
+              llm_endpoint: "databricks-meta-llama-3-1-70b-instruct"
               query: "Run comprehensive payment analysis: routing, retries, declines, risk, and performance optimizations."
           timeout_seconds: 3600
       schedule:

@@ -1,9 +1,10 @@
 # =============================================================================
 # Unity Catalog - Schema and Volumes
 # =============================================================================
-# Single schema and four managed volumes for the payment analysis platform.
+# Schemas: payment_analysis (data, views, ML, agent tools); agents (AgentBricks registered models).
 # Catalog and schema names come from variables (default or set at deploy).
 # Tables/views are created by Lakeflow and gold view job; ML models by ML job.
+# AgentBricks: register LangGraph agents to catalog.agents.* (see job 6 model_registry_*).
 # =============================================================================
 
 resources:
@@ -18,6 +19,18 @@ resources:
       grants:
         - principal: users
           privileges: [USE_SCHEMA, SELECT, EXECUTE]
+        - principal: ${workspace.current_user.userName}
+          privileges: [ALL_PRIVILEGES]
+
+    agents_schema:
+      name: agents
+      catalog_name: ${var.catalog}
+      comment: |
+        AgentBricks registered models (LangGraph agents). Job 6 uses model_registry_catalog.model_registry_schema.
+        Register with mlflow.register_model(..., name=f"{catalog}.agents.{agent_name}").
+      grants:
+        - principal: users
+          privileges: [USE_SCHEMA, READ_METADATA, USE_CATALOG]
         - principal: ${workspace.current_user.userName}
           privileges: [ALL_PRIVILEGES]
 

@@ -309,6 +309,8 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 
 **Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [AgentBricks — Payment Analysis](AGENT_FRAMEWORK_DATABRICKS.md).
 
+**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md).
+
 **Dashboard jobs:** Job 4 (Deploy Dashboards) has two tasks: prepare (generate assets) and publish (AI/BI Dashboards API with embed credentials). Genie sync is a separate job (job 7 in `genie_spaces.yml`).
 
 ## Jobs and notebook/SQL reference
