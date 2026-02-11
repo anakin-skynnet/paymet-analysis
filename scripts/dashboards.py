@@ -185,6 +185,7 @@ def cmd_check_widgets() -> int:
             if not ds.get("query") and not ds.get("queryLines"):
                 errors.append(f"{path.name}: dataset '{name}' missing 'query' or 'queryLines'")
         # --- Pages and layout ---
+        datasets_by_name = {ds.get("name"): ds for ds in datasets if ds.get("name")}
         pages = data.get("pages", [])
         if not pages:
             errors.append(f"{path.name}: no 'pages' defined")
@@ -221,6 +222,18 @@ def cmd_check_widgets() -> int:
                             referenced.add(dn)
                             if dn not in dataset_names:
                                 errors.append(f"{path.name}: widget references unknown dataset '{dn}'")
+                            else:
+                                # Columns and values MUST exist in the dataset
+                                ds = datasets_by_name.get(dn)
+                                if ds:
+                                    ds_columns = set(_select_columns_from_query(ds.get("query", "")))
+                                    widget_fields = [f.get("name") for f in query.get("fields", []) if f.get("name")]
+                                    if ds_columns and widget_fields:
+                                        missing_in_ds = [f for f in widget_fields if f not in ds_columns]
+                                        if missing_in_ds:
+                                            errors.append(
+                                                f"{path.name}: page[{pidx}] layout[{lidx}] widget fields not in dataset '{dn}': {missing_in_ds}"
+                                            )
                         if "fields" not in query or not query["fields"]:
                             errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] queries[{qidx}] missing or empty 'query.fields'")
                     spec = widget.get("spec", {})
@@ -271,8 +284,16 @@ def _table_column_spec(field_name: str, order: int) -> dict:
     }
 
 
+def _dataset_by_name(data: dict, name: str) -> dict | None:
+    """Return the dataset with the given name, or None."""
+    for ds in data.get("datasets", []):
+        if ds.get("name") == name:
+            return ds
+    return None
+
+
 def cmd_fix_visualization_fields() -> int:
-    """Ensure datasets and table widgets have correct structure so Lakeview does not show 'Visualization has no fields selected'."""
+    """Ensure widget columns and values exist: derive query.fields and spec.encodings.columns from the dataset query."""
     fixed = 0
     for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
         try:
@@ -280,13 +301,14 @@ def cmd_fix_visualization_fields() -> int:
         except json.JSONDecodeError as e:
             print(f"Error reading {path}: {e}", file=sys.stderr)
             return 1
+        datasets_by_name = {ds.get("name"): ds for ds in data.get("datasets", []) if ds.get("name")}
         changed = False
         # Remove queryLines if present (API allows only one of query or query_lines per dataset)
         for ds in data.get("datasets", []):
             if "queryLines" in ds:
                 del ds["queryLines"]
                 changed = True
-        # Table widgets: align query.fields with spec.encodings.columns so Lakeview has fields selected
+        # Table widgets: set query.fields and encodings.columns from the dataset query so columns/values exist
         for page in data.get("pages", []):
             for item in page.get("layout", []):
                 w = item.get("widget", {})
@@ -297,21 +319,34 @@ def cmd_fix_visualization_fields() -> int:
                 main_query = next((q.get("query", {}) for q in queries if q.get("query", {}).get("datasetName")), None)
                 if not main_query:
                     continue
-                fields = main_query.get("fields", [])
-                if not fields:
+                dataset_name = main_query.get("datasetName")
+                dataset = _dataset_by_name(data, dataset_name) if dataset_name else None
+                if not dataset:
                     continue
-                field_names = [f.get("name") for f in fields if f.get("name")]
+                ds_query = dataset.get("query", "")
+                field_names = _select_columns_from_query(ds_query)
                 if not field_names:
-                    continue
-                enc = spec.get("encodings", {})
-                # Rebuild columns from query.fields so visualization has fields selected and settings aligned
-                new_cols = [_table_column_spec(name, i) for i, name in enumerate(field_names)]
-                if enc.get("columns") != new_cols:
+                    # SELECT * or unparseable: keep existing fields if present, else fallback
+                    existing_fields = main_query.get("fields", [])
+                    field_names = [f.get("name") for f in existing_fields if f.get("name")]
+                    if not field_names:
+                        field_names = [dataset.get("displayName", dataset_name or "value")]
+                # Ensure query.fields and spec.encodings.columns use only these columns (they exist in the dataset)
+                new_fields = [{"name": n, "expression": f"`{n}`"} for n in field_names]
+                new_cols = [_table_column_spec(n, i) for i, n in enumerate(field_names)]
+                if main_query.get("fields") != new_fields:
+                    main_query["fields"] = new_fields
+                    changed = True
+                enc = spec.get("encodings") or {}
+                if spec.get("encodings") is None:
+                    spec["encodings"] = enc
+                existing_names = [c.get("fieldName") or c.get("name") for c in (enc.get("columns") or [])]
+                if existing_names != field_names:
                     enc["columns"] = new_cols
                     changed = True
         if changed:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-            print(f"Fixed {path.name}: dataset and widget field selections")
+            print(f"Fixed {path.name}: widget columns/values from dataset")
             fixed += 1
     print(f"Updated {fixed} dashboard(s) for visualization fields.")
     return 0
