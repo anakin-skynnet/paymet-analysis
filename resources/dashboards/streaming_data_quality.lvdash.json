@@ -3,22 +3,30 @@
     {
       "name": "ds_quality_summary",
       "displayName": "Data Quality Summary",
-      "query": "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+      "queryLines": [
+        "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+      ]
     },
     {
       "name": "ds_bronze_hourly",
       "displayName": "Bronze Ingestion Hourly",
-      "query": "SELECT hour, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_hourly ORDER BY hour DESC LIMIT 168"
+      "queryLines": [
+        "SELECT hour, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_hourly ORDER BY hour DESC LIMIT 168"
+      ]
     },
     {
       "name": "ds_silver_hourly",
       "displayName": "Silver Processed Hourly",
-      "query": "SELECT hour, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_hourly ORDER BY hour DESC LIMIT 168"
+      "queryLines": [
+        "SELECT hour, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_hourly ORDER BY hour DESC LIMIT 168"
+      ]
     },
     {
       "name": "ds_volume_per_second",
       "displayName": "Incoming volume per second",
-      "query": "SELECT hour, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY hour DESC LIMIT 168"
+      "queryLines": [
+        "SELECT hour, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY hour DESC LIMIT 168"
+      ]
     }
   ],
   "pages": [
@@ -599,7 +607,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }

@@ -3,12 +3,16 @@
     {
       "name": "ds_last_hour",
       "displayName": "Last Hour Performance",
-      "query": "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+      "queryLines": [
+        "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+      ]
     },
     {
       "name": "ds_alerts",
       "displayName": "Active Alerts",
-      "query": "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+      "queryLines": [
+        "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+      ]
     }
   ],
   "pages": [
@@ -138,7 +142,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }

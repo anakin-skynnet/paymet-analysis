@@ -3,22 +3,30 @@
     {
       "name": "ds_exec_kpis",
       "displayName": "Executive KPIs",
-      "query": "SELECT total_transactions, approved_count, declined_count, approval_rate_pct, avg_fraud_score, total_transaction_value, approved_value, declined_value, avg_transaction_amount, auth_3ds_usage_pct, period_start, period_end FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      "queryLines": [
+        "SELECT total_transactions, approved_count, declined_count, approval_rate_pct, avg_fraud_score, total_transaction_value, approved_value, declined_value, avg_transaction_amount, auth_3ds_usage_pct, period_start, period_end FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
     },
     {
       "name": "ds_approval_trends",
       "displayName": "Approval Trends Hourly",
-      "query": "SELECT hour, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value, active_segments FROM __CATALOG__.__SCHEMA__.v_approval_trends_hourly ORDER BY hour DESC LIMIT 168"
+      "queryLines": [
+        "SELECT hour, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value, active_segments FROM __CATALOG__.__SCHEMA__.v_approval_trends_hourly ORDER BY hour DESC LIMIT 168"
+      ]
     },
     {
       "name": "ds_solution_perf",
       "displayName": "Solution Performance",
-      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "ds_geography",
       "displayName": "Performance by Geography",
-      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC LIMIT 50"
+      "queryLines": [
+        "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC LIMIT 50"
+      ]
     }
   ],
   "pages": [
@@ -617,7 +625,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }

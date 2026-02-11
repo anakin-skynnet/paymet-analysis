@@ -3,12 +3,16 @@
     {
       "name": "ds_daily",
       "displayName": "Daily Trends",
-      "query": "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM __CATALOG__.__SCHEMA__.v_daily_trends ORDER BY event_date DESC LIMIT 90"
+      "queryLines": [
+        "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM __CATALOG__.__SCHEMA__.v_daily_trends ORDER BY event_date DESC LIMIT 90"
+      ]
     },
     {
       "name": "ds_hourly",
       "displayName": "Hourly Approval Trends",
-      "query": "SELECT hour, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_hourly ORDER BY hour DESC LIMIT 168"
+      "queryLines": [
+        "SELECT hour, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_hourly ORDER BY hour DESC LIMIT 168"
+      ]
     }
   ],
   "pages": [
@@ -304,7 +308,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }
