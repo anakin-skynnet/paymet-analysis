@@ -255,6 +255,22 @@ export DATABRICKS_SCHEMA=payment_analysis
 uv run python scripts/run_and_validate_jobs.py --job job_1_create_data_repositories
 ```
 
+### Fix: payments_enriched_silver not found (Job 3)
+
+**Error:** `The table payments_enriched_silver was not found in <catalog>.<schema>. Gold views require the silver table from the Lakeflow pipeline.`
+
+Job 3 (Initialize Ingestion) creates gold views from the silver table. The silver table is produced by the **Lakeflow pipeline** "8. Payment Analysis ETL", not by a job. Run the pipeline at least once before Job 3.
+
+**Option A — From the app:** **Setup & Run** → **Pipelines** → start **8. Payment Analysis ETL**. Wait until the pipeline run completes (pipeline shows idle). Then run **Job 3** (Initialize Ingestion).
+
+**Option B — From the CLI (run pipeline then Job 3):**
+
+```bash
+uv run python scripts/run_and_validate_jobs.py --run-pipelines --job job_3_initialize_ingestion
+```
+
+This starts the ETL pipeline, waits until it is idle (up to ~25 minutes), then runs Job 3. To run all jobs in order with the pipeline first: `uv run python scripts/run_and_validate_jobs.py --run-pipelines`.
+
 ### Fix: PAT / token scopes
 
 **Error:** `Provided OAuth token does not have required scopes` (with `auth_type=pat`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN` set; sometimes `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` are also set).
@@ -277,6 +293,7 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 |--------|---------|
 | **bundle.sh** | `./scripts/bundle.sh deploy [dev\|prod]` — runs prepare (dashboards + `gold_views.sql` + `lakehouse_bootstrap.sql` in `.build/transform/`) then deploy. `validate` / `verify` for checks. |
 | **dashboards.py** | **prepare** (by bundle.sh): writes `.build/dashboards/`, `.build/transform/gold_views.sql`, `.build/transform/lakehouse_bootstrap.sql` with catalog/schema. **validate-assets**, **publish** (optional). Run: `uv run python scripts/dashboards.py` |
+| **run_and_validate_jobs.py** | Run and validate bundle jobs; optional `--run-pipelines` runs ETL pipeline (8. Payment Analysis ETL) and waits until idle before running jobs so `payments_enriched_silver` exists for Job 3. `pipelines` subcommand lists pipelines. Run: `uv run python scripts/run_and_validate_jobs.py [--run-pipelines] [--job KEY]` |
 | **sync_requirements_from_lock.py** | Generate `requirements.txt` from `uv.lock` for the Databricks App. Run after `uv lock`: `uv run python scripts/sync_requirements_from_lock.py` |
 
 ## Demo setup & one-click run

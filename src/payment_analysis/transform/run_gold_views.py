@@ -44,7 +44,8 @@ if not spark.catalog.tableExists("payments_enriched_silver"):  # type: ignore[na
         f"The table payments_enriched_silver was not found in {catalog}.{schema}. "
         "Gold views require the silver table from the Lakeflow pipeline. "
         "Run the pipeline 'Payment Analysis ETL' (Step 8 in Setup & Run, or pipelines payment_analysis_etl) so that "
-        "payments_enriched_silver (and payments_raw_bronze) exist in this catalog and schema, then re-run this job."
+        "payments_enriched_silver (and payments_raw_bronze) exist in this catalog and schema, then re-run this job. "
+        "From repo: uv run python scripts/run_and_validate_jobs.py --run-pipelines --job job_3_initialize_ingestion"
     )
 
 # Ensure payments_raw_bronze exists so streaming/quality views (v_streaming_ingestion_by_second,

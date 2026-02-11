@@ -78,7 +78,7 @@ Single entry point for all documentation. Use this page to find where each topic
 - **Catalog/schema not found:** Create catalog in Data → Catalogs, or run Job 1. See [DEPLOYMENT.md](DEPLOYMENT.md).
 - **Lakebase not found:** Create Lakebase project (Compute → Lakebase) or run `create_lakebase_autoscaling.py`. See [DEPLOYMENT.md](DEPLOYMENT.md).
 - **Web UI not found:** Ensure `uv run apx build` then deploy; `source_code_path` = `${workspace.root_path}`. See [DEPLOYMENT.md](DEPLOYMENT.md).
-- **Gold views / TABLE_OR_VIEW_NOT_FOUND:** Run ETL pipeline first so `payments_enriched_silver` exists, then Job 3 (Gold Views). See [DEPLOYMENT.md](DEPLOYMENT.md).
+- **Gold views / TABLE_OR_VIEW_NOT_FOUND:** Run ETL pipeline first so `payments_enriched_silver` exists, then Job 3 (Gold Views). From repo: `uv run python scripts/run_and_validate_jobs.py --run-pipelines --job job_3_initialize_ingestion`. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 

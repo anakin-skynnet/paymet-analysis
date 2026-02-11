@@ -13,21 +13,25 @@ If jobs fail with "Catalog ... or schema ... not found": create the catalog in t
 is created (resources/unity_catalog.yml). Re-run jobs after that.
 
 Usage:
-  uv run python scripts/run_and_validate_jobs.py [--dry-run] [--job KEY] [--no-wait] [--results-file PATH]
+  uv run python scripts/run_and_validate_jobs.py [--dry-run] [--job KEY] [--run-pipelines] [--no-wait] [--results-file PATH]
   uv run python scripts/run_and_validate_jobs.py status [--results-file PATH] [--once]
-  DATABRICKS_HOST=... DATABRICKS_TOKEN=... uv run python scripts/run_and_validate_jobs.py
+  uv run python scripts/run_and_validate_jobs.py pipelines
+  DATABRICKS_HOST=... DATABRICKS_TOKEN=... uv run python scripts/run_and_validate_jobs.py --run-pipelines
 
 Options:
   --dry-run        List matched jobs only, do not run.
-  --job KEY        Run only this job key (e.g. job_1_create_data_repositories).
+  --job KEY        Run only this job key (e.g. job_3_initialize_ingestion).
+  --run-pipelines  Run ETL pipeline (8. Payment Analysis ETL) and wait until idle before jobs. Use before job_3 so payments_enriched_silver exists.
   --no-wait        Start runs but do not wait for completion.
   --results-file   Write run_id per key (JSON) so "status" can poll later.
   status           Poll run status from last --results-file. Use --once to report current state and exit (no wait).
+  pipelines        List pipelines matching bundle names; exit 1 if any missing.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -38,6 +42,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_RESULTS_FILE = REPO_ROOT / ".databricks_job_runs.json"
 MAX_POLL_RETRIES = 6
 POLL_RETRY_DELAY = 30
+PIPELINE_ETL_WAIT_TIMEOUT_MINUTES = 25
 
 
 def _state_str(x):
@@ -80,11 +85,48 @@ def _get_run_with_retry(ws, run_id):
     raise last_err if last_err is not None else RuntimeError("get_run failed after retries")
 
 
+def _resolve_pipelines(ws) -> dict[str, tuple[str, str]]:
+    """Resolve pipeline keys to (pipeline_id, name) by listing and matching names."""
+    key_to_pipeline: dict[str, tuple[str, str]] = {}
+    for p in ws.pipelines.list_pipelines():
+        name = (p.name or "") if getattr(p, "name", None) else ""
+        pipeline_id = getattr(p, "pipeline_id", None)
+        if not name or not pipeline_id:
+            continue
+        for key, substr in PIPELINE_NAME_SUBSTRINGS.items():
+            if substr in name:
+                key_to_pipeline[key] = (str(pipeline_id), name)
+                break
+    return key_to_pipeline
+
+
+def _run_etl_pipeline_and_wait(ws, pipeline_id: str, name: str) -> None:
+    """Start the ETL pipeline update and wait until pipeline is idle (so silver table exists)."""
+    print(f"Starting pipeline {name!r} ({pipeline_id})...")
+    try:
+        ws.pipelines.start_update(pipeline_id=pipeline_id)
+    except Exception as e:
+        raise RuntimeError(f"Failed to start pipeline {pipeline_id}: {e}") from e
+    print("Waiting for pipeline to become idle (creates payments_enriched_silver)...")
+    try:
+        ws.pipelines.wait_get_pipeline_idle(
+            pipeline_id=pipeline_id,
+            timeout=datetime.timedelta(minutes=PIPELINE_ETL_WAIT_TIMEOUT_MINUTES),
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Pipeline {pipeline_id} did not complete in time or failed: {e}. "
+            "Check the pipeline run in the workspace; ensure catalog/schema exist and pipeline has run at least once."
+        ) from e
+    print("Pipeline idle; payments_enriched_silver should exist. Proceeding with jobs.")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run and validate payment-analysis Databricks jobs")
     parser.add_argument("--dry-run", action="store_true", help="List jobs only, do not run")
     parser.add_argument("--job", type=str, metavar="KEY", help="Run only this job key")
     parser.add_argument("--no-wait", action="store_true", help="Start runs but do not wait")
+    parser.add_argument("--run-pipelines", action="store_true", help="Run ETL pipeline (8. Payment Analysis ETL) and wait until idle before running jobs. Required for job_3_initialize_ingestion unless pipeline was run separately.")
     parser.add_argument("--results-file", type=str, default=str(DEFAULT_RESULTS_FILE), help="Write/read run IDs (JSON) for status command")
     parser.add_argument("command", nargs="?", choices=["status", "pipelines"], help="Use 'status' to poll runs; 'pipelines' to list/validate pipelines")
     parser.add_argument("--once", action="store_true", help="(status only) Report current state once and exit without waiting for all to complete")
@@ -99,20 +141,10 @@ def main() -> int:
             return 1
         ws = WorkspaceClient()
         try:
-            pipeline_list = list(ws.pipelines.list_pipelines())
+            key_to_pipeline = _resolve_pipelines(ws)
         except Exception as e:
             print(f"Failed to list pipelines: {e}", file=sys.stderr)
             return 1
-        key_to_pipeline: dict[str, tuple[str, str]] = {}  # key -> (pipeline_id, name)
-        for p in pipeline_list:
-            name = (p.name or "") if getattr(p, "name", None) else ""
-            pipeline_id = getattr(p, "pipeline_id", None)
-            if not name or not pipeline_id:
-                continue
-            for key, substr in PIPELINE_NAME_SUBSTRINGS.items():
-                if substr in name:
-                    key_to_pipeline[key] = (str(pipeline_id), name)
-                    break
         if not key_to_pipeline:
             print("No payment-analysis pipelines found in workspace.", file=sys.stderr)
             print("Expected names containing: " + ", ".join(PIPELINE_NAME_SUBSTRINGS.values()), file=sys.stderr)
@@ -242,6 +274,22 @@ def main() -> int:
         print(f"  {key}: {jid}  {name[:60]}...")
     if args.dry_run:
         return 0
+
+    # Job 3 (Initialize Ingestion) requires payments_enriched_silver from the ETL pipeline.
+    run_job_3 = "job_3_initialize_ingestion" in key_to_job
+    if run_job_3 and getattr(args, "run_pipelines", False):
+        key_to_pipeline = _resolve_pipelines(ws)
+        if "pipeline_8_etl" not in key_to_pipeline:
+            print("--run-pipelines set but pipeline '8. Payment Analysis ETL' not found. Deploy bundle to create it.", file=sys.stderr)
+            return 1
+        pipeline_id, pipeline_name = key_to_pipeline["pipeline_8_etl"]
+        _run_etl_pipeline_and_wait(ws, pipeline_id, pipeline_name)
+    elif run_job_3:
+        print(
+            "\nNote: job_3_initialize_ingestion requires payments_enriched_silver. "
+            "Run the pipeline '8. Payment Analysis ETL' first, or use --run-pipelines to run it automatically.",
+            file=sys.stderr,
+        )
 
     notebook_params = {"catalog": catalog, "schema": schema}
     if warehouse_id:
