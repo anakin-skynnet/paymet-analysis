@@ -92,9 +92,9 @@ function Layout() {
     { to: "/ai-agents", label: "AI agents", icon: <Bot size={16} />, match: (p) => p === "/ai-agents" },
   ];
 
-  // Operations: setup, notebooks, models, incidents, experiments
+  // Operations: control panel (run jobs/pipelines), notebooks, models, incidents, experiments
   const operationsItems: NavItem[] = [
-    { to: "/setup", label: "Setup & run", icon: <Rocket size={16} />, match: (p) => p === "/setup" },
+    { to: "/setup", label: "Control panel", icon: <Rocket size={16} />, match: (p) => p === "/setup" },
     { to: "/notebooks", label: "Notebooks", icon: <Code2 size={16} />, match: (p) => p === "/notebooks" },
     { to: "/models", label: "ML models", icon: <Brain size={16} />, match: (p) => p === "/models" },
     { to: "/incidents", label: "Incidents", icon: <AlertTriangle size={16} />, match: (p) => p === "/incidents" },

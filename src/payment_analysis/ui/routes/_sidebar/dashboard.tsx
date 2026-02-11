@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGetKpisSuspense,
+  useGetDatabricksKpis,
   useGetApprovalTrendsSuspense,
   useGetSolutionPerformanceSuspense,
   useRecentDecisionsSuspense,
@@ -36,6 +37,11 @@ import {
   ArrowRight,
   AlertCircle,
   Target,
+  Shield,
+  Gauge,
+  Bot,
+  LayoutDashboard,
+  Search,
 } from "lucide-react";
 import { getDashboardUrl, getGenieUrl, openWorkspaceUrl } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
@@ -149,6 +155,7 @@ function formatDecisionTime(iso: string | undefined): string {
 function Dashboard() {
   const { entity } = useEntity();
   const { data: kpis } = useGetKpisSuspense(selector());
+  const { data: dbKpis } = useGetDatabricksKpis({ query: { retry: false } });
   const { data: trends } = useGetApprovalTrendsSuspense(selector());
   const { data: solutions } = useGetSolutionPerformanceSuspense(selector());
   const { data: decisions } = useRecentDecisionsSuspense({
@@ -156,6 +163,7 @@ function Dashboard() {
   });
   const { data: reasonCodeData } = useGetReasonCodeInsightsSuspense({ params: { entity, limit: 5 } });
   const factorsDelayingApproval = reasonCodeData?.data ?? [];
+  const avgFraudScore = dbKpis?.data?.avg_fraud_score;
 
   const pct = (kpis.approval_rate * 100).toFixed(2);
   const decisionList = decisions?.data ?? [];
@@ -337,6 +345,47 @@ function Dashboard() {
         </motion.div>
       </motion.div>
 
+      {/* Impact at a glance — ingestion, quality, risk/fraud, approval by merchant (CEO & Getnet) */}
+      <motion.div variants={dashboardItem}>
+        <p className="section-label text-muted-foreground mb-2">Impact at a glance</p>
+        <Card className="border-primary/15 bg-muted/20">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Ingestion volume</span>
+                <span className="text-sm text-muted-foreground">{kpis.total.toLocaleString()} auths</span>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/streaming_data_quality"))}
+              >
+                <Gauge className="h-4 w-4" />
+                Data quality
+                <ExternalLink className="h-3 w-3" />
+              </button>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Risk / fraud score</span>
+                <span className="text-sm font-mono">
+                  {avgFraudScore != null ? avgFraudScore.toFixed(3) : "—"}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/routing_optimization"))}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Approval by merchant
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Drivers & trends — trends and solution performance */}
       <motion.div variants={dashboardItem}>
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
@@ -512,6 +561,50 @@ function Dashboard() {
                 View all Reason Codes <ArrowRight className="w-3 h-3 ml-1" />
               </Link>
             </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Discover & get recommendations — Genie, AI agents, dashboards, false-positive analysis, semantic search */}
+      <motion.div variants={dashboardItem}>
+        <p className="section-label text-muted-foreground mb-1">Discover trends &amp; get recommendations</p>
+        <Card className="border-l-4 border-l-primary border-primary/10 bg-primary/5 dark:bg-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquareText className="w-4 h-4 text-primary" />
+              Accelerate approval rates with AI
+            </CardTitle>
+            <CardDescription>
+              Use natural language, agent chats, semantic search, and false-positive fraud analysis to discover trends and get actionable recommendations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => openInDatabricks(getGenieUrl())}>
+              <MessageSquareText className="w-3.5 h-3.5 mr-1.5" />
+              Genie — ask in natural language
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/ai-agents">
+                <Bot className="w-3.5 h-3.5 mr-1.5" />
+                AI agents &amp; chat
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/dashboards">
+                <LayoutDashboard className="w-3.5 h-3.5 mr-1.5" />
+                All dashboards
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/decisioning">
+                <Target className="w-3.5 h-3.5 mr-1.5" />
+                Recommendations &amp; next steps
+              </Link>
+            </Button>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 rounded border border-border/60">
+              <Search className="w-3.5 h-3.5" />
+              Semantic search &amp; false-positive analysis in agents
+            </span>
           </CardContent>
         </Card>
       </motion.div>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/apx/navbar";
 import Logo from "@/components/apx/logo";
 import { motion } from "motion/react";
-import { BarChart3, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database, MessageSquareText, Zap, Shield, LineChart, Eye, Sparkles, Layers, GitBranch, Brain } from "lucide-react";
+import { BarChart3, ArrowRight, CheckCircle2, LogIn, CreditCard, ListChecks, RotateCcw, Database, MessageSquareText, Zap, Shield, LineChart, Eye, Sparkles, Layers, GitBranch, Brain, LayoutDashboard, Bot, Gauge, TrendingUp, PlayCircle } from "lucide-react";
 import { BubbleBackground } from "@/components/backgrounds/bubble";
 import { getWorkspaceUrl } from "@/config/workspace";
 import { useGetAuthStatus } from "@/lib/api";
@@ -223,10 +223,50 @@ function Index() {
               </div>
             </motion.section>
 
+            {/* For CEO & Getnet team — one place for impact metrics and discovery */}
+            <motion.section variants={item} className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4" aria-labelledby="ceo-section-heading">
+              <h2 id="ceo-section-heading" className="text-sm font-semibold text-primary mb-3">For CEO &amp; Getnet team</h2>
+              <p className="text-xs text-muted-foreground mb-3">Ingestion volume, data quality, risk scoring, fraud signals, approval by merchant — and AI-powered discovery to accelerate approval rates.</p>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/dashboard" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  Executive overview
+                </Link>
+                <Link to="/dashboard" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Ingestion &amp; volume
+                </Link>
+                <Link to="/dashboards" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <Gauge className="h-3.5 w-3.5" />
+                  Data quality
+                </Link>
+                <Link to="/dashboards" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <Shield className="h-3.5 w-3.5" />
+                  Risk &amp; fraud
+                </Link>
+                <Link to="/dashboards" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <LineChart className="h-3.5 w-3.5" />
+                  Approval by merchant
+                </Link>
+                <Link to="/dashboards" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  All dashboards
+                </Link>
+                <Link to="/ai-agents" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <Bot className="h-3.5 w-3.5" />
+                  AI agents &amp; chat
+                </Link>
+                <Link to="/decisioning" className="inline-flex items-center gap-1.5 rounded-lg bg-background/90 dark:bg-card px-3 py-2 text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                  <MessageSquareText className="h-3.5 w-3.5" />
+                  Recommendations
+                </Link>
+              </div>
+            </motion.section>
+
             {/* Primary CTAs — clear, impactful */}
             <motion.div
               variants={item}
-              className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start pt-2"
+              className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start pt-2"
             >
               <Button
                 size="lg"
@@ -248,6 +288,17 @@ function Index() {
                 <Link to="/decisioning">
                   <MessageSquareText className="h-5 w-5" />
                   Recommendations &amp; next steps
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2 min-w-[200px] h-12 text-base font-medium rounded-xl border-2"
+                asChild
+              >
+                <Link to="/setup">
+                  <PlayCircle className="h-5 w-5" />
+                  Control panel — run jobs &amp; pipelines
                 </Link>
               </Button>
             </motion.div>

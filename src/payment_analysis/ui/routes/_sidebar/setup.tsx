@@ -18,6 +18,7 @@ import {
   Settings2,
   RefreshCw,
   Play,
+  Gauge,
 } from "lucide-react";
 import { ensureAbsoluteWorkspaceUrl, getWorkspaceUrl } from "@/config/workspace";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
@@ -287,6 +288,44 @@ function SetupRun() {
           Get the platform ready so your team can see approval rates and act on recommendations. Follow the steps in order; click <strong>Run</strong> to start a job or pipeline, or <strong>Open</strong> to view it in the workspace.
         </p>
       </div>
+
+      {/* Presenter control panel — one-click open Jobs & Pipelines in Databricks */}
+      {defaults && (
+        <Card className="border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Gauge className="h-4 w-4 text-primary" />
+              Control panel — run jobs &amp; pipelines
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Open the Databricks workspace to see and run all jobs and pipelines in one place. Use the cards below to run individual steps or open a specific job/pipeline.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={openJobsList}
+              disabled={!host}
+            >
+              <Play className="h-4 w-4" />
+              Open Jobs
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2"
+              onClick={openPipelinesList}
+              disabled={!host}
+            >
+              <GitBranch className="h-4 w-4" />
+              Open Pipelines
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Connection status: why Run may be disabled (token, host, job IDs) */}
       {defaults && (
