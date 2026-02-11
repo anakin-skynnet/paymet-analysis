@@ -31,10 +31,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Placeholder in source dashboard JSONs (resources/dashboards/*.lvdash.json); replaced with catalog.schema during prepare.
 CATALOG_SCHEMA_PLACEHOLDER = "__CATALOG__.__SCHEMA__"
 SOURCE_DIR = REPO_ROOT / "resources" / "dashboards"
-# Bundle (resources/dashboards.yml) reads from .build/dashboards/*.lvdash.json — must write here so deploy finds them.
-BUILD_DASHBOARDS_DIR = REPO_ROOT / ".build" / "dashboards"
-# Legacy: also write to dashboards/ for workspace sync / publish discovery.
+# Bundle (resources/dashboards.yml) uses file_path: ./dashboards/<name>.lvdash.json (project root).
 OUT_DIR = REPO_ROOT / "dashboards"
+# Also write to .build/dashboards for any scripts that expect it.
+BUILD_DASHBOARDS_DIR = REPO_ROOT / ".build" / "dashboards"
 GOLD_VIEWS_SOURCE = REPO_ROOT / "src" / "payment_analysis" / "transform" / "gold_views.sql"
 LAKEHOUSE_BOOTSTRAP_SOURCE = REPO_ROOT / "src" / "payment_analysis" / "transform" / "lakehouse_bootstrap.sql"
 GOLD_VIEWS_OUT_DIR = REPO_ROOT / ".build" / "transform"
@@ -455,6 +455,39 @@ def get_workspace_root() -> str | None:
     return None
 
 
+def cmd_delete_workspace_dashboards(path: str | None, recursive: bool) -> int:
+    """Delete dashboard objects under workspace .../dashboards so deploy can recreate them from config."""
+    root = path or get_workspace_root()
+    if not root:
+        print(
+            "Error: could not get workspace path. Pass --path /Workspace/Users/.../payment-analysis",
+            file=sys.stderr,
+        )
+        return 1
+    dashboards_path = f"{root.rstrip('/')}/dashboards"
+    cmd = ["databricks", "workspace", "delete", dashboards_path]
+    if recursive:
+        cmd.append("--recursive")
+    print(f"Deleting {dashboards_path} (recursive={recursive})...")
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=60)
+        print("Done. Run prepare then deploy to create dashboards with configured widgets:")
+        print("  uv run python scripts/dashboards.py prepare --catalog <cat> --schema <schema>")
+        print("  databricks bundle deploy -t dev --force --auto-approve")
+        print("  uv run python scripts/dashboards.py publish")
+        return 0
+    except subprocess.CalledProcessError as e:
+        err = (e.stderr or e.stdout or str(e)).strip()
+        if "RESOURCE_DOES_NOT_EXIST" in err or "does not exist" in err.lower():
+            print(f"Path {dashboards_path} does not exist; nothing to delete.")
+            return 0
+        print(f"Error: {err}", file=sys.stderr)
+        return 1
+    except FileNotFoundError:
+        print("Error: databricks CLI not found.", file=sys.stderr)
+        return 1
+
+
 def cmd_publish(path: str | None, dry_run: bool) -> int:
     root = path or get_workspace_root()
     if not root:
@@ -539,6 +572,10 @@ def main() -> int:
     sub.add_parser("check-widgets", help="Verify widgets reference datasets in the same file and every dataset has a widget")
     # fix-visualization-fields
     sub.add_parser("fix-visualization-fields", help="Add 'name' to table columns so Lakeview does not show 'no fields selected'")
+    # delete-workspace-dashboards
+    p_del = sub.add_parser("delete-workspace-dashboards", help="Delete workspace .../dashboards so deploy recreates them from config")
+    p_del.add_argument("--path", default=None, help="Workspace root path")
+    p_del.add_argument("--no-recursive", action="store_true", help="Do not delete folder recursively")
     args = parser.parse_args()
 
     if args.cmd == "prepare":
@@ -555,6 +592,8 @@ def main() -> int:
         return cmd_check_widgets()
     if args.cmd == "fix-visualization-fields":
         return cmd_fix_visualization_fields()
+    if args.cmd == "delete-workspace-dashboards":
+        return cmd_delete_workspace_dashboards(args.path, recursive=not getattr(args, "no_recursive", False))
     return 1
 
 

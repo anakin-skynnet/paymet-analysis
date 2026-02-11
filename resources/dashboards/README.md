@@ -17,7 +17,7 @@ This project is configured in line with [dbdemos AI/BI](https://github.com/datab
 | **Widget → dataset** | Widgets reference datasets by name | Each data widget has `queries[].query.datasetName` pointing to a dataset in the same file |
 | **Widget fields** | Query fields and encodings for visualizations | `query.fields` (name, expression) and `spec.encodings.columns` (fieldName, visible, etc.) so Lakeview has fields selected |
 | **Validation** | — | `check-widgets`: every dataset has ≥1 widget; every widget has datasetName, fields, spec, position |
-| **File location** | `_resources/dashboards/` or `_dashboards`, filename = bundle id | `resources/dashboards/*.lvdash.json`; bundle `file_path` points to `.build/dashboards/*.lvdash.json` (prepare output) |
+| **File location** | `_resources/dashboards/` or `_dashboards`, filename = bundle id | Source: `resources/dashboards/*.lvdash.json`; bundle uses `file_path: ./dashboards/<name>.lvdash.json` (prepare writes to repo root `dashboards/`) |
 
 We do not use `queryLines` (API allows only one of `query` or `query_lines` per dataset). Table widgets have full column encodings so Lakeview does not show "Visualization has no fields selected."
 
