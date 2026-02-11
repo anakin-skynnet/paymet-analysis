@@ -52,5 +52,5 @@ src/payment_analysis/__dist__/
 # Bundle sync mirror / workspace copy — do not commit; single source of truth at repo root
 files/
 
-# Exported/published dashboard copies (display-name filenames); source of truth is resources/dashboards/*.lvdash.json
-dashboards/
+# Exported/published dashboard copies at repo root; source of truth is resources/dashboards/*.lvdash.json
+/dashboards/

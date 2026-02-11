@@ -1,0 +1,12 @@
+{
+  "datasets": [
+    {
+      "name": "ds_by_country",
+      "displayName": "Performance by Country",
+      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC"
+    }
+  ],
+  "pages": [
+    { "name": "page_global", "displayName": "Global Coverage - World Map by Country" }
+  ]
+}

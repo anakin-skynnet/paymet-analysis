@@ -1,0 +1,17 @@
+{
+  "datasets": [
+    {
+      "name": "ds_auth_kpis",
+      "displayName": "3DS Usage",
+      "query": "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+    },
+    {
+      "name": "ds_merchant_auth",
+      "displayName": "Auth by Segment",
+      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+    }
+  ],
+  "pages": [
+    { "name": "page_auth", "displayName": "3DS Authentication & Security Analysis" }
+  ]
+}

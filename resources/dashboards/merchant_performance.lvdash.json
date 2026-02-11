@@ -1,0 +1,12 @@
+{
+  "datasets": [
+    {
+      "name": "ds_merchant_segment",
+      "displayName": "Merchant Segment Performance",
+      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+    }
+  ],
+  "pages": [
+    { "name": "page_merchant", "displayName": "Merchant Performance & Segmentation" }
+  ]
+}

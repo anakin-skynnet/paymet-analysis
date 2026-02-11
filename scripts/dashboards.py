@@ -10,6 +10,10 @@ Usage:
 Prepare: copies dashboard JSONs to dashboards/ (workspace root) and gold_views.sql to .build/transform/ with catalog/schema.
 Validate-assets: lists tables/views required by dashboards (no DB connection).
 Publish: after deploy, publishes all 12 dashboards with embed credentials (Databricks CLI).
+
+Dashboard JSONs (resources/dashboards/*.lvdash.json) follow dbdemos/cookbook pattern: each file has "datasets"
+(SQL queries using __CATALOG__.__SCHEMA__) and "pages". In Databricks AI/BI, open a dashboard and use
+"Add visualization" to link a dataset to a chart/table so widgets show interactive results.
 """
 from __future__ import annotations
 

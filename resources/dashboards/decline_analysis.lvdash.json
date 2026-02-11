@@ -1,0 +1,20 @@
+{
+  "datasets": [
+    {
+      "name": "ds_top_decline",
+      "displayName": "Top Decline Reasons",
+      "query": "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+    },
+    {
+      "name": "ds_recovery",
+      "displayName": "Decline Recovery Opportunities",
+      "query": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_decline",
+      "displayName": "Decline Analysis & Recovery"
+    }
+  ]
+}
