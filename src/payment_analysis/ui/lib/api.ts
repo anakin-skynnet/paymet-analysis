@@ -155,6 +155,14 @@ export interface ChatOut {
   reply: string;
 }
 
+export interface CommandCenterEntryThroughputPointOut {
+  Checkout: number;
+  PD: number;
+  SEP: number;
+  WS: number;
+  ts: string;
+}
+
 export interface ComplexValue {
   display?: string | null;
   primary?: boolean | null;
@@ -721,6 +729,11 @@ export interface GetActiveAlertsParams {
   limit?: number;
 }
 
+export interface GetCommandCenterEntryThroughputParams {
+  entity?: string;
+  limit_minutes?: number;
+}
+
 export interface GetCountriesParams {
   limit?: number;
 }
@@ -1050,6 +1063,34 @@ export function useGetActiveAlerts<TData = { data: ActiveAlertOut[] }>(options?:
 
 export function useGetActiveAlertsSuspense<TData = { data: ActiveAlertOut[] }>(options?: { params?: GetActiveAlertsParams; query?: Omit<UseSuspenseQueryOptions<{ data: ActiveAlertOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getActiveAlertsKey(options?.params), queryFn: () => getActiveAlerts(options?.params), ...options?.query });
+}
+
+export const getCommandCenterEntryThroughput = async (params?: GetCommandCenterEntryThroughputParams, options?: RequestInit): Promise<{ data: CommandCenterEntryThroughputPointOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.entity != null) searchParams.set("entity", String(params?.entity));
+  if (params?.limit_minutes != null) searchParams.set("limit_minutes", String(params?.limit_minutes));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/command-center/entry-throughput?${queryString}` : `/api/analytics/command-center/entry-throughput`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getCommandCenterEntryThroughputKey = (params?: GetCommandCenterEntryThroughputParams) => {
+  return ["/api/analytics/command-center/entry-throughput", params] as const;
+};
+
+export function useGetCommandCenterEntryThroughput<TData = { data: CommandCenterEntryThroughputPointOut[] }>(options?: { params?: GetCommandCenterEntryThroughputParams; query?: Omit<UseQueryOptions<{ data: CommandCenterEntryThroughputPointOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getCommandCenterEntryThroughputKey(options?.params), queryFn: () => getCommandCenterEntryThroughput(options?.params), ...options?.query });
+}
+
+export function useGetCommandCenterEntryThroughputSuspense<TData = { data: CommandCenterEntryThroughputPointOut[] }>(options?: { params?: GetCommandCenterEntryThroughputParams; query?: Omit<UseSuspenseQueryOptions<{ data: CommandCenterEntryThroughputPointOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getCommandCenterEntryThroughputKey(options?.params), queryFn: () => getCommandCenterEntryThroughput(options?.params), ...options?.query });
 }
 
 export const getCountries = async (params?: GetCountriesParams, options?: RequestInit): Promise<{ data: CountryOut[] }> => {

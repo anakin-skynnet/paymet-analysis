@@ -512,6 +512,32 @@ class DatabricksService:
             logger.debug("get_streaming_tps failed: %s", e)
         return MockDataGenerator.streaming_tps(limit_seconds=limit_seconds)
 
+    async def get_command_center_entry_throughput(
+        self, entity: str = DEFAULT_ENTITY, limit_minutes: int = 30
+    ) -> list[dict[str, Any]]:
+        """Throughput by entry system (PD, WS, SEP, Checkout) for Command Center. Databricks first: derive from v_streaming_volume_per_second with fixed shares; else mock."""
+        limit_seconds = max(1, min(limit_minutes, 60)) * 60
+        try:
+            tps_list = await self.get_streaming_tps(limit_seconds=limit_seconds)
+            if tps_list:
+                # Derive PD/WS/SEP/Checkout from total TPS using standard shares (62%, 34%, 3%, 1%)
+                shares = (0.62, 0.34, 0.03, 0.01)
+                return [
+                    {
+                        "ts": row["event_second"],
+                        "PD": int(row["records_per_second"] * shares[0]),
+                        "WS": int(row["records_per_second"] * shares[1]),
+                        "SEP": int(row["records_per_second"] * shares[2]),
+                        "Checkout": max(0, int(row["records_per_second"] * shares[3])),
+                    }
+                    for row in tps_list
+                ]
+        except Exception as e:
+            logger.debug("get_command_center_entry_throughput failed: %s", e)
+        return MockDataGenerator.command_center_entry_throughput(
+            country_code=entity, limit_minutes=limit_minutes
+        )
+
     async def get_data_quality_summary(self) -> dict[str, Any]:
         """Fetch data quality summary (bronze/silver volumes, retention) from Databricks."""
         query = f"""
@@ -1359,6 +1385,30 @@ class MockDataGenerator:
             out.append({
                 "event_second": ts.strftime("%Y-%m-%dT%H:%M:%S"),
                 "records_per_second": tps,
+            })
+        return out
+
+    @staticmethod
+    def command_center_entry_throughput(
+        country_code: str = "BR", limit_minutes: int = 30
+    ) -> list[dict[str, Any]]:
+        """Mock entry-system throughput (PD 62%, WS 34%, SEP 3%, Checkout 1%) for Command Center real-time chart."""
+        import random
+        base_tps = 420 if country_code == "BR" else 180 if country_code == "MX" else 90
+        shares = (0.62, 0.34, 0.03, 0.01)
+        now = datetime.now()
+        n = min(limit_minutes * 60, 3600)
+        out: list[dict[str, Any]] = []
+        for i in range(n, 0, -1):
+            t = now - timedelta(seconds=i)
+            jitter = 0.9 + random.random() * 0.2
+            total = max(1, int(base_tps * jitter * (1 + 0.1 * (i % 10 - 5) / 5)))
+            out.append({
+                "ts": t.isoformat(),
+                "PD": int(total * shares[0]),
+                "WS": int(total * shares[1]),
+                "SEP": int(total * shares[2]),
+                "Checkout": max(0, int(total * shares[3])),
             })
         return out
 

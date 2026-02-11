@@ -176,10 +176,12 @@ def main() -> int:
             if len(run_results) < len(runs):
                 time.sleep(10)
         failed = [k for k, v in run_results.items() if v != "SUCCESS"]
+        # Terminal failures only (not RUNNING/PENDING)
+        failed_terminal = [k for k, v in run_results.items() if v in ("FAILED", "INTERNAL_ERROR", "SKIPPED", "ERROR")]
         if failed and not once:
             print(f"\nFailed jobs: {', '.join(failed)}", file=sys.stderr)
             return 1
-        if failed and once:
+        if failed_terminal and once:
             print("\nHint: If failures mention catalog/schema not found, see docs/DEPLOYMENT.md#fix-catalog-or-schema-not-found", file=sys.stderr)
         if not once and not failed:
             print("\nAll jobs completed successfully.")

@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState, useEffect } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Card,
@@ -19,6 +19,8 @@ import { Switch } from "@/components/ui/switch";
 import {
   useGetKpisSuspense,
   useGetDataQualitySummary,
+  useGetCommandCenterEntryThroughput,
+  useGetActiveAlerts,
   useHealthDatabricks,
 } from "@/lib/api";
 import selector from "@/lib/selector";
@@ -31,6 +33,7 @@ import {
   getFalseInsightsPct,
   getRetryRecurrence,
   getEntryGateTelemetry,
+  getReasonCodeSummary,
   type EntrySystemPoint,
   type FrictionFunnelStep,
 } from "@/lib/command-center-mock";
@@ -54,7 +57,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+/** Refresh interval for KPI and data quality (5s). */
 const REFRESH_MS = 5000;
+/** Real-time chart widgets: 0.5s for short interval and dynamically adjusting axis. */
+const REFRESH_CHART_MS = 500;
 const SANTANDER_RED = "#EC0000";
 const NEON_CYAN = "#00E5FF";
 const VIBRANT_GREEN = "#22C55E";
@@ -206,16 +212,26 @@ function CommandCenter() {
   const [fraudShadowMode, setFraudShadowMode] = useState(false);
   const [triggerRetryLogic, setTriggerRetryLogic] = useState(false);
 
-  const [entryPoints, setEntryPoints] = useState<EntrySystemPoint[]>([]);
-  useEffect(() => {
-    setEntryPoints(getEntrySystemThroughput(countryCode, 30));
-    const t = setInterval(() => setEntryPoints(getEntrySystemThroughput(countryCode, 30)), REFRESH_MS);
-    return () => clearInterval(t);
-  }, [countryCode]);
-
   const { data: kpis } = useGetKpisSuspense(selector());
   const dataQualityQ = useGetDataQualitySummary({ query: { refetchInterval: REFRESH_MS } });
   const { data: healthData } = useHealthDatabricks();
+
+  const entryThroughputQ = useGetCommandCenterEntryThroughput({
+    params: { entity: countryCode, limit_minutes: 30 },
+    query: { refetchInterval: REFRESH_CHART_MS },
+  });
+  const alertsQ = useGetActiveAlerts({
+    params: { limit: 20 },
+    query: { refetchInterval: REFRESH_CHART_MS },
+  });
+
+  const entryPoints: EntrySystemPoint[] = useMemo(() => {
+    const raw = entryThroughputQ.data?.data;
+    if (raw?.length) {
+      return raw.map((p) => ({ ts: p.ts, PD: p.PD, WS: p.WS, SEP: p.SEP, Checkout: p.Checkout }));
+    }
+    return getEntrySystemThroughput(countryCode, 30);
+  }, [entryThroughputQ.data?.data, countryCode]);
 
   const mockKpis = getCommandCenterKpis(countryCode);
   const approvalPct = kpis ? (kpis.approval_rate * 100).toFixed(1) : String(mockKpis.grossApprovalRatePct);
@@ -228,6 +244,7 @@ function CommandCenter() {
   const funnelSteps = getFrictionFunnel(countryCode);
   const falseInsightsPct = getFalseInsightsPct(countryCode);
   const retryRecurrence = getRetryRecurrence(countryCode);
+  const reasonCodeSummary = getReasonCodeSummary(countryCode);
   const fromDatabricks = healthData?.data?.analytics_source === "Unity Catalog";
 
   return (
@@ -335,7 +352,7 @@ function CommandCenter() {
                 </Tooltip>
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Throughput (TPS) by entry system. Refresh every 5s. Country filter applied (Databricks SQL parameter).
+                Throughput (TPS) by entry system. Auto-refresh every 0.5s · dynamic axis. Country filter applied.
               </p>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -348,22 +365,99 @@ function CommandCenter() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Friction Funnel: 3DS journey */}
           <Card className="glass-card border border-border/80">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                3DS Friction Funnel
-              </CardTitle>
+              <CardTitle className="text-base">Top 5 Decline Reasons</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Total → 80% Friction → 60% Auth → 80% Approved
+                Reason code taxonomy: Antifraud, Technical, Issuer Decline
               </p>
             </CardHeader>
             <CardContent>
-              <FrictionFunnelWidget steps={funnelSteps} />
+              <div className="space-y-2">
+                {reasonCodeSummary.slice(0, 5).map((r) => (
+                  <div key={r.category} className="flex items-center justify-between rounded-md bg-muted/30 px-2 py-1.5 text-sm">
+                    <span className="font-medium text-foreground">{r.category}</span>
+                    <span className="tabular-nums text-muted-foreground">{r.count.toLocaleString()} ({r.pct}%)</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
+
+          {/* Right column: Friction Funnel + Alerts */}
+          <div className="space-y-4">
+            <Card className="glass-card border border-border/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  3DS Friction Funnel
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Total → 80% Friction → 60% Auth → 80% Approved
+                </p>
+              </CardHeader>
+              <CardContent>
+                <FrictionFunnelWidget steps={funnelSteps} />
+              </CardContent>
+            </Card>
+            <Card className="glass-card border border-border/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  Alerts
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Active alerts · refresh every 0.5s
+                </p>
+              </CardHeader>
+              <CardContent>
+                {alertsQ.data?.data?.length ? (
+                  <ul className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
+                    {alertsQ.data.data.slice(0, 10).map((a, i) => (
+                      <li key={i} className="flex flex-col gap-0.5 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
+                        <span className="font-medium text-foreground">{a.alert_type}</span>
+                        <span className="text-muted-foreground line-clamp-2">{a.alert_message}</span>
+                        <span className="text-[10px] text-muted-foreground/80">{a.severity} · {a.metric_name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No active alerts</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="glass-card border border-border/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" style={{ color: NEON_CYAN }} />
+                  Data Quality
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Freshness · schema · PII masking
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm">
+                  <li className="flex items-center gap-2 text-muted-foreground">
+                    {dataQualityQ.data?.data ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: VIBRANT_GREEN }} />
+                    ) : (
+                      <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/50" />
+                    )}
+                    <span>Retention {dataQualityQ.data?.data ? `${Math.round(dataQualityQ.data.data.retention_pct_24h)}%` : "—"} (24h)</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: VIBRANT_GREEN }} />
+                    <span>Schema validated</span>
+                  </li>
+                  <li className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: VIBRANT_GREEN }} />
+                    <span>PII masking enabled</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Entry Gate Telemetry: Intermediate layers path */}
@@ -469,7 +563,7 @@ function CommandCenter() {
         </div>
 
         <footer className="flex items-center justify-between border-t border-border/80 px-4 py-2 text-xs text-muted-foreground">
-          <span>Country filter: global dimension · Refresh every 5s</span>
+          <span>Country filter: global dimension · Charts & alerts refresh every 0.5s</span>
           {fromDatabricks ? (
             <span className="inline-flex items-center gap-1 rounded bg-green-500/10 px-2 py-0.5" style={{ color: VIBRANT_GREEN }}>
               Data: Databricks

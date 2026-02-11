@@ -207,6 +207,15 @@ class DataQualitySummaryOut(BaseModel):
     latest_silver_event: str
 
 
+class CommandCenterEntryThroughputPointOut(BaseModel):
+    """Single time point for Command Center real-time monitor: throughput by entry system (PD, WS, SEP, Checkout)."""
+    ts: str
+    PD: int
+    WS: int
+    SEP: int
+    Checkout: int
+
+
 class StreamingTpsPointOut(BaseModel):
     """Single TPS data point for real-time ingestion monitor (from v_streaming_volume_per_second)."""
     event_second: str
@@ -566,6 +575,24 @@ async def streaming_tps(
     """Real-time TPS from streaming pipeline (v_streaming_volume_per_second). Simulate Transaction Events -> ETL -> Payment Real-Time Stream."""
     data = await service.get_streaming_tps(limit_seconds=limit_seconds)
     return [StreamingTpsPointOut(event_second=r["event_second"], records_per_second=r["records_per_second"]) for r in data]
+
+
+@router.get(
+    "/command-center/entry-throughput",
+    response_model=list[CommandCenterEntryThroughputPointOut],
+    operation_id="getCommandCenterEntryThroughput",
+)
+async def command_center_entry_throughput(
+    service: DatabricksServiceDep,
+    entity: str = Query(DEFAULT_ENTITY, description="Country/entity code (e.g. BR)."),
+    limit_minutes: int = Query(30, ge=1, le=60, description="Time window in minutes"),
+) -> list[CommandCenterEntryThroughputPointOut]:
+    """Real-time throughput by entry system (PD, WS, SEP, Checkout) for Command Center. Databricks first (from streaming TPS), then mock."""
+    data = await service.get_command_center_entry_throughput(entity=entity, limit_minutes=limit_minutes)
+    return [
+        CommandCenterEntryThroughputPointOut(ts=r["ts"], PD=r["PD"], WS=r["WS"], SEP=r["SEP"], Checkout=r["Checkout"])
+        for r in data
+    ]
 
 
 @router.get(
