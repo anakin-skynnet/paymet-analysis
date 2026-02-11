@@ -12,8 +12,9 @@ Validate-assets: lists tables/views required by dashboards (no DB connection).
 Publish: after deploy, publishes all 12 dashboards with embed credentials (Databricks CLI).
 
 Dashboard JSONs (resources/dashboards/*.lvdash.json) follow dbdemos/cookbook pattern: each file has "datasets"
-(SQL queries using __CATALOG__.__SCHEMA__) and "pages". In Databricks AI/BI, open a dashboard and use
-"Add visualization" to link a dataset to a chart/table so widgets show interactive results.
+(SQL queries using __CATALOG__.__SCHEMA__) and "pages". Each page should have a "layout" with widgets that
+reference datasets via query.datasetName (see dbdemos aibi-marketing-campaign). Use "link-widgets" to add
+minimal table widgets linked to each dataset so visual components show data without manual "Add visualization".
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ import os
 import re
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +62,154 @@ ASSETS = [
     ("payments_enriched_silver", "Lakeflow pipeline (silver table)"),
 ]
 PUBLISH_TIMEOUT = 60
+
+
+def _select_columns_from_query(query: str) -> list[str]:
+    """Extract column names from a SQL query (SELECT col1, col2, ... FROM ...). Simple parser."""
+    if not query or not query.strip():
+        return []
+    # Match SELECT ... FROM (case-insensitive, allow newlines)
+    m = re.search(r"\bSELECT\s+(.+?)\s+FROM\s+", query, re.DOTALL | re.IGNORECASE)
+    if not m:
+        return []
+    select_part = m.group(1).strip()
+    # Split by comma, but avoid splitting inside parens (e.g. func(a,b))
+    parts: list[str] = []
+    depth = 0
+    start = 0
+    for i, c in enumerate(select_part):
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        elif c == "," and depth == 0:
+            parts.append(select_part[start:i].strip())
+            start = i + 1
+    if start < len(select_part):
+        parts.append(select_part[start:].strip())
+    # Take last identifier (e.g. "col" or "t.col AS alias" -> use alias or col)
+    columns: list[str] = []
+    for p in parts:
+        if not p or p.upper() == "*":
+            continue
+        # "expr AS alias" or "alias" or "table.col"
+        if " AS " in p.upper():
+            alias = p.upper().split(" AS ", 1)[1].strip().strip("`\"'")
+            columns.append(alias)
+        else:
+            name = p.split()[-1].strip("`\"'") if p.split() else p.strip("`\"'")
+            columns.append(name)
+    return columns[:20]  # limit columns for table widget
+
+
+def _make_table_widget(dataset_name: str, columns: list[str], x: int, y: int, width: int = 6, height: int = 4) -> dict:
+    """Build a minimal table widget linked to the dataset (dbdemos pattern)."""
+    widget_id = str(uuid.uuid4()).replace("-", "")[:12]
+    if not columns:
+        columns = ["*"]
+    fields = [{"name": c, "expression": f"`{c}`"} for c in columns]
+    return {
+        "widget": {
+            "name": widget_id,
+            "queries": [
+                {
+                    "name": "main_query",
+                    "query": {
+                        "datasetName": dataset_name,
+                        "fields": fields,
+                        "disaggregated": True,
+                    },
+                }
+            ],
+            "spec": {
+                "version": 1,
+                "widgetType": "table",
+                "encodings": {
+                    "columns": [
+                        {
+                            "fieldName": c,
+                            "displayName": c,
+                            "booleanValues": ["false", "true"],
+                            "imageUrlTemplate": "{{ @ }}",
+                            "imageTitleTemplate": "{{ @ }}",
+                            "imageWidth": "",
+                            "imageHeight": "",
+                            "linkUrlTemplate": "{{ @ }}",
+                            "linkTextTemplate": "{{ @ }}",
+                            "linkTitleTemplate": "{{ @ }}",
+                            "linkOpenInNewTab": True,
+                            "type": "string",
+                            "displayAs": "string",
+                            "visible": True,
+                            "order": i,
+                            "title": c,
+                            "allowSearch": True,
+                            "alignContent": "left",
+                            "allowHTML": False,
+                            "highlightLinks": False,
+                            "useMonospaceFont": False,
+                            "preserveWhitespace": False,
+                        }
+                        for i, c in enumerate(columns)
+                    ]
+                },
+                "frame": {"showTitle": True, "title": dataset_name, "showDescription": False},
+            },
+        },
+        "position": {"x": x, "y": y, "width": width, "height": height},
+    }
+
+
+def cmd_link_widgets() -> int:
+    """Add minimal layout with one table widget per dataset so widgets are linked (dbdemos pattern)."""
+    updated = 0
+    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            print(f"Error reading {path}: {e}", file=sys.stderr)
+            return 1
+        datasets = data.get("datasets", [])
+        pages = data.get("pages", [])
+        if not datasets or not pages:
+            continue
+        changed = False
+        for page in pages:
+            layout = page.get("layout", [])
+            # Check if every dataset is referenced by at least one widget
+            linked = set()
+            for item in layout:
+                w = item.get("widget", {})
+                for q in w.get("queries", []):
+                    qq = q.get("query", {})
+                    if "datasetName" in qq:
+                        linked.add(qq["datasetName"])
+            for ds in datasets:
+                ds_name = ds.get("name")
+                if not ds_name or ds_name in linked:
+                    continue
+                # Add a table widget for this dataset
+                query = ds.get("query", "")
+                cols = _select_columns_from_query(query)
+                if not cols and "query" in ds:
+                    # Fallback: use displayName or name as single column placeholder
+                    cols = [ds.get("displayName", ds_name)]
+                y_offset = sum(
+                    item.get("position", {}).get("height", 4) + 1
+                    for item in layout
+                )
+                new_widget = _make_table_widget(ds_name, cols, 0, y_offset)
+                layout.append(new_widget)
+                linked.add(ds_name)
+                changed = True
+            if changed:
+                page["layout"] = layout
+        if changed:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            print(f"Updated {path.name}: linked widgets to datasets")
+            updated += 1
+    print(f"Linked widgets in {updated} dashboard(s).")
+    return 0
 
 
 def cmd_prepare(catalog: str, schema: str) -> None:
@@ -177,7 +327,7 @@ def cmd_publish(path: str | None, dry_run: bool) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Dashboard operations: prepare, validate-assets, publish")
+    parser = argparse.ArgumentParser(description="Dashboard operations: prepare, validate-assets, publish, link-widgets")
     sub = parser.add_subparsers(dest="cmd", required=True)
     # prepare
     p_prepare = sub.add_parser("prepare", help="Copy dashboard JSONs to dashboards/ and gold_views.sql to .build/transform/ with catalog/schema")
@@ -191,6 +341,8 @@ def main() -> int:
     p_pub = sub.add_parser("publish", help="Publish all dashboards with embed credentials (after deploy)")
     p_pub.add_argument("--path", default=None, help="Workspace root path")
     p_pub.add_argument("--dry-run", action="store_true")
+    # link-widgets
+    sub.add_parser("link-widgets", help="Add layout with table widgets linked to each dataset (dbdemos pattern)")
     args = parser.parse_args()
 
     if args.cmd == "prepare":
@@ -201,6 +353,8 @@ def main() -> int:
         return 0
     if args.cmd == "publish":
         return cmd_publish(args.path, args.dry_run)
+    if args.cmd == "link-widgets":
+        return cmd_link_widgets()
     return 1
 
 
