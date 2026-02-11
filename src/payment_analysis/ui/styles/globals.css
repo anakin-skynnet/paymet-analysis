@@ -59,14 +59,21 @@
   --sidebar-ring: oklch(0.52 0.22 27);
   --getnet-red: #EC0000;
   --neon-cyan: #00B8D4;
+  --glass-card: oklch(1 0 0 / 0.7);
+  --vibrant-green: #16a34a;
 }
 
 .dark {
-  /* Dark premium: deep navy/gray surfaces, not pure black — reduces eye strain, preserves depth */
-  --background: oklch(0.16 0.01 260);
+  /* Pro-Dark: deep charcoal #121212 for Command Center; preserves depth and reduces eye strain */
+  --background: #121212;
   --foreground: oklch(0.97 0.005 260);
-  --card: oklch(0.19 0.012 260);
+  --card: oklch(0.18 0.012 260);
   --card-foreground: oklch(0.97 0.005 260);
+  --pro-dark-bg: #121212;
+  --glass-card: oklch(0.18 0.012 260 / 0.75);
+  --santander-red: #EC0000;
+  --neon-cyan: #00E5FF;
+  --vibrant-green: #22C55E;
   --popover: oklch(0.19 0.012 260);
   --popover-foreground: oklch(0.97 0.005 260);
   /* Getnet red — primary accent for key actions and data highlights (Santander/Getnet #EC0000) */
@@ -91,6 +98,8 @@
   --chart-5: oklch(0.65 0.08 140);
   --getnet-red: #EC0000;
   --neon-cyan: #00E5FF;
+  --glass-card: oklch(0.18 0.012 260 / 0.75);
+  --vibrant-green: #22C55E;
   --elevation-1: 0 1px 3px oklch(0 0 0 / 0.2);
   --elevation-2: 0 8px 24px oklch(0 0 0 / 0.28);
   --elevation-3: 0 16px 40px oklch(0 0 0 / 0.35);
@@ -262,6 +271,16 @@
   }
   .dark .card-interactive:hover {
     border-color: oklch(0.62 0.22 27 / 0.35);
+  }
+  /* Pro-Dark glassmorphism cards — Command Center */
+  .glass-card {
+    background: var(--glass-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid oklch(1 0 0 / 0.08);
+  }
+  .dark .glass-card {
+    border-color: oklch(1 0 0 / 0.12);
   }
   /* Business value card — initiative / feature highlight; left accent */
   .business-value-card {
