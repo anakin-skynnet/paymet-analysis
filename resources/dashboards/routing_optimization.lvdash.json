@@ -54,12 +54,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Payment Solution"
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_routing",
+                "title": "Solution Performance",
                 "showDescription": false
               }
             }
@@ -109,12 +113,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Card Network"
+                  "displayName": "Card Network",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_card_network",
+                "title": "Card Network Performance",
                 "showDescription": false
               }
             }

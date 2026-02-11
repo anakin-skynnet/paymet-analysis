@@ -263,7 +263,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_last_hour",
+                "title": "Last Hour Performance",
                 "showDescription": false
               }
             }
@@ -306,19 +306,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "First Detected"
+                  "displayName": "First Detected",
+                  "axis": {
+                    "title": "First Detected"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(alert_type)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Alert Type"
+                  "displayName": "Alert Type",
+                  "axis": {
+                    "title": "Alert Type"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_alerts",
+                "title": "Active Alerts",
                 "showDescription": false
               }
             }

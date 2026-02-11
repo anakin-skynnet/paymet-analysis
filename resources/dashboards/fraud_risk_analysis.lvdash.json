@@ -231,7 +231,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_fraud_kpis",
+                "title": "Fraud & Risk KPIs",
                 "showDescription": false
               }
             }
@@ -281,12 +281,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Decline Reason"
+                  "displayName": "Decline Reason",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_decline_risk",
+                "title": "Declines by Fraud Score",
                 "showDescription": false
               }
             }

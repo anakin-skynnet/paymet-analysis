@@ -334,16 +334,17 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
     if has_limit_1 and len(columns) >= 1 and any(_NUMERIC_LIKE.search(c) for c in columns):
         c = next((x for x in columns if _NUMERIC_LIKE.search(x)), columns[0])
         return "counter", [c], {"value": {"fieldName": c, "displayName": _display_name(c)}}
-    # Time series: only real time dimensions (hour, date, …) → line chart
+    # Time series: only real time dimensions (hour, date, …) → line chart (with axis titles per MS Learn)
     time_cols = [c for c in columns if c in _TIME_DIMENSION_NAMES]
     if time_cols and len(columns) >= 2:
         x_col = time_cols[0]
         rest = [c for c in columns if c != x_col]
         y_col = next((c for c in rest if _NUMERIC_LIKE.search(c)), rest[0] if rest else columns[0])
         fields = [x_col, y_col]
+        x_display, y_display = _display_name(x_col), _display_name(y_col)
         encodings = {
-            "x": {"fieldName": x_col, "scale": {"type": "temporal"}, "displayName": _display_name(x_col)},
-            "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
+            "x": {"fieldName": x_col, "scale": {"type": "temporal"}, "displayName": x_display, "axis": {"title": x_display}},
+            "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": y_display, "axis": {"title": y_display}},
         }
         return "line", fields, encodings
     # Categorical + numeric → bar or pie (only when first column is clearly categorical, not a metric)
@@ -367,18 +368,21 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
                 or first.lower() in ("payment_solution", "card_network", "country", "alert_type", "severity")
             )
             if use_pie:
+                x_display, y_display = _display_name(x_col), _display_name(y_col)
                 encodings = {
-                    "angle": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
-                    "color": {"fieldName": x_col, "scale": {"type": "categorical"}, "displayName": _display_name(x_col)},
+                    "angle": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": y_display},
+                    "color": {"fieldName": x_col, "scale": {"type": "categorical"}, "displayName": x_display, "legend": {"position": "bottom", "hideTitle": False}},
                 }
                 return "pie", fields, encodings
+            x_display, y_display = _display_name(x_col), _display_name(y_col)
             encodings = {
                 "x": {
                     "fieldName": x_col,
                     "scale": {"type": "categorical", "sort": {"by": "y-reversed"}},
-                    "displayName": _display_name(x_col),
+                    "displayName": x_display,
+                    "axis": {"title": x_display},
                 },
-                "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(y_col)},
+                "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": y_display, "axis": {"title": y_display}},
             }
             return "bar", fields, encodings
     # Default: table
@@ -490,11 +494,13 @@ def cmd_best_widgets() -> int:
                     if "columns" in enc:
                         del enc["columns"]
                         changed = True
-                # Ensure frame with title (dbdemos pattern)
+                # Frame: show title from dataset displayName (per MS Learn dashboard visualizations)
                 frame = spec.get("frame") or {}
-                if not frame.get("title") and dataset:
-                    frame["showTitle"] = frame.get("showTitle", True)
-                    frame["title"] = frame.get("title") or dataset.get("displayName", dataset_name)
+                want_title = dataset.get("displayName", dataset_name) if dataset else dataset_name
+                if frame.get("title") != want_title or frame.get("showTitle") is not True:
+                    frame["showTitle"] = True
+                    frame["title"] = want_title
+                    frame["showDescription"] = frame.get("showDescription", False)
                     spec["frame"] = frame
                     changed = True
         if changed:
@@ -502,6 +508,61 @@ def cmd_best_widgets() -> int:
             print(f"Best widgets: {path.name}")
             updated += 1
     print(f"Updated {updated} dashboard(s) with best widget type and required columns.")
+    return 0
+
+
+def cmd_fix_widget_settings() -> int:
+    """Apply missing Databricks visualization settings: frame title from displayName, axis titles (line/bar), legend (pie)."""
+    updated = 0
+    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            print(f"Error reading {path}: {e}", file=sys.stderr)
+            return 1
+        datasets_by_name = {ds.get("name"): ds for ds in data.get("datasets", []) if ds.get("name")}
+        changed = False
+        for page in data.get("pages", []):
+            for item in page.get("layout", []):
+                w = item.get("widget", {})
+                queries = w.get("queries", [])
+                main_query = next((q.get("query", {}) for q in queries if q.get("query", {}).get("datasetName")), None)
+                if not main_query:
+                    continue
+                dataset_name = main_query.get("datasetName")
+                dataset = datasets_by_name.get(dataset_name)
+                display_title = (dataset.get("displayName", dataset_name) if dataset else dataset_name)
+                spec = w.get("spec", {})
+                # Frame: title from displayName, showTitle true (per MS Learn)
+                frame = spec.get("frame") or {}
+                if frame.get("title") != display_title or frame.get("showTitle") is not True:
+                    frame["showTitle"] = True
+                    frame["title"] = display_title
+                    frame.setdefault("showDescription", False)
+                    spec["frame"] = frame
+                    changed = True
+                enc = spec.get("encodings") or {}
+                wt = spec.get("widgetType")
+                if wt in ("line", "bar"):
+                    for key in ("x", "y"):
+                        e = enc.get(key)
+                        if not e:
+                            continue
+                        display_name = e.get("displayName") or e.get("fieldName") or key
+                        if not e.get("axis") or e.get("axis", {}).get("title") != display_name:
+                            e["axis"] = e.get("axis") or {}
+                            e["axis"]["title"] = display_name
+                            changed = True
+                elif wt == "pie":
+                    color_enc = enc.get("color")
+                    if color_enc and not color_enc.get("legend"):
+                        color_enc["legend"] = {"position": "bottom", "hideTitle": False}
+                        changed = True
+        if changed:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            print(f"Fixed widget settings: {path.name}")
+            updated += 1
+    print(f"Updated {updated} dashboard(s) with widget settings (frame, axis, legend).")
     return 0
 
 
@@ -794,6 +855,7 @@ def main() -> int:
     sub.add_parser("fix-visualization-fields", help="Set widget columns/values from dataset query (table widgets)")
     # best-widgets
     sub.add_parser("best-widgets", help="Set best widget type (line/bar/table) and required columns from dataset")
+    sub.add_parser("fix-widget-settings", help="Apply missing visualization settings: frame title, axis titles, legend")
     # delete-workspace-dashboards
     p_del = sub.add_parser("delete-workspace-dashboards", help="Delete workspace .../dashboards so deploy recreates them from config")
     p_del.add_argument("--path", default=None, help="Workspace root path")
@@ -816,6 +878,8 @@ def main() -> int:
         return cmd_fix_visualization_fields()
     if args.cmd == "best-widgets":
         return cmd_best_widgets()
+    if args.cmd == "fix-widget-settings":
+        return cmd_fix_widget_settings()
     if args.cmd == "delete-workspace-dashboards":
         return cmd_delete_workspace_dashboards(args.path, recursive=not getattr(args, "no_recursive", False))
     return 1

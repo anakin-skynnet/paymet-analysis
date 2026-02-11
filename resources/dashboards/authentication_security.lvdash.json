@@ -167,7 +167,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_auth_kpis",
+                "title": "3DS Usage",
                 "showDescription": false
               }
             }
@@ -217,12 +217,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Merchant Segment"
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_merchant_auth",
+                "title": "Auth by Segment",
                 "showDescription": false
               }
             }

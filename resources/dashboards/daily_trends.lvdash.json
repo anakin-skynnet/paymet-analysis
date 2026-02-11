@@ -231,7 +231,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_daily",
+                "title": "Daily Trends",
                 "showDescription": false
               }
             }
@@ -274,19 +274,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour"
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(transaction_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Transaction Count"
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_hourly",
+                "title": "Hourly Approval Trends",
                 "showDescription": false
               }
             }

@@ -49,12 +49,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Merchant Segment"
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_merchant_segment",
+                "title": "Merchant Segment Performance",
                 "showDescription": false
               }
             }

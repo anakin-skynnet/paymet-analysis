@@ -49,12 +49,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Country"
+                  "displayName": "Country",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_by_country",
+                "title": "Performance by Country",
                 "showDescription": false
               }
             }

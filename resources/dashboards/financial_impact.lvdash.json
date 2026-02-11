@@ -263,7 +263,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_financial",
+                "title": "Transaction Value",
                 "showDescription": false
               }
             }
@@ -313,12 +313,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Decline Reason"
+                  "displayName": "Decline Reason",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_decline_value",
+                "title": "Declined Value by Reason",
                 "showDescription": false
               }
             }

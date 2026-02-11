@@ -433,7 +433,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_exec_kpis",
+                "title": "Executive KPIs",
                 "showDescription": false
               }
             }
@@ -476,19 +476,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour"
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(transaction_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Transaction Count"
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_approval_trends",
+                "title": "Approval Trends Hourly",
                 "showDescription": false
               }
             }
@@ -538,12 +544,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Payment Solution"
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_solution_perf",
+                "title": "Solution Performance",
                 "showDescription": false
               }
             }
@@ -593,12 +603,16 @@
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Country"
+                  "displayName": "Country",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_geography",
+                "title": "Performance by Geography",
                 "showDescription": false
               }
             }

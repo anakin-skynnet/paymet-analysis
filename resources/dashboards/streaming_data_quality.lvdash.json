@@ -209,7 +209,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "ds_quality_summary",
+                "title": "Data Quality Summary",
                 "showDescription": false
               }
             }
@@ -404,7 +404,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "Real-time volume \u2013 Incoming & stored events",
+                "title": "Data Quality Summary",
                 "showDescription": false
               }
             }
@@ -447,19 +447,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour"
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(records_per_second)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Records Per Second"
+                  "displayName": "Records Per Second",
+                  "axis": {
+                    "title": "Records Per Second"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Incoming streaming volume (records per second)",
+                "title": "Incoming volume per second",
                 "showDescription": false
               }
             }
@@ -502,19 +508,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour"
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(bronze_record_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Bronze Record Count"
+                  "displayName": "Bronze Record Count",
+                  "axis": {
+                    "title": "Bronze Record Count"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Bronze ingestion hourly",
+                "title": "Bronze Ingestion Hourly",
                 "showDescription": false
               }
             }
@@ -557,19 +569,25 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour"
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
                 },
                 "y": {
                   "fieldName": "sum(silver_record_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Silver Record Count"
+                  "displayName": "Silver Record Count",
+                  "axis": {
+                    "title": "Silver Record Count"
+                  }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Silver processed hourly",
+                "title": "Silver Processed Hourly",
                 "showDescription": false
               }
             }

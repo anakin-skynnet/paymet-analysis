@@ -264,12 +264,19 @@ WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 7 DAYS
 GROUP BY DATE_TRUNC('hour', event_timestamp)
 ORDER BY hour DESC;
 
--- View 14b: Incoming streaming volume per second (rate from hourly bronze ingestion)
+-- View 14b: Real-time streaming volume per second (from silver; always includes current second for live widget)
+-- Uses payments_enriched_silver so the view exists even when streaming/bronze is not set up.
 CREATE OR REPLACE VIEW v_streaming_volume_per_second AS
-SELECT
-    hour,
-    ROUND(bronze_record_count / 3600.0, 2) AS records_per_second
-FROM v_streaming_ingestion_hourly
+SELECT hour, records_per_second FROM (
+    SELECT
+        DATE_TRUNC('second', event_timestamp) AS hour,
+        COUNT(*) AS records_per_second
+    FROM payments_enriched_silver
+    WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR
+    GROUP BY DATE_TRUNC('second', event_timestamp)
+    UNION ALL
+    SELECT DATE_TRUNC('second', CURRENT_TIMESTAMP()) AS hour, CAST(0 AS BIGINT) AS records_per_second
+) AS t
 ORDER BY hour DESC
 LIMIT 168;
 
