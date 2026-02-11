@@ -26,7 +26,7 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | 1 | **1. Create Data Repositories** | **Setup & Run** → Run job 1 (ensure catalog & schema → **create Lakebase Autoscaling** project/branch/endpoint → **Lakebase data init** — app_config, approval_rules, online_features, app_settings → lakehouse bootstrap → vector search). Run once. Creates everything needed for later jobs and the app. |
 | 2 | **2. Simulate Transaction Events** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines) |
 | — | **Pipeline (before Step 3)** | Start **Payment Analysis ETL** (Lakeflow) at least once so it creates `payments_enriched_silver` (and `payments_raw_bronze`) in the catalog/schema. Step 3 (Gold Views) depends on this table. |
-| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; requires pipeline to have run so `payments_enriched_silver` exists) |
+| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run job 3 (create gold views → **create UC agent tools** → sync vector search; requires pipeline so `payments_enriched_silver` exists) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
 | 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
 | 6 | **6. Deploy Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
@@ -78,6 +78,10 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 **App bindings:** sql-warehouse (`payment_analysis_warehouse`), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
+
+#### Databricks feature alignment
+
+The solution is built entirely on Databricks-native features and current product naming (Lakeflow, Unity Catalog, PRO serverless SQL warehouse, Lakebase Autoscaling, Databricks App, Genie, Model Serving, Lakeview dashboards). A full checklist and recommendations are in [Databricks Validation](DATABRICKS_VALIDATION.md). Re-check when adding resources or upgrading the Databricks SDK.
 
 #### Dashboard visuals not showing?
 

@@ -79,6 +79,12 @@ print('   Backend app and API router import OK.')
     echo "5. Databricks bundle validate..."
     databricks bundle validate -t "$TARGET"
     echo ""
+    echo "6. Jobs dry-run (workspace must be configured)..."
+    uv run python scripts/run_and_validate_jobs.py --dry-run
+    echo ""
+    echo "7. Pipelines validation..."
+    uv run python scripts/run_and_validate_jobs.py pipelines
+    echo ""
     echo "=== All verifications passed ==="
     ;;
   *)

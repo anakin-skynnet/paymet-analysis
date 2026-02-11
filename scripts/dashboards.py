@@ -817,13 +817,14 @@ def cmd_prepare(catalog: str, schema: str) -> None:
 
 def cmd_validate_assets(catalog: str, schema: str) -> None:
     print(f"Dashboard assets (catalog={catalog}, schema={schema}):")
-    print("Run 'Create Payment Analysis Gold Views' job in this catalog.schema, and ensure Lakeflow has written payments_enriched_silver (and payments_raw_bronze for streaming views).")
+    print("Run Job 3 (Create Gold Views) in this catalog.schema. It requires payments_enriched_silver (Lakeflow);")
+    print("if payments_raw_bronze is missing, Job 3 creates a stub so streaming views (v_streaming_ingestion_by_second, etc.) exist.")
     print()
     for asset, source in ASSETS:
         print(f"  {catalog}.{schema}.{asset}")
         print(f"    -> {source}")
     print()
-    print("If you see TABLE_OR_VIEW_NOT_FOUND: run dashboards.py prepare with the same catalog/schema, then bundle deploy; then run the Gold Views job (it uses .build/transform/gold_views.sql which sets USE CATALOG/SCHEMA).")
+    print("If you see TABLE_OR_VIEW_NOT_FOUND: run 'dashboards.py prepare' with the same catalog/schema, deploy, then run Job 3 (Gold Views).")
 
 
 def get_workspace_root() -> str | None:

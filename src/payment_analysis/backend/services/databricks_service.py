@@ -512,6 +512,35 @@ class DatabricksService:
             logger.debug("get_data_quality_summary failed: %s", e)
         return MockDataGenerator.data_quality_summary()
 
+    async def get_active_alerts(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch active alerts from v_active_alerts (approval rate drop, high fraud, etc.)."""
+        limit = max(1, min(limit, 100))
+        query = f"""
+            SELECT alert_type, severity, metric_name, current_value, threshold_value,
+                   alert_message, first_detected
+            FROM {self.config.full_schema_name}.v_active_alerts
+            ORDER BY severity DESC, first_detected DESC
+            LIMIT {limit}
+        """
+        try:
+            results = await self.execute_query(query)
+            if results:
+                return [
+                    {
+                        "alert_type": str(r.get("alert_type", "")),
+                        "severity": str(r.get("severity", "MEDIUM")),
+                        "metric_name": str(r.get("metric_name", "")),
+                        "current_value": float(r.get("current_value", 0) or 0),
+                        "threshold_value": float(r.get("threshold_value", 0) or 0),
+                        "alert_message": str(r.get("alert_message", "")),
+                        "first_detected": str(r.get("first_detected", "")),
+                    }
+                    for r in results
+                ]
+        except Exception as e:
+            logger.debug("get_active_alerts failed: %s", e)
+        return MockDataGenerator.active_alerts()
+
     async def get_performance_by_geography(self, limit: int = 50) -> list[dict[str, Any]]:
         """Fetch transaction counts by country for geographic distribution (e.g. Brazil %)."""
         limit = max(1, min(limit, 200))
@@ -1004,6 +1033,8 @@ class DatabricksService:
             return MockDataGenerator.countries()
         elif "v_dedup_collision_stats" in query_lower:
             return [MockDataGenerator.dedup_collision_stats()]
+        elif "v_active_alerts" in query_lower:
+            return MockDataGenerator.active_alerts()
         elif "v_false_insights_metric" in query_lower:
             return MockDataGenerator.false_insights_metric(30)
         elif "v_retry_performance" in query_lower:
@@ -1371,6 +1402,32 @@ class MockDataGenerator:
             for (s, r, rc, a, sr, rv, af, avg_wait, avg_prior, baseline, lift, e) in rows[:limit]
         ]
     
+    @staticmethod
+    def active_alerts() -> list[dict[str, Any]]:
+        """Generate mock active alerts for command center / Alerts panel."""
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        return [
+            {
+                "alert_type": "APPROVAL_RATE_DROP",
+                "severity": "HIGH",
+                "metric_name": "approval_rate_pct",
+                "current_value": 83.2,
+                "threshold_value": 85.0,
+                "alert_message": "Approval rate dropped to 83.2%",
+                "first_detected": now,
+            },
+            {
+                "alert_type": "HIGH_FRAUD_RATE",
+                "severity": "MEDIUM",
+                "metric_name": "high_risk_transactions",
+                "current_value": 25.0,
+                "threshold_value": 20.0,
+                "alert_message": "25 high-risk transactions in last hour",
+                "first_detected": now,
+            },
+        ]
+
     @staticmethod
     def approval_prediction(features: dict[str, Any]) -> dict[str, Any]:
         """Generate mock approval prediction based on features."""

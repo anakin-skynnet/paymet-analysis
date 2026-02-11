@@ -47,6 +47,19 @@ if not spark.catalog.tableExists("payments_enriched_silver"):  # type: ignore[na
         "payments_enriched_silver (and payments_raw_bronze) exist in this catalog and schema, then re-run this job."
     )
 
+# Ensure payments_raw_bronze exists so streaming/quality views (v_streaming_ingestion_by_second,
+# v_streaming_ingestion_hourly, v_data_quality_summary) can be created. The Lakeflow pipeline creates
+# this table when it runs; if the pipeline has not run yet, create a minimal stub so dashboards work.
+if not spark.catalog.tableExists("payments_raw_bronze"):  # type: ignore[name-defined]
+    spark.sql(
+        "CREATE TABLE IF NOT EXISTS payments_raw_bronze ("
+        "_ingested_at TIMESTAMP NOT NULL"
+        ") USING DELTA "
+        "TBLPROPERTIES ('delta.autoOptimize.optimizeWrite' = 'true') "
+        "COMMENT 'Stub for streaming gold views; Lakeflow pipeline populates when run.'"
+    )
+    print("Created stub table payments_raw_bronze (empty until Lakeflow pipeline runs).")
+
 header = f"USE CATALOG {catalog};\nUSE SCHEMA {schema};\n\n"
 full_sql = header + content
 

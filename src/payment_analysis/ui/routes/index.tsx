@@ -273,9 +273,9 @@ function Index() {
                 className="cta-glow gap-2 min-w-[240px] h-12 text-base font-semibold shadow-lg transition-all duration-200 rounded-xl px-6"
                 asChild
               >
-                <Link to="/dashboard">
+                <Link to="/command-center">
                   <BarChart3 className="h-5 w-5" />
-                  View executive overview
+                  Open Command Center
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

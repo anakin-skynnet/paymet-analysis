@@ -115,8 +115,8 @@ resources:
     # 3. Initialize ingestion: real-time ingestion into lakehouse, lakebase, vector search
     # -------------------------------------------------------------------------
     "job_3_initialize_ingestion":
-      name: "[${var.environment}] 3. Initialize Ingestion (Lakehouse, Lakebase, Vector Search)"
-      description: "Create gold views and sync vector search index. Ingests data into lakehouse (views), and vector search (delta-sync). Run after step 2 (simulator) or when pipelines have produced silver data."
+      name: "[${var.environment}] 3. Initialize Ingestion (Lakehouse, UC Agent Tools, Vector Search)"
+      description: "Create gold views, UC agent tool functions (for AgentBricks), and sync vector search index. Run after step 2 or when pipelines have produced silver data."
       tasks:
         - task_key: create_gold_views
           description: "Create gold-layer analytical views for dashboards and Genie"
@@ -129,10 +129,22 @@ resources:
           timeout_seconds: 600
           max_retries: 2
 
+        - task_key: create_uc_agent_tools
+          description: "Create Unity Catalog functions for AgentBricks (get_decline_trends, get_route_performance, etc.)"
+          depends_on:
+            - task_key: create_gold_views
+          notebook_task:
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/uc_tools/create_uc_agent_tools
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+          timeout_seconds: 300
+          max_retries: 1
+
         - task_key: sync_vector_search
           description: "Sync vector search index from transaction_summaries_for_search"
           depends_on:
-            - task_key: create_gold_views
+            - task_key: create_uc_agent_tools
           notebook_task:
             notebook_path: ${workspace.root_path}/src/payment_analysis/vector_search/create_index
             base_parameters:

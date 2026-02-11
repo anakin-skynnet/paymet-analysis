@@ -1,0 +1,145 @@
+{
+  "datasets": [
+    {
+      "name": "ds_latency",
+      "displayName": "Latency by Solution",
+      "queryLines": [
+        "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
+    },
+    {
+      "name": "ds_network_latency",
+      "displayName": "Latency by Card Network",
+      "queryLines": [
+        "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_perf",
+      "displayName": "Technical Performance & Latency Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "7426dd4f8880",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_latency",
+                  "fields": [
+                    {
+                      "name": "payment_solution",
+                      "expression": "`payment_solution`"
+                    },
+                    {
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(avg_latency_ms)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg Latency Ms"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Latency by Solution",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "c19d32947c95",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_network_latency",
+                  "fields": [
+                    {
+                      "name": "card_network",
+                      "expression": "`card_network`"
+                    },
+                    {
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(avg_latency_ms)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg Latency Ms"
+                },
+                "color": {
+                  "fieldName": "card_network",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Card Network",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Latency by Card Network",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

@@ -1,8 +1,65 @@
 # Databricks AgentBricks — Payment Analysis (Full Conversion)
 
-This guide converts **all** payment analysis Python agents (`agent_framework.py`) to **Databricks AgentBricks**: same five specialists and orchestrator, implemented with **MLflow + LangGraph/LangChain**, tools as **Unity Catalog functions**, deployable to **Model Serving**. The **Multi-Agent Supervisor** (workspace Agents UI) replaces the Python `OrchestratorAgent`.
+This guide converts **all** payment analysis Python agents (`agent_framework.py`) to **Mosaic AI Agent Framework (AgentBricks)**: same five specialists and orchestrator, implemented with **MLflow + LangGraph**, tools as **Unity Catalog functions**, deployable to **Model Serving**. The **Multi-Agent Supervisor** (workspace Agents UI) replaces the Python `OrchestratorAgent`.
 
-## Python agents → AgentBricks mapping
+---
+
+## Current agent architecture (before conversion)
+
+**Type:** Custom Python class-based agents — **not** AgentBricks yet.
+
+| Component | Description |
+|-----------|-------------|
+| **BaseAgent** | Custom class with LLM calls (WorkspaceClient), SQL execution, and tool management |
+| **SmartRoutingAgent** | Payment routing optimization |
+| **SmartRetryAgent** | Retry decision logic |
+| **DeclineAnalystAgent** | Decline pattern analysis |
+| **RiskAssessorAgent** | Fraud/risk assessment |
+| **PerformanceRecommenderAgent** | Overall optimization |
+| **OrchestratorAgent** | Multi-agent coordinator |
+
+**Current approach:** Direct LLM endpoint calls via WorkspaceClient; custom tool execution; manual conversation history; in-memory state. No MLflow tracing, no UC-registered tools, no Model Serving endpoints.
+
+---
+
+## AgentBricks type classification (Mosaic AI Agent Framework)
+
+Each Python agent maps to a specific AgentBricks pattern:
+
+| Agent | AgentBricks type | Framework | Key feature |
+|-------|------------------|-----------|-------------|
+| **Smart Routing** | Tool-Calling Agent | LangGraph ReAct | UC function tools (get_route_performance, get_cascade_recommendations) |
+| **Decline Analyst** | Tool-Calling Agent | LangGraph ReAct | UC function tools (get_decline_trends, get_decline_by_segment) |
+| **Risk Assessor** | Tool-Calling Agent | LangGraph ReAct | UC function tools (get_high_risk_transactions, get_risk_distribution) |
+| **Performance Recommender** | Tool-Calling Agent | LangGraph ReAct | UC function tools (get_kpi_summary, get_optimization_opportunities, get_trend_analysis) |
+| **Smart Retry** | Tool-Calling Agent | LangGraph ReAct | UC function tools (get_retry_success_rates, get_recovery_opportunities) |
+| **Orchestrator** | Multi-Agent System (Compound) | LangGraph StateGraph / Workspace Multi-Agent Supervisor | Routes to specialists; synthesizes results |
+
+**Pattern 1 — Tool-Calling Agents (all 5 specialists):** User query → LLM decides which tools to call → Execute UC SQL tools → LLM synthesizes answer. Implemented with **LangGraph `create_react_agent`** + LLM with function calling + tools as Unity Catalog functions.
+
+**Pattern 2 — Multi-Agent System (Orchestrator):** User query → Orchestrator routes to specialist(s) → Specialists respond → Orchestrator synthesizes. Implemented via **Workspace Multi-Agent Supervisor** (or LangGraph StateGraph with conditional routing).
+
+All are **conversational agents** (chat interface) with tool-calling and **MLflow tracing** when deployed via AgentBricks/Model Serving.
+
+---
+
+## Conversion steps (high level)
+
+| Step | What | Outcome |
+|------|------|--------|
+| **1** | Refactor each specialist as MLflow LangChain/LangGraph model (e.g. `mlflow.pyfunc` / `mlflow.langchain`) | Loggable, versioned agent |
+| **2** | Register tools as Unity Catalog functions | `get_decline_trends`, `get_route_performance`, etc. in `catalog.schema` |
+| **3** | Log each agent to MLflow; register to Unity Catalog | `catalog.agents.decline_analyst`, etc. |
+| **4** | Deploy each agent as Model Serving endpoint | Scalable, production-ready specialist endpoints |
+| **5** | Convert orchestrator to Multi-Agent System | Workspace Multi-Agent Supervisor (or LangGraph StateGraph) calling specialist endpoints |
+
+**Key benefits after conversion:** MLflow tracing; Unity Catalog integration (tools + models); Model Serving scaling and monitoring; evaluation framework; governance and lineage; no in-app agent process for specialists.
+
+**Migration priority:** Start with **Decline Analyst** (simplest); test end-to-end (create UC tools → log → register → deploy → query); then migrate the other four specialists; finally update the orchestrator to call serving endpoints and add evaluation (e.g. Mosaic AI Agent Evaluation).
+
+---
+
+## Python agents → AgentBricks mapping (implementation)
 
 | Python agent (agent_framework.py) | AgentBricks specialist | UC tools | LangGraph builder |
 |----------------------------------|------------------------|----------|--------------------|
@@ -14,6 +71,17 @@ This guide converts **all** payment analysis Python agents (`agent_framework.py`
 | **OrchestratorAgent** | Multi-Agent Supervisor | (routes to above) | Workspace → Agents → Multi-Agent Supervisor |
 
 System prompts and tool behavior match the Python agents 1:1.
+
+### Specialist behavior (Tool-Calling pattern)
+
+| Specialist | Tools | Behavior |
+|------------|-------|----------|
+| Smart Routing | get_route_performance, get_cascade_recommendations | Analyzes data → Recommends optimal payment route |
+| Decline Analyst | get_decline_trends, get_decline_by_segment | Investigates declines → Identifies root causes |
+| Risk Assessor | get_high_risk_transactions, get_risk_distribution | Assesses risk → Flags suspicious transactions |
+| Performance Recommender | get_kpi_summary, get_optimization_opportunities, get_trend_analysis | Reviews metrics → Provides recommendations |
+| Smart Retry | get_retry_success_rates, get_recovery_opportunities | Evaluates failed transactions → Recommends retry strategy |
+| Orchestrator | (calls specialists) | Understands query → Routes to specialists → Synthesizes results |
 
 ### Best practice: agent tools in their own schema vs same schema as data
 
@@ -262,7 +330,8 @@ Use **AgentBricks → Multi-Agent Supervisor** in the workspace to route user qu
 
 ## References
 
+- **Mosaic AI Agent Framework (AgentBricks):** Tool-Calling agents (LangGraph ReAct) + Multi-Agent Supervisor; MLflow tracing, UC tools, Model Serving.
 - [Integrate LangChain with Databricks Unity Catalog tools](https://docs.databricks.com/en/generative-ai/agent-framework/langchain-uc-integration)
 - [Create AI agent tools using Unity Catalog functions](https://docs.databricks.com/en/generative-ai/agent-framework/create-custom-tool)
 - [Log and load LangChain models with MLflow](https://mlflow.org/docs/latest/python_api/mlflow.langchain.html)
-- **AgentBricks**: **Multi-Agent Supervisor** in the workspace **Agents** UI
+- **AgentBricks:** **Multi-Agent Supervisor** in the workspace **Agents** UI; optional **Mosaic AI Agent Evaluation** for evaluation suite.

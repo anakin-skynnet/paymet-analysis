@@ -1,0 +1,249 @@
+{
+  "datasets": [
+    {
+      "name": "ds_auth_kpis",
+      "displayName": "3DS Usage",
+      "queryLines": [
+        "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
+    },
+    {
+      "name": "ds_merchant_auth",
+      "displayName": "Auth by Segment",
+      "queryLines": [
+        "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_auth",
+      "displayName": "3DS Authentication & Security Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "40556991a5b1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_auth_kpis",
+                  "fields": [
+                    {
+                      "name": "total_transactions",
+                      "expression": "`total_transactions`"
+                    },
+                    {
+                      "name": "auth_3ds_usage_pct",
+                      "expression": "`auth_3ds_usage_pct`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "total_transactions",
+                    "fieldName": "total_transactions",
+                    "displayName": "total_transactions",
+                    "title": "total_transactions",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "auth_3ds_usage_pct",
+                    "fieldName": "auth_3ds_usage_pct",
+                    "displayName": "auth_3ds_usage_pct",
+                    "title": "auth_3ds_usage_pct",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approval_rate_pct",
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "approval_rate_pct",
+                    "title": "approval_rate_pct",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "avg_fraud_score",
+                    "title": "avg_fraud_score",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "3DS Usage",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "8b5d1175a7e7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_merchant_auth",
+                  "fields": [
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Auth by Segment",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

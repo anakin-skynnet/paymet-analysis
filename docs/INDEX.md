@@ -25,6 +25,8 @@ Single entry point for all documentation. Use this page to find where each topic
 | **[BUSINESS_AND_SOLUTION.md](BUSINESS_AND_SOLUTION.md)** | **Payment services context and requirement map.** Getnet services, data foundation, Smart Checkout / Reason Codes / Smart Retry context, Brazil focus, entry systems. **Map: Business requirement → Solution → Description.** | Business context and how each requirement is met. |
 | **[GUIDE.md](GUIDE.md)** | **What** the platform does, **how** it’s built. Business overview, use cases, technology map, component impact on approval rates, architecture, project structure, workspace ↔ UI mapping, data sources, control panel, best practices, verification. | Understand scope, architecture, and where things live. |
 | **[DEPLOYMENT.md](DEPLOYMENT.md)** | **Deploy & operate.** Prerequisites, quick start, 7 steps, app config and paths, version alignment, schema consistency (`payment_analysis`), troubleshooting, scripts, job inventory, fixes (Lakebase, catalog/schema, PAT, UI, dashboards). | Deploy, configure env, fix errors. |
+| **[DATABRICKS_VALIDATION.md](DATABRICKS_VALIDATION.md)** | **Databricks feature alignment.** Checklist that the solution uses current Databricks naming and capabilities (Lakeflow, UC, PRO warehouse, Lakebase, App, Genie, Model Serving, Lakeview). Use when adding resources or upgrading SDK. | Validate Databricks-native design; upgrade reviews. |
+| **[DATABRICKS_IMPLEMENTATION_REVIEW.md](DATABRICKS_IMPLEMENTATION_REVIEW.md)** | **Implementation review.** What is Databricks-native vs custom; prefer AgentBricks + Mosaic AI over custom AI framework; UC agent tools, Feature Store, agent evaluation. | Ensure agents and ML use Databricks-native features. |
 | **[AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md)** | **AgentBricks.** Convert Python agents to MLflow + LangGraph + UC functions; single schema for tools (`payment_analysis`); log/register, deploy to Model Serving, Multi-Agent Supervisor; custom vs AgentBricks comparison; best practice (same schema as data). | Use or migrate to AgentBricks. |
 | **[AGENTS.md](../AGENTS.md)** | **AI agent (Cursor) rules.** Solution scope, do’s and don’ts, package management, project structure, models & API, frontend rules, dev commands, version alignment, MCP reference. For the AI working on the repo. | When editing code; align with project rules. |
 
@@ -104,7 +106,7 @@ Single entry point for all documentation. Use this page to find where each topic
 
 - **BUSINESS_AND_SOLUTION** → GUIDE (architecture, use cases), DEPLOYMENT (deploy).
 - **GUIDE** → BUSINESS_AND_SOLUTION (payment context, requirement map), Deployment (deploy steps and env), DEPLOYMENT (catalog/schema).
-- **DEPLOYMENT** → Guide (architecture, structure), AGENT_FRAMEWORK_DATABRICKS (AgentBricks).
+- **DEPLOYMENT** → Guide (architecture, structure), DATABRICKS_VALIDATION (feature alignment), DATABRICKS_IMPLEMENTATION_REVIEW (agents, AgentBricks), AGENT_FRAMEWORK_DATABRICKS (AgentBricks).
 - **AGENT_FRAMEWORK_DATABRICKS** → DEPLOYMENT (schema), Guide (overview).
 - **AGENTS.md** → DEPLOYMENT (version alignment, commands), .cursor/rules (project.mdc).
 

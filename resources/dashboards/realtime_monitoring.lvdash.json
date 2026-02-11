@@ -1,0 +1,149 @@
+{
+  "datasets": [
+    {
+      "name": "ds_last_hour",
+      "displayName": "Last Hour Performance",
+      "queryLines": [
+        "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+      ]
+    },
+    {
+      "name": "ds_alerts",
+      "displayName": "Active Alerts",
+      "queryLines": [
+        "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_realtime",
+      "displayName": "Real-Time Payment Monitoring",
+      "layout": [
+        {
+          "widget": {
+            "name": "32588df2d755",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_last_hour",
+                  "fields": [
+                    {
+                      "name": "transactions_last_hour",
+                      "expression": "`transactions_last_hour`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "transactions_last_hour",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transactions Last Hour",
+                  "axis": {
+                    "title": "Transactions Last Hour"
+                  }
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Approval Rate Pct",
+                  "axis": {
+                    "title": "Approval Rate Pct"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Last Hour Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "0839bf1d574b",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_alerts",
+                  "fields": [
+                    {
+                      "name": "first_detected",
+                      "expression": "`first_detected`"
+                    },
+                    {
+                      "name": "sum(current_value)",
+                      "expression": "SUM(`current_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "first_detected",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "First Detected",
+                  "axis": {
+                    "title": "First Detected"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(current_value)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Current Value",
+                  "axis": {
+                    "title": "Current Value"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Active Alerts",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

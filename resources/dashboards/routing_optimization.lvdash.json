@@ -1,0 +1,145 @@
+{
+  "datasets": [
+    {
+      "name": "ds_routing",
+      "displayName": "Solution Performance",
+      "queryLines": [
+        "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
+    },
+    {
+      "name": "ds_card_network",
+      "displayName": "Card Network Performance",
+      "queryLines": [
+        "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_routing",
+      "displayName": "Smart Routing & Optimization",
+      "layout": [
+        {
+          "widget": {
+            "name": "096e80a4949c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_routing",
+                  "fields": [
+                    {
+                      "name": "payment_solution",
+                      "expression": "`payment_solution`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Solution Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "19333057a434",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_card_network",
+                  "fields": [
+                    {
+                      "name": "card_network",
+                      "expression": "`card_network`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "card_network",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Card Network",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Card Network Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

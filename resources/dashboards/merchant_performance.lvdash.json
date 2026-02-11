@@ -1,0 +1,79 @@
+{
+  "datasets": [
+    {
+      "name": "ds_merchant_segment",
+      "displayName": "Merchant Segment Performance",
+      "queryLines": [
+        "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_merchant",
+      "displayName": "Merchant Performance & Segmentation",
+      "layout": [
+        {
+          "widget": {
+            "name": "e2c81561b682",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_merchant_segment",
+                  "fields": [
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Merchant Segment Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

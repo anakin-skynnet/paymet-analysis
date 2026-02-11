@@ -1,15 +1,17 @@
 # =============================================================================
-# Step 6: Deploy Agents (Orchestrator & Specialists) — AI Framework
+# Step 6: Deploy Agents (Orchestrator & Specialists)
 # =============================================================================
 # Single task runs the full agent framework: Orchestrator + all specialists
 # (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender).
-# One notebook run builds the framework and executes one comprehensive query;
-# the orchestrator routes to the appropriate specialists and synthesizes the response.
-# Approval rules from OLTP Lakebase Autoscaling when lakebase_* params are set.
+# LLM: Mosaic AI (Model Serving). Tools: Databricks SQL (Statement Execution).
 #
-# Model registry: agents are registered in Unity Catalog at
-# {model_registry_catalog}.{model_registry_schema}.{agent_name} (e.g. catalog.agents.decline_analyst).
-# Use the same catalog as data so one catalog holds tables, views, and agent models.
+# For AgentBricks (LangGraph + UC tools + Model Serving), see langgraph_agents.py and
+# docs/AGENT_FRAMEWORK_DATABRICKS.md. UC agent tool functions are created in Job 3
+# (create_uc_agent_tools). To run AgentBricks agents, add a task that builds/logs/deploys
+# them and call agent endpoints from the app instead of this job.
+#
+# Approval rules from Lakebase when lakebase_* params are set.
+# Model registry: catalog.agents (e.g. catalog.agents.decline_analyst).
 # =============================================================================
 
 resources:

@@ -1,6 +1,16 @@
 import { useQuery, useSuspenseQuery, useMutation } from "@tanstack/react-query";
 import type { UseQueryOptions, UseSuspenseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
 
+export interface ActiveAlertOut {
+  alert_message: string;
+  alert_type: string;
+  current_value: number;
+  first_detected: string;
+  metric_name: string;
+  severity: string;
+  threshold_value: number;
+}
+
 export const AgentCapability = {
   natural_language_analytics: "natural_language_analytics",
   predictive_scoring: "predictive_scoring",
@@ -702,6 +712,10 @@ export interface GetAgentUrlParams {
   agent_id: string;
 }
 
+export interface GetActiveAlertsParams {
+  limit?: number;
+}
+
 export interface GetCountriesParams {
   limit?: number;
 }
@@ -1000,6 +1014,33 @@ export const postOrchestratorChat = async (data: OrchestratorChatIn, options?: R
 
 export function usePostOrchestratorChat(options?: { mutation?: UseMutationOptions<{ data: OrchestratorChatOut }, ApiError, OrchestratorChatIn> }) {
   return useMutation({ mutationFn: (data) => postOrchestratorChat(data), ...options?.mutation });
+}
+
+export const getActiveAlerts = async (params?: GetActiveAlertsParams, options?: RequestInit): Promise<{ data: ActiveAlertOut[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/active-alerts?${queryString}` : `/api/analytics/active-alerts`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getActiveAlertsKey = (params?: GetActiveAlertsParams) => {
+  return ["/api/analytics/active-alerts", params] as const;
+};
+
+export function useGetActiveAlerts<TData = { data: ActiveAlertOut[] }>(options?: { params?: GetActiveAlertsParams; query?: Omit<UseQueryOptions<{ data: ActiveAlertOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getActiveAlertsKey(options?.params), queryFn: () => getActiveAlerts(options?.params), ...options?.query });
+}
+
+export function useGetActiveAlertsSuspense<TData = { data: ActiveAlertOut[] }>(options?: { params?: GetActiveAlertsParams; query?: Omit<UseSuspenseQueryOptions<{ data: ActiveAlertOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getActiveAlertsKey(options?.params), queryFn: () => getActiveAlerts(options?.params), ...options?.query });
 }
 
 export const getCountries = async (params?: GetCountriesParams, options?: RequestInit): Promise<{ data: CountryOut[] }> => {

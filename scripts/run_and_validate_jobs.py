@@ -60,6 +60,12 @@ JOB_NAME_SUBSTRINGS: dict[str, str] = {
     "job_7_genie_sync": "7. Genie Space Sync",
 }
 
+# Pipeline name substrings (bundle: 8. Payment Analysis ETL, 9. Payment Real-Time Stream).
+PIPELINE_NAME_SUBSTRINGS: dict[str, str] = {
+    "pipeline_8_etl": "8. Payment Analysis ETL",
+    "pipeline_9_realtime": "9. Payment Real-Time Stream",
+}
+
 
 def _get_run_with_retry(ws, run_id):
     """Call ws.jobs.get_run(run_id) with retries on connection/timeout errors."""
@@ -80,9 +86,47 @@ def main() -> int:
     parser.add_argument("--job", type=str, metavar="KEY", help="Run only this job key")
     parser.add_argument("--no-wait", action="store_true", help="Start runs but do not wait")
     parser.add_argument("--results-file", type=str, default=str(DEFAULT_RESULTS_FILE), help="Write/read run IDs (JSON) for status command")
-    parser.add_argument("command", nargs="?", choices=["status"], help="Use 'status' to poll runs from last --results-file")
+    parser.add_argument("command", nargs="?", choices=["status", "pipelines"], help="Use 'status' to poll runs; 'pipelines' to list/validate pipelines")
     parser.add_argument("--once", action="store_true", help="(status only) Report current state once and exit without waiting for all to complete")
     args = parser.parse_args()
+
+    # pipelines subcommand: list pipelines matching bundle names
+    if args.command == "pipelines":
+        try:
+            from databricks.sdk import WorkspaceClient
+        except ImportError:
+            print("databricks-sdk not installed. Run: uv sync", file=sys.stderr)
+            return 1
+        ws = WorkspaceClient()
+        try:
+            pipeline_list = list(ws.pipelines.list_pipelines())
+        except Exception as e:
+            print(f"Failed to list pipelines: {e}", file=sys.stderr)
+            return 1
+        key_to_pipeline: dict[str, tuple[str, str]] = {}  # key -> (pipeline_id, name)
+        for p in pipeline_list:
+            name = (p.name or "") if getattr(p, "name", None) else ""
+            pipeline_id = getattr(p, "pipeline_id", None)
+            if not name or not pipeline_id:
+                continue
+            for key, substr in PIPELINE_NAME_SUBSTRINGS.items():
+                if substr in name:
+                    key_to_pipeline[key] = (str(pipeline_id), name)
+                    break
+        if not key_to_pipeline:
+            print("No payment-analysis pipelines found in workspace.", file=sys.stderr)
+            print("Expected names containing: " + ", ".join(PIPELINE_NAME_SUBSTRINGS.values()), file=sys.stderr)
+            return 1
+        print("Matched pipelines:")
+        for key in sorted(key_to_pipeline):
+            pid, name = key_to_pipeline[key]
+            print(f"  {key}: {pid}  {name[:70]}...")
+        missing = set(PIPELINE_NAME_SUBSTRINGS) - set(key_to_pipeline)
+        if missing:
+            print(f"\nMissing pipelines (deploy bundle to create): {', '.join(sorted(missing))}", file=sys.stderr)
+            return 1
+        print("\nAll pipelines found.")
+        return 0
 
     # status subcommand: read results file and poll
     if args.command == "status":

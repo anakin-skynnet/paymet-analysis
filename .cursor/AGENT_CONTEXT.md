@@ -40,6 +40,8 @@ This file consolidates knowledge and context from all conversation prompts so th
 
 **Dashboard source:** `resources/dashboards/*.lvdash.json`. Prepare copies to `dashboards/` and `.build/dashboards/` and replaces `__CATALOG__.__SCHEMA__` in queries. Bundle uses `.build/dashboards/`.
 
+**Mosaic AI Agent Framework (AgentBricks) conversion:** Current agents are custom Python (BaseAgent, OrchestratorAgent, 5 specialists). AgentBricks mapping: all 5 specialists = **Tool-Calling Agents** (LangGraph ReAct + UC functions); Orchestrator = **Multi-Agent System** (Workspace Multi-Agent Supervisor or LangGraph StateGraph). **Job 3** includes task **create_uc_agent_tools** (notebook `create_uc_agent_tools.py`) so UC tool functions exist after gold views. Conversion steps: (1) UC functions ✓ (created by Job 3), (2) LangGraph agents in `langgraph_agents.py`, (3) log/register to MLflow UC, (4) deploy to Model Serving, (5) Multi-Agent Supervisor. See `docs/AGENT_FRAMEWORK_DATABRICKS.md`. Migration priority: start with Decline Analyst.
+
 ---
 
 ## 3. Orchestrator agent and app UI
@@ -54,9 +56,7 @@ This file consolidates knowledge and context from all conversation prompts so th
   - `POST /api/agents/orchestrator/chat`: Runs Job 6 with notebook params (catalog, schema, query, agent_role=orchestrator), polls until run terminates, returns `synthesis`, `agents_used`, `run_page_url`.
   - **Job ID resolution:** Orchestrator job ID comes from `DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT` if set; otherwise from **workspace resolution** via `resolve_orchestrator_job_id(ws)` in `setup.py` (same logic as Setup “Refresh job IDs”: list jobs, match “6. Deploy Agents”). So the assistant works after deploy without setting the env var, as long as the app is opened from Compute → Apps.
 
-- **UI:** Command Center (`src/payment_analysis/ui/routes/_sidebar/command-center.tsx`) renders two chat panels:
-  - **Getnet AI Assistant** — `GetnetAIAssistant` → `POST /api/agents/chat`.
-  - **Agent Recommendations** — `AgentOrchestratorChat` → `POST /api/agents/orchestrator/chat` (orchestrator; shows synthesis and agents used).
+- **UI:** Command Center (`src/payment_analysis/ui/routes/_sidebar/command-center.tsx`) matches reference layout: top KPIs (Gross Approval Rate, False Decline Rate), embedded Databricks Executive Overview dashboard (iframe), Alerts panel (from `GET /api/analytics/active-alerts`, Databricks `v_active_alerts` or mock), Control Panel (Report generation, Download, Share link, Recalculate Routing, Setup). Two chat panels: **Getnet AI Assistant** (`POST /api/agents/chat`), **Agent Recommendations** (`POST /api/agents/orchestrator/chat`). Backend: `GET /api/analytics/active-alerts` returns active alerts (Pydantic `ActiveAlertOut`); `DatabricksService.get_active_alerts()` queries `v_active_alerts` or mock.
 
 - **Docs:** `AGENTS.md` includes an “Orchestrator in the app UI” section: requirements (Job 6 deployed, open from Compute → Apps, optional env var, catalog/schema) and how to verify (Command Center → Agent Recommendations → send a message).
 
@@ -104,4 +104,4 @@ This file consolidates knowledge and context from all conversation prompts so th
 
 ---
 
-*Last consolidated from conversation: dashboards (real-time, cleanup, best-widgets), orchestrator verification and job ID resolution, AGENTS.md and deploy flow.*
+*Last consolidated: Command Center UI (KPIs, embedded dashboard, Alerts, Control Panel), active-alerts API and Job 3 create_uc_agent_tools; dashboards, orchestrator, deploy flow.*

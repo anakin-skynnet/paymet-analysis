@@ -1,0 +1,163 @@
+{
+  "datasets": [
+    {
+      "name": "ds_top_decline",
+      "displayName": "Top Decline Reasons",
+      "queryLines": [
+        "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+      ]
+    },
+    {
+      "name": "ds_recovery",
+      "displayName": "Decline Recovery Opportunities",
+      "queryLines": [
+        "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_decline",
+      "displayName": "Decline Analysis & Recovery",
+      "layout": [
+        {
+          "widget": {
+            "name": "c09102716ecf",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_top_decline",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Decline Count",
+                  "axis": {
+                    "title": "Decline Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top Decline Reasons",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "483b2f87c43d",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_recovery",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant Segment",
+                  "axis": {
+                    "title": "Merchant Segment"
+                  }
+                },
+                "color": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Decline Count"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Decline Recovery Opportunities",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

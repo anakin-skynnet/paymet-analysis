@@ -1,0 +1,78 @@
+{
+  "datasets": [
+    {
+      "name": "ds_by_country",
+      "displayName": "Performance by Country",
+      "queryLines": [
+        "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_global",
+      "displayName": "Global Coverage - World Map by Country",
+      "layout": [
+        {
+          "widget": {
+            "name": "ae43b765254c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_by_country",
+                  "fields": [
+                    {
+                      "name": "country",
+                      "expression": "`country`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "choropleth",
+              "encodings": {
+                "color": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "region": {
+                  "fieldName": "country",
+                  "displayName": "Country"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Performance by Country",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

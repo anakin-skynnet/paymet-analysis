@@ -176,6 +176,17 @@ class GeographyOut(BaseModel):
     transaction_count: int
 
 
+class ActiveAlertOut(BaseModel):
+    """Single active alert from v_active_alerts (Databricks) or mock."""
+    alert_type: str
+    severity: str
+    metric_name: str
+    current_value: float
+    threshold_value: float
+    alert_message: str
+    first_detected: str
+
+
 class LastHourPerformanceOut(BaseModel):
     """Last-hour performance for real-time monitor (from v_last_hour_performance)."""
     transactions_last_hour: int
@@ -535,6 +546,20 @@ async def data_quality_summary(service: DatabricksServiceDep) -> DataQualitySumm
     """Data quality summary (bronze/silver volumes, retention). Data from Databricks v_data_quality_summary."""
     data = await service.get_data_quality_summary()
     return DataQualitySummaryOut(**data)
+
+
+@router.get(
+    "/active-alerts",
+    response_model=list[ActiveAlertOut],
+    operation_id="getActiveAlerts",
+)
+async def active_alerts(
+    service: DatabricksServiceDep,
+    limit: int = Query(50, ge=1, le=100, description="Max alerts to return"),
+) -> list[ActiveAlertOut]:
+    """Active alerts for command center (approval rate drop, high fraud, etc.). Data from Databricks v_active_alerts."""
+    data = await service.get_active_alerts(limit=limit)
+    return [ActiveAlertOut(**row) for row in data]
 
 
 @router.get(

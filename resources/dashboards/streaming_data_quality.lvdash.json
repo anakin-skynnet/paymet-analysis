@@ -1,0 +1,620 @@
+{
+  "datasets": [
+    {
+      "name": "ds_quality_summary",
+      "displayName": "Data Quality Summary",
+      "queryLines": [
+        "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+      ]
+    },
+    {
+      "name": "ds_bronze_by_second",
+      "displayName": "Bronze Ingestion by Second",
+      "queryLines": [
+        "SELECT event_second, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_by_second ORDER BY event_second DESC"
+      ]
+    },
+    {
+      "name": "ds_silver_by_second",
+      "displayName": "Silver Processed by Second",
+      "queryLines": [
+        "SELECT event_second, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_by_second ORDER BY event_second DESC"
+      ]
+    },
+    {
+      "name": "ds_volume_per_second",
+      "displayName": "Incoming volume per second",
+      "queryLines": [
+        "SELECT hour, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY hour DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_streaming",
+      "displayName": "Streaming & Data Quality",
+      "layout": [
+        {
+          "widget": {
+            "name": "bc37762da058",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_quality_summary",
+                  "fields": [
+                    {
+                      "name": "bronze_last_24h",
+                      "expression": "`bronze_last_24h`"
+                    },
+                    {
+                      "name": "silver_last_24h",
+                      "expression": "`silver_last_24h`"
+                    },
+                    {
+                      "name": "retention_pct_24h",
+                      "expression": "`retention_pct_24h`"
+                    },
+                    {
+                      "name": "latest_bronze_ingestion",
+                      "expression": "`latest_bronze_ingestion`"
+                    },
+                    {
+                      "name": "latest_silver_event",
+                      "expression": "`latest_silver_event`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "bronze_last_24h",
+                    "displayName": "bronze_last_24h",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 0,
+                    "title": "bronze_last_24h",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "bronze_last_24h"
+                  },
+                  {
+                    "fieldName": "silver_last_24h",
+                    "displayName": "silver_last_24h",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 1,
+                    "title": "silver_last_24h",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "silver_last_24h"
+                  },
+                  {
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "retention_pct_24h",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 2,
+                    "title": "retention_pct_24h",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "retention_pct_24h"
+                  },
+                  {
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "latest_bronze_ingestion",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 3,
+                    "title": "latest_bronze_ingestion",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "latest_bronze_ingestion"
+                  },
+                  {
+                    "fieldName": "latest_silver_event",
+                    "displayName": "latest_silver_event",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 4,
+                    "title": "latest_silver_event",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "latest_silver_event"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Data Quality Summary",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "realtime_vol_widget",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_quality_summary",
+                  "fields": [
+                    {
+                      "name": "bronze_last_24h",
+                      "expression": "`bronze_last_24h`"
+                    },
+                    {
+                      "name": "silver_last_24h",
+                      "expression": "`silver_last_24h`"
+                    },
+                    {
+                      "name": "retention_pct_24h",
+                      "expression": "`retention_pct_24h`"
+                    },
+                    {
+                      "name": "latest_bronze_ingestion",
+                      "expression": "`latest_bronze_ingestion`"
+                    },
+                    {
+                      "name": "latest_silver_event",
+                      "expression": "`latest_silver_event`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "bronze_last_24h",
+                    "fieldName": "bronze_last_24h",
+                    "displayName": "bronze_last_24h",
+                    "title": "bronze_last_24h",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "silver_last_24h",
+                    "fieldName": "silver_last_24h",
+                    "displayName": "silver_last_24h",
+                    "title": "silver_last_24h",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "retention_pct_24h",
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "retention_pct_24h",
+                    "title": "retention_pct_24h",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_bronze_ingestion",
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "latest_bronze_ingestion",
+                    "title": "latest_bronze_ingestion",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_silver_event",
+                    "fieldName": "latest_silver_event",
+                    "displayName": "latest_silver_event",
+                    "title": "latest_silver_event",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Data Quality Summary",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "line_volume_per_second",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_volume_per_second",
+                  "fields": [
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "sum(records_per_second)",
+                      "expression": "SUM(`records_per_second`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Hour",
+                  "axis": {
+                    "title": "Hour"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(records_per_second)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Records Per Second",
+                  "axis": {
+                    "title": "Records Per Second"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Incoming volume per second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bbd77b111db2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_bronze_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(bronze_record_count)",
+                      "expression": "SUM(`bronze_record_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(bronze_record_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Bronze Record Count",
+                  "axis": {
+                    "title": "Bronze Record Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Bronze Ingestion by Second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "18916a35d710",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_silver_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(silver_record_count)",
+                      "expression": "SUM(`silver_record_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(silver_record_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Silver Record Count",
+                  "axis": {
+                    "title": "Silver Record Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Silver Processed by Second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 16,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
