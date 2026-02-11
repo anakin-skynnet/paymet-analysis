@@ -200,6 +200,20 @@ function About() {
         </CardContent>
       </Card>
 
+      <Card className="bg-muted/30">
+        <CardHeader>
+          <CardTitle className="text-base">Documentation</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            <strong>For leadership:</strong> The repository <strong>README</strong> includes a &quot;Map for business users&quot; table: business purpose, technical solution, and a brief plain-language &quot;What you get&quot; for each capability (no technical jargon).
+          </p>
+          <p>
+            Full documentation (deploy, architecture, Databricks, agents) is in the <code className="rounded bg-muted px-1">docs/</code> folder. Start with <code className="rounded bg-muted px-1">docs/INDEX.md</code> for the document map.
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-wrap gap-3">
         <Link
           to="/command-center"

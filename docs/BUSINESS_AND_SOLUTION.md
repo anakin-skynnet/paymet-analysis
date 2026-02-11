@@ -136,4 +136,4 @@ In Brazil, **more than 1 million transactions per month** fall under one of thes
 | Architecture, use cases, technology map | [GUIDE.md](GUIDE.md) |
 | Deploy, env, troubleshooting | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | All docs index | [INDEX.md](INDEX.md) |
-| Agent framework (Job 6, AgentBricks) | [AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md) |
+| Agent framework (Job 6, AgentBricks) | [DATABRICKS.md Part 3](DATABRICKS.md#part-3--agent-framework-agentbricks) |

@@ -96,7 +96,7 @@ async def health_databricks(
 ) -> HealthDatabricksOut:
     """Validate that data and AI are served from Databricks when the connection is available.
     Use this endpoint to confirm the app is using Unity Catalog and Model Serving in your environment.
-    See docs/CODE_GUIDELINES_AND_DATA_SOURCES.md.
+    See docs/GUIDE.md §10 (Data sources & code guidelines).
     """
     available = service.is_available
     return HealthDatabricksOut(

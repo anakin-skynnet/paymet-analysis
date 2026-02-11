@@ -10,14 +10,34 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
+---
+
+## Map for business users
+
+| Business purpose | Technical solution | What you get (plain language) |
+|------------------|--------------------|--------------------------------|
+| **One trusted data base for all initiatives** | Medallion pipelines (Bronze → Silver → Gold), gold views, single catalog | Everyone works from the same numbers; Smart Checkout, Reason Codes, and Smart Retry share one clean, up-to-date picture. |
+| **See why payments fail and where to act** | Reason Codes, decline dashboards, top-decline and recovery views, Decline Analyst agent | Declines from all channels in one place, with clear reasons and where recovery or routing changes will help most. |
+| **Optimize payment-link performance (e.g. Brazil)** | Smart Checkout UI, 3DS funnel, solution performance and routing dashboards, Smart Routing agent | You see how each path (Antifraud, 3DS, Network Token, etc.) performs and how to balance security, friction, and approvals. |
+| **Recover more from retries and recurring payments** | Smart Retry UI, retry performance views, Smart Retry agent, decisioning API | You see which failed payments are worth retrying, when and how to retry, and the impact on approval rates (e.g. 1M+ such transactions per month in Brazil). |
+| **Get clear next steps, not just reports** | Decisioning API, Recommendations UI, orchestrator + 5 AI agents, rules engine | You get recommended actions and expected impact; rules, models, and AI work together in one place so decisions stay consistent. |
+| **Learn from what we do and improve over time** | Experiments, incidents, rules management, model retraining jobs | You track which actions were taken and what happened, run A/B tests, and keep improving how we approve and route payments. |
+| **Keep insights reliable** | Experiments, validation workflow, False Insights metric | You balance speed and accuracy; experts can flag bad or non-actionable insights so the system gets better. |
+| **Focus on the regions that matter (e.g. Brazil)** | Catalog/schema and country filters, geography dashboards | You filter by country or region; Brazil’s share of volume is visible by default so local teams see what’s relevant. |
+| **See performance across all entry channels** | Entry-system distribution analytics, gold views and dashboards | You see how each channel (Checkout, PD, WS, SEP) performs without double-counting or mixing definitions. |
+| **Monitor performance in real time and over time** | 12 dashboards (executive, trends, declines, routing, retry, risk, etc.), real-time views | You have KPIs, trends, and reason codes for both live monitoring and historical analysis. |
+| **One place to run and control everything** | FastAPI + React app: Setup & Run, Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, AI agents | You run jobs, manage rules, view dashboards and recommendations, and operate the full stack from a single control panel. |
+| **Ask in plain language and get recommendations** | 7 AI agents (orchestrator + 5 specialists), Genie | You ask questions in natural language and get answers and recommendations on routing, retries, declines, risk, and performance. |
+
 ## Documentation
 
 | Purpose | Document |
 |--------|----------|
-| **All docs (index)** | [docs/INDEX.md](docs/INDEX.md) — Consolidated summary and document map; start here to find any topic |
-| **Business context & solution map** | [docs/BUSINESS_AND_SOLUTION.md](docs/BUSINESS_AND_SOLUTION.md) — Payment services context, Smart Checkout / Reason Codes / Smart Retry, requirement → solution map |
-| **Guide** | [docs/GUIDE.md](docs/GUIDE.md) — Business overview, architecture, project structure, control panel & UI, best practices |
+| **All docs (index)** | [docs/INDEX.md](docs/INDEX.md) — Start here: document map and consolidated summary |
+| **Guide** | [docs/GUIDE.md](docs/GUIDE.md) — What the platform does, architecture, project structure, data sources & code guidelines, control panel |
 | **Deploy & operate** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deploy steps, env vars, version alignment, troubleshooting |
+| **Business context** | [docs/BUSINESS_AND_SOLUTION.md](docs/BUSINESS_AND_SOLUTION.md) — Payment services context, requirement → solution map |
+| **Databricks & agents** | [docs/DATABRICKS.md](docs/DATABRICKS.md) — Feature validation, implementation review, AgentBricks conversion |
 
 ## Quick start
 

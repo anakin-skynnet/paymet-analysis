@@ -81,7 +81,7 @@ Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepa
 
 #### Databricks feature alignment
 
-The solution is built entirely on Databricks-native features and current product naming (Lakeflow, Unity Catalog, PRO serverless SQL warehouse, Lakebase Autoscaling, Databricks App, Genie, Model Serving, Lakeview dashboards). A full checklist and recommendations are in [Databricks Validation](DATABRICKS_VALIDATION.md). Re-check when adding resources or upgrading the Databricks SDK.
+The solution is built entirely on Databricks-native features and current product naming (Lakeflow, Unity Catalog, PRO serverless SQL warehouse, Lakebase Autoscaling, Databricks App, Genie, Model Serving, Lakeview dashboards). A full checklist and recommendations are in [DATABRICKS.md](DATABRICKS.md) (Part 1–3). Re-check when adding resources or upgrading the Databricks SDK.
 
 #### Dashboard visuals not showing?
 
@@ -311,9 +311,9 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | **genie_spaces.yml** | | |
 | `job_7_genie_sync` | Sync Genie space configuration and sample questions | Single purpose; optional. |
 
-**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [AgentBricks — Payment Analysis](AGENT_FRAMEWORK_DATABRICKS.md).
+**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [DATABRICKS.md Part 3](DATABRICKS.md#part-3--agent-framework-agentbricks).
 
-**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [AGENT_FRAMEWORK_DATABRICKS.md](AGENT_FRAMEWORK_DATABRICKS.md).
+**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [DATABRICKS.md Part 3](DATABRICKS.md#part-3--agent-framework-agentbricks).
 
 **Dashboard jobs:** Job 4 (Deploy Dashboards) has two tasks: prepare (generate assets) and publish (AI/BI Dashboards API with embed credentials). Genie sync is a separate job (job 7 in `genie_spaces.yml`).
 

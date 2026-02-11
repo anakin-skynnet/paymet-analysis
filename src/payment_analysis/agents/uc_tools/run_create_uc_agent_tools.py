@@ -31,14 +31,19 @@ def run(catalog: str, schema: str) -> None:
     statements = [s.strip() for s in parts if s.strip()]
 
     try:
-        spark  # noqa: F821  # injected in Databricks
+        _spark = spark  # noqa: F821  # injected in Databricks notebook
     except NameError:
-        raise RuntimeError("run_create_uc_agent_tools must run in a Databricks context (spark available)")
+        try:
+            from pyspark.sql import SparkSession
+
+            _spark = SparkSession.builder.getOrCreate()
+        except Exception as e:
+            raise RuntimeError("run_create_uc_agent_tools must run in a Databricks context (spark available)") from e
 
     for stmt in statements:
         if not stmt.strip():
             continue
-        spark.sql(stmt)
+        _spark.sql(stmt)
 
     print(f"Created {len(statements)} UC agent tool functions in {catalog}.{schema}")
 

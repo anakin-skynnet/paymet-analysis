@@ -3,7 +3,7 @@
 All data is fetched from Databricks (Unity Catalog views via SQL Warehouse) when the
 connection is available. When Databricks is unavailable, endpoints return mock data
 or, for GET /kpis only, local DB counts. Validate with GET /api/v1/health/databricks.
-See docs/CODE_GUIDELINES_AND_DATA_SOURCES.md.
+See docs/GUIDE.md §10 (Data sources & code guidelines).
 """
 
 from __future__ import annotations

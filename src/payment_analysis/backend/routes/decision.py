@@ -2,7 +2,7 @@
 
 ML predictions (approval, risk, routing) are fetched from Databricks Model Serving
 when the connection is available; otherwise mock predictions are returned.
-Validate with GET /api/v1/health/databricks. See docs/CODE_GUIDELINES_AND_DATA_SOURCES.md.
+Validate with GET /api/v1/health/databricks. See docs/GUIDE.md §10 (Data sources & code guidelines).
 """
 
 from __future__ import annotations

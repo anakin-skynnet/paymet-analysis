@@ -6,7 +6,7 @@
 # LLM: Mosaic AI (Model Serving). Tools: Databricks SQL (Statement Execution).
 #
 # For AgentBricks (LangGraph + UC tools + Model Serving), see langgraph_agents.py and
-# docs/AGENT_FRAMEWORK_DATABRICKS.md. UC agent tool functions are created in Job 3
+# docs/DATABRICKS.md Part 3. UC agent tool functions are created in Job 3
 # (create_uc_agent_tools). To run AgentBricks agents, add a task that builds/logs/deploys
 # them and call agent endpoints from the app instead of this job.
 #

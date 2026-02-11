@@ -134,7 +134,7 @@ resources:
           depends_on:
             - task_key: create_gold_views
           notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/uc_tools/create_uc_agent_tools
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_create_uc_agent_tools
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

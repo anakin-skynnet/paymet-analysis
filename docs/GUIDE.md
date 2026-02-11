@@ -218,3 +218,32 @@ uv run apx dev check          # TypeScript + Python
 ```
 
 **Deployment summary:** One command: `./scripts/bundle.sh deploy dev`. App env (required): `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `DATABRICKS_WAREHOUSE_ID`. Optional: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
+
+---
+
+## 10. Data sources & code guidelines
+
+Aligns the app with Databricks Apps best practices and confirms **all data and AI are from Databricks** when the workspace connection is available.
+
+**Reference guidelines:** [Databricks Apps Cookbook](https://apps-cookbook.dev/docs/intro), [apx](https://github.com/databricks-solutions/apx), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit), [dbdemos](https://github.com/databricks-demos/dbdemos).
+
+### Data and AI source: Databricks-first
+
+| Area | Primary source | Fallback when Databricks unavailable |
+|------|----------------|--------------------------------------|
+| **Analytics (KPIs, trends, reason codes)** | Unity Catalog views via SQL Warehouse (Statement Execution API) | Mock data; `/kpis` can fall back to local DB counts |
+| **ML inference (approval, risk, routing)** | Databricks Model Serving endpoints | Mock predictions |
+| **Recommendations / Vector Search** | UC tables + Vector Search / Lakehouse | Mock recommendations |
+| **Online features** | Lakebase or Lakehouse feature tables | Mock features |
+| **Rules (approval rules)** | Lakebase/Lakehouse or UC | Local DB / error when not available |
+| **Agents list** | Workspace (Mosaic AI Gateway, Genie, UC models) | N/A |
+| **Dashboards** | DBSQL dashboards in workspace (embed URLs) | N/A |
+| **Jobs / Pipelines** | Databricks Jobs & Pipelines APIs | N/A |
+
+**Unity Catalog views used by analytics** (via `DatabricksService.execute_query()`): `v_executive_kpis`, `v_approval_trends_hourly`, `v_solution_performance`, `v_top_decline_reasons`, `v_smart_checkout_*`, `v_3ds_funnel_br`, `v_reason_codes_br`, `v_reason_code_insights_br`, `v_entry_system_distribution_br`, `v_dedup_collision_stats`, `v_false_insights_metric`, `v_retry_performance`, plus country and recommendation tables (see `databricks_service.py`).
+
+**AI/ML sources:** Model Serving (approval, risk, routing); Genie / Mosaic AI Gateway (linked from UI); agents listed from workspace config.
+
+**Validation:** `GET /api/v1/health/databricks` returns whether the Databricks connection is available and the effective data source. See also docstrings in `backend/services/databricks_service.py` and `backend/routes/analytics.py`.
+
+**Implementation:** SQL via **Databricks SDK** `statement_execution.execute_statement()` (not legacy SQL Connector). When the app is opened from Compute → Apps, token is forwarded via `X-Forwarded-Access-Token`. Mock/fallbacks only when connection is missing or fails.
