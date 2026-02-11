@@ -23,7 +23,7 @@ import Logo from "@/components/apx/logo";
 const PATH_LABELS: Record<string, string> = {
   "/dashboard": "Executive overview",
   "/dashboards": "Dashboards",
-  "/setup": "Setup & run",
+  "/setup": "Control panel",
   "/notebooks": "Notebooks",
   "/models": "ML models",
   "/ai-agents": "AI agents",
