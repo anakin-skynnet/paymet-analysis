@@ -790,13 +790,22 @@ def cmd_prepare(catalog: str, schema: str) -> None:
         raise SystemExit("prepare requires non-empty --catalog and --schema (or set BUNDLE_VAR_catalog / BUNDLE_VAR_schema)")
     BUILD_DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # Source: resources/dashboards (canonical); fallback to dashboards/ when no JSONs in resources (e.g. repo only has prepared files)
+    source_dir = SOURCE_DIR
+    source_files = sorted(source_dir.glob("*.lvdash.json"))
+    if not source_files:
+        source_dir = OUT_DIR
+        source_files = sorted(source_dir.glob("*.lvdash.json"))
     count = 0
-    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+    for path in source_files:
         data = json.loads(path.read_text(encoding="utf-8"))
         _strip_optional_widget_spec_keys(data)
         content = json.dumps(data, indent=2)
         if CATALOG_SCHEMA_PLACEHOLDER in content:
             content = content.replace(CATALOG_SCHEMA_PLACEHOLDER, catalog_schema)
+        else:
+            # Fallback: replace literal catalog.schema (e.g. from a previous prepare)
+            content = content.replace("ahs_demos_catalog.payment_analysis", catalog_schema)
         if CATALOG_SCHEMA_PLACEHOLDER in content:
             raise SystemExit(
                 f"prepare: {path.name} still contains {CATALOG_SCHEMA_PLACEHOLDER!r} after replace. "
