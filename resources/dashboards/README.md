@@ -46,14 +46,14 @@ Our widget choices follow the [AI/BI dashboard visualization types](https://lear
 | **Bar** | Change in metrics over time or across categories; proportionality | Category + metric when not using pie (sort by value descending) | ✓ |
 | **Table** | Standard table; reorder, hide, format | Multi-column KPI rows (executive KPIs, last hour, quality summary), alert detail, multi-field datasets | ✓ |
 | **Counter** | Single value prominently; optional comparison/sparkline | Single numeric KPI only (we prefer table when multiple KPIs in one row) | ✓ |
-| **Area** | One or more groups’ numeric values over time (filled trend) | Not yet used; line used for all time series. Area could be added for volume/throughput for a filled look. | — |
-| **Choropleth** | Geographic localities colored by aggregate values | Geography uses **pie** (country + count). Choropleth would be ideal for global coverage if map widget is added later. | — |
+| **Area** | One or more groups’ numeric values over time (filled trend) | Time + volume/throughput (streaming ingestion, volume per second) | ✓ |
+| **Choropleth** | Geographic localities colored by aggregate values | Country/region + value (global coverage, executive geography) | ✓ |
 | **Funnel** | Metric at different *stages* (step + value) | Not used; we have category + metric (pie/bar). Funnel would fit stage-based flows. | — |
-| **Heatmap** | Two categories + value as color intensity | Not used; pie/bar for single category + value. | — |
-| **Scatter** | Relationship between two numerical variables | Not used; we use line (time + metric) or bar/pie (category + metric). | — |
+| **Heatmap** | Two categories + value as color intensity | Two dimensions + value (e.g. decline reason × merchant segment) | ✓ |
+| **Scatter** | Relationship between two numerical variables | Two numeric columns (no time); applied when dataset has two numeric axes | ✓ |
 | **Waterfall** | Cumulative effect of sequential +/- values (e.g. P&amp;L) | Not used; financial_impact uses table/pie. | — |
 
-So for every dataset we use a type that matches the official “best for” guidance; the only enhancements would be optional **area** for time series and **choropleth** for geography if the Lakeview schema supports them.
+So for every dataset we use a type that matches the official “best for” guidance; **area** (time + volume), **choropleth** (country + value), and **heatmap** (two categories + value) are now applied where appropriate; run `uv run python scripts/dashboards.py best-widgets` to re-apply.
 
 Chart widgets use **single objects** for `encodings.x` and `encodings.y` (not arrays). `spec.frame` can include `showTitle`, `title`, and `showDescription`. Validation (`check-widgets`) accepts aggregate field names like `sum(column_name)` as referring to the dataset column `column_name`.
 

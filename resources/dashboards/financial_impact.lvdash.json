@@ -299,24 +299,29 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "bar",
               "encodings": {
-                "angle": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
                   "fieldName": "sum(total_declined_value)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Total Declined Value"
-                },
-                "color": {
-                  "fieldName": "decline_reason",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Decline Reason",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "displayName": "Total Declined Value",
+                  "axis": {
+                    "title": "Total Declined Value"
                   }
                 }
               },

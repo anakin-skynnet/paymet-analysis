@@ -43,7 +43,7 @@ import {
   LayoutDashboard,
   Search,
 } from "lucide-react";
-import { getDashboardUrl, getGenieUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getDashboardUrl, getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
 
@@ -61,7 +61,6 @@ const dashboardItem = {
   show: { opacity: 1, y: 0 },
 };
 
-const openInDatabricks = (url: string) => openWorkspaceUrl(url);
 
 export const Route = createFileRoute("/_sidebar/dashboard")({
   component: () => (
@@ -75,13 +74,13 @@ const openNotebook = async (notebookId: string) => {
   try {
     const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
     const data = await response.json();
-    openWorkspaceUrl(data?.url);
+    openInDatabricks(data?.url);
   } catch (error) {
     console.error("Failed to open notebook:", error);
   }
 };
 
-const openDashboard = () => openWorkspaceUrl(getDashboardUrl("/sql/dashboards/executive_overview"));
+const openDashboard = () => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"));
 
 function DashboardSkeleton() {
   return (

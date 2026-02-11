@@ -28,22 +28,22 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <header className={cn("page-header space-y-2 min-w-0", className)}>
+    <header className={cn("page-header space-y-3 min-w-0", className)}>
       {sectionLabel && (
-        <p className="section-label text-muted-foreground" aria-hidden>
+        <p className="section-label text-muted-foreground mb-1" aria-hidden>
           {sectionLabel}
         </p>
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <h1 id={titleId} className="page-section-title text-2xl md:text-3xl font-bold truncate">
+            <h1 id={titleId} className="page-section-title text-2xl md:text-3xl font-bold break-words">
               {title}
             </h1>
             {badge}
           </div>
           {description && (
-            <p className="page-section-description max-w-2xl">{description}</p>
+            <p className="page-section-description max-w-2xl leading-relaxed">{description}</p>
           )}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}

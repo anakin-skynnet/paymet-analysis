@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight, Globe, LayoutGrid, ArrowLeft } from "lucide-react";
-import { getWorkspaceUrl, getGenieUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getWorkspaceUrl, getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { PageHeader } from "@/components/layout";
 import { friendlyReason } from "@/lib/reasoning";
@@ -100,7 +100,7 @@ export function Component() {
     e.stopPropagation();
     try {
       const { data } = await getNotebookUrl({ notebook_id: notebookId });
-      openWorkspaceUrl(data?.url);
+      openInDatabricks(data?.url);
     } catch (error) {
       console.error("Failed to open notebook:", error);
     }

@@ -765,7 +765,7 @@ function SetupRun() {
           { step: 3, title: "Initialize Ingestion", desc: "Gold views and sync for dashboards and Vector Search. Uses warehouse and schema.", jobKey: "create_gold_views", icon: LayoutDashboard },
           { step: 4, title: "Deploy Dashboards", desc: "Publish dashboards with embed credentials so the app can embed AI/BI dashboards.", jobKey: "publish_dashboards", icon: LayoutDashboard },
           { step: 5, title: "Train Models & Serving", desc: "Train approval propensity, risk scoring, routing, and retry models. Uses catalog and schema.", jobKey: "train_ml_models", icon: Brain },
-          { step: 6, title: "Deploy AgentBricks Agents", desc: "Run agent framework (orchestrator + Smart Routing, Retry, Decline Analyst, Risk, Performance). One task runs full analysis.", jobKey: "orchestrator_agent", icon: Bot },
+          { step: 6, title: "Deploy Agents", desc: "Run agent framework (orchestrator + Smart Routing, Retry, Decline Analyst, Risk, Performance). One task runs full analysis.", jobKey: "orchestrator_agent", icon: Bot },
           { step: 7, title: "Genie Space Sync", desc: "Sync Genie space and sample questions for natural language analytics over payment data.", jobKey: "genie_sync", icon: LayoutDashboard },
         ].map(({ step, title, desc, jobKey, icon: Icon }) => (
           <Card

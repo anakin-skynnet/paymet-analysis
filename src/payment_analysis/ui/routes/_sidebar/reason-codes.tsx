@@ -10,11 +10,9 @@ import {
   useGetFalseInsightsMetric,
   useSubmitInsightFeedback,
 } from "@/lib/api";
-import { getDashboardUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getDashboardUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, CheckCircle2, AlertTriangle, Target } from "lucide-react";
-
-const openInDatabricks = (url: string) => openWorkspaceUrl(url);
 
 export const Route = createFileRoute("/_sidebar/reason-codes")({
   component: () => <ReasonCodes />,

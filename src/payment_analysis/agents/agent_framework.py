@@ -1070,7 +1070,7 @@ def run_framework(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     if agent_role == "orchestrator":
-        orchestrator = setup_agent_framework(catalog, schema, **lakebase_kw, **registry_kw, llm_endpoint=lakebase_kw["llm_endpoint"])
+        orchestrator = setup_agent_framework(catalog, schema, **lakebase_kw, **registry_kw)
         return orchestrator.handle_query(query)
 
     # Optional: run a single specialist (e.g. for ad-hoc or debug)

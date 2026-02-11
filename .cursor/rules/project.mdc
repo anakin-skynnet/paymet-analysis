@@ -15,7 +15,7 @@ alwaysApply: true
 - If agent has access to native browser tool, use it to verify changes on the frontend. If such tool is not present or is not working, use playwright MCP to automate browser actions (e.g. screenshots, clicks, etc.).
 - **Databricks SDK:** Use the apx MCP `docs` tool to search Databricks SDK documentation instead of guessing or hallucinating API signatures.
 - Always use Databricks latest features, releases and naming
-- When mentioning an APP in a prompt, always confirm if it is referring ot a Databricks APP
+- When mentioning an APP in a prompt, always confirm if it is referring to a Databricks APP
 - Do not update dependencies and packages if not instructed
 
 ## Package Management

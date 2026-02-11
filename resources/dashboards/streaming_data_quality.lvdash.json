@@ -440,7 +440,7 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "hour",
@@ -501,7 +501,7 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "hour",
@@ -562,7 +562,7 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "hour",

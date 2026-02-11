@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Code2, Bot, Brain, Zap, Database, BarChart3, ExternalLink, PlayCircle } from "lucide-react";
 import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/api";
-import { getWorkspaceUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getWorkspaceUrl, openInDatabricks } from "@/config/workspace";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_sidebar/notebooks")({
@@ -52,7 +52,7 @@ export function Component() {
   const handleNotebookClick = async (notebookId: string) => {
     try {
       const { data } = await getNotebookUrl({ notebook_id: notebookId });
-      openWorkspaceUrl(data.url);
+      openInDatabricks(data.url);
     } catch (error) {
       console.error("Failed to open notebook:", error);
     }
@@ -260,10 +260,10 @@ export function Component() {
 
         <Card
           className="border-yellow-200 dark:border-yellow-800 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openWorkspaceUrl(getWorkspaceUrl())}
+          onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter") openWorkspaceUrl(getWorkspaceUrl()); }}
+          onKeyDown={(e) => { if (e.key === "Enter") openInDatabricks(getWorkspaceUrl()); }}
         >
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -278,10 +278,10 @@ export function Component() {
 
         <Card
           className="border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openWorkspaceUrl(getWorkspaceUrl())}
+          onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter") openWorkspaceUrl(getWorkspaceUrl()); }}
+          onKeyDown={(e) => { if (e.key === "Enter") openInDatabricks(getWorkspaceUrl()); }}
         >
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -296,10 +296,10 @@ export function Component() {
 
         <Card
           className="border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => openWorkspaceUrl(getWorkspaceUrl())}
+          onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter") openWorkspaceUrl(getWorkspaceUrl()); }}
+          onKeyDown={(e) => { if (e.key === "Enter") openInDatabricks(getWorkspaceUrl()); }}
         >
           <CardHeader>
             <div className="flex items-center gap-2">

@@ -29,10 +29,8 @@ import {
   getNotebookFolderUrl,
   type AgentType,
 } from "@/lib/api";
-import { getGenieUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
-
-const openInDatabricks = (url: string) => openWorkspaceUrl(url);
 
 export const Route = createFileRoute("/_sidebar/ai-agents")({
   component: () => <AIAgents />,
@@ -96,7 +94,7 @@ function AIAgents() {
   const handleAgentClick = async (agentId: string) => {
     try {
       const { data } = await getAgentUrl({ agent_id: agentId });
-      openWorkspaceUrl(data?.url);
+      openInDatabricks(data?.url);
     } catch (error) {
       console.error("Failed to open agent:", error);
     }
@@ -105,7 +103,7 @@ function AIAgents() {
   const openAgentsFolder = async () => {
     try {
       const { data } = await getNotebookFolderUrl({ folder_id: "agents" });
-      openWorkspaceUrl(data?.url);
+      openInDatabricks(data?.url);
     } catch (error) {
       console.error("Failed to open agents folder:", error);
     }

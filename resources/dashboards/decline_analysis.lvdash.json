@@ -40,24 +40,29 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "bar",
               "encodings": {
-                "angle": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
                   "fieldName": "sum(decline_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Decline Count"
-                },
-                "color": {
-                  "fieldName": "decline_reason",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Decline Reason",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "displayName": "Decline Count",
+                  "axis": {
+                    "title": "Decline Count"
                   }
                 }
               },
@@ -89,8 +94,12 @@
                       "expression": "`decline_reason`"
                     },
                     {
-                      "name": "sum(merchant_segment)",
-                      "expression": "SUM(`merchant_segment`)"
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -99,25 +108,34 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "heatmap",
               "encodings": {
-                "angle": {
-                  "fieldName": "sum(merchant_segment)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Merchant Segment"
-                },
-                "color": {
+                "x": {
                   "fieldName": "decline_reason",
                   "scale": {
                     "type": "categorical"
                   },
                   "displayName": "Decline Reason",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "axis": {
+                    "title": "Decline Reason"
                   }
+                },
+                "y": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant Segment",
+                  "axis": {
+                    "title": "Merchant Segment"
+                  }
+                },
+                "color": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Decline Count"
                 }
               },
               "frame": {

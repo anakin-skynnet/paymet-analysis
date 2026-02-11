@@ -29,7 +29,7 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | 3 | **3. Initialize Ingestion** | **Setup & Run** → Run **Create Gold Views** or **Continuous Stream Processor** (same job: gold views + vector search sync; requires pipeline to have run so `payments_enriched_silver` exists) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
 | 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
-| 6 | **6. Deploy AgentBricks Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
+| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
 | 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
 | — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
 | — | Dashboards & app | 12 dashboards + app deployed by bundle |
@@ -278,7 +278,7 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 ## Demo setup & one-click run
 
 1. **Deploy once:** `./scripts/bundle.sh deploy dev` (prepare + build + deploy; all job files present).
-2. **Run in order from the app:** Open the app → **Setup & Run** → run jobs **1** (Create Data Repositories), **2** (Simulate Transaction Events), **3** (Initialize Ingestion), **4** (Deploy Dashboards), **5** (Train Models & Model Serving), **6** (Deploy AgentBricks Agents), **7** (Genie Space Sync, optional). Start Lakeflow pipelines when needed.
+2. **Run in order from the app:** Open the app → **Setup & Run** → run jobs **1** (Create Data Repositories), **2** (Simulate Transaction Events), **3** (Initialize Ingestion), **4** (Deploy Dashboards), **5** (Train Models & Model Serving), **6** (Deploy Agents), **7** (Genie Space Sync, optional). Start Lakeflow pipelines when needed.
 3. **Optional:** Set `DATABRICKS_JOB_ID_*` in the app environment to job IDs from **Workflows** if Run uses a different workspace.
 
 **Estimated time:** 45–60 min. Job/pipeline IDs: **Workflows** / **Lakeflow** or `databricks bundle run <job_name> -t dev`.

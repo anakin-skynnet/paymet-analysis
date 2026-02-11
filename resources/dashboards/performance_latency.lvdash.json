@@ -30,8 +30,8 @@
                       "expression": "`payment_solution`"
                     },
                     {
-                      "name": "sum(transaction_count)",
-                      "expression": "SUM(`transaction_count`)"
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
                     }
                   ],
                   "disaggregated": false
@@ -43,11 +43,11 @@
               "widgetType": "pie",
               "encodings": {
                 "angle": {
-                  "fieldName": "sum(transaction_count)",
+                  "fieldName": "sum(avg_latency_ms)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Transaction Count"
+                  "displayName": "Avg Latency Ms"
                 },
                 "color": {
                   "fieldName": "payment_solution",
@@ -89,8 +89,8 @@
                       "expression": "`card_network`"
                     },
                     {
-                      "name": "sum(transaction_count)",
-                      "expression": "SUM(`transaction_count`)"
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
                     }
                   ],
                   "disaggregated": false
@@ -102,11 +102,11 @@
               "widgetType": "pie",
               "encodings": {
                 "angle": {
-                  "fieldName": "sum(transaction_count)",
+                  "fieldName": "sum(avg_latency_ms)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Transaction Count"
+                  "displayName": "Avg Latency Ms"
                 },
                 "color": {
                   "fieldName": "card_network",

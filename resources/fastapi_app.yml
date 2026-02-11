@@ -70,7 +70,7 @@ resources:
             id: ${resources.jobs.job_5_train_models_and_serving.id}
             permission: CAN_MANAGE_RUN
         - name: job-6-agents
-          description: "6. Deploy AgentBricks Agents"
+          description: "6. Deploy Agents"
           job:
             id: ${resources.jobs.job_6_deploy_agents.id}
             permission: CAN_MANAGE_RUN

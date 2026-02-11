@@ -35,25 +35,18 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "choropleth",
               "encodings": {
-                "angle": {
+                "color": {
                   "fieldName": "sum(transaction_count)",
                   "scale": {
                     "type": "quantitative"
                   },
                   "displayName": "Transaction Count"
                 },
-                "color": {
+                "region": {
                   "fieldName": "country",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Country",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
-                  }
+                  "displayName": "Country"
                 }
               },
               "frame": {

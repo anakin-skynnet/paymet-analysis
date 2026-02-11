@@ -100,8 +100,8 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           </div>
         </SidebarHeader>
         <SidebarContent>{children}</SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border pt-3">
-          <p className="px-3 pb-2 text-[11px] text-muted-foreground leading-snug" aria-hidden>
+        <SidebarFooter className="border-t border-sidebar-border pt-3 px-3 pb-3">
+          <p className="text-[11px] text-muted-foreground leading-snug" aria-hidden>
             Powered by Databricks · Live data from your workspace
           </p>
           <SidebarUserFooter />
@@ -111,7 +111,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
       <SidebarInset className="flex flex-col h-screen">
         <header
           role="banner"
-          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex min-h-[3.5rem] shrink-0 items-center gap-3 px-4 md:px-6 py-2 transition-colors duration-200 shadow-sm overflow-visible"
+          className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border flex min-h-[3.5rem] shrink-0 items-center gap-3 px-4 md:px-6 py-2.5 transition-colors duration-200 shadow-sm overflow-visible"
           aria-label="App header"
         >
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Toggle sidebar" />
@@ -135,7 +135,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           tabIndex={-1}
         >
           <motion.div
-            className="page-container flex flex-1 flex-col gap-6 p-6 md:p-8 w-full"
+            className="page-container flex flex-1 flex-col gap-6 py-6 md:py-8 w-full"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}

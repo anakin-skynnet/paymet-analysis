@@ -267,24 +267,29 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "bar",
               "encodings": {
-                "angle": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
                   "fieldName": "sum(decline_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Decline Count"
-                },
-                "color": {
-                  "fieldName": "decline_reason",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "displayName": "Decline Reason",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "displayName": "Decline Count",
+                  "axis": {
+                    "title": "Decline Count"
                   }
                 }
               },

@@ -33,8 +33,14 @@
   --radius-lg: 1rem;
   --spacing-section: 1.5rem;
   --spacing-card: 1rem;
+  --spacing-inline: 0.75rem;   /* horizontal breathing room inside containers */
+  --spacing-block: 0.5rem;    /* vertical breathing room between inline elements */
   --content-max-width: 80rem; /* max-w-7xl */
   --content-section-gap: 1.5rem;
+  --content-padding-x: 1.5rem; /* page horizontal padding (md: 2rem) */
+  --card-padding: 1.25rem;     /* card inner padding for clarity */
+  --icon-text-gap: 0.5rem;    /* gap between icon and label */
+  --touch-min: 2.75rem;        /* min touch target height */
   --elevation-1: 0 1px 3px oklch(0 0 0 / 0.05);
   --elevation-2: 0 8px 24px oklch(0 0 0 / 0.08);
   --elevation-3: 0 16px 40px oklch(0 0 0 / 0.1);
@@ -273,7 +279,7 @@
   }
   /* Data source badge (Databricks / live data) */
   .data-source-badge {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary [&_svg]:shrink-0;
   }
   .dark .data-source-badge {
     @apply border-primary/30 bg-primary/10;
@@ -298,11 +304,10 @@
   .sidebar-header {
     @apply shrink-0 overflow-visible border-b border-sidebar-border/60;
     min-height: 6.5rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
+    padding: 0.75rem 1rem 0.875rem;
   }
   .sidebar-header-inner {
-    @apply flex flex-col items-center justify-center gap-0.5 px-4 py-2 min-w-0;
+    @apply flex flex-col items-center justify-center gap-1 px-3 py-2 min-w-0;
     min-height: 5.5rem;
   }
   /* In-content links: clear anchor style for readability */
@@ -327,6 +332,13 @@
     margin-left: auto;
     margin-right: auto;
     min-width: 0;
+    padding-left: var(--content-padding-x);
+    padding-right: var(--content-padding-x);
+  }
+  @media (min-width: 768px) {
+    .page-container {
+      --content-padding-x: 2rem;
+    }
   }
   /* KPI card — consistent min-height for metric blocks (executive at-a-glance) */
   .kpi-card {
@@ -335,6 +347,64 @@
   /* Hero KPI card — primary metric emphasis */
   .kpi-card-hero {
     min-height: 10.5rem;
+  }
+  /* Container fit: content stays inside with breathing room; use on wrappers for text/images/icons */
+  .container-fit {
+    padding: var(--spacing-inline) var(--spacing-inline);
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .container-fit-x {
+    padding-left: var(--spacing-inline);
+    padding-right: var(--spacing-inline);
+    min-width: 0;
+  }
+  .container-fit-y {
+    padding-top: var(--spacing-block);
+    padding-bottom: var(--spacing-block);
+  }
+  /* Icon + text row: consistent gap and alignment; icons don’t shrink */
+  .icon-text-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--icon-text-gap);
+    min-width: 0;
+  }
+  .icon-text-row svg {
+    flex-shrink: 0;
+    width: 1em;
+    height: 1em;
+  }
+  /* Image/icon container: fit inside without overflow, optional aspect */
+  .media-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+  }
+  .media-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+  /* Card inner spacing — use for consistent card padding */
+  .card-padding {
+    padding: var(--card-padding);
+  }
+  /* Touch-friendly minimum height for buttons/links */
+  .touch-target {
+    min-height: var(--touch-min);
+  }
+  /* Content stack: vertical spacing between sections */
+  .content-stack > * + * {
+    margin-top: var(--content-section-gap);
+  }
+  /* Prevent text/children from touching container edges */
+  .text-balance {
+    text-wrap: balance;
   }
 }
 

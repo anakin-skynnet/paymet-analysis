@@ -46,7 +46,7 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
     <Link
       to={item.to}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-0",
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-0 min-h-[2.5rem]",
         "border-l-[3px] border-transparent -ml-[3px]",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-primary shadow-sm"
@@ -54,7 +54,7 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
       )}
       aria-current={isActive ? "page" : undefined}
     >
-      <span className="shrink-0 size-4 flex items-center justify-center [&>svg]:size-4">{item.icon}</span>
+      <span className="shrink-0 size-5 flex items-center justify-center [&>svg]:size-[1.125rem] text-current">{item.icon}</span>
       <span className="truncate">{item.label}</span>
     </Link>
   );

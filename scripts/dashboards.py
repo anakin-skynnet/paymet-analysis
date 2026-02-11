@@ -296,17 +296,21 @@ def _dataset_by_name(data: dict, name: str) -> dict | None:
     return None
 
 
-# Names that suggest a numeric value column for charts (Y-axis or value). Use word boundaries so "country" doesn't match "count".
+# Names that suggest a numeric value column for charts (Y-axis or value). Match whole-word or trailing _count/_value/ etc. so "country" doesn't match but "decline_count" does.
 _NUMERIC_LIKE = re.compile(
-    r"\b(count|pct|rate|value|amount|score|ms|cost|total|avg|sum|volume|records_per|transaction_count|approved_count|declined_count)\b",
+    r"(?:\b|_)(count|pct|rate|value|amount|score|ms|cost|total|avg|sum|volume|records_per|transactions?|approved|declined)(?:\b|_|$)",
     re.IGNORECASE,
 )
 # Only these column names are treated as time dimensions (line chart X-axis). Avoid false matches like "transactions_last_hour".
 _TIME_DIMENSION_NAMES = frozenset(("hour", "date", "day", "period_start", "event_timestamp", "first_detected"))
+# Geographic columns for choropleth (map): country/region by name.
+_GEOGRAPHIC_COLUMNS = frozenset(("country", "region", "state", "nation"))
 # Categorical columns that work well for bar/pie (category + metric).
 _CATEGORICAL_LIKE = re.compile(
     r"reason|country|solution|network|segment|type|severity|template|source|device|alert|metric"
 )
+# Few-category columns: part-of-whole (pie). Many-category or ranking → bar.
+_PIE_FRIENDLY_CATEGORIES = frozenset(("payment_solution", "card_network", "merchant_segment", "alert_type", "severity"))
 
 
 def _display_name(col: str) -> str:
@@ -334,7 +338,18 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
     if has_limit_1 and len(columns) >= 1 and any(_NUMERIC_LIKE.search(c) for c in columns):
         c = next((x for x in columns if _NUMERIC_LIKE.search(x)), columns[0])
         return "counter", [c], {"value": {"fieldName": c, "displayName": _display_name(c)}}
-    # Time series: only real time dimensions (hour, date, …) → line chart (with axis titles per MS Learn)
+    # Geography (country/region) + value → choropleth (best for world/country maps)
+    first_lower = columns[0].lower()
+    if first_lower in _GEOGRAPHIC_COLUMNS and len(columns) >= 2:
+        geo_col = columns[0]
+        value_col = next((c for c in columns[1:] if _NUMERIC_LIKE.search(c)), columns[1])
+        fields = [geo_col, value_col]
+        encodings = {
+            "region": {"fieldName": geo_col, "displayName": _display_name(geo_col)},
+            "color": {"fieldName": f"sum({value_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(value_col)},
+        }
+        return "choropleth", fields, encodings
+    # Time series → line or area (area for volume/throughput)
     time_cols = [c for c in columns if c in _TIME_DIMENSION_NAMES]
     if time_cols and len(columns) >= 2:
         x_col = time_cols[0]
@@ -346,7 +361,33 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
             "x": {"fieldName": x_col, "scale": {"type": "temporal"}, "displayName": x_display, "axis": {"title": x_display}},
             "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": y_display, "axis": {"title": y_display}},
         }
-        return "line", fields, encodings
+        use_area = bool(re.search(r"records_per_second|record_count|volume", y_col, re.IGNORECASE))
+        return "area" if use_area else "line", fields, encodings
+    # Two numeric columns (no time) → scatter
+    if len(columns) >= 2 and not time_cols:
+        first_numeric = _NUMERIC_LIKE.search(columns[0])
+        second_numeric = _NUMERIC_LIKE.search(columns[1]) if len(columns) > 1 else None
+        if first_numeric and second_numeric and columns[0] != columns[1]:
+            x_col, y_col = columns[0], columns[1]
+            fields = [x_col, y_col]
+            encodings = {
+                "x": {"fieldName": x_col, "scale": {"type": "quantitative"}, "displayName": _display_name(x_col), "axis": {"title": _display_name(x_col)}},
+                "y": {"fieldName": y_col, "scale": {"type": "quantitative"}, "displayName": _display_name(y_col), "axis": {"title": _display_name(y_col)}},
+            }
+            return "scatter", fields, encodings
+    # Two categorical + value → heatmap
+    if len(columns) >= 3 and not has_limit_1:
+        cat1 = columns[0].lower() in ("decline_reason", "merchant_segment", "card_network", "payment_solution", "country", "alert_type") or _CATEGORICAL_LIKE.search(columns[0])
+        cat2 = columns[1].lower() in ("merchant_segment", "card_network", "decline_reason") or _CATEGORICAL_LIKE.search(columns[1])
+        val_col = next((c for c in columns[2:] if _NUMERIC_LIKE.search(c)), None)
+        if cat1 and cat2 and val_col:
+            fields = [columns[0], columns[1], val_col]
+            encodings = {
+                "x": {"fieldName": columns[0], "scale": {"type": "categorical"}, "displayName": _display_name(columns[0]), "axis": {"title": _display_name(columns[0])}},
+                "y": {"fieldName": columns[1], "scale": {"type": "categorical"}, "displayName": _display_name(columns[1]), "axis": {"title": _display_name(columns[1])}},
+                "color": {"fieldName": f"sum({val_col})", "scale": {"type": "quantitative"}, "displayName": _display_name(val_col)},
+            }
+            return "heatmap", fields, encodings
     # Categorical + numeric → bar or pie (only when first column is clearly categorical, not a metric)
     if not has_limit_1 and len(columns) >= 2:
         first, second = columns[0], columns[1]
@@ -362,11 +403,8 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
             x_col = first
             y_col = next((c for c in columns[1:] if _NUMERIC_LIKE.search(c)), second)
             fields = [x_col, y_col]
-            # Pie for distribution (angle + color) when category name suggests segment/type
-            use_pie = bool(
-                _CATEGORICAL_LIKE.search(first)
-                or first.lower() in ("payment_solution", "card_network", "country", "alert_type", "severity")
-            )
+            # Pie for part-of-whole (few categories); bar for many categories / ranking
+            use_pie = first.lower() in _PIE_FRIENDLY_CATEGORIES
             if use_pie:
                 x_display, y_display = _display_name(x_col), _display_name(y_col)
                 encodings = {
@@ -419,15 +457,33 @@ def cmd_best_widgets() -> int:
                     existing = [f.get("name") for f in main_query.get("fields", []) if f.get("name")]
                     columns = existing or [dataset.get("displayName", dataset_name)]
                 widget_type, fields, encodings = _recommend_widget_type(columns, ds_query)
-                # Build query.fields (dbdemos: counter = one field; line/bar/pie = x + SUM(y), disaggregated false)
+                # Build query.fields and disaggregated per widget type
                 if widget_type == "counter":
                     new_fields = [{"name": fields[0], "expression": f"`{fields[0]}`"}]
                     main_query["disaggregated"] = True
-                elif widget_type in ("line", "bar", "pie"):
+                elif widget_type in ("line", "bar", "pie", "area"):
                     x_col, y_col = fields[0], fields[1]
                     new_fields = [
                         {"name": x_col, "expression": f"`{x_col}`"},
                         {"name": f"sum({y_col})", "expression": f"SUM(`{y_col}`)"},
+                    ]
+                    main_query["disaggregated"] = False
+                elif widget_type == "choropleth":
+                    geo_col, value_col = fields[0], fields[1]
+                    new_fields = [
+                        {"name": geo_col, "expression": f"`{geo_col}`"},
+                        {"name": f"sum({value_col})", "expression": f"SUM(`{value_col}`)"},
+                    ]
+                    main_query["disaggregated"] = False
+                elif widget_type == "scatter":
+                    new_fields = [{"name": f, "expression": f"`{f}`"} for f in fields]
+                    main_query["disaggregated"] = True
+                elif widget_type == "heatmap":
+                    x_col, y_col, val_col = fields[0], fields[1], fields[2]
+                    new_fields = [
+                        {"name": x_col, "expression": f"`{x_col}`"},
+                        {"name": y_col, "expression": f"`{y_col}`"},
+                        {"name": f"sum({val_col})", "expression": f"SUM(`{val_col}`)"},
                     ]
                     main_query["disaggregated"] = False
                 else:
@@ -439,8 +495,9 @@ def cmd_best_widgets() -> int:
                 if spec.get("widgetType") != widget_type:
                     spec["widgetType"] = widget_type
                     changed = True
-                # dbdemos: version 2 for counter, 3 for bar/line/pie
-                want_version = 2 if widget_type == "counter" else (3 if widget_type in ("line", "bar", "pie") else 1)
+                # version 2 for counter, 3 for chart types (line/bar/pie/area/choropleth/scatter/heatmap)
+                chart_types = ("line", "bar", "pie", "area", "choropleth", "scatter", "heatmap")
+                want_version = 2 if widget_type == "counter" else (3 if widget_type in chart_types else 1)
                 if spec.get("version") != want_version:
                     spec["version"] = want_version
                     changed = True
@@ -479,17 +536,38 @@ def cmd_best_widgets() -> int:
                     enc.pop("x", None)
                     enc.pop("y", None)
                     enc.pop("value", None)
+                    enc.pop("region", None)
+                    if "columns" in enc:
+                        del enc["columns"]
+                        changed = True
+                elif widget_type == "choropleth":
+                    if enc.get("region") != encodings.get("region") or enc.get("color") != encodings.get("color"):
+                        enc["region"] = encodings.get("region")
+                        enc["color"] = encodings.get("color")
+                        changed = True
+                    for k in ("x", "y", "value", "angle", "columns"):
+                        enc.pop(k, None)
+                elif widget_type == "heatmap":
+                    if enc.get("x") != encodings.get("x") or enc.get("y") != encodings.get("y") or enc.get("color") != encodings.get("color"):
+                        enc["x"] = encodings.get("x")
+                        enc["y"] = encodings.get("y")
+                        enc["color"] = encodings.get("color")
+                        changed = True
+                    enc.pop("value", None)
+                    enc.pop("angle", None)
+                    enc.pop("region", None)
                     if "columns" in enc:
                         del enc["columns"]
                         changed = True
                 else:
-                    # line/bar: encodings x and y as single objects (dbdemos style)
+                    # line/bar/area/scatter: x and y encodings
                     if enc.get("x") != encodings.get("x") or enc.get("y") != encodings.get("y"):
                         enc["x"] = encodings.get("x")
                         enc["y"] = encodings.get("y")
                         changed = True
                     enc.pop("value", None)
                     enc.pop("angle", None)
+                    enc.pop("region", None)
                     enc.pop("color", None)
                     if "columns" in enc:
                         del enc["columns"]

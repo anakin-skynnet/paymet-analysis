@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Code2, AlertTriangle } from "lucide-react";
-import { getDashboardUrl, openWorkspaceUrl } from "@/config/workspace";
+import { getDashboardUrl, openInDatabricks } from "@/config/workspace";
 
 export const Route = createFileRoute("/_sidebar/incidents")({
   component: () => <Incidents />,
@@ -22,14 +22,14 @@ const openNotebook = async (notebookId: string) => {
   try {
     const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
     const data = await response.json();
-    openWorkspaceUrl(data?.url);
+    openInDatabricks(data?.url);
   } catch (error) {
     console.error("Failed to open notebook:", error);
   }
 };
 
 const openDashboard = () => {
-  openWorkspaceUrl(getDashboardUrl("/sql/dashboards/realtime_monitoring"));
+  openInDatabricks(getDashboardUrl("/sql/dashboards/realtime_monitoring"));
 };
 
 function Incidents() {
@@ -110,7 +110,7 @@ const MONITORING_DASHBOARD_PATH = "/sql/dashboards/realtime_monitoring";
 function IncidentRow({ inc }: { inc: Incident }) {
   const openInWorkspace = () => {
     const url = getDashboardUrl(MONITORING_DASHBOARD_PATH);
-    openWorkspaceUrl(url);
+    openInDatabricks(url);
   };
   return (
     <Card

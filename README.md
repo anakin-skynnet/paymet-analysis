@@ -21,7 +21,7 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 ## Quick start
 
 1. **Deploy:** `./scripts/bundle.sh deploy dev` (runs dashboard prepare and deploys bundle).
-2. **Setup & Run (in order):** In the app, run the 6 jobs in order: **1** Create Data Repositories, **2** Simulate Transaction Events, **3** Initialize Ingestion, **4** Deploy Dashboards, **5** Train Models & Model Serving, **6** Deploy AgentBricks Agents. Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
+2. **Setup & Run (in order):** In the app, run the 6 jobs in order: **1** Create Data Repositories, **2** Simulate Transaction Events, **3** Initialize Ingestion, **4** Deploy Dashboards, **5** Train Models & Model Serving, **6** Deploy Agents. Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
 3. **App environment:** **Workspace → Apps** → payment-analysis → Edit → set `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID` (same as Job 1), `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN`.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.

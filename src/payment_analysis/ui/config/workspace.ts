@@ -99,3 +99,9 @@ export function openWorkspaceUrl(url: string | null | undefined): void {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 }
+
+/**
+ * Alias for openWorkspaceUrl for UI click handlers (open link in Databricks workspace).
+ * Use with getDashboardUrl(), getGenieUrl(), getMLflowUrl(), or any workspace path.
+ */
+export const openInDatabricks = openWorkspaceUrl;

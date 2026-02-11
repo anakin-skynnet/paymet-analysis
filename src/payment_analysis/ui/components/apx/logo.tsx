@@ -9,10 +9,10 @@ interface LogoProps {
 export function Logo({ to = "/", className = "", showText = false }: LogoProps) {
   const content = (
     <div
-      className={`flex flex-col items-center justify-center gap-1.5 py-1.5 px-0.5 min-h-[2.75rem] ${className}`}
+      className={`flex flex-col items-center justify-center gap-2 py-2 px-2 min-h-[3rem] min-w-0 ${className}`}
       style={{ contain: "layout" }}
     >
-      <span className="flex items-center justify-center h-9 max-h-9 w-full overflow-visible shrink-0">
+      <span className="media-container h-9 max-h-9 w-full shrink-0">
         <img
           src="/getnet_logo.png"
           alt="Payment Analysis"
@@ -20,7 +20,7 @@ export function Logo({ to = "/", className = "", showText = false }: LogoProps) 
         />
       </span>
       {showText && (
-        <span className="font-semibold text-base font-heading leading-tight shrink-0 text-center">{__APP_NAME__}</span>
+        <span className="font-semibold text-sm font-heading leading-tight shrink-0 text-center px-0.5">{__APP_NAME__}</span>
       )}
     </div>
   );

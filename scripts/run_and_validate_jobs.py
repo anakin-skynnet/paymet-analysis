@@ -56,7 +56,7 @@ JOB_NAME_SUBSTRINGS: dict[str, str] = {
     "job_3_initialize_ingestion": "3. Initialize Ingestion",
     "job_4_deploy_dashboards": "4. Deploy Dashboards",
     "job_5_train_models_and_serving": "5. Train Models",
-    "job_6_deploy_agents": "6. Deploy AgentBricks",
+    "job_6_deploy_agents": "6. Deploy Agents",  # Matches "[dev] 6. Deploy Agents (Orchestrator & Specialists)" (AI Framework)
     "job_7_genie_sync": "7. Genie Space Sync",
 }
 

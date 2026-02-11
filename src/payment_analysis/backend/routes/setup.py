@@ -188,7 +188,7 @@ _STEP_JOB_SUBSTRINGS: dict[str, list[str]] = {
     "3. Initialize Ingestion": ["create_gold_views", "continuous_stream_processor"],
     "4. Deploy Dashboards": ["prepare_dashboards", "publish_dashboards"],
     "5. Train Models & Publish to Model Serving": ["train_ml_models"],
-    "6. Deploy AgentBricks Agents": [
+    "6. Deploy Agents": [
         "run_agent_framework",
         "orchestrator_agent",
         "test_agent_framework",

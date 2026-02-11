@@ -32,234 +32,36 @@
                     {
                       "name": "approval_rate_pct",
                       "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "total_value",
-                      "expression": "`total_value`"
-                    },
-                    {
-                      "name": "active_segments",
-                      "expression": "`active_segments`"
-                    },
-                    {
-                      "name": "high_risk_transactions",
-                      "expression": "`high_risk_transactions`"
-                    },
-                    {
-                      "name": "declines_last_hour",
-                      "expression": "`declines_last_hour`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "scatter",
               "encodings": {
-                "columns": [
-                  {
-                    "name": "transactions_last_hour",
-                    "fieldName": "transactions_last_hour",
-                    "displayName": "transactions_last_hour",
-                    "title": "transactions_last_hour",
-                    "order": 0,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                "x": {
+                  "fieldName": "transactions_last_hour",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "name": "approval_rate_pct",
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "approval_rate_pct",
-                    "title": "approval_rate_pct",
-                    "order": 1,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "avg_fraud_score",
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "avg_fraud_score",
-                    "title": "avg_fraud_score",
-                    "order": 2,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "total_value",
-                    "fieldName": "total_value",
-                    "displayName": "total_value",
-                    "title": "total_value",
-                    "order": 3,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "active_segments",
-                    "fieldName": "active_segments",
-                    "displayName": "active_segments",
-                    "title": "active_segments",
-                    "order": 4,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "high_risk_transactions",
-                    "fieldName": "high_risk_transactions",
-                    "displayName": "high_risk_transactions",
-                    "title": "high_risk_transactions",
-                    "order": 5,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "declines_last_hour",
-                    "fieldName": "declines_last_hour",
-                    "displayName": "declines_last_hour",
-                    "title": "declines_last_hour",
-                    "order": 6,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                  "displayName": "Transactions Last Hour",
+                  "axis": {
+                    "title": "Transactions Last Hour"
                   }
-                ]
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Approval Rate Pct",
+                  "axis": {
+                    "title": "Approval Rate Pct"
+                  }
+                }
               },
               "frame": {
                 "showTitle": true,
@@ -289,8 +91,8 @@
                       "expression": "`first_detected`"
                     },
                     {
-                      "name": "sum(alert_type)",
-                      "expression": "SUM(`alert_type`)"
+                      "name": "sum(current_value)",
+                      "expression": "SUM(`current_value`)"
                     }
                   ],
                   "disaggregated": false
@@ -312,13 +114,13 @@
                   }
                 },
                 "y": {
-                  "fieldName": "sum(alert_type)",
+                  "fieldName": "sum(current_value)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Alert Type",
+                  "displayName": "Current Value",
                   "axis": {
-                    "title": "Alert Type"
+                    "title": "Current Value"
                   }
                 }
               },
