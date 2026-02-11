@@ -49,6 +49,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGetDashboardUrl } from "@/lib/api";
 import { getDashboardUrl, getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
@@ -85,8 +86,6 @@ const openNotebook = async (notebookId: string) => {
     console.error("Failed to open notebook:", error);
   }
 };
-
-const openDashboard = () => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"));
 
 function DashboardSkeleton() {
   return (
@@ -181,7 +180,11 @@ function Dashboard() {
   const getRiskTier = (log: { response?: Record<string, unknown> }) =>
     log.response?.risk_tier as string | undefined;
 
-  const openExecutive = () => openInDatabricks(getDashboardUrl("/sql/dashboards/executive_overview"));
+  const { data: execUrlData } = useGetDashboardUrl({ params: { dashboard_id: "executive_overview" } });
+  const openExecutive = () => {
+    const url = (execUrlData?.data as { full_url?: string } | undefined)?.full_url ?? getDashboardUrl("/sql/dashboards/executive_overview");
+    openInDatabricks(url);
+  };
 
   return (
     <motion.div
@@ -268,7 +271,7 @@ function Dashboard() {
           <div className="flex gap-2 flex-wrap">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={openDashboard}>
+                <Button variant="outline" size="sm" onClick={openExecutive}>
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Executive Dashboard
                   <ExternalLink className="w-3 h-3 ml-2" />

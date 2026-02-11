@@ -14,7 +14,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..config import ensure_absolute_workspace_url
+from ..config import (
+    REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE,
+    REFERENCE_WORKSPACE_HOST,
+    REFERENCE_WORKSPACE_ID,
+    ensure_absolute_workspace_url,
+)
 from ..dependencies import ConfigDep
 
 logger = logging.getLogger(__name__)
@@ -269,6 +274,34 @@ async def get_dashboard(dashboard_id: str) -> DashboardInfo:
     )
 
 
+def _dashboard_url_path_and_full(
+    dashboard_id: str,
+    default_url_path: str,
+    config: Any,
+) -> tuple[str, str | None]:
+    """
+    Return (url_path, full_url) for a dashboard. When executive_overview and a Lakeview
+    reference ID is configured (or workspace matches reference), use dashboardsv3 published URL.
+    Reference: https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111
+    """
+    lakeview_id = getattr(config.databricks, "lakeview_id_executive_overview", None) or (
+        REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE if dashboard_id == "executive_overview" else None
+    )
+    raw_host = (config.databricks.workspace_url or "").strip().rstrip("/")
+    workspace_id = config.databricks.workspace_id
+    if not workspace_id and raw_host and REFERENCE_WORKSPACE_HOST.rstrip("/") == ensure_absolute_workspace_url(raw_host).rstrip("/"):
+        workspace_id = REFERENCE_WORKSPACE_ID
+    if dashboard_id == "executive_overview" and lakeview_id:
+        path = f"/dashboardsv3/{lakeview_id}/published"
+        if workspace_id:
+            path = f"{path}?o={workspace_id}"
+        full = None
+        if raw_host and "example.databricks.com" not in raw_host:
+            full = ensure_absolute_workspace_url(raw_host).rstrip("/") + path
+        return path, full
+    return default_url_path, None
+
+
 @router.get("/{dashboard_id}/url", response_model=dict[str, Any], operation_id="getDashboardUrl")
 async def get_dashboard_url(
     dashboard_id: str,
@@ -278,33 +311,38 @@ async def get_dashboard_url(
     """
     Get the Databricks URL for a specific dashboard.
     
+    When Executive Overview is configured with a Lakeview dashboard ID (or reference workspace
+    matches), returns the dashboardsv3 published URL so the app opens the reference dashboard.
+    
     Args:
         dashboard_id: Unique dashboard identifier
         embed: If True, returns URL suitable for iframe embedding
         
     Returns:
-        Dictionary with URL, embed_url (path), and full_embed_url (absolute URL for iframe)
+        Dictionary with url (path or full URL), full_url when using Lakeview reference, embed_url, full_embed_url
         
     Raises:
         HTTPException: If dashboard not found
     """
     dashboard = await get_dashboard(dashboard_id)
-    
-    # Relative path; frontend can prepend workspace URL from config
-    base_url = dashboard.url_path
+    default_path = dashboard.url_path or ""
+    base_url, full_url = _dashboard_url_path_and_full(dashboard_id, default_path, config)
     raw_host = (config.databricks.workspace_url or "").strip().rstrip("/")
     is_placeholder = not raw_host or "example.databricks.com" in raw_host
-    workspace_host = ensure_absolute_workspace_url(raw_host) if raw_host else ""
+    workspace_host = ensure_absolute_workspace_url(raw_host).rstrip("/") if raw_host else ""
 
     if embed:
-        # Embed path: optional workspace ID (o=) from DATABRICKS_WORKSPACE_ID so embed works in any workspace
-        embed_path = f"{base_url}?embed=true"
-        if config.databricks.workspace_id:
-            embed_path = f"{base_url}?o={config.databricks.workspace_id}&embed=true"
-        full_embed_url = f"{workspace_host}{embed_path}" if workspace_host and not is_placeholder else None
+        sep = "&" if "?" in base_url else "?"
+        embed_path = f"{base_url}{sep}embed=true"
+        full_embed_url = None
+        if full_url:
+            full_embed_url = f"{full_url}{sep}embed=true"
+        elif workspace_host and not is_placeholder:
+            full_embed_url = f"{workspace_host}{embed_path}"
         return {
             "dashboard_id": dashboard_id,
             "url": base_url,
+            "full_url": full_url,
             "embed_url": embed_path,
             "full_embed_url": full_embed_url,
             "embed": True,
@@ -314,6 +352,7 @@ async def get_dashboard_url(
     return {
         "dashboard_id": dashboard_id,
         "url": base_url,
+        "full_url": full_url,
         "embed": False,
     }
 

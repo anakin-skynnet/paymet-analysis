@@ -121,6 +121,13 @@ def get_default_schema() -> str:
     return SCHEMA_BASE_NAME
 
 
+# Reference workspace and Lakeview dashboard (Azure) for aligning app dashboard links.
+# When set, executive_overview uses the Lakeview v3 published URL: /dashboardsv3/<id>/published?o=<workspace_id>
+REFERENCE_WORKSPACE_HOST = "https://adb-984752964297111.11.azuredatabricks.net"
+REFERENCE_WORKSPACE_ID = "984752964297111"
+REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE = "01efef6277e1146bb92982fc1364845d"
+
+
 class DatabricksConfig(BaseSettings):
     """Databricks workspace configuration."""
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
@@ -135,6 +142,11 @@ class DatabricksConfig(BaseSettings):
         default=None,
         description="Workspace ID (e.g. for dashboard embed URL query param 'o'). Set DATABRICKS_WORKSPACE_ID.",
         validation_alias="DATABRICKS_WORKSPACE_ID",
+    )
+    lakeview_id_executive_overview: str | None = Field(
+        default=None,
+        description="Lakeview dashboard ID for Executive Overview (dashboardsv3 URL). Set DATABRICKS_LAKEVIEW_ID_EXECUTIVE_OVERVIEW. When unset, reference ID may be used if workspace matches.",
+        validation_alias="DATABRICKS_LAKEVIEW_ID_EXECUTIVE_OVERVIEW",
     )
 
 

@@ -1,5 +1,7 @@
 # AI/BI Dashboard definitions (Lakeview / .lvdash.json)
 
+**Reference dashboard (Lakeview v3):** The app can use a published Lakeview dashboard as the Executive Overview. When the workspace matches the reference (e.g. `https://adb-984752964297111.11.azuredatabricks.net`), or when `DATABRICKS_LAKEVIEW_ID_EXECUTIVE_OVERVIEW` is set, the backend returns the dashboardsv3 URL (`/dashboardsv3/<id>/published?o=<workspace_id>`) so "Executive Dashboard" opens that dashboard. Reference: [published dashboard](https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111).
+
 Dashboard JSONs are prepared by `scripts/dashboards.py prepare` (catalog/schema substitution) and deployed via the bundle (`resources/dashboards.yml`). Each file follows the [dbdemos](https://github.com/databricks-demos/dbdemos) and [Apps Cookbook](https://apps-cookbook.dev/docs/intro) pattern:
 
 - **datasets**: SQL queries against Unity Catalog views. Use placeholder `__CATALOG__.__SCHEMA__`; it is replaced with the target catalog and schema at prepare time.
