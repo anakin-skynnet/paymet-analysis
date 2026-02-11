@@ -160,6 +160,86 @@ def _make_table_widget(dataset_name: str, columns: list[str], x: int, y: int, wi
     }
 
 
+def cmd_check_widgets() -> int:
+    """Verify dashboard structure and widget settings per dbdemos pattern (see README and dbdemos/installer_dashboard)."""
+    errors: list[str] = []
+    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            errors.append(f"{path.name}: invalid JSON — {e}")
+            continue
+        # --- Datasets (dbdemos: name, displayName, query or queryLines) ---
+        datasets = data.get("datasets", [])
+        dataset_names = set()
+        for i, ds in enumerate(datasets):
+            name = ds.get("name")
+            if not name:
+                errors.append(f"{path.name}: dataset[{i}] missing 'name'")
+                continue
+            dataset_names.add(name)
+            if not ds.get("displayName"):
+                errors.append(f"{path.name}: dataset '{name}' missing 'displayName'")
+            if not ds.get("query") and not ds.get("queryLines"):
+                errors.append(f"{path.name}: dataset '{name}' missing 'query' or 'queryLines'")
+        # --- Pages and layout ---
+        pages = data.get("pages", [])
+        if not pages:
+            errors.append(f"{path.name}: no 'pages' defined")
+        referenced: set[str] = set()
+        for pidx, page in enumerate(pages):
+            if not page.get("name"):
+                errors.append(f"{path.name}: page[{pidx}] missing 'name'")
+            if not page.get("displayName"):
+                errors.append(f"{path.name}: page[{pidx}] missing 'displayName'")
+            layout = page.get("layout", [])
+            if not layout:
+                errors.append(f"{path.name}: page[{pidx}] has no 'layout'")
+            for lidx, item in enumerate(layout):
+                widget = item.get("widget")
+                pos = item.get("position")
+                if not widget:
+                    errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] missing 'widget'")
+                    continue
+                if not pos:
+                    errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] widget missing 'position'")
+                else:
+                    for key in ("x", "y", "width", "height"):
+                        if key not in pos:
+                            errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] position missing '{key}'")
+                # Data widget: must have queries with query.datasetName and query.fields, and spec
+                queries = widget.get("queries", [])
+                if queries:
+                    for qidx, q in enumerate(queries):
+                        query = q.get("query", {})
+                        dn = query.get("datasetName")
+                        if not dn:
+                            errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] queries[{qidx}] missing 'query.datasetName'")
+                        else:
+                            referenced.add(dn)
+                            if dn not in dataset_names:
+                                errors.append(f"{path.name}: widget references unknown dataset '{dn}'")
+                        if "fields" not in query or not query["fields"]:
+                            errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] queries[{qidx}] missing or empty 'query.fields'")
+                    spec = widget.get("spec", {})
+                    if not spec:
+                        errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] data widget missing 'spec'")
+                    else:
+                        if not spec.get("widgetType"):
+                            errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] spec missing 'widgetType'")
+                        if spec.get("widgetType") == "table" and "encodings" in spec and "columns" not in spec["encodings"]:
+                            errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] table widget spec.encodings missing 'columns'")
+        missing = dataset_names - referenced
+        if missing:
+            errors.append(f"{path.name}: dataset(s) with no widget: {', '.join(sorted(missing))}")
+    if errors:
+        for e in errors:
+            print(e, file=sys.stderr)
+        return 1
+    print("All dashboards match dbdemos pattern: datasets defined, widgets have datasetName/fields/spec/position.")
+    return 0
+
+
 def cmd_link_widgets() -> int:
     """Add minimal layout with one table widget per dataset so widgets are linked (dbdemos pattern)."""
     updated = 0
@@ -343,6 +423,8 @@ def main() -> int:
     p_pub.add_argument("--dry-run", action="store_true")
     # link-widgets
     sub.add_parser("link-widgets", help="Add layout with table widgets linked to each dataset (dbdemos pattern)")
+    # check-widgets
+    sub.add_parser("check-widgets", help="Verify widgets reference datasets in the same file and every dataset has a widget")
     args = parser.parse_args()
 
     if args.cmd == "prepare":
@@ -355,6 +437,8 @@ def main() -> int:
         return cmd_publish(args.path, args.dry_run)
     if args.cmd == "link-widgets":
         return cmd_link_widgets()
+    if args.cmd == "check-widgets":
+        return cmd_check_widgets()
     return 1
 
 

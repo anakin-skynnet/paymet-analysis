@@ -4,7 +4,7 @@ Dashboard JSONs are prepared by `scripts/dashboards.py prepare` (catalog/schema 
 
 - **datasets**: SQL queries against Unity Catalog views. Use placeholder `__CATALOG__.__SCHEMA__`; it is replaced with the target catalog and schema at prepare time.
 - **pages**: Dashboard pages. Each page has a `name`, `displayName`, and **layout** (widgets linked to datasets).
-- **Widgets and datasets**: Following the [dbdemos aibi-marketing-campaign](https://github.com/databricks-demos/dbdemos-notebooks/tree/main/aibi/aibi-marketing-campaign/_resources/dashboards) example, every widget in `layout` references a dataset via `query.datasetName` (the dataset's `name`). Run `uv run python scripts/dashboards.py link-widgets` to add minimal table widgets for any dataset that has no widget yet.
+- **Widgets and datasets**: Following the [dbdemos](https://github.com/databricks-demos/dbdemos/tree/main/dbdemos) / [aibi-marketing-campaign](https://github.com/databricks-demos/dbdemos-notebooks/tree/main/aibi/aibi-marketing-campaign/_resources/dashboards) example, every data widget in `layout` has `queries[].query.datasetName`, `query.fields`, `spec` (widgetType, encodings), and `position` (x, y, width, height). Run `uv run python scripts/dashboards.py link-widgets` to add minimal table widgets for any dataset that has no widget; run `uv run python scripts/dashboards.py check-widgets` to verify all widget settings are defined and assigned per dbdemos.
 
 ## Making widgets show visual results
 
