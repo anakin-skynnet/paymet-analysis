@@ -3,12 +3,14 @@
 # =============================================================================
 # Two pipelines: main ETL (Bronze → Silver → Gold) and dedicated real-time stream.
 # Numeric prefix matches execution order (jobs 1–7, then pipelines 8, 9).
-# Catalog/schema from variables. Serverless, continuous, Photon. Development mode in dev.
+# Catalog/schema from variables. Serverless, Photon. Pipeline mode: Continuous
+# (UI "Pipeline mode" = Continuous); development mode in dev for pipeline 8.
 # =============================================================================
 
 resources:
   pipelines:
     # 8. Main ETL: bronze_ingest → silver_transform → gold_views (notebooks)
+    # Pipeline mode: Continuous (processes data as it arrives; not triggered).
     payment_analysis_etl:
       name: "[${var.environment}] 8. Payment Analysis ETL"
       catalog: ${var.catalog}
@@ -34,11 +36,12 @@ resources:
         - notebook:
             path: ${workspace.root_path}/src/payment_analysis/transform/gold_views
       serverless: true
-      continuous: true
+      continuous: true  # Pipeline mode = Continuous (UI); required for both pipelines
       development: ${var.pipelines_development}
       photon: true
 
-    # 9. Dedicated real-time pipeline (single notebook). Continuous streaming (not triggered).
+    # 9. Dedicated real-time pipeline (single notebook).
+    # Pipeline mode: Continuous (streaming; not triggered).
     payment_realtime_pipeline:
       name: "[${var.environment}] 9. Payment Real-Time Stream"
       catalog: ${var.catalog}
@@ -54,6 +57,6 @@ resources:
         - notebook:
             path: ${workspace.root_path}/src/payment_analysis/streaming/realtime_pipeline
       serverless: true
-      continuous: true
+      continuous: true  # Pipeline mode = Continuous (UI); required for real-time stream
       development: false
       photon: true

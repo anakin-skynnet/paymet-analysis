@@ -83,7 +83,6 @@ def register_agents():
     registered = []
 
     set_registry_uri("databricks-uc")
-    # Experiment path: /Users/<user>/agents/agentbricks_register. Avoid /Users/spark-xxx/ (no workspace folder).
     _user = None
     try:
         _user = spark.sql("SELECT current_user()").collect()[0][0]  # type: ignore[name-defined]
@@ -99,10 +98,9 @@ def register_agents():
     if not _user:
         _user = os.environ.get("USER") or ""
     _user = (_user or "").strip()
-    if _user and not _user.startswith("spark-"):
-        _exp_path = f"/Users/{_user}/agents/agentbricks_register"
-    else:
-        _exp_path = "/Shared/agents/agentbricks_register"
+
+    _exp_path = f"/Workspace/Users/{_user}/payment-analysis/src/payment_analysis/agents/experiments"
+
     try:
         mlflow.set_experiment(_exp_path)
     except Exception as _e1:
