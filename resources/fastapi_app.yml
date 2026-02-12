@@ -58,37 +58,19 @@ resources:
             name: "Payment Analytics"
             space_id: ${var.genie_space_id}
             permission: CAN_EDIT
-        # Model serving — endpoints created by model_serving.yml after Job 5 & 6. Use two-phase deploy (deploy_with_dependencies.sh) so jobs run before app.
-        - name: serving-orchestrator
-          description: AgentBricks/Supervisor orchestrator (set ORCHESTRATOR_SERVING_ENDPOINT=payment-analysis-orchestrator to use)
-          serving_endpoint:
-            name: "payment-analysis-orchestrator"
-            permission: CAN_QUERY
-        - name: serving-decline-analyst
-          description: Decline analyst agent (LangGraph)
-          serving_endpoint:
-            name: "decline-analyst-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-approval-prop
-          description: Approval propensity model
-          serving_endpoint:
-            name: "approval-propensity-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-risk-scoring
-          description: Risk scoring model
-          serving_endpoint:
-            name: "risk-scoring-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-routing
-          description: Smart routing model
-          serving_endpoint:
-            name: "smart-routing-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-retry
-          description: Smart retry model
-          serving_endpoint:
-            name: "smart-retry-${var.environment}"
-            permission: CAN_QUERY
+        # Model serving — uncomment when endpoints exist (use ./scripts/deploy_with_dependencies.sh for two-phase deploy).
+        # - name: serving-orchestrator
+        #   serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
+        # - name: serving-decline-analyst
+        #   serving_endpoint: { name: "decline-analyst-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-approval-prop
+        #   serving_endpoint: { name: "approval-propensity-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-risk-scoring
+        #   serving_endpoint: { name: "risk-scoring-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-smart-routing
+        #   serving_endpoint: { name: "smart-routing-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-smart-retry
+        #   serving_endpoint: { name: "smart-retry-${var.environment}", permission: CAN_QUERY }
         # Optional: legacy/external LLM endpoint (uncomment if used)
         # - name: serving-endpoint
         #   description: External model endpoint

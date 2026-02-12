@@ -7,6 +7,7 @@ alwaysApply: true
 **Unified agent context:** For full knowledge and context from all conversation prompts (dashboards, real-time views, workspace cleanup, orchestrator UI, commands, key paths), read [.cursor/AGENT_CONTEXT.md](../../.cursor/AGENT_CONTEXT.md). For solution scope, MCP reference, agent framework, and common requests, see [AGENTS.md](../../AGENTS.md). The rules below align with both.
 
 # Do's and Don'ts
+- **Deploy prompt:** When the user sends a "deploy" or "redeploy" prompt, **always ask** before running: "Are you deploying the app or the rest of the resources?" Then run the matching command: **rest of resources** → `./scripts/bundle.sh deploy [target]` (phase 1: all except the App; then user runs jobs 5 and 6 and later "deploy app"); **app** → `./scripts/bundle.sh deploy app [target]` (phase 2: validate and deploy the App with model serving and all resources uncommented).
 - OpenAPI client is generated at build time; don't manually regenerate.
 - Prefer running apx related commands via MCP server if it's available.
 - Use the apx MCP `search_registry_components` and `add_component` tools to find and add shadcn/ui components.
@@ -62,11 +63,13 @@ uv run apx dev check
 uv run apx build
 ```
 
-**Deploy to Databricks** (run from repo root; prepares dashboards then deploys):
-```bash
-./scripts/bundle.sh deploy [dev|prod]
-# Or: ./scripts/bundle.sh validate dev && databricks bundle deploy -t dev
-```
+**Two-phase deploy** (run from repo root):
+
+- **Phase 1 — rest of resources (no app):** `./scripts/bundle.sh deploy [dev|prod]` or `./scripts/bundle.sh redeploy [dev|prod]`. Deploys jobs, pipelines, dashboards, etc.; outputs: "all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt \"deploy app\"". Always validates that the app can be deployed with all dependencies and resources when you run phase 2.
+- **Phase 2 — app (after jobs 5 and 6):** `./scripts/bundle.sh deploy app [dev|prod]`. Validates app dependencies, uncomments model_serving and serving bindings, deploys the App with all resources assigned and uncommented.
+
+When the user says "deploy" or "redeploy", always ask: "Are you deploying the app or the rest of the resources?" then run the matching phase.
+
 Before any `databricks bundle` command (validate, deploy, run), ensure dashboard files exist: run `uv run python scripts/dashboards.py prepare` (or with `--catalog`/`--schema` for prod)—otherwise you get "failed to read serialized dashboard from file_path .build/dashboards/...."
 
 ## MCP Tools Reference

@@ -188,7 +188,6 @@ def register_agents():
 
     return registered
 
-    
 
 # COMMAND ----------
 

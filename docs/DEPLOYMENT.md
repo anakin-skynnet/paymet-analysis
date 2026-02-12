@@ -8,23 +8,45 @@ Databricks workspace (Unity Catalog), SQL Warehouse, CLI configured. **Catalog a
 
 ## Quick start
 
-One command deploys the bundle and generates all required files (dashboards and SQL for jobs):
+Deployment is **two-phase**: deploy all resources first (no App), then deploy the App after its dependencies (model serving endpoints) exist.
+
+### Phase 1 — deploy resources (no App)
 
 ```bash
 ./scripts/bundle.sh deploy dev
 ```
 
-This runs **prepare** (writes `.build/dashboards/` and `.build/transform/gold_views.sql` + `lakehouse_bootstrap.sql` with catalog/schema) then deploys. After deploy, run steps 1–10 from the app **Setup & Run** in order. To validate without deploying: `./scripts/bundle.sh validate dev`.
+This runs **build** (frontend + wheel), **clean** (removes existing BI dashboards to avoid duplicates), **prepare** (writes `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema), **deploy** (jobs, pipelines, dashboards, UC — everything except the App and model serving), and **publish** (embed credentials). Model serving and app serving bindings are temporarily excluded.
 
-### Two-phase deploy (recommended when using model serving + app)
+Output: *"all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt `deploy app`"*.
 
-To ensure **model serving endpoints** exist before the app is bound to them (avoids "Endpoint with name '...' does not exist"):
+After phase 1, run **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** from the app **Setup & Run** so ML models and agent registrations exist in UC.
 
-1. Run **`./scripts/deploy_with_dependencies.sh [dev|prod]`** (default target: `dev`).
-2. **Phase 1:** The script temporarily excludes `model_serving.yml` and `fastapi_app.yml` from the bundle, deploys jobs and other resources, then runs **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** and waits for completion.
-3. **Phase 2:** The script restores `model_serving.yml` and `fastapi_app.yml`, then deploys again so model serving endpoints and the app are created with correct bindings.
+### Phase 2 — deploy app
 
-After a successful run, set **ORCHESTRATOR_SERVING_ENDPOINT=payment-analysis-orchestrator** in the app Environment to use the AgentBricks orchestrator for chat.
+```bash
+./scripts/bundle.sh deploy app dev
+```
+
+This **validates** that all app dependencies exist (runs `toggle_app_resources.py --check-app-deployable`), **uncomments** `model_serving.yml` in `databricks.yml` and serving endpoint bindings in `fastapi_app.yml`, **validates** the bundle, then **deploys** the App with all resources assigned.
+
+Output: *"App deployed with all dependencies and resources assigned and uncommented."*
+
+### Automated two-phase deploy
+
+```bash
+./scripts/deploy_with_dependencies.sh dev
+```
+
+Runs phase 1, automatically executes Job 5 and Job 6 and waits for completion, then runs phase 2. Single command for the full flow.
+
+### Validate without deploying
+
+```bash
+./scripts/bundle.sh validate dev
+```
+
+**ORCHESTRATOR_SERVING_ENDPOINT** can be set in **`app.yml`** at project root (e.g. `payment-analysis-orchestrator`); redeploy to apply. You can also override in **Compute → Apps → payment-analysis → Edit → Environment**.
 
 ## Steps at a glance
 
@@ -60,9 +82,9 @@ The app is configured in the bundle with the following so it can be deployed and
 | **Lakebase** | Job 1 + app env `LAKEBASE_*` | Postgres for app_config, approval_rules, online_features; app connects via env vars. |
 | **Dashboards** | `resources/dashboards.yml` | Three unified dashboards (Data & Quality, ML & Optimization, Executive & Trends). |
 
-**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports), and four model serving endpoints (approval propensity, risk scoring, smart routing, smart retry). These endpoints are created by `resources/model_serving.yml` after Step 5 (Train ML Models); see [App resources and value](APP_RESOURCES_AND_VALUE.md) for creation, validation, and business value. **Genie** is commented out (set `--var genie_space_id=<uuid>` to uncomment). For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all 11 agent tools, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
+**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports). Model serving endpoint bindings are **commented out** by default; uncomment after endpoints exist (two-phase deploy or manual). See [REFERENCE.md](REFERENCE.md) for model serving and UC functions. **Genie** is commented out (set `--var genie_space_id=<uuid>` to uncomment). For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all 11 agent tools, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
 
-After deploy, set the app **Environment** variables (see table below). If you use **user authorization (OBO)**, the bundle configures the user API scopes listed above; ensure the app is opened from **Compute → Apps** so the user token is forwarded and users consent to those scopes on first use.
+**App environment:** Defaults and app-specific vars (e.g. **LAKEBASE_***, **ORCHESTRATOR_SERVING_ENDPOINT**) are defined in **`app.yml`** at project root; redeploy the bundle to apply changes. You can **override** in **Compute → Apps → payment-analysis → Edit → Environment** (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). If you use **user authorization (OBO)**, open the app from **Compute → Apps** so the user token is forwarded (see **User token (OBO)** in the table section below); the bundle configures user API scopes in `fastapi_app.yml`.
 
 ## Deploy app as a Databricks App
 
@@ -83,8 +105,10 @@ After deploy, set the app **Environment** variables (see table below). If you us
 | **DATABRICKS_WAREHOUSE_ID** | Required for SQL/analytics. SQL Warehouse ID (from bundle or sql-warehouse binding). |
 | **DATABRICKS_HOST** | Optional when opened from **Compute → Apps** (workspace URL derived from request). Set when not using OBO. |
 | **DATABRICKS_TOKEN** | Optional when using OBO. Open from **Compute → Apps** so your token is forwarded; do not set in env. Set only for app-only use; then do **not** set DATABRICKS_CLIENT_ID/SECRET. |
-| **ORCHESTRATOR_SERVING_ENDPOINT** | Optional. When set (e.g. `payment-analysis-orchestrator`), the app’s Orchestrator chat calls this Model Serving endpoint (AgentBricks/Supervisor) instead of Job 6. See [AGENT_STACK_CLARIFICATION.md](AGENT_STACK_CLARIFICATION.md). |
+| **ORCHESTRATOR_SERVING_ENDPOINT** | Optional. When set (e.g. `payment-analysis-orchestrator`), the app’s Orchestrator chat calls this Model Serving endpoint (AgentBricks/Supervisor) instead of Job 6. Can be set in `app.yml` or App Environment. See [REFERENCE.md](REFERENCE.md). |
 | **LAKEBASE_SCHEMA** | Optional. Postgres schema for app tables (default `payment_analysis`). Use when the app has no CREATE on `public`. |
+
+**User token (OBO):** When the app is opened from **Compute → Apps**, Databricks forwards the user token in the **X-Forwarded-Access-Token** header. The backend reads it in `src/payment_analysis/backend/dependencies.py` via `_get_obo_token(request)` and uses it for warehouse queries and run job. No DATABRICKS_TOKEN is required in the app environment when using OBO.
 
 **Use your credentials (recommended):** Open the app from **Workspace → Compute → Apps → payment-analysis**. The platform forwards your token; no DATABRICKS_TOKEN or DATABRICKS_HOST is required in the app environment. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, Genie, files, model serving, vector search, Unity Catalog, jobs, dashboards). The bundle configures **user authorization scopes** in `resources/fastapi_app.yml`; if your workspace uses different scope names, add or adjust them in **Edit → Configure → User authorization**. If you see 403 Invalid scope, ensure the required scope (e.g. **sql**) is in the list and restart. If Run stays disabled, click **Refresh job IDs** on the Setup page.
 
@@ -96,7 +120,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 
 **Bundle root:** Directory containing `databricks.yml`. **App source:** `source_code_path` in `resources/fastapi_app.yml` is `${workspace.root_path}` (e.g. `.../payment-analysis`). Sync uploads to the same root path; the app runs from there so `src/payment_analysis/__dist__` is found for the web UI.
 
-**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards` (comment out if deploy fails with "Node named '…' already exists"), `fastapi_app`. Optional: `model_serving` (uncomment after training models).
+**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `fastapi_app`. **Commented by default:** `model_serving` (uncomment after Step 5; use two-phase deploy if app bindings are enabled); serving endpoint blocks in `fastapi_app.yml` (uncomment when endpoints exist). **Dashboard overwrite:** `bundle.sh deploy` cleans existing BI dashboards in the workspace (except `dbdemos*`) before deploy to avoid duplicates.
 
 **Paths:**  
 - Workspace root: `/Workspace/Users/${user}/${var.workspace_folder}` (default folder: `payment-analysis`).  
@@ -111,7 +135,7 @@ Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepa
 
 #### Databricks feature alignment
 
-The solution is built entirely on Databricks-native features and current product naming (Lakeflow, Unity Catalog, PRO serverless SQL warehouse, Lakebase Autoscaling, Databricks App, Genie, Model Serving, Lakeview dashboards). A full checklist and recommendations are in [DATABRICKS.md](DATABRICKS.md) (Part 1–3). Re-check when adding resources or upgrading the Databricks SDK.
+The solution is built entirely on Databricks-native features and current product naming (Lakeflow, Unity Catalog, PRO serverless SQL warehouse, Lakebase Autoscaling, Databricks App, Genie, Model Serving, Lakeview dashboards). A full checklist and recommendations are in [REFERENCE.md](REFERENCE.md). Re-check when adding resources or upgrading the Databricks SDK.
 
 #### Dashboard visuals not showing?
 
@@ -122,7 +146,7 @@ Following the [dbdemos](https://github.com/databricks-demos/dbdemos) pattern, da
    `uv run python scripts/dashboards.py prepare` (or `--catalog X --schema Y` for prod).  
    The bundle reads dashboard definitions from `.build/dashboards/`; if these files are missing, deploy fails with "failed to read serialized dashboard from file_path".
 
-2. **Deploy** with dashboards included: In `databricks.yml`, **include** `resources/dashboards.yml` (uncomment `- resources/dashboards`) so the bundle creates/updates the 12 AI/BI dashboards in the workspace. If you previously commented it out to avoid "Node named '...' already exists", you can leave it commented and only ensure prepare has run for other assets; to **create or replace** dashboards, uncomment and deploy.
+2. **Deploy** with dashboards included: `resources/dashboards.yml` is included by default. **`./scripts/bundle.sh deploy dev`** cleans existing BI dashboards in the workspace (except `dbdemos*`) then deploys so the 3 unified dashboards are created/overwritten without "Node named '...' already exists" errors.
 
 3. **Publish** (embed credentials): After deploy, run  
    `uv run python scripts/dashboards.py publish`  
@@ -275,7 +299,7 @@ By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simu
 | **Provided OAuth token does not have required scopes** | PAT lacks permissions or OAuth env vars conflict. See [Fix: PAT / token scopes](#fix-pat--token-scopes) below. |
 | **403 Forbidden / Invalid scope** (SQL or Setup) | User token from Compute → Apps lacks a required scope. In **Compute → Apps → payment-analysis → Edit → Configure → User authorization**, ensure the needed scope (e.g. **sql**) is listed, then **Save** and **restart** the app. See [Deploy app as a Databricks App](#deploy-app-as-a-databricks-app) above. |
 | **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
-| **Node named '…' already exists** (dashboard deploy) | The 3 unified dashboards already exist in the workspace. In **`databricks.yml`**, keep **`resources/dashboards.yml`** commented in the `include` list so the bundle does not try to create them again. Deploy will then succeed; existing dashboards are unchanged. For a **clean workspace** (first deploy), uncomment `resources/dashboards.yml` to create the dashboards. |
+| **Node named '…' already exists** (dashboard deploy) | Run **`./scripts/bundle.sh deploy dev`** so it cleans existing BI dashboards (except `dbdemos*`) then deploys; the 3 unified dashboards are overwritten. If you run `databricks bundle deploy` directly without the script, clean dashboards manually or comment out `resources/dashboards.yml` temporarily. |
 
 ### Fix: Lakebase project/endpoint not found
 
@@ -373,9 +397,11 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 
 | Script | Purpose |
 |--------|---------|
-| **bundle.sh** | `./scripts/bundle.sh deploy [dev\|prod]` — runs prepare (dashboards + `gold_views.sql` + `lakehouse_bootstrap.sql` in `.build/transform/`) then deploy. `validate` / `verify` for checks. |
+| **bundle.sh** | Two-phase deploy: `deploy [target]` (phase 1: resources, no App); `deploy app [target]` (phase 2: App with model serving); `validate` / `verify` for checks. Also: `redeploy` = same as `deploy`. |
+| **deploy_with_dependencies.sh** | Automated two-phase deploy: phase 1 → runs Job 5 & 6 → phase 2. Single command. |
+| **toggle_app_resources.py** | Toggle serving endpoint bindings in `fastapi_app.yml`: `--enable-serving-endpoints`, `--disable-serving-endpoints`, `--check-app-deployable`. Used by bundle.sh and deploy_with_dependencies.sh. |
 | **dashboards.py** | **prepare** (by bundle.sh): writes `.build/dashboards/`, `.build/transform/gold_views.sql`, `.build/transform/lakehouse_bootstrap.sql` with catalog/schema. **validate-assets**, **publish** (optional). Run: `uv run python scripts/dashboards.py` |
-| **run_and_validate_jobs.py** | Run and validate bundle jobs; optional `--run-pipelines` runs ETL pipeline (8. Payment Analysis ETL) and waits until idle before running jobs so `payments_enriched_silver` exists for Job 3. `pipelines` subcommand lists pipelines. Run: `uv run python scripts/run_and_validate_jobs.py [--run-pipelines] [--job KEY]` |
+| **run_and_validate_jobs.py** | Run and validate bundle jobs; optional `--run-pipelines` runs ETL pipeline and waits before running jobs. `pipelines` lists pipelines. Run: `uv run python scripts/run_and_validate_jobs.py [--run-pipelines] [--job KEY]` |
 | **sync_requirements_from_lock.py** | Generate `requirements.txt` from `uv.lock` for the Databricks App. Run after `uv lock`: `uv run python scripts/sync_requirements_from_lock.py` |
 
 ## Demo setup & one-click run
@@ -410,9 +436,9 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | **genie_spaces.yml** | | |
 | `job_7_genie_sync` | Sync Genie space configuration and sample questions | Single purpose; optional. |
 
-**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [DATABRICKS.md Part 3](DATABRICKS.md#part-3--agent-framework-agentbricks).
+**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [REFERENCE.md](REFERENCE.md).
 
-**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [DATABRICKS.md Part 3](DATABRICKS.md#part-3--agent-framework-agentbricks).
+**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [REFERENCE.md](REFERENCE.md).
 
 **Dashboard jobs:** Job 4 (Deploy Dashboards) has two tasks: prepare (generate assets) and publish (AI/BI Dashboards API with embed credentials). Genie sync is a separate job (job 7 in `genie_spaces.yml`).
 

@@ -46,7 +46,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  - resources/model_serving.yml
+  # - resources/model_serving.yml   # Uncomment for two-phase deploy (deploy_with_dependencies.sh) when endpoints exist
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------

@@ -17,10 +17,22 @@ Requires: UC functions in catalog.schema (e.g. ahs_demos_catalog.payment_analysi
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple
+import json
+import re
+from typing import TYPE_CHECKING, Annotated, Any, List, Tuple, TypedDict
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Callable
+
+# Module-level imports required so get_type_hints() can resolve OrchestratorState
+# annotations when MLflow loads the serialized agent code (models-from-code).
+try:
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+    from langgraph.graph import END, StateGraph
+    from langgraph.graph.message import add_messages
+    from langgraph.prebuilt import create_react_agent
+except ImportError:  # Only needed at runtime when langgraph is installed
+    pass
 
 # System prompts 1:1 from agent_framework.py (SmartRoutingAgent, SmartRetryAgent, etc.)
 DECLINE_ANALYST_SYSTEM_PROMPT = """You are a Decline Analysis Specialist for payment optimization.
@@ -190,8 +202,6 @@ def create_decline_analyst_agent(
 
     Tools: get_decline_trends, get_decline_by_segment (from catalog.schema).
     """
-    from langgraph.prebuilt import create_react_agent
-
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
     tools = _toolkit_tools(catalog, ["get_decline_trends", "get_decline_by_segment"], schema=schema)
     agent = create_react_agent(
@@ -210,8 +220,6 @@ def create_smart_routing_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Smart Routing & Cascading agent (same role as SmartRoutingAgent in agent_framework.py)."""
-    from langgraph.prebuilt import create_react_agent
-
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
     tools = _toolkit_tools(catalog, ["get_route_performance", "get_cascade_recommendations"], schema=schema)
     return create_react_agent(
@@ -229,8 +237,6 @@ def create_smart_retry_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Smart Retry agent (same role as SmartRetryAgent in agent_framework.py)."""
-    from langgraph.prebuilt import create_react_agent
-
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
     tools = _toolkit_tools(catalog, ["get_retry_success_rates", "get_recovery_opportunities"], schema=schema)
     return create_react_agent(
@@ -248,8 +254,6 @@ def create_risk_assessor_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Risk Assessor agent (same role as RiskAssessorAgent in agent_framework.py)."""
-    from langgraph.prebuilt import create_react_agent
-
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
     tools = _toolkit_tools(catalog, ["get_high_risk_transactions", "get_risk_distribution"], schema=schema)
     return create_react_agent(
@@ -267,8 +271,6 @@ def create_performance_recommender_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Performance Recommender agent (same role as PerformanceRecommenderAgent in agent_framework.py)."""
-    from langgraph.prebuilt import create_react_agent
-
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
     tools = _toolkit_tools(
         catalog,
@@ -280,6 +282,14 @@ def create_performance_recommender_agent(
         tools,
         prompt=PERFORMANCE_RECOMMENDER_SYSTEM_PROMPT,
     )
+
+
+def _last_ai_content(messages: list) -> str:
+    """Extract the last AIMessage content from a list of messages."""
+    for m in reversed(messages):
+        if isinstance(m, AIMessage) and m.content:
+            return m.content if isinstance(m.content, str) else str(m.content)
+    return ""
 
 
 def get_all_agent_builders() -> List[Tuple["Callable[..., Any]", str]]:
@@ -338,15 +348,6 @@ def create_orchestrator_agent(
     (3) Synthesize: Single response from specialist outputs.
     Returns a compiled graph suitable for MLflow and AgentBricks deployment.
     """
-    import json
-    import re
-    from typing import Annotated, Any, TypedDict
-
-    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-    from langgraph.graph import END, StateGraph
-    from langgraph.graph.message import add_messages
-    from langgraph.prebuilt import create_react_agent
-
     SPECIALIST_KEYS = [
         "decline_analyst",
         "smart_routing",
@@ -372,12 +373,6 @@ def create_orchestrator_agent(
     catalog_arg = catalog
     schema_arg = schema
     llm_endpoint_arg = llm_endpoint
-
-    def _last_ai_content(messages: list) -> str:
-        for m in reversed(messages):
-            if isinstance(m, AIMessage) and m.content:
-                return m.content if isinstance(m.content, str) else str(m.content)
-        return ""
 
     def _parse_router_output(text: str) -> list[str]:
         """Parse LLM router output to list of specialist names. Default to all if invalid."""
@@ -475,8 +470,6 @@ def create_orchestrator_agent(
 
 def get_notebook_config() -> "dict[str, Any]":
     """Read job/notebook parameters from Databricks widgets or return defaults (same interface as agent_framework.py)."""
-    from typing import Any
-
     defaults: dict[str, Any] = {
         "catalog": "ahs_demos_catalog",
         "schema": "payment_analysis",
@@ -509,10 +502,6 @@ def run_agentbricks(config: "dict[str, Any]") -> "dict[str, Any]":
     Run AgentBricks agents: LangGraph specialists with UC tools.
     Same return shape as agent_framework.run_framework for Job 6 / orchestrator chat API.
     """
-    from typing import Any
-
-    from langchain_core.messages import AIMessage, HumanMessage
-
     catalog = config["catalog"]
     schema = config.get("schema") or "payment_analysis"
     query = config["query"]
@@ -521,23 +510,14 @@ def run_agentbricks(config: "dict[str, Any]") -> "dict[str, Any]":
 
     def _invoke_agent(agent: Any, q: str) -> str:
         result = agent.invoke({"messages": [HumanMessage(content=q)]})
-        messages = result.get("messages") or []
-        for m in reversed(messages):
-            if isinstance(m, AIMessage) and m.content:
-                return m.content if isinstance(m.content, str) else str(m.content)
-        return ""
+        return _last_ai_content(result.get("messages") or [])
 
     if agent_role == "orchestrator":
-        # Use the compiled supervisor graph (router → run_specialists → synthesize)
         orchestrator = create_orchestrator_agent(catalog, schema=schema, llm_endpoint=llm_endpoint)
         out = orchestrator.invoke({"messages": [HumanMessage(content=query)]})
         specialist_responses = out.get("specialist_responses") or {}
         agents_used = list(specialist_responses.keys())
-        synthesis = ""
-        for m in reversed(out.get("messages") or []):
-            if isinstance(m, AIMessage) and m.content:
-                synthesis = m.content if isinstance(m.content, str) else str(m.content)
-                break
+        synthesis = _last_ai_content(out.get("messages") or [])
         return {
             "query": query,
             "agents_used": agents_used,
@@ -569,8 +549,6 @@ def run_agentbricks(config: "dict[str, Any]") -> "dict[str, Any]":
 
 # Databricks notebook entry point (Job 6: Deploy AgentBricks agents)
 if __name__ == "__main__":
-    import json
-
     config = get_notebook_config()
     query = config["query"]
     agent_role = config["agent_role"]

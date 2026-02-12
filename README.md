@@ -33,17 +33,23 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 
 | Purpose | Document |
 |--------|----------|
-| **All docs (index)** | [docs/INDEX.md](docs/INDEX.md) — Start here: document map and consolidated summary |
-| **Guide** | [docs/GUIDE.md](docs/GUIDE.md) — What the platform does, architecture, project structure, data sources & code guidelines, control panel |
-| **Deploy & operate** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deploy steps, env vars, version alignment, troubleshooting |
-| **Business context** | [docs/BUSINESS_AND_SOLUTION.md](docs/BUSINESS_AND_SOLUTION.md) — Payment services context, requirement → solution map |
-| **Databricks & agents** | [docs/DATABRICKS.md](docs/DATABRICKS.md) — Feature validation, implementation review, AgentBricks conversion |
+| **Index** | [docs/INDEX.md](docs/INDEX.md) — Document map and quick reference |
+| **Guide** | [docs/GUIDE.md](docs/GUIDE.md) — What the platform does, business context, architecture, project structure, control panel, data sources, verification |
+| **Deploy & operate** | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Deploy steps, app env (`app.yml` + UI), two-phase deploy, version alignment, troubleshooting |
+| **Reference** | [docs/REFERENCE.md](docs/REFERENCE.md) — Databricks alignment, agents (runtime vs AgentBricks), model serving & UC functions, approval optimization |
+| **Schema** | [docs/SCHEMA_TABLES_VIEWS.md](docs/SCHEMA_TABLES_VIEWS.md) — Tables and views reference (required vs optional, where used, why empty) |
 
 ## Quick start
 
-1. **Deploy:** `./scripts/bundle.sh deploy dev` (runs dashboard prepare and deploys bundle).
-2. **Setup & Run (in order):** In the app, run the 6 jobs in order: **1** Create Data Repositories, **2** Simulate Transaction Events, **3** Initialize Ingestion, **4** Deploy Dashboards, **5** Train Models & Model Serving, **6** Deploy Agents. Optionally run Genie Space Sync and start Lakeflow pipelines when needed.
-3. **App environment:** **Workspace → Apps** → payment-analysis → Edit → set `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID` (same as Job 1), `DATABRICKS_HOST`, `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_TOKEN`.
+Deployment is **two-phase**: first deploy all resources except the App, then deploy the App after its dependencies exist.
+
+1. **Phase 1 — deploy resources:** `./scripts/bundle.sh deploy dev` — builds the UI, cleans existing BI dashboards (avoids duplicates), prepares dashboards, deploys jobs/pipelines/dashboards/UC (everything **except** the App and model serving), and publishes dashboards. Output: *"all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt `deploy app`"*.
+2. **Run jobs 5 and 6:** In the app **Setup & Run**, run **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** so ML models and agent registrations exist in UC.
+3. **Phase 2 — deploy app:** `./scripts/bundle.sh deploy app dev` — validates app dependencies, uncomments `model_serving.yml` and serving endpoint bindings in `fastapi_app.yml`, then deploys the App with all resources assigned and uncommented. Output: *"App deployed with all dependencies and resources assigned and uncommented."*
+4. **Setup & Run (in order):** Jobs **1** → **2** → (ETL pipeline) → **3** → **4** → **5** → **6** → **7** (Create Data Repositories, Simulate Events, Initialize Ingestion, Deploy Dashboards, Train Models, Deploy Agents, Genie Sync).
+5. **App environment:** Defined in **`app.yml`** at project root (e.g. `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `ORCHESTRATOR_SERVING_ENDPOINT`). Override in **Workspace → Apps → payment-analysis → Edit → Environment** (e.g. `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN`). Redeploy to apply `app.yml` changes.
+
+**Automated two-phase:** `./scripts/deploy_with_dependencies.sh dev` runs phase 1, executes jobs 5 and 6 automatically, then runs phase 2.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 

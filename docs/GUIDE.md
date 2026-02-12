@@ -1,8 +1,6 @@
 # Payment Analysis — Guide
 
-Single reference for **what** the platform does, **how** it is built, and how it aligns with best practices. For deploy steps, env vars, and troubleshooting see [Deployment](DEPLOYMENT.md).
-
-**Payment services context and requirement map:** For Getnet payment services (Antifraud, 3DS, Network Token, etc.), Smart Checkout / Reason Codes / Smart Retry context, data foundation, geographic focus, and a **Business requirement → Solution → Description** map, see **[BUSINESS_AND_SOLUTION.md](BUSINESS_AND_SOLUTION.md)**.
+Single reference for **what** the platform does, **how** it is built, and how it aligns with best practices. For deploy steps, env vars, and troubleshooting see [Deployment](DEPLOYMENT.md); for Databricks alignment and agents see [REFERENCE.md](REFERENCE.md).
 
 ---
 
@@ -60,6 +58,12 @@ The solution is designed and documented around a single business objective: **ac
 | **FastAPI + React app** | Control panel: Setup & Run (jobs, pipelines), Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, Agents, Experiments, Incidents. | One place to run pipelines/jobs, manage rules, view recommendations and KPIs, and open agents/dashboards; ensures teams can operate the whole stack that drives approval rate without leaving the app. |
 | **Genie** | Natural-language “Ask Data” in the workspace, synced with sample questions (approval rate, trends, segments). | Extends visibility: ask “What is the approval rate?” or “Which segment has the lowest approval rate?” in the lakehouse context, supporting the same goal of accelerating approval rates. |
 | **Experiments & incidents** | A/B experiments (e.g. 3DS treatment vs control) and incident/remediation tracking in Lakebase. | Experiments measure impact of policy changes on approval rate; incidents track production issues that might hurt approvals so they can be fixed. |
+
+### 1c. Payment services context (Getnet)
+
+Payment transactions can use several services (Antifraud, Vault, 3DS, Data Only, Recurrence, Network Token, IdPay, Passkey, Click to Pay). **Smart Checkout**, **Reason Codes**, and **Smart Retry** rely on a shared data foundation: medallion pipelines, gold views, and a single control panel. **Brazil** accounts for most volume; the platform supports catalog/schema and country filters. **Entry systems:** Checkout, PD, WS, SEP; each returns the final response to the merchant. **Smart Retry** covers recurrence and reattempts (e.g. 1M+ such transactions per month in Brazil). **False Insights** is a quality metric (insights marked invalid by specialists) to balance speed vs accuracy.
+
+**Business requirement → Solution:** Data foundation → Medallion + gold views. Unified decline visibility → Reason Codes, decline dashboards, Decline Analyst. Smart Checkout (Brazil) → Smart Checkout UI, 3DS funnel, Smart Routing agent. Smart Retry → Retry UI, Smart Retry agent, decisioning API. Actionable insights → Decisioning API, orchestrator + 5 agents, rules engine. Feedback loop → Experiments, incidents, rules CRUD, model retraining. Single control panel → FastAPI + React app (Setup & Run, Dashboards, Rules, Decisioning, Agents). AI-driven intelligence → 7 AI agents, Genie.
 
 ---
 
@@ -180,6 +184,26 @@ All data is **fetched from the Databricks backend** and is **interactive**.
 | Online features | Lakebase → Lakehouse | Setup → Data & config |
 | Approval rules | Lakebase → Lakehouse | Rules page (CRUD) |
 
+### 6b. Two chatbots
+
+| Chat | Endpoint | Purpose |
+|------|----------|---------|
+| **AI Chatbot (Orchestrator)** | `POST /api/agents/orchestrator/chat` | Orchestrator agent (Job 6 or Model Serving): recommendations, payment analysis from specialists. |
+| **Genie Assistant** | `POST /api/agents/chat` | Databricks Genie Conversation API when `GENIE_SPACE_ID` is set. |
+
+Header buttons: “AI Chatbot” (Orchestrator) and “Genie Assistant”. Command Center “Chat with Orchestrator” opens the AI Chatbot. If Orchestrator fails, the app can fall back to Genie or a static reply.
+
+### 6c. Where artifacts are used in the app
+
+| Category | Resources | Used in app |
+|----------|-----------|-------------|
+| Streaming & real-time | Bronze/Silver/Gold, pipelines, Job 2 (simulator) | Data & Quality, Command Center KPIs, Dashboards, Recommendations |
+| ML models & inference | Approval propensity, Risk, Routing, Retry | Decisioning (Live ML predictions), Models page |
+| Agents | Orchestrator, Decline analyst, Routing/Retry/Risk/Performance | AI Agents page, Orchestrator chat |
+| Dashboards | Data & Quality, ML & Optimization, Executive & Trends | Dashboards page (list, embed, open in workspace) |
+| Vector Search | Similar-case index | Decisioning recommendations via v_recommendations_from_lakehouse |
+| Lakebase / Lakehouse | Rules, recommendations, app_config | Rules page, Decisioning, analytics |
+
 ---
 
 ## 7. Databricks App compliance checklist
@@ -212,12 +236,20 @@ All data is **fetched from the Databricks backend** and is **interactive**.
 
 ## 9. Verification
 
-```bash
-uv run apx dev check          # TypeScript + Python
-./scripts/bundle.sh verify dev # Build, smoke test, dashboards, bundle validate
-```
+**Commands:**
 
-**Deployment summary:** One command: `./scripts/bundle.sh deploy dev`. App env (required): `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `DATABRICKS_WAREHOUSE_ID`. Optional: `DATABRICKS_HOST`, `DATABRICKS_TOKEN`. Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
+| Purpose | Command |
+|--------|--------|
+| TypeScript + Python | `uv run apx dev check` |
+| Bundle (prepare + validate) | `./scripts/bundle.sh validate dev` |
+| Full verify (build, smoke, dashboards, bundle) | `./scripts/bundle.sh verify dev` |
+| Deploy resources (phase 1: all except App) | `./scripts/bundle.sh deploy dev` |
+| Deploy app (phase 2: App with model serving) | `./scripts/bundle.sh deploy app dev` |
+| Automated two-phase deploy | `./scripts/deploy_with_dependencies.sh dev` |
+
+**Data source indicator:** Command Center footer shows **“Data: Databricks”** when `GET /api/v1/health/databricks` returns `analytics_source === "Unity Catalog"`, otherwise **“Data: Sample (mock)”**. If you see mock, check app env (DATABRICKS_WAREHOUSE_ID, DATABRICKS_HOST or open from Compute → Apps) and user auth scopes.
+
+**Deployment summary:** Two-phase: `./scripts/bundle.sh deploy dev` (phase 1: resources) → run jobs 5 & 6 → `./scripts/bundle.sh deploy app dev` (phase 2: App). Or automated: `./scripts/deploy_with_dependencies.sh dev`. App env: defined in **`app.yml`** (e.g. LAKEBASE_*, ORCHESTRATOR_SERVING_ENDPOINT); override in App Environment (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
 
 ---
 
