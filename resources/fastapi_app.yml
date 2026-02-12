@@ -3,13 +3,15 @@
 # Authorization: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth
 # Runtime: app.yml at project root (command, env). source_code_path = workspace root (sync destination).
 #
-# App resources (per UI: Add resource): SQL warehouse, Secret, Genie space, Database, MLflow experiment,
-# Serving endpoint, UC volume, Vector search index, UC function, UC connection. Jobs are listed for Setup & Run only.
+# Full configuration (when deployed + UI steps):
+#   User authorization scopes (below): sql, dashboards.genie, files.files, serving.serving-endpoints,
+#     vectorsearch.vector-search-indexes, catalog.connections, catalog.catalogs:read, catalog.schemas:read, catalog.tables:read.
+#   App resources from bundle: SQL warehouse, Secret, UC volume, Jobs 1–7, Serving endpoints (4).
+#   Genie: uncomment genie-space block and set --var genie_space_id=<uuid> then redeploy.
+#   Add in Apps UI (Configure → App resources → + Add resource) after deploy: Database (Lakebase),
+#     MLflow experiment, Vector search index, UC function, UC connection.
 #
-# Required for deployment:
-#   - Resources below are created by the bundle or must exist; deploy grants the app's service principal access.
-#   - Environment: LAKEBASE_* + DATABRICKS_WAREHOUSE_ID (see DEPLOYMENT.md). Set genie_space_id for Genie.
-#
+# Prerequisites: Secret scope "payment-analysis" with key "api-key" in workspace; volume and warehouse from bundle.
 # Environment (Workspace → Apps → payment-analysis → Edit → Environment):
 #   LAKEBASE_* — Required. DATABRICKS_WAREHOUSE_ID — Required (from sql-warehouse binding).
 #   DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET — Injected for the app's service principal.
@@ -45,13 +47,13 @@ resources:
             scope: "payment-analysis"
             key: "api-key"
             permission: READ
-        # Genie space — natural language analytics (set --var genie_space_id=<uuid> or deploy may fail if empty)
-        - name: genie-space
-          description: Genie space for natural language analytics (Ask Data)
-          genie_space:
-            name: "Approvals domain expert"
-            space_id: ${var.genie_space_id}
-            permission: CAN_RUN
+        # Genie space — uncomment and set --var genie_space_id=<uuid> when you have a Genie space (empty space_id causes app update to fail)
+        # - name: genie-space
+        #   description: Genie space for natural language analytics (Ask Data)
+        #   genie_space:
+        #     name: "Approvals domain expert"
+        #     space_id: ${var.genie_space_id}
+        #     permission: CAN_RUN
         # UC volume — reports and exports (volume created in unity_catalog.yml)
         - name: volume-reports
           description: UC volume for reports and Genie config
@@ -117,12 +119,12 @@ resources:
             name: "smart-retry-${var.environment}"
             permission: CAN_QUERY
         # -------------------------------------------------------------------------
-        # Add these in the Apps UI (Configure → App resources → + Add resource) for full config.
-        # The bundle schema does not yet support them in YAML; add after first deploy.
+        # Full config: add these in Apps UI (Compute → Apps → payment-analysis → Edit → Configure → App resources → + Add resource).
+        # Bundle YAML does not support these resource types yet; add after deploy to see them in the portal.
         # -------------------------------------------------------------------------
-        # • Database (Lakebase): instance + database → permission Can connect and create
-        # • MLflow experiment: choose experiment → Can read
-        # • Vector search index: ${var.catalog}.${var.schema}.similar_transactions_index → Can select
-        # • UC function: e.g. ${var.catalog}.${var.schema}.get_decline_trends → Can execute
-        # • UC connection: choose connection → Use connection
+        # • Database (Lakebase): select instance + database → Can connect and create
+        # • MLflow experiment: select experiment → Can read
+        # • Vector search index: select index (e.g. <catalog>.<schema>.similar_transactions_index) → Can select
+        # • UC function: select function (e.g. catalog.schema.get_decline_trends) → Can execute
+        # • UC connection: select connection → Use connection
       # Lakebase: app also uses LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID (set in app Environment).
