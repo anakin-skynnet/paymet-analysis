@@ -14,12 +14,11 @@
 #   Use two-phase deploy so endpoints exist before the app is bound: run ./scripts/deploy_with_dependencies.sh [dev|prod].
 #   It deploys jobs first (phase 1), runs Job 5 and Job 6 to completion, then deploys model serving + app (phase 2).
 #   Option B (manual): Add endpoints in Workspace → Apps → payment-analysis → Configure → App resources.
-#   For orchestrator chat: set Environment variable ORCHESTRATOR_SERVING_ENDPOINT=payment-analysis-orchestrator.
+#   For orchestrator chat: ORCHESTRATOR_SERVING_ENDPOINT is set in app.yml (project root). Redeploy to apply.
 #
 # Note: Bundle may warn on experiment, vector_search_index, function. If app update fails on those, add in Apps UI.
-# Environment (Workspace → Apps → payment-analysis → Edit → Environment):
-#   LAKEBASE_* — Required. DATABRICKS_WAREHOUSE_ID — Required (from sql-warehouse binding).
-#   DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET — Injected for the app's service principal.
+# App env: defined in app.yml at project root (env section). LAKEBASE_*, PYTHONPATH, ORCHESTRATOR_SERVING_ENDPOINT.
+# Platform-injected: DATABRICKS_WAREHOUSE_ID (from sql-warehouse binding), DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET.
 
 resources:
   apps:

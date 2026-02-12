@@ -1,9 +1,9 @@
 # Databricks App execution (app.yaml). Required at project root.
 # Docs: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-runtime
 # App definition (resources, bindings): resources/fastapi_app.yml. When deployed, the platform runs this in source_code_path and proxies traffic to the app.
+# Environment variables: defined below in env (not in Compute → Apps → Edit UI). Redeploy bundle to apply changes.
 # User auth: open from Compute → Apps → payment-analysis so the platform forwards your token (x-forwarded-access-token).
-# Service principal: the app uses the service principal (e.g. fb1b1b8f-b3f6-45e1-b62c-c9e7d483526d) to execute actions on behalf of the app when DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET are set (injected by the platform in app Environment).
-# Lakebase: set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Compute → Apps → Edit → Environment); same values as Job 1 create_lakebase_autoscaling. Set DATABRICKS_WAREHOUSE_ID; DATABRICKS_HOST is optional when opened from Apps.
+# Lakebase: LAKEBASE_* below; DATABRICKS_WAREHOUSE_ID from sql-warehouse binding; DATABRICKS_CLIENT_ID/SECRET injected by platform.
 command:
   - uvicorn
   - payment_analysis.backend.app:app
@@ -14,10 +14,13 @@ command:
 env:
   - name: PYTHONPATH
     value: src
-  # Lakebase Autoscaling (set in app Environment; example defaults below)
+  # Lakebase Autoscaling (example defaults; override via bundle vars or workspace)
   - name: LAKEBASE_PROJECT_ID
     value: payment-analysis-db
   - name: LAKEBASE_BRANCH_ID
     value: production
   - name: LAKEBASE_ENDPOINT_ID
     value: primary
+  # Use AgentBricks orchestrator for chat (Model Serving). Omit or set empty to use Job 6 (custom Python).
+  - name: ORCHESTRATOR_SERVING_ENDPOINT
+    value: payment-analysis-orchestrator
