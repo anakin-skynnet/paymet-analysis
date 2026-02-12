@@ -48,37 +48,20 @@ resources:
             name: "Payment Analytics"
             space_id: ${var.genie_space_id}
             permission: CAN_EDIT
-        # Model serving — include model_serving.yml and register agents (Job 6 task 2) for orchestrator
-        - name: serving-orchestrator
-          description: AgentBricks/Supervisor orchestrator (set ORCHESTRATOR_SERVING_ENDPOINT=payment-analysis-orchestrator to use)
-          serving_endpoint:
-            name: "payment-analysis-orchestrator"
-            permission: CAN_QUERY
-        - name: serving-decline-analyst
-          description: Decline analyst agent (LangGraph)
-          serving_endpoint:
-            name: "decline-analyst-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-approval-prop
-          description: Approval propensity model (predicts transaction approval likelihood)
-          serving_endpoint:
-            name: "approval-propensity-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-risk-scoring
-          description: Risk scoring model (fraud risk with PII guardrails)
-          serving_endpoint:
-            name: "risk-scoring-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-routing
-          description: Smart routing model (optimal payment route recommendation)
-          serving_endpoint:
-            name: "smart-routing-${var.environment}"
-            permission: CAN_QUERY
-        - name: serving-smart-retry
-          description: Smart retry model (retry success likelihood and recovery)
-          serving_endpoint:
-            name: "smart-retry-${var.environment}"
-            permission: CAN_QUERY
+        # Model serving — include model_serving.yml and register agents (Job 6 task 2) for orchestrator. Uncomment when endpoint exists.
+        # Model serving — uncomment each block when the corresponding endpoint exists (after Job 5 Train Models / Job 6 Deploy Agents). Add in Apps UI if needed.
+        # - name: serving-orchestrator
+        #   serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
+        # - name: serving-decline-analyst
+        #   serving_endpoint: { name: "decline-analyst-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-approval-prop
+        #   serving_endpoint: { name: "approval-propensity-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-risk-scoring
+        #   serving_endpoint: { name: "risk-scoring-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-smart-routing
+        #   serving_endpoint: { name: "smart-routing-${var.environment}", permission: CAN_QUERY }
+        # - name: serving-smart-retry
+        #   serving_endpoint: { name: "smart-retry-${var.environment}", permission: CAN_QUERY }
         # Optional: legacy/external LLM endpoint (uncomment if used)
         # - name: serving-endpoint
         #   description: External model endpoint
