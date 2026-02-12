@@ -8,9 +8,11 @@ import {
   useGetSolutionPerformanceSuspense,
   useGetThreeDsFunnel,
   useGetEntrySystemDistribution,
+  useHealthDatabricks,
 } from "@/lib/api";
 import selector from "@/lib/selector";
 import { useEntity } from "@/contexts/entity-context";
+import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { GeographyWorldMap } from "@/components/geography/geography-world-map";
 import {
   Shield,
@@ -69,6 +71,7 @@ function Initiatives() {
   const { entity } = useEntity();
   const { data: kpis } = useGetKpisSuspense(selector());
   const { data: solutions } = useGetSolutionPerformanceSuspense(selector());
+  const { data: healthData } = useHealthDatabricks({ query: { refetchInterval: REFRESH_ANALYTICS_MS } });
   const funnelQ = useGetThreeDsFunnel({
     params: { entity, days: 30 },
     query: { refetchInterval: REFRESH_ANALYTICS_MS },
@@ -91,10 +94,15 @@ function Initiatives() {
   const totalTxn = kpis?.total ?? 0;
   const transactionsPerYear = totalTxn > 0 ? (totalTxn * (365 / 30)).toLocaleString(undefined, { maximumFractionDigits: 0 }) : null;
 
+  const fromDatabricks = healthData?.data?.analytics_source === "Unity Catalog";
+
   return (
     <div className="space-y-6 p-4">
       <header className="flex items-center justify-between rounded-lg bg-primary px-4 py-3 text-primary-foreground">
-        <h1 className="text-lg font-semibold">Getnet Payment Services &amp; Data Initiatives</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-lg font-semibold">Getnet Payment Services &amp; Data Initiatives</h1>
+          <DataSourceBadge label={fromDatabricks ? "From Databricks" : "Backend"} className="text-primary-foreground/90" />
+        </div>
         <button type="button" className="rounded p-1 hover:bg-primary-foreground/10" aria-label="Open menu">
           <span className="inline-block h-5 w-6 border-y-2 border-current" aria-hidden />
         </button>

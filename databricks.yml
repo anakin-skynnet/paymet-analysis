@@ -46,7 +46,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  # - resources/model_serving.yml  # Uncomment after Step 5 (Train ML Models) and decline_analyst registered so 5 endpoints exist
+  - resources/model_serving.yml
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------

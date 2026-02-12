@@ -16,6 +16,16 @@ One command deploys the bundle and generates all required files (dashboards and 
 
 This runs **prepare** (writes `.build/dashboards/` and `.build/transform/gold_views.sql` + `lakehouse_bootstrap.sql` with catalog/schema) then deploys. After deploy, run steps 1–10 from the app **Setup & Run** in order. To validate without deploying: `./scripts/bundle.sh validate dev`.
 
+### Two-phase deploy (recommended when using model serving + app)
+
+To ensure **model serving endpoints** exist before the app is bound to them (avoids "Endpoint with name '...' does not exist"):
+
+1. Run **`./scripts/deploy_with_dependencies.sh [dev|prod]`** (default target: `dev`).
+2. **Phase 1:** The script temporarily excludes `model_serving.yml` and `fastapi_app.yml` from the bundle, deploys jobs and other resources, then runs **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** and waits for completion.
+3. **Phase 2:** The script restores `model_serving.yml` and `fastapi_app.yml`, then deploys again so model serving endpoints and the app are created with correct bindings.
+
+After a successful run, set **ORCHESTRATOR_SERVING_ENDPOINT=payment-analysis-orchestrator** in the app Environment to use the AgentBricks orchestrator for chat.
+
 ## Steps at a glance
 
 Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in order: **1 → 2 → 3 → 4 → 5 → 6 → 7**. Pipelines (Lakeflow ETL and Real-time) are separate resources; start them when needed.
