@@ -23,6 +23,7 @@ import {
   type Incident,
 } from "@/lib/api";
 import { getDashboardUrl, openInDatabricks } from "@/config/workspace";
+import { openNotebookInDatabricks } from "@/lib/notebooks";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -60,16 +61,6 @@ function DataQualitySkeleton() {
     </div>
   );
 }
-
-const openNotebook = async (notebookId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
-  }
-};
 
 function IncidentRow({ inc }: { inc: Incident }) {
   const openInWorkspace = () => {
@@ -299,7 +290,7 @@ function DataQualityPage() {
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={() => openNotebook("realtime_pipeline")}>
+                  <Button variant="outline" size="sm" onClick={() => openNotebookInDatabricks("realtime_pipeline")}>
                     <Code2 className="h-3 w-3 mr-2" />
                     Alert Pipeline
                     <ExternalLink className="h-3 w-3 ml-2" />

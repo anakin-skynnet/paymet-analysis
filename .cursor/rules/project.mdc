@@ -71,7 +71,9 @@ Before any `databricks bundle` command (validate, deploy, run), ensure dashboard
 
 ## MCP Tools Reference
 
-When the apx MCP server is available, use these tools:
+**Full list and setup:** See [.cursor/MCP.md](../../.cursor/MCP.md) for all configured servers (apx, shadcn, playwright, databricks) and how they connect to backend/Databricks.
+
+When the **apx** MCP server is available, use these tools:
 
 | Tool | Description |
 |------|-------------|
@@ -82,3 +84,5 @@ When the apx MCP server is available, use these tools:
 | `docs` | Search Databricks SDK documentation for code examples and API references |
 | `databricks_apps_logs` | Fetch logs from deployed Databricks app using Databricks CLI |
 | `get_route_info` | Get code example for using a specific API route |
+
+**Databricks MCP** (when enabled and credentials set): list UC catalogs/schemas/tables, describe tables with lineage, execute SQL. Use for development-time exploration; the app serves data via the FastAPI backend.

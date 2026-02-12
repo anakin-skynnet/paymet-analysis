@@ -8,30 +8,11 @@ import { getMLflowUrl, getWorkspaceUrl, openInDatabricks } from "@/config/worksp
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { useGetModels } from "@/lib/api";
 import { useEntity } from "@/contexts/entity-context";
+import { openNotebookInDatabricks, openFolderInDatabricks } from "@/lib/notebooks";
 
 export const Route = createFileRoute("/_sidebar/models")({
   component: () => <Models />,
 });
-
-const openNotebook = async (notebookId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
-  }
-};
-
-const openFolder = async (folderId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/folders/${folderId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open folder:", error);
-  }
-};
 
 const openMLflow = () => openInDatabricks(getMLflowUrl());
 
@@ -76,7 +57,7 @@ function Models() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openFolder("ml")}
+              onClick={() => openFolderInDatabricks("ml")}
             >
               <Code2 className="w-4 h-4 mr-2" />
               Open ML folder in Workspace
@@ -85,7 +66,7 @@ function Models() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("train_models")}
+              onClick={() => openNotebookInDatabricks("train_models")}
             >
               <Code2 className="w-4 h-4 mr-2" />
               Training Notebook
@@ -232,7 +213,7 @@ function Models() {
                     variant="outline"
                     size="sm"
                     className="flex-1 min-w-0"
-                    onClick={() => openNotebook("train_models")}
+                    onClick={() => openNotebookInDatabricks("train_models")}
                   >
                     <Code2 className="w-4 h-4 mr-2" />
                     Training Notebook

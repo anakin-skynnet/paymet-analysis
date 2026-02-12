@@ -11,25 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLink, Code2, Brain, Database, Sparkles, ArrowRight, Target, AlertCircle } from "lucide-react";
-import { openInDatabricks } from "@/config/workspace";
+import { openNotebookInDatabricks } from "@/lib/notebooks";
 
 export const Route = createFileRoute("/_sidebar/decisioning")({
   component: () => <Decisioning />,
 });
-
-const openNotebook = async (notebookId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
-  }
-};
 
 function Decisioning() {
   const [ctx, setCtx] = useState<DecisionContext & { experiment_id?: string; subject_key?: string }>({
@@ -75,7 +66,7 @@ function Decisioning() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("train_models")}
+              onClick={() => openNotebookInDatabricks("train_models")}
             >
               <Brain className="w-4 h-4 mr-2" />
               ML Models
@@ -84,7 +75,7 @@ function Decisioning() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("agent_framework")}
+              onClick={() => openNotebookInDatabricks("agent_framework")}
             >
               <Code2 className="w-4 h-4 mr-2" />
               Agent Framework
@@ -130,14 +121,14 @@ function Decisioning() {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Merchant</label>
+            <Label className="text-muted-foreground">Merchant</Label>
             <Input
               value={ctx.merchant_id}
               onChange={(e) => setCtx({ ...ctx, merchant_id: e.target.value })}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Amount (minor)</label>
+            <Label className="text-muted-foreground">Amount (minor)</Label>
             <Input
               type="number"
               value={ctx.amount_minor}
@@ -147,14 +138,14 @@ function Decisioning() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Currency</label>
+            <Label className="text-muted-foreground">Currency</Label>
             <Input
               value={ctx.currency}
               onChange={(e) => setCtx({ ...ctx, currency: e.target.value })}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Risk score (0-1)</label>
+            <Label className="text-muted-foreground">Risk score (0-1)</Label>
             <Input
               type="number"
               step="0.01"
@@ -165,7 +156,7 @@ function Decisioning() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">A/B Experiment ID (optional)</label>
+            <Label className="text-muted-foreground">A/B Experiment ID (optional)</Label>
             <Input
               placeholder="e.g. experiment-uuid"
               value={ctx.experiment_id ?? ""}
@@ -175,7 +166,7 @@ function Decisioning() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Subject key (optional, default: merchant_id)</label>
+            <Label className="text-muted-foreground">Subject key (optional, default: merchant_id)</Label>
             <Input
               placeholder="default: merchant_id"
               value={ctx.subject_key ?? ""}
@@ -280,7 +271,7 @@ function DecisionCard({
   const obj = typeof result === "object" && result != null ? (result as Record<string, unknown>) : null;
   const variant = obj?.variant as string | undefined;
   const experimentId = obj?.experiment_id as string | undefined;
-  const handleCardClick = () => notebookId && openNotebook(notebookId);
+  const handleCardClick = () => notebookId && openNotebookInDatabricks(notebookId);
   return (
     <Card
       className={notebookId ? "cursor-pointer hover:shadow-md transition-shadow" : undefined}

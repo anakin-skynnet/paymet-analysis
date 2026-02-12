@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   useGetReasonCodeInsights,
   useGetEntrySystemDistribution,
@@ -18,7 +19,8 @@ export const Route = createFileRoute("/_sidebar/reason-codes")({
   component: () => <ReasonCodes />,
 });
 
-const ENTRY_DISTRIBUTION = [
+/** Fallback sample when backend has no entry system data yet (Databricks/Lakehouse). */
+const ENTRY_DISTRIBUTION_FALLBACK = [
   { system: "PD (Digital Platform)", pct: "~62%", desc: "Monthly volume" },
   { system: "WS (WebService)", pct: "~34%", desc: "Monthly volume" },
   { system: "SEP", pct: "~3%", desc: "Single Entry Point" },
@@ -68,28 +70,15 @@ function ReasonCodes() {
         </p>
       </div>
 
-      {/* Entry systems & distribution */}
+      {/* Entry systems & distribution — backend (Databricks) first, fallback sample when no data */}
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-3">Entry systems & transaction distribution</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Brazil, monthly view. Checkout, PD, WS, and SEP return the final response to the merchant; consolidation must avoid double-counting.
+          Brazil, monthly view. Data from Databricks Lakehouse. Checkout, PD, WS, and SEP return the final response to the merchant; consolidation must avoid double-counting.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-4">
-          {ENTRY_DISTRIBUTION.map((e) => (
-            <Card key={e.system} className="border-border/80">
-              <CardHeader className="pb-1">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{e.system}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xl font-semibold tabular-nums">{e.pct}</p>
-                <p className="text-xs text-muted-foreground">{e.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card className="border-border/80">
+        <Card className="border-border/80 mb-4">
           <CardHeader>
-            <CardTitle className="text-base">Entry system coverage (live data)</CardTitle>
+            <CardTitle className="text-base">Entry system coverage (live from Databricks)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {entryQ.isLoading ? (
@@ -97,7 +86,7 @@ function ReasonCodes() {
             ) : entryQ.isError ? (
               <p className="text-sm text-destructive">Failed to load entry system distribution.</p>
             ) : entryRows.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No data yet.</p>
+              <p className="text-sm text-muted-foreground">No data yet. Run gold views and streaming to populate.</p>
             ) : (
               entryRows.map((r) => (
                 <div key={r.entry_system} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
@@ -111,6 +100,22 @@ function ReasonCodes() {
             )}
           </CardContent>
         </Card>
+        {!entryQ.isLoading && !entryQ.isError && entryRows.length === 0 && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-4">
+            <p className="text-xs text-muted-foreground col-span-full">Sample distribution (for reference until data is available):</p>
+            {ENTRY_DISTRIBUTION_FALLBACK.map((e) => (
+              <Card key={e.system} className="border-border/80">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{e.system}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xl font-semibold tabular-nums">{e.pct}</p>
+                  <p className="text-xs text-muted-foreground">{e.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
         <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={() => openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"))}>
           Open decline analysis dashboard <ExternalLink className="h-3.5 w-3.5" />
         </Button>
@@ -225,17 +230,17 @@ function ReasonCodes() {
         <Card className="border-border/80">
           <CardContent className="pt-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Insight ID</label>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Insight ID</Label>
                 <Input value={insightId} onChange={(e) => setInsightId(e.target.value)} placeholder="ins-001" />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Reviewer</label>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Reviewer</Label>
                 <Input value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="analyst@company.com" />
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Verdict</label>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Verdict</Label>
               <div className="flex flex-wrap gap-2">
                 {(["valid", "invalid", "non_actionable"] as const).map((v) => (
                   <Button key={v} type="button" variant={verdict === v ? "default" : "secondary"} onClick={() => setVerdict(v)}>
@@ -244,8 +249,8 @@ function ReasonCodes() {
                 ))}
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Reason (optional)</label>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Reason (optional)</Label>
               <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this insight invalid or non-actionable?" />
             </div>
             <div className="flex flex-wrap items-center gap-3">

@@ -16,20 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Code2, FlaskConical } from "lucide-react";
 import { getMLflowUrl, openInDatabricks } from "@/config/workspace";
+import { openNotebookInDatabricks } from "@/lib/notebooks";
 
 export const Route = createFileRoute("/_sidebar/experiments")({
   component: () => <Experiments />,
 });
-
-const openNotebook = async (notebookId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
-  }
-};
 
 function Experiments() {
   const qc = useQueryClient();
@@ -62,7 +53,7 @@ function Experiments() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("train_models")}
+              onClick={() => openNotebookInDatabricks("train_models")}
             >
               <FlaskConical className="w-4 h-4 mr-2" />
               ML Training
@@ -71,7 +62,7 @@ function Experiments() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("agent_framework")}
+              onClick={() => openNotebookInDatabricks("agent_framework")}
             >
               <Code2 className="w-4 h-4 mr-2" />
               Agent Tests

@@ -8,21 +8,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLink, Code2, TrendingUp, Target, ArrowRight, AlertCircle } from "lucide-react";
 import { getDashboardUrl, openInDatabricks } from "@/config/workspace";
+import { openNotebookInDatabricks } from "@/lib/notebooks";
 import { useEntity } from "@/contexts/entity-context";
 
 export const Route = createFileRoute("/_sidebar/declines")({
   component: () => <Declines />,
 });
-
-const openNotebook = async (notebookId: string) => {
-  try {
-    const response = await fetch(`/api/notebooks/notebooks/${notebookId}/url`);
-    const data = await response.json();
-    openInDatabricks(data?.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
-  }
-};
 
 const openDashboard = () => {
   openInDatabricks(getDashboardUrl("/sql/dashboards/decline_analysis"));
@@ -62,7 +53,7 @@ function Declines() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openNotebook("gold_views_sql")}
+              onClick={() => openNotebookInDatabricks("gold_views_sql")}
             >
               <Code2 className="w-4 h-4 mr-2" />
               SQL Views

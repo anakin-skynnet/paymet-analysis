@@ -36,6 +36,7 @@ import {
   useGetSetupSettings,
   useGetCountries,
   useGetOnlineFeatures,
+  useUpdateSetupConfig,
   type RunJobOut,
   type RunPipelineOut,
 } from "@/lib/api";
@@ -43,23 +44,6 @@ import {
 export const Route = createFileRoute("/_sidebar/setup")({
   component: () => <SetupRun />,
 });
-
-const API_BASE = "/api/setup";
-
-type SetupConfigResult = { catalog: string; schema: string };
-
-async function updateConfig(body: { catalog: string; schema: string }): Promise<SetupConfigResult> {
-  const res = await fetch(`${API_BASE}/config`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
-  return res.json();
-}
 
 function SetupRun() {
   const qc = useQueryClient();
@@ -92,19 +76,20 @@ function SetupRun() {
     }
   }, [defaults]);
 
-  const updateConfigMutation = useMutation({
-    mutationFn: updateConfig,
-    onSuccess: () => {
-      setLastResult({
-        type: "config",
-        message: "Catalog and schema saved. They will be used for all Lakehouse operations.",
-      });
-      setError(null);
-      qc.invalidateQueries({ queryKey: getSetupDefaultsKey() });
-    },
-    onError: (e: Error) => {
-      setError(e.message);
-      setLastResult(null);
+  const updateConfigMutation = useUpdateSetupConfig({
+    mutation: {
+      onSuccess: () => {
+        setLastResult({
+          type: "config",
+          message: "Catalog and schema saved. They will be used for all Lakehouse operations.",
+        });
+        setError(null);
+        qc.invalidateQueries({ queryKey: getSetupDefaultsKey() });
+      },
+      onError: (e: Error) => {
+        setError(e.message);
+        setLastResult(null);
+      },
     },
   });
 
