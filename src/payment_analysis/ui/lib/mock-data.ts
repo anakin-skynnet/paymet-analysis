@@ -1,7 +1,7 @@
 /**
  * Mock data for UI when backend is unavailable.
- * Types mirror backend Pydantic models (API client types from OpenAPI).
- * Use for fallback only; prefer fetching from backend via useListDashboards, useGetKpisSuspense, etc.
+ * Types mirror backend Pydantic models (API client types from OpenAPI); keep in sync with backend schemas.
+ * Use for fallback only; data is always fetched from backend first (useListDashboards, useGetKpisSuspense, etc.).
  */
 
 import type { DashboardInfo, DashboardCategory } from "@/lib/api";
