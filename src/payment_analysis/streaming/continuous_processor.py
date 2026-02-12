@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Continuous Stream Processor
-# MAGIC 
+# MAGIC
 # MAGIC Real-time processing of payment events using Structured Streaming.
 
 # COMMAND ----------
