@@ -18,24 +18,36 @@ import sys
 import json
 
 # Ensure payment_analysis package is importable when run as a Databricks job (no pip install of the repo).
-# Repo root is either from __file__ (e.g. .../files/src/payment_analysis/agents/agentbricks_register.py -> .../files/src)
-# or from workspace_path widget / WORKSPACE_ROOT env (bundle workspace path, e.g. .../files).
-_src_root = None
-try:
-    _agentbricks_dir = os.path.dirname(os.path.abspath(__file__))
-    if os.path.basename(_agentbricks_dir) == "agents":
-        _src_root = os.path.abspath(os.path.join(_agentbricks_dir, "..", ".."))
-except NameError:
-    pass
-if not _src_root or not os.path.isdir(_src_root):
+# Repo root is either from __file__ (e.g. .../files/src/payment_analysis/agents/... -> .../files/src)
+# or from workspace_path widget / WORKSPACE_ROOT env (bundle workspace path).
+def _get_dbutils():
+    """Return dbutils from Databricks runtime, or None when not in a notebook."""
     try:
         from databricks.sdk.runtime import dbutils
-        _workspace_path = (dbutils.widgets.get("workspace_path") or "").strip()
-    except Exception:
-        _workspace_path = os.environ.get("WORKSPACE_ROOT", "").strip()
-    if _workspace_path:
-        _src_root = os.path.join(_workspace_path, "src")
-if _src_root and os.path.isdir(_src_root) and _src_root not in sys.path:
+        return dbutils
+    except (ImportError, AttributeError):
+        return None
+
+
+def _resolve_src_root():
+    """Resolve path to repo src/ (for sys.path). Prefer __file__, then widget, then env."""
+    root = None
+    if "__file__" in globals():
+        agentbricks_dir = os.path.dirname(os.path.abspath(__file__))
+        if os.path.basename(agentbricks_dir) == "agents":
+            root = os.path.abspath(os.path.join(agentbricks_dir, "..", ".."))
+    if not root or not os.path.isdir(root):
+        dbutils = _get_dbutils()
+        workspace_path = (dbutils.widgets.get("workspace_path") or "").strip() if dbutils else ""
+        if not workspace_path:
+            workspace_path = os.environ.get("WORKSPACE_ROOT", "").strip()
+        if workspace_path:
+            root = os.path.join(workspace_path, "src")
+    return root if root and os.path.isdir(root) else None
+
+
+_src_root = _resolve_src_root()
+if _src_root and _src_root not in sys.path:
     sys.path.insert(0, _src_root)
 
 # COMMAND ----------
@@ -48,20 +60,19 @@ def _get_config():
         "model_registry_schema": os.environ.get("MODEL_REGISTRY_SCHEMA", "agents"),
         "llm_endpoint": os.environ.get("LLM_ENDPOINT", "databricks-meta-llama-3-3-70b-instruct"),
     }
-    try:
-        from databricks.sdk.runtime import dbutils
-        dbutils.widgets.text("catalog", defaults["catalog"])
-        dbutils.widgets.text("schema", defaults["schema"])
-        dbutils.widgets.text("model_registry_schema", defaults["model_registry_schema"])
-        dbutils.widgets.text("llm_endpoint", defaults["llm_endpoint"])
-        return {
-            "catalog": (dbutils.widgets.get("catalog") or defaults["catalog"]).strip(),
-            "schema": (dbutils.widgets.get("schema") or defaults["schema"]).strip(),
-            "model_registry_schema": (dbutils.widgets.get("model_registry_schema") or defaults["model_registry_schema"]).strip(),
-            "llm_endpoint": (dbutils.widgets.get("llm_endpoint") or defaults["llm_endpoint"]).strip(),
-        }
-    except Exception:
+    dbutils = _get_dbutils()
+    if not dbutils:
         return defaults
+    dbutils.widgets.text("catalog", defaults["catalog"])
+    dbutils.widgets.text("schema", defaults["schema"])
+    dbutils.widgets.text("model_registry_schema", defaults["model_registry_schema"])
+    dbutils.widgets.text("llm_endpoint", defaults["llm_endpoint"])
+    return {
+        "catalog": (dbutils.widgets.get("catalog") or defaults["catalog"]).strip(),
+        "schema": (dbutils.widgets.get("schema") or defaults["schema"]).strip(),
+        "model_registry_schema": (dbutils.widgets.get("model_registry_schema") or defaults["model_registry_schema"]).strip(),
+        "llm_endpoint": (dbutils.widgets.get("llm_endpoint") or defaults["llm_endpoint"]).strip(),
+    }
 
 # COMMAND ----------
 
@@ -83,39 +94,12 @@ def register_agents():
     registered = []
 
     set_registry_uri("databricks-uc")
-    _user = None
-    try:
-        _user = spark.sql("SELECT current_user()").collect()[0][0]  # type: ignore[name-defined]
-    except Exception:
-        pass
-    if not _user or (isinstance(_user, str) and _user.strip().lower() in ("none", "")):
-        try:
-            from databricks.sdk.runtime import dbutils
-            _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()
-            _user = _ctx.userName().get() if _ctx else None
-        except Exception:
-            pass
-    if not _user:
-        _user = os.environ.get("USER") or ""
-    _user = (_user or "").strip()
+    _user = os.environ.get('USER', 'unknown').strip()
 
-    _exp_path = f"/Workspace/Users/{_user}/payment-analysis/src/payment_analysis/agents/experiments"
+    # Experiment local path: /Workspace/Users/<user>/payment-analysis-experiments
+    _exp_path = f"/Users/{_user}/payment-analysis-experiments"
 
-    try:
-        mlflow.set_experiment(_exp_path)
-    except Exception as _e1:
-        print(f"⚠ set_experiment({_exp_path!r}) failed: {_e1}")
-        _fallback = "/Shared/agents/agentbricks_register" if _exp_path.startswith("/Users/") else (f"/Users/{_user}/agents/agentbricks_register" if _user and not _user.startswith("spark-") else None)
-        if _fallback:
-            try:
-                mlflow.set_experiment(_fallback)
-                _exp_path = _fallback
-            except Exception as _e2:
-                print(f"⚠ set_experiment({_fallback!r}) failed: {_e2}")
-                raise _e1 from _e2
-        else:
-            raise _e1
-    print(f"MLflow experiment: {_exp_path}")
+    mlflow.set_experiment(_exp_path)
 
     # 1. Register each specialist (Tool-Calling Agent)
     for create_fn, suffix in get_all_agent_builders():
@@ -153,8 +137,6 @@ if __name__ == "__main__":
     print("=" * 60)
     for name in registered:
         print(f"  - {name}")
-    try:
-        from databricks.sdk.runtime import dbutils
+    dbutils = _get_dbutils()
+    if dbutils:
         dbutils.notebook.exit(json.dumps({"registered_models": registered}))
-    except Exception:
-        pass
