@@ -190,7 +190,6 @@ def create_decline_analyst_agent(
 
     Tools: get_decline_trends, get_decline_by_segment (from catalog.schema).
     """
-    from langchain_core.messages import SystemMessage
     from langgraph.prebuilt import create_react_agent
 
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
@@ -198,7 +197,7 @@ def create_decline_analyst_agent(
     agent = create_react_agent(
         llm,
         tools,
-        state_modifier=SystemMessage(content=DECLINE_ANALYST_SYSTEM_PROMPT),
+        prompt=DECLINE_ANALYST_SYSTEM_PROMPT),
     )
     return agent
 
@@ -211,7 +210,6 @@ def create_smart_routing_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Smart Routing & Cascading agent (same role as SmartRoutingAgent in agent_framework.py)."""
-    from langchain_core.messages import SystemMessage
     from langgraph.prebuilt import create_react_agent
 
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
@@ -219,7 +217,7 @@ def create_smart_routing_agent(
     return create_react_agent(
         llm,
         tools,
-        state_modifier=SystemMessage(content=SMART_ROUTING_SYSTEM_PROMPT),
+        prompt=SMART_ROUTING_SYSTEM_PROMPT),
     )
 
 
@@ -231,7 +229,6 @@ def create_smart_retry_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Smart Retry agent (same role as SmartRetryAgent in agent_framework.py)."""
-    from langchain_core.messages import SystemMessage
     from langgraph.prebuilt import create_react_agent
 
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
@@ -239,7 +236,7 @@ def create_smart_retry_agent(
     return create_react_agent(
         llm,
         tools,
-        state_modifier=SystemMessage(content=SMART_RETRY_SYSTEM_PROMPT),
+        prompt=SMART_RETRY_SYSTEM_PROMPT),
     )
 
 
@@ -251,7 +248,6 @@ def create_risk_assessor_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Risk Assessor agent (same role as RiskAssessorAgent in agent_framework.py)."""
-    from langchain_core.messages import SystemMessage
     from langgraph.prebuilt import create_react_agent
 
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
@@ -259,7 +255,7 @@ def create_risk_assessor_agent(
     return create_react_agent(
         llm,
         tools,
-        state_modifier=SystemMessage(content=RISK_ASSESSOR_SYSTEM_PROMPT),
+        prompt=RISK_ASSESSOR_SYSTEM_PROMPT),
     )
 
 
@@ -271,7 +267,6 @@ def create_performance_recommender_agent(
     temperature: float = 0.1,
 ) -> "Any":
     """Build Performance Recommender agent (same role as PerformanceRecommenderAgent in agent_framework.py)."""
-    from langchain_core.messages import SystemMessage
     from langgraph.prebuilt import create_react_agent
 
     llm = _llm(endpoint=llm_endpoint, temperature=temperature)
@@ -283,7 +278,7 @@ def create_performance_recommender_agent(
     return create_react_agent(
         llm,
         tools,
-        state_modifier=SystemMessage(content=PERFORMANCE_RECOMMENDER_SYSTEM_PROMPT),
+        prompt=PERFORMANCE_RECOMMENDER_SYSTEM_PROMPT),
     )
 
 
@@ -349,7 +344,7 @@ def create_orchestrator_agent(
     import re
     from typing import Annotated, Any, TypedDict
 
-    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
     from langgraph.graph import END, StateGraph
     from langgraph.graph.message import add_messages
     from langgraph.prebuilt import create_react_agent
@@ -423,7 +418,7 @@ def create_orchestrator_agent(
         router_agent = create_react_agent(
             llm,
             [],
-            state_modifier=SystemMessage(content=SUPERVISOR_ROUTER_PROMPT),
+            prompt=SUPERVISOR_ROUTER_PROMPT),
         )
         result = router_agent.invoke({
             "messages": [HumanMessage(content=f"User query: {state['query']}\n\nWhich specialists should run? Reply with JSON array only.")],
@@ -453,7 +448,7 @@ def create_orchestrator_agent(
         synthesizer = create_react_agent(
             llm,
             [],
-            state_modifier=SystemMessage(content=ORCHESTRATOR_SYSTEM_PROMPT),
+            prompt=ORCHESTRATOR_SYSTEM_PROMPT),
         )
         result = synthesizer.invoke({
             "messages": [
