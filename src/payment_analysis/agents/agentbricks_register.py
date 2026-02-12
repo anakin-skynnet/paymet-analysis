@@ -83,7 +83,41 @@ def register_agents():
     registered = []
 
     set_registry_uri("databricks-uc")
-    mlflow.set_experiment(f"/Users/{os.environ.get('USER', 'unknown')}/agentbricks_register")
+    # Experiment path: /Users/<user>/agents/agentbricks_register. Avoid /Users/spark-xxx/ (no workspace folder).
+    _user = None
+    try:
+        _user = spark.sql("SELECT current_user()").collect()[0][0]  # type: ignore[name-defined]
+    except Exception:
+        pass
+    if not _user or (isinstance(_user, str) and _user.strip().lower() in ("none", "")):
+        try:
+            from databricks.sdk.runtime import dbutils
+            _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()
+            _user = _ctx.userName().get() if _ctx else None
+        except Exception:
+            pass
+    if not _user:
+        _user = os.environ.get("USER") or ""
+    _user = (_user or "").strip()
+    if _user and not _user.startswith("spark-"):
+        _exp_path = f"/Users/{_user}/agents/agentbricks_register"
+    else:
+        _exp_path = "/Shared/agents/agentbricks_register"
+    try:
+        mlflow.set_experiment(_exp_path)
+    except Exception as _e1:
+        print(f"⚠ set_experiment({_exp_path!r}) failed: {_e1}")
+        _fallback = "/Shared/agents/agentbricks_register" if _exp_path.startswith("/Users/") else (f"/Users/{_user}/agents/agentbricks_register" if _user and not _user.startswith("spark-") else None)
+        if _fallback:
+            try:
+                mlflow.set_experiment(_fallback)
+                _exp_path = _fallback
+            except Exception as _e2:
+                print(f"⚠ set_experiment({_fallback!r}) failed: {_e2}")
+                raise _e1 from _e2
+        else:
+            raise _e1
+    print(f"MLflow experiment: {_exp_path}")
 
     # 1. Register each specialist (Tool-Calling Agent)
     for create_fn, suffix in get_all_agent_builders():
