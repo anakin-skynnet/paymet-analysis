@@ -137,12 +137,18 @@ export function Component() {
                 <Skeleton className="h-full w-full max-w-md" />
               </div>
             ) : iframeSrc ? (
-              <iframe
-                title={embedDashboard?.name || "Dashboard"}
-                src={String(iframeSrc)}
-                className="w-full h-[78vh] border-0"
-                allowFullScreen
-              />
+              <>
+                <iframe
+                  title={embedDashboard?.name || "Dashboard"}
+                  src={String(iframeSrc)}
+                  className="w-full h-[78vh] border-0"
+                  allowFullScreen
+                />
+                <p className="text-xs text-muted-foreground px-2 py-1.5 border-t border-border bg-muted/20">
+                  If the dashboard shows &quot;refused to connect&quot;, the workspace must allow embedding:{" "}
+                  <span className="font-medium">Settings → Security → Embed dashboards</span> → set to <strong>Allow</strong> or add <code className="text-[11px]">*.databricksapps.com</code> to approved domains.
+                </p>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-[70vh] text-muted-foreground gap-3 p-4 max-w-md">
                 <p className="text-center text-sm">

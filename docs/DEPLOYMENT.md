@@ -119,6 +119,8 @@ Following the [dbdemos](https://github.com/databricks-demos/dbdemos) pattern, da
 
 4. **Data**: Gold views and Lakeflow tables must exist and have data. Run **Job 3** (Initialize Ingestion / Create Gold Views) and the **Lakeflow ETL pipeline** so `v_executive_kpis`, `payments_enriched_silver`, etc. exist in the catalog/schema used by the dashboards. Empty or missing tables produce empty charts.
 
+5. **Embedded dashboards show "refused to connect"**: The app embeds dashboards in an iframe pointing at your workspace (e.g. `https://adb-<workspace-id>.<region>.azuredatabricks.net/...`). The workspace **Embed dashboards** policy must allow that. Have a workspace admin: go to **Settings → Security**, scroll to **External access → Embed dashboards**, and set the policy to **Allow** or **Allow approved domains** and add the app domain (e.g. `*.azure.databricksapps.com` or `*.cloud.databricksapps.com`). See [Manage dashboard embedding](https://docs.databricks.com/aws/en/ai-bi/admin/embed).
+
 ### Why tables and views may be empty
 
 Tables and views in `ahs_demos_catalog.payment_analysis` (or your catalog/schema) are populated by **jobs** and **Lakeflow pipelines**. If dashboards or the app show no data:
