@@ -171,6 +171,17 @@ export interface ComplexValue {
   value?: string | null;
 }
 
+export interface ControlPanelIn {
+  activate_smart_routing?: boolean | null;
+  deploy_fraud_shadow_model?: boolean | null;
+  recalculate_algorithms?: boolean | null;
+}
+
+export interface ControlPanelOut {
+  message?: string | null;
+  ok?: boolean;
+}
+
 export interface CountryOut {
   code: string;
   name: string;
@@ -760,6 +771,10 @@ export interface GetFalseInsightsMetricParams {
   days?: number;
 }
 
+export interface GetMetricsParams {
+  country?: string;
+}
+
 export interface GetModelsParams {
   entity?: string;
 }
@@ -1093,6 +1108,21 @@ export function useGetCommandCenterEntryThroughputSuspense<TData = { data: Comma
   return useSuspenseQuery({ queryKey: getCommandCenterEntryThroughputKey(options?.params), queryFn: () => getCommandCenterEntryThroughput(options?.params), ...options?.query });
 }
 
+export const postControlPanel = async (data: ControlPanelIn, options?: RequestInit): Promise<{ data: ControlPanelOut }> => {
+  const res = await fetch("/api/analytics/control-panel", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function usePostControlPanel(options?: { mutation?: UseMutationOptions<{ data: ControlPanelOut }, ApiError, ControlPanelIn> }) {
+  return useMutation({ mutationFn: (data) => postControlPanel(data), ...options?.mutation });
+}
+
 export const getCountries = async (params?: GetCountriesParams, options?: RequestInit): Promise<{ data: CountryOut[] }> => {
   const searchParams = new URLSearchParams();
   if (params?.limit != null) searchParams.set("limit", String(params?.limit));
@@ -1400,6 +1430,33 @@ export function useGetLastHourPerformance<TData = { data: LastHourPerformanceOut
 
 export function useGetLastHourPerformanceSuspense<TData = { data: LastHourPerformanceOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: LastHourPerformanceOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getLastHourPerformanceKey(), queryFn: () => getLastHourPerformance(), ...options?.query });
+}
+
+export const getMetrics = async (params?: GetMetricsParams, options?: RequestInit): Promise<{ data: KPIOut }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.country != null) searchParams.set("country", String(params?.country));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/metrics?${queryString}` : `/api/analytics/metrics`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getMetricsKey = (params?: GetMetricsParams) => {
+  return ["/api/analytics/metrics", params] as const;
+};
+
+export function useGetMetrics<TData = { data: KPIOut }>(options?: { params?: GetMetricsParams; query?: Omit<UseQueryOptions<{ data: KPIOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getMetricsKey(options?.params), queryFn: () => getMetrics(options?.params), ...options?.query });
+}
+
+export function useGetMetricsSuspense<TData = { data: KPIOut }>(options?: { params?: GetMetricsParams; query?: Omit<UseSuspenseQueryOptions<{ data: KPIOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getMetricsKey(options?.params), queryFn: () => getMetrics(options?.params), ...options?.query });
 }
 
 export const getModels = async (params?: GetModelsParams, options?: RequestInit): Promise<{ data: ModelOut[] }> => {

@@ -35,7 +35,7 @@ resources:
             path: ${workspace.root_path}/src/payment_analysis/transform/gold_views
       serverless: true
       continuous: true
-      development: true
+      development: ${var.pipelines_development}
       photon: true
 
     # 9. Dedicated real-time pipeline (single notebook). Continuous streaming (not triggered).

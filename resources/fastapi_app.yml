@@ -3,12 +3,14 @@
 # Authorization: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth
 # Runtime: app.yml at project root (command, env). source_code_path = workspace root (sync destination).
 #
+# Required for deployment:
+#   - Resources below (sql-warehouse + jobs 1–7) are created by the bundle; deploy grants the app's service principal access.
+#   - Environment: LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID, DATABRICKS_WAREHOUSE_ID (see DEPLOYMENT.md).
+#   - User authorization (OBO): user_api_scopes below request sql (and jobs/pipelines when available) so the app can run queries and Setup & Run jobs/pipelines on behalf of the user.
+#
 # Environment (Workspace → Apps → payment-analysis → Edit → Environment):
-#   Lakebase Autoscaling (required): Set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID
-#   to match the Lakebase created by Job 1 (create_lakebase_autoscaling task). Same IDs as bundle vars.
-#   DATABRICKS_WAREHOUSE_ID — Required for SQL/analytics (from sql-warehouse binding).
-#   DATABRICKS_HOST         — Optional when opened from Compute → Apps (workspace URL derived from request headers).
-#   DATABRICKS_TOKEN        — Optional when using user authorization: open from Compute → Apps so token is forwarded (x-forwarded-access-token). Do not set DATABRICKS_CLIENT_ID/SECRET when using forwarded user token.
+#   LAKEBASE_* — Required (match Job 1 create_lakebase_autoscaling). DATABRICKS_WAREHOUSE_ID — Required (from sql-warehouse binding).
+#   DATABRICKS_HOST — Optional when opened from Compute → Apps. DATABRICKS_TOKEN — Optional when using OBO (token forwarded).
 
 resources:
   apps:
@@ -16,6 +18,9 @@ resources:
       name: payment-analysis
       source_code_path: ${workspace.root_path}
       description: Payment Approval Optimization Platform – dashboards, rules, decisioning, ML models, and agent jobs.
+      # User authorization scopes (on-behalf-of-user). sql = SQL warehouse/dashboards. Add jobs/pipelines in UI if supported by workspace.
+      user_api_scopes:
+        - sql
       resources:
         - name: sql-warehouse
           description: SQL warehouse for analytics, app_config, gold views

@@ -32,11 +32,13 @@ case "$CMD" in
     echo "Building web UI (required for app to serve frontend)..."
     uv run apx build
     echo "Cleaning workspace dashboards (except dbdemos*) to overwrite existing and avoid duplicates..."
-    if uv run python scripts/dashboards.py clean-workspace-except-dbdemos 2>/dev/null; then
-      echo "Workspace dashboards cleaned."
+    WORKSPACE_PATH=$(databricks bundle validate -t "$TARGET" 2>/dev/null | sed -n 's/.*Path:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)
+    if [[ -n "$WORKSPACE_PATH" ]]; then
+      uv run python scripts/dashboards.py clean-workspace-except-dbdemos --path "$WORKSPACE_PATH" 2>/dev/null || true
     else
-      echo "Clean skipped (no workspace path or folder empty)."
+      uv run python scripts/dashboards.py clean-workspace-except-dbdemos 2>/dev/null || true
     fi
+    echo "Proceeding with prepare and deploy..."
     prepare_dashboards
     echo "Deploying bundle (-t $TARGET)..."
     EXTRA_VARS=()

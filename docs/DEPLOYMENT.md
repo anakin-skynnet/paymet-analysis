@@ -32,10 +32,25 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | 6 | **6. Deploy Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
 | 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
 | — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
-| — | Dashboards & app | 12 dashboards + app deployed by bundle |
+| — | Dashboards & app | 3 unified dashboards + app deployed by bundle |
 | — | Verify | **Dashboard**, **Rules**, **Decisioning**, **ML Models** in app |
 
 All jobs and pipelines can be run from the UI. To connect: use your credentials (open app from **Compute → Apps**) or set **DATABRICKS_TOKEN** (PAT) in the app environment. When you open the app from Compute → Apps (or with PAT set), the Setup & Run page resolves job and pipeline IDs from the workspace by name so you can run steps without setting `DATABRICKS_JOB_ID_*` / `DATABRICKS_PIPELINE_ID_*`. See **Setup & Run → Connect to Databricks**.
+
+## Required resources and scopes for the app
+
+The app is configured in the bundle with the following so it can be deployed and used for approval-rate analysis:
+
+| What | Where | Purpose |
+|------|--------|--------|
+| **SQL warehouse** | `resources/fastapi_app.yml` → `sql-warehouse` | Analytics, app_config, gold views; permission CAN_USE. |
+| **Jobs 1–7** | `resources/fastapi_app.yml` → `job-1-data-repositories` … `job-7-genie` | Setup & Run from the app; each CAN_MANAGE_RUN. |
+| **User authorization scopes** | `resources/fastapi_app.yml` → `user_api_scopes` | When users open the app from Compute → Apps: `sql`, `jobs`, `pipelines` so the app can run queries and run jobs/pipelines on their behalf. |
+| **Unity Catalog** | `resources/unity_catalog.yml` | Schema and volumes used by pipelines, jobs, and dashboards. |
+| **Lakebase** | Job 1 + app env `LAKEBASE_*` | Postgres for app_config, approval_rules, online_features; app connects via env vars. |
+| **Dashboards** | `resources/dashboards.yml` | Three unified dashboards (Data & Quality, ML & Optimization, Executive & Trends). |
+
+After deploy, set the app **Environment** variables (see table below). If you use **user authorization (OBO)**, the bundle already requests scopes `sql`, `jobs`, and `pipelines`; ensure the app is opened from **Compute → Apps** so the user token is forwarded.
 
 ## Deploy app as a Databricks App
 
@@ -56,7 +71,7 @@ All jobs and pipelines can be run from the UI. To connect: use your credentials 
 | **DATABRICKS_TOKEN** | Optional when using OBO. Open from **Compute → Apps** so your token is forwarded; do not set in env. Set only for app-only use; then do **not** set DATABRICKS_CLIENT_ID/SECRET. |
 | **LAKEBASE_SCHEMA** | Optional. Postgres schema for app tables (default `payment_analysis`). Use when the app has no CREATE on `public`. |
 
-**Use your credentials (recommended):** Open the app from **Workspace → Compute → Apps → payment-analysis**. The platform forwards your token; no DATABRICKS_TOKEN or DATABRICKS_HOST is required in the app environment. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, jobs, dashboards). The main page shows "Use your Databricks credentials" when no token is present; open the workspace to sign in. Enable user authorization (OBO) and add scopes **sql**, **Jobs**, and **Pipelines** (if needed) in **Edit → Configure → Authorization scopes**. If you see 403 Invalid scope, add **sql** and restart. If Run stays disabled, click **Refresh job IDs** on the Setup page.
+**Use your credentials (recommended):** Open the app from **Workspace → Compute → Apps → payment-analysis**. The platform forwards your token; no DATABRICKS_TOKEN or DATABRICKS_HOST is required in the app environment. The app then uses that logged-in user token for all Databricks resources (SQL Warehouse, jobs, dashboards). The bundle configures **user authorization scopes** (`sql`, `jobs`, `pipelines`) in `resources/fastapi_app.yml`; if your workspace uses different scope names, add or adjust them in **Edit → Configure → Authorization scopes**. If you see 403 Invalid scope, add **sql** and restart. If Run stays disabled, click **Refresh job IDs** on the Setup page.
 
 5. **Optional — override job/pipeline IDs:** Set `DATABRICKS_JOB_ID_*`, `DATABRICKS_PIPELINE_ID_*`, `DATABRICKS_WORKSPACE_ID` per [Guide — Workspace ↔ UI mapping](GUIDE.md#4-workspace-components--ui-mapping).
 
@@ -168,7 +183,7 @@ Effective catalog/schema for the app come from Lakehouse `app_config`; set via *
 
 ## Resources in the workspace
 
-By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 12 dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 5 (Train ML models); create Vector Search manually from `resources/vector_search.yml` if not in bundle.
+By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 5 (Train ML models); create Vector Search manually from `resources/vector_search.yml` if not in bundle.
 
 ## Where to find resources
 
@@ -215,7 +230,7 @@ By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simu
 | **Provided OAuth token does not have required scopes** | PAT lacks permissions or OAuth env vars conflict. See [Fix: PAT / token scopes](#fix-pat--token-scopes) below. |
 | **403 Forbidden / Invalid scope** (SQL or Setup) | User token from Compute → Apps lacks the **sql** scope. In **Compute → Apps → payment-analysis → Edit → Configure → Authorization scopes**, add **sql**, then **Save** and **restart** the app. See [Deploy app as a Databricks App](#deploy-app-as-a-databricks-app) above. |
 | **Failed to export ... type=mlflowExperiment** | An old MLflow experiment exists under the app path. Delete it in the workspace, then redeploy. See [Fix: export mlflowExperiment](#fix-failed-to-export--typemlflowexperiment) below. |
-| **Node named '…' already exists** (dashboard deploy) | The 12 dashboards already exist in the workspace. In **`databricks.yml`**, keep **`resources/dashboards.yml`** commented in the `include` list so the bundle does not try to create them again. Deploy will then succeed; existing dashboards are unchanged. For a **clean workspace** (first deploy), uncomment `resources/dashboards.yml` to create the dashboards. |
+| **Node named '…' already exists** (dashboard deploy) | The 3 unified dashboards already exist in the workspace. In **`databricks.yml`**, keep **`resources/dashboards.yml`** commented in the `include` list so the bundle does not try to create them again. Deploy will then succeed; existing dashboards are unchanged. For a **clean workspace** (first deploy), uncomment `resources/dashboards.yml` to create the dashboards. |
 
 ### Fix: Lakebase project/endpoint not found
 

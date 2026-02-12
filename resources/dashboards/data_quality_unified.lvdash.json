@@ -1,0 +1,956 @@
+{
+  "datasets": [
+    {
+      "name": "m0_ds_quality_summary",
+      "displayName": "Data Quality Summary",
+      "query": "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+    },
+    {
+      "name": "m0_ds_bronze_by_second",
+      "displayName": "Bronze Ingestion by Second",
+      "query": "SELECT event_second, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_by_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m0_ds_silver_by_second",
+      "displayName": "Silver Processed by Second",
+      "query": "SELECT event_second, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_by_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m0_ds_volume_per_second",
+      "displayName": "Incoming volume per second",
+      "query": "SELECT event_second, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m1_ds_performance_by_second",
+      "displayName": "Performance by Second (Real-Time)",
+      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m1_ds_last_hour",
+      "displayName": "Last Hour Summary KPIs",
+      "query": "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+    },
+    {
+      "name": "m1_ds_alerts",
+      "displayName": "Active Alerts",
+      "query": "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+    },
+    {
+      "name": "m2_ds_by_country",
+      "displayName": "Performance by Country",
+      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC"
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_streaming",
+      "displayName": "Streaming & Data Quality",
+      "layout": [
+        {
+          "widget": {
+            "name": "bc37762da058",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_quality_summary",
+                  "fields": [
+                    {
+                      "name": "bronze_last_24h",
+                      "expression": "`bronze_last_24h`"
+                    },
+                    {
+                      "name": "silver_last_24h",
+                      "expression": "`silver_last_24h`"
+                    },
+                    {
+                      "name": "retention_pct_24h",
+                      "expression": "`retention_pct_24h`"
+                    },
+                    {
+                      "name": "latest_bronze_ingestion",
+                      "expression": "`latest_bronze_ingestion`"
+                    },
+                    {
+                      "name": "latest_silver_event",
+                      "expression": "`latest_silver_event`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "bronze_last_24h",
+                    "displayName": "Bronze Last 24H",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 0,
+                    "title": "Bronze Last 24H",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "bronze_last_24h"
+                  },
+                  {
+                    "fieldName": "silver_last_24h",
+                    "displayName": "Silver Last 24H",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 1,
+                    "title": "Silver Last 24H",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "silver_last_24h"
+                  },
+                  {
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "Retention Pct 24H",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 2,
+                    "title": "Retention Pct 24H",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "retention_pct_24h"
+                  },
+                  {
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "Latest Bronze Ingestion",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 3,
+                    "title": "Latest Bronze Ingestion",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "latest_bronze_ingestion"
+                  },
+                  {
+                    "fieldName": "latest_silver_event",
+                    "displayName": "Latest Silver Event",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 4,
+                    "title": "Latest Silver Event",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "name": "latest_silver_event"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Data Quality Summary",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "realtime_vol_widget",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_quality_summary",
+                  "fields": [
+                    {
+                      "name": "bronze_last_24h",
+                      "expression": "`bronze_last_24h`"
+                    },
+                    {
+                      "name": "silver_last_24h",
+                      "expression": "`silver_last_24h`"
+                    },
+                    {
+                      "name": "retention_pct_24h",
+                      "expression": "`retention_pct_24h`"
+                    },
+                    {
+                      "name": "latest_bronze_ingestion",
+                      "expression": "`latest_bronze_ingestion`"
+                    },
+                    {
+                      "name": "latest_silver_event",
+                      "expression": "`latest_silver_event`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "bronze_last_24h",
+                    "fieldName": "bronze_last_24h",
+                    "displayName": "Bronze Last 24H",
+                    "title": "Bronze Last 24H",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "silver_last_24h",
+                    "fieldName": "silver_last_24h",
+                    "displayName": "Silver Last 24H",
+                    "title": "Silver Last 24H",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "retention_pct_24h",
+                    "fieldName": "retention_pct_24h",
+                    "displayName": "Retention Pct 24H",
+                    "title": "Retention Pct 24H",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_bronze_ingestion",
+                    "fieldName": "latest_bronze_ingestion",
+                    "displayName": "Latest Bronze Ingestion",
+                    "title": "Latest Bronze Ingestion",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "latest_silver_event",
+                    "fieldName": "latest_silver_event",
+                    "displayName": "Latest Silver Event",
+                    "title": "Latest Silver Event",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Data Quality Summary",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "line_volume_per_second",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_volume_per_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(records_per_second)",
+                      "expression": "SUM(`records_per_second`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(records_per_second)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Records Per Second",
+                  "axis": {
+                    "title": "Records Per Second"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Incoming volume per second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bbd77b111db2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_bronze_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(bronze_record_count)",
+                      "expression": "SUM(`bronze_record_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(bronze_record_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Bronze Record Count",
+                  "axis": {
+                    "title": "Bronze Record Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Bronze Ingestion by Second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "18916a35d710",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_silver_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(silver_record_count)",
+                      "expression": "SUM(`silver_record_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(silver_record_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Silver Record Count",
+                  "axis": {
+                    "title": "Silver Record Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Silver Processed by Second",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 16,
+            "width": 8,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_realtime",
+      "displayName": "Real-Time Payment Monitoring",
+      "layout": [
+        {
+          "widget": {
+            "name": "rt_ts_volume",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_performance_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Performance by Second (Real-Time)",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "rt_ts_approval",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_performance_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Performance by Second (Real-Time)",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "rt_kpis",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_last_hour",
+                  "fields": [
+                    {
+                      "name": "transactions_last_hour",
+                      "expression": "`transactions_last_hour`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "transactions_last_hour",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transactions Last Hour",
+                  "axis": {
+                    "title": "Transactions Last Hour"
+                  }
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Approval Rate Pct",
+                  "axis": {
+                    "title": "Approval Rate Pct"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Last Hour Summary KPIs",
+                "showDescription": false
+              }
+            },
+            "frame": {
+              "showTitle": true,
+              "title": "Last Hour Summary",
+              "showDescription": false
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "rt_alerts",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_alerts",
+                  "fields": [
+                    {
+                      "name": "first_detected",
+                      "expression": "`first_detected`"
+                    },
+                    {
+                      "name": "sum(current_value)",
+                      "expression": "SUM(`current_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "first_detected",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "First Detected",
+                  "axis": {
+                    "title": "First Detected"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(current_value)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Current Value",
+                  "axis": {
+                    "title": "Current Value"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Active Alerts",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 8,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_global",
+      "displayName": "Global Coverage - World Map by Country",
+      "layout": [
+        {
+          "widget": {
+            "name": "ae43b765254c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m2_ds_by_country",
+                  "fields": [
+                    {
+                      "name": "country",
+                      "expression": "`country`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "choropleth",
+              "encodings": {
+                "color": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "region": {
+                  "fieldName": "country",
+                  "displayName": "Country"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Performance by Country",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 5
+          }
+        }
+      ]
+    }
+  ]
+}

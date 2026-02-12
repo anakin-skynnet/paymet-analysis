@@ -1,100 +1,33 @@
 # =============================================================================
-# AI/BI Dashboards - Payment Approval Analytics
+# Unified AI/BI Dashboards - Approval-rate analysis (multi-visual)
 # =============================================================================
-# Pattern (see databricks.yml / bundle docs):
-#   resources:
-#     dashboards:
-#       my_dashboard:
-#         display_name: "My Dashboard"
-#         warehouse_id: "${var.warehouse_id}"
-#         file_path: "./dashboards/my_dashboard.lvdash.json"
-# Run before deploy: uv run python scripts/dashboards.py prepare [--catalog X] [--schema Y]
-# Same catalog.schema as Create Gold Views job. warehouse_id from var.
-# file_path must point to PREPARED dashboards (.build/dashboards/) so __CATALOG__.__SCHEMA__ is replaced.
+# Three logical dashboards (see scripts/dashboards.py MERGE_GROUPS):
+#   data_quality_unified   — Stream ingestion, data quality, real-time, alerts, countries
+#   ml_optimization_unified — Routing, decline/recovery, fraud/risk, 3DS, financial impact
+#   executive_trends_unified — KPIs, approval rates, trends, merchant, performance
+# Run: uv run python scripts/dashboards.py merge && uv run python scripts/dashboards.py prepare [--catalog X] [--schema Y]
+# Then deploy. file_path points to .build/dashboards/ (prepare output).
 # =============================================================================
 
 resources:
   dashboards:
-    executive_overview:
-      display_name: "[${var.environment}] Executive Overview - Payment Analysis"
+    data_quality_unified:
+      display_name: "[${var.environment}] Data & Quality"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/executive_overview.lvdash.json
+      file_path: ../.build/dashboards/data_quality_unified.lvdash.json
 
-    decline_analysis:
-      display_name: "[${var.environment}] Decline Analysis & Recovery"
+    ml_optimization_unified:
+      display_name: "[${var.environment}] ML & Optimization"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/decline_analysis.lvdash.json
+      file_path: ../.build/dashboards/ml_optimization_unified.lvdash.json
 
-    realtime_monitoring:
-      display_name: "[${var.environment}] Real-Time Payment Monitoring"
+    executive_trends_unified:
+      display_name: "[${var.environment}] Executive & Trends"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/realtime_monitoring.lvdash.json
-
-    fraud_risk_analysis:
-      display_name: "[${var.environment}] Fraud & Risk Analysis"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/fraud_risk_analysis.lvdash.json
-
-    merchant_performance:
-      display_name: "[${var.environment}] Merchant Performance & Segmentation"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/merchant_performance.lvdash.json
-
-    routing_optimization:
-      display_name: "[${var.environment}] Smart Routing & Optimization"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/routing_optimization.lvdash.json
-
-    daily_trends:
-      display_name: "[${var.environment}] Daily Trends & Historical Analysis"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/daily_trends.lvdash.json
-
-    authentication_security:
-      display_name: "[${var.environment}] 3DS Authentication & Security Analysis"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/authentication_security.lvdash.json
-
-    financial_impact:
-      display_name: "[${var.environment}] Financial Impact & ROI Analysis"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/financial_impact.lvdash.json
-
-    performance_latency:
-      display_name: "[${var.environment}] Technical Performance & Latency Analysis"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/performance_latency.lvdash.json
-
-    streaming_data_quality:
-      display_name: "[${var.environment}] Streaming & Data Quality"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/streaming_data_quality.lvdash.json
-
-    global_coverage:
-      display_name: "[${var.environment}] Global Coverage - World Map by Country"
-      warehouse_id: ${var.warehouse_id}
-      parent_path: ${workspace.root_path}/dashboards
-      embed_credentials: true
-      file_path: ../.build/dashboards/global_coverage.lvdash.json
+      file_path: ../.build/dashboards/executive_trends_unified.lvdash.json

@@ -60,108 +60,34 @@ class DashboardList(BaseModel):
 # =============================================================================
 # Dashboard Registry (Databricks AI/BI Dashboards)
 # =============================================================================
-# These IDs and url_paths match the AI/BI dashboards deployed by the bundle
-# (resources/dashboards.yml and resources/dashboards/*.lvdash.json). The app
-# builds full URLs using config.databricks.workspace_url so the UI embeds and
-# opens the actual dashboards in the Databricks workspace.
+# Unified multi-visual dashboards for approval-rate analysis (see MERGE_GROUPS
+# in scripts/dashboards.py). Run "merge" then "prepare"; bundle deploys these three.
 # =============================================================================
 
 DASHBOARDS = [
     DashboardInfo(
-        id="executive_overview",
-        name="Executive Overview",
-        description="High-level KPIs and trends for executives. Shows total transactions, approval rates, transaction value, and key performance metrics.",
-        category=DashboardCategory.EXECUTIVE,
-        tags=["kpi", "overview", "executive", "summary"],
-        url_path="/sql/dashboards/executive_overview",
-    ),
-    DashboardInfo(
-        id="decline_analysis",
-        name="Decline Analysis & Recovery",
-        description="Deep dive into decline patterns and recovery opportunities. Identifies top decline reasons, recovery potential, and retry strategies.",
-        category=DashboardCategory.OPERATIONS,
-        tags=["decline", "recovery", "analysis", "optimization"],
-        url_path="/sql/dashboards/decline_analysis",
-    ),
-    DashboardInfo(
-        id="realtime_monitoring",
-        name="Real-Time Payment Monitoring",
-        description="Live monitoring with per-second real-time charts, last hour summary KPIs, and active alerts.",
-        category=DashboardCategory.OPERATIONS,
-        tags=["realtime", "monitoring", "alerts", "health"],
-        url_path="/sql/dashboards/realtime_monitoring",
-    ),
-    DashboardInfo(
-        id="fraud_risk_analysis",
-        name="Fraud & Risk Analysis",
-        description="Comprehensive fraud detection and risk monitoring. Tracks fraud scores, AML risk, high-risk transactions, and security patterns.",
-        category=DashboardCategory.ANALYTICS,
-        tags=["fraud", "risk", "security", "aml"],
-        url_path="/sql/dashboards/fraud_risk_analysis",
-    ),
-    DashboardInfo(
-        id="merchant_performance",
-        name="Merchant Performance & Segmentation",
-        description="Detailed merchant performance metrics and segment analysis. Analyzes performance by merchant segment and geography.",
-        category=DashboardCategory.ANALYTICS,
-        tags=["merchant", "segment", "performance", "analytics"],
-        url_path="/sql/dashboards/merchant_performance",
-    ),
-    DashboardInfo(
-        id="routing_optimization",
-        name="Smart Routing & Optimization",
-        description="Payment routing performance and optimization recommendations. Compares payment solutions, networks, and retry strategies.",
-        category=DashboardCategory.OPERATIONS,
-        tags=["routing", "optimization", "smart-retry", "performance"],
-        url_path="/sql/dashboards/routing_optimization",
-    ),
-    DashboardInfo(
-        id="daily_trends",
-        name="Daily Trends & Historical Analysis",
-        description="Historical trends and day-over-day performance analysis. Shows 90-day trends in volume, approval rates, value, and fraud.",
-        category=DashboardCategory.ANALYTICS,
-        tags=["trends", "historical", "daily", "analytics"],
-        url_path="/sql/dashboards/daily_trends",
-    ),
-    DashboardInfo(
-        id="authentication_security",
-        name="3DS Authentication & Security",
-        description="Deep dive into 3D Secure authentication adoption and security compliance. Analyzes 3DS usage patterns and impact on approval rates.",
-        category=DashboardCategory.ANALYTICS,
-        tags=["3ds", "authentication", "security", "compliance"],
-        url_path="/sql/dashboards/authentication_security",
-    ),
-    DashboardInfo(
-        id="financial_impact",
-        name="Financial Impact & ROI Analysis",
-        description="Transaction value analysis, revenue impact, and ROI from optimization strategies. Quantifies financial impact and recovery potential.",
-        category=DashboardCategory.EXECUTIVE,
-        tags=["financial", "revenue", "roi", "value"],
-        url_path="/sql/dashboards/financial_impact",
-    ),
-    DashboardInfo(
-        id="performance_latency",
-        name="Technical Performance & Latency",
-        description="Processing time, latency metrics, and technical performance by solution and network. Monitors SLA compliance and performance trends.",
+        id="data_quality_unified",
+        name="Data & Quality",
+        description="Stream ingestion volume, data quality, real-time monitoring, active alerts, and global coverage by country. Single dashboard for data health and operational monitoring.",
         category=DashboardCategory.TECHNICAL,
-        tags=["performance", "latency", "technical", "sla"],
-        url_path="/sql/dashboards/performance_latency",
+        tags=["streaming", "ingestion", "data-quality", "realtime", "alerts", "countries", "geography"],
+        url_path="/sql/dashboards/data_quality_unified",
     ),
     DashboardInfo(
-        id="streaming_data_quality",
-        name="Streaming & Data Quality",
-        description="Incoming streaming data (bronze/silver), pipeline retention %, and Unity Catalog data quality metrics (freshness, completeness, downstream impact from system.data_quality_monitoring).",
-        category=DashboardCategory.TECHNICAL,
-        tags=["streaming", "ingestion", "data-quality", "bronze", "silver", "unity-catalog"],
-        url_path="/sql/dashboards/streaming_data_quality",
-    ),
-    DashboardInfo(
-        id="global_coverage",
-        name="Global Coverage - World Map by Country",
-        description="World map and metrics aggregated by country. Transaction volume, approval rates, and value across issuer countries.",
+        id="ml_optimization_unified",
+        name="ML & Optimization",
+        description="Smart routing, decline analysis & recovery, fraud/risk, 3DS authentication, and financial impact. Predictions, smart retry impact, smart checkout behavior.",
         category=DashboardCategory.ANALYTICS,
-        tags=["geography", "world-map", "countries", "global", "analytics"],
-        url_path="/sql/dashboards/global_coverage",
+        tags=["routing", "decline", "recovery", "fraud", "risk", "3ds", "smart-checkout", "smart-retry", "roi"],
+        url_path="/sql/dashboards/ml_optimization_unified",
+    ),
+    DashboardInfo(
+        id="executive_trends_unified",
+        name="Executive & Trends",
+        description="KPIs, approval rates, daily trends, merchant performance, and technical performance. For business users to analyze and understand approval rates.",
+        category=DashboardCategory.EXECUTIVE,
+        tags=["kpi", "approval-rate", "trends", "merchant", "performance", "executive"],
+        url_path="/sql/dashboards/executive_trends_unified",
     ),
 ]
 
@@ -280,18 +206,18 @@ def _dashboard_url_path_and_full(
     config: Any,
 ) -> tuple[str, str | None]:
     """
-    Return (url_path, full_url) for a dashboard. When executive_overview and a Lakeview
+    Return (url_path, full_url) for a dashboard. When executive_trends_unified and a Lakeview
     reference ID is configured (or workspace matches reference), use dashboardsv3 published URL.
     Reference: https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111
     """
     lakeview_id = getattr(config.databricks, "lakeview_id_executive_overview", None) or (
-        REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE if dashboard_id == "executive_overview" else None
+        REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE if dashboard_id == "executive_trends_unified" else None
     )
     raw_host = (config.databricks.workspace_url or "").strip().rstrip("/")
     workspace_id = config.databricks.workspace_id
     if not workspace_id and raw_host and REFERENCE_WORKSPACE_HOST.rstrip("/") == ensure_absolute_workspace_url(raw_host).rstrip("/"):
         workspace_id = REFERENCE_WORKSPACE_ID
-    if dashboard_id == "executive_overview" and lakeview_id:
+    if dashboard_id == "executive_trends_unified" and lakeview_id:
         path = f"/dashboardsv3/{lakeview_id}/published"
         if workspace_id:
             path = f"{path}?o={workspace_id}"
@@ -311,8 +237,8 @@ async def get_dashboard_url(
     """
     Get the Databricks URL for a specific dashboard.
     
-    When Executive Overview is configured with a Lakeview dashboard ID (or reference workspace
-    matches), returns the dashboardsv3 published URL so the app opens the reference dashboard.
+    When Executive & Trends (executive_trends_unified) is configured with a Lakeview dashboard ID
+    (or reference workspace matches), returns the dashboardsv3 published URL so the app opens the reference dashboard.
     
     Args:
         dashboard_id: Unique dashboard identifier

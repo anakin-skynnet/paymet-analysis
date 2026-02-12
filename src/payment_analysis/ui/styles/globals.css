@@ -446,6 +446,47 @@
   --sidebar-background: 240 12% 8%;
 }
 
+/* Landing page: scrollable content area (overflow via class, no inline style) */
+@layer components {
+  .landing-panel-scroll {
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.6 0.02 0 / 0.4) transparent;
+  }
+  .dark .landing-panel-scroll {
+    scrollbar-color: oklch(0.5 0.02 260 / 0.5) transparent;
+  }
+  /* Stagger reveal without inline styles: use classes instead of motion variants */
+  .landing-stagger-container {
+    --stagger-delay-initial: 0.1s;
+    --stagger-delay-step: 0.06s;
+  }
+  .landing-stagger-item {
+    opacity: 0;
+    transform: translateY(1.25rem);
+    animation: landing-reveal 0.4s ease-out forwards;
+  }
+  .landing-stagger-item.delay-0 { animation-delay: calc(var(--stagger-delay-initial) + (0 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-1 { animation-delay: calc(var(--stagger-delay-initial) + (1 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-2 { animation-delay: calc(var(--stagger-delay-initial) + (2 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-3 { animation-delay: calc(var(--stagger-delay-initial) + (3 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-4 { animation-delay: calc(var(--stagger-delay-initial) + (4 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-5 { animation-delay: calc(var(--stagger-delay-initial) + (5 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-6 { animation-delay: calc(var(--stagger-delay-initial) + (6 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-7 { animation-delay: calc(var(--stagger-delay-initial) + (7 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-8 { animation-delay: calc(var(--stagger-delay-initial) + (8 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-9 { animation-delay: calc(var(--stagger-delay-initial) + (9 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-10 { animation-delay: calc(var(--stagger-delay-initial) + (10 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-11 { animation-delay: calc(var(--stagger-delay-initial) + (11 * var(--stagger-delay-step))); }
+  .landing-stagger-item.delay-12 { animation-delay: calc(var(--stagger-delay-initial) + (12 * var(--stagger-delay-step))); }
+  @keyframes landing-reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 /* Optional: subtle scrollbar styling for a polished app feel (non-intrusive) */
 @layer utilities {
   .scrollbar-thin {

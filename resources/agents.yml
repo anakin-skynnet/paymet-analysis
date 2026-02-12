@@ -1,18 +1,17 @@
 # =============================================================================
-# Step 6: Deploy Agents (Orchestrator & Specialists) — AgentBricks
+# Step 6: Deploy Agents (Orchestrator & Specialists)
 # =============================================================================
-# Single task runs AgentBricks agents: LangGraph + UC tools (same five specialists
-# + orchestrator). Orchestrator runs all five in sequence and synthesizes.
-# LLM: Mosaic AI (Model Serving). Tools: Unity Catalog functions (Job 3 create_uc_agent_tools).
-#
-# UC agent tool functions must exist in catalog.schema (Job 3) before running this job.
+# Task 1 (run_agent_framework): Custom Python framework (agent_framework.py) — orchestrator
+# + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender.
+# Same notebook used by the app's Orchestrator chat; output (synthesis, agents_used) is read by Jobs API.
+# Task 2 (register_agentbricks): Optional LangGraph/AgentBricks register to UC (langgraph_agents.py).
 # =============================================================================
 
 resources:
   jobs:
     "job_6_deploy_agents":
       name: "[${var.environment}] 6. Deploy Agents (Orchestrator & Specialists)"
-      description: "Run AgentBricks agents (LangGraph + UC tools): orchestrator coordinates Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, and Performance Recommender. Single task runs one comprehensive analysis. Requires UC agent tools (Job 3 create_uc_agent_tools)."
+      description: "Run agent framework (orchestrator + specialists). Task 1 runs agent_framework.py; task 2 optionally registers LangGraph agents to UC. App Orchestrator chat uses task 1."
       max_concurrent_runs: 1
       environments:
         - environment_key: lakebase_sdk
@@ -28,10 +27,10 @@ resources:
               - "psycopg[binary]==3.3.2"
       tasks:
         - task_key: run_agent_framework
-          description: "Run AgentBricks (orchestrator + all specialists) with one comprehensive query"
+          description: "Run agent framework (orchestrator + all specialists); output used by app Orchestrator chat"
           environment_key: lakebase_sdk
           notebook_task:
-            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/langgraph_agents
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agent_framework
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -45,6 +44,7 @@ resources:
           notebook_task:
             notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agentbricks_register
             base_parameters:
+              workspace_path: ${workspace.root_path}
               catalog: ${var.catalog}
               schema: ${var.schema}
               model_registry_schema: "agents"

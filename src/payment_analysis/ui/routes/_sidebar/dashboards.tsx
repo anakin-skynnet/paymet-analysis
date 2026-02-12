@@ -4,11 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, TrendingUp, Shield, DollarSign, Gauge, Users, Calendar, Lock, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight, Globe, LayoutGrid, ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { BarChart3, Gauge, Award, Zap, ExternalLink, Code2, Activity, MessageSquareText, ArrowRight, LayoutGrid, ArrowLeft, AlertCircle } from "lucide-react";
 import { getWorkspaceUrl, getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { PageHeader } from "@/components/layout";
+import { DashboardTable } from "@/components/dashboards";
 import { friendlyReason } from "@/lib/reasoning";
+import { MOCK_DASHBOARDS } from "@/lib/mock-data";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/dashboards")({
@@ -29,34 +33,16 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 const dashboardIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  executive_overview: BarChart3,
-  decline_analysis: TrendingUp,
-  realtime_monitoring: Gauge,
-  fraud_risk_analysis: Shield,
-  merchant_performance: Users,
-  routing_optimization: Zap,
-  daily_trends: Calendar,
-  authentication_security: Lock,
-  financial_impact: DollarSign,
-  performance_latency: Gauge,
-  streaming_data_quality: Activity,
-  global_coverage: Globe,
+  data_quality_unified: Activity,
+  ml_optimization_unified: Zap,
+  executive_trends_unified: BarChart3,
 };
 
 // Map dashboards to their underlying notebooks
 const dashboardNotebooks: Record<string, string[]> = {
-  executive_overview: ["gold_views_sql"],
-  decline_analysis: ["gold_views_sql", "silver_transform"],
-  realtime_monitoring: ["realtime_pipeline", "gold_views_sql"],
-  fraud_risk_analysis: ["train_models", "gold_views_sql"],
-  merchant_performance: ["gold_views_sql", "silver_transform"],
-  routing_optimization: ["train_models", "gold_views_sql", "agent_framework"],
-  daily_trends: ["gold_views_sql"],
-  authentication_security: ["silver_transform", "gold_views_sql"],
-  financial_impact: ["gold_views_sql"],
-  performance_latency: ["gold_views_sql"],
-  streaming_data_quality: ["bronze_ingest", "silver_transform", "gold_views_sql"],
-  global_coverage: ["gold_views_sql"],
+  data_quality_unified: ["bronze_ingest", "silver_transform", "gold_views_sql", "realtime_pipeline"],
+  ml_optimization_unified: ["train_models", "gold_views_sql", "agent_framework", "silver_transform"],
+  executive_trends_unified: ["gold_views_sql", "silver_transform"],
 };
 
 export function Component() {
@@ -116,14 +102,11 @@ export function Component() {
     return colors[category] || "bg-gray-500/10 text-gray-700 dark:text-gray-400";
   };
 
-  // Core 6 for executive storytelling: KPI, Decline, Risk & Fraud, Routing, Live, Retry/Recommendations
+  // Three unified dashboards: Data & Quality, ML & Optimization, Executive & Trends
   const coreDashboardIds = [
-    "executive_overview",
-    "decline_analysis",
-    "fraud_risk_analysis",
-    "routing_optimization",
-    "realtime_monitoring",
-    "daily_trends",
+    "executive_trends_unified",
+    "ml_optimization_unified",
+    "data_quality_unified",
   ];
   const coreDashboards = dashboards.filter((d) => coreDashboardIds.includes(d.id));
   const otherDashboards = dashboards.filter((d) => !coreDashboardIds.includes(d.id));
@@ -183,17 +166,17 @@ export function Component() {
       {!showEmbedView && (
         <>
       <PageHeader
-        sectionLabel="Portfolio visibility"
-        title="Executive dashboards"
-        description="Approval rate, decline rate, fraud, and uplift by geography, merchant, and issuer. One place for leadership and operations to monitor performance."
+        sectionLabel="Approval analytics"
+        title="Dashboards"
+        description="Approval rate, declines, fraud, routing, and real-time monitoring. Open in Databricks."
         badge={<DataSourceBadge />}
       />
 
-      {/* Core executive & operations (6) */}
+      {/* Core approval & operations (6) */}
       {coreDashboards.length > 0 && (
         <section className="content-section space-y-3">
           <h2 className="section-label">
-            Core executive & operations
+            Approval & operations
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {coreDashboards.map((dashboard) => {
@@ -289,16 +272,31 @@ export function Component() {
         })}
       </div>
 
-      {/* Error State — connectivity to backend / Databricks */}
+      {/* Error state: backend unavailable — use Alert (consistent style); table view can show mock data */}
       {isError && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-8 text-center">
-            <p className="text-destructive font-medium">Failed to load dashboards.</p>
-            <p className="text-sm text-muted-foreground mt-1">Check that the backend is running and can reach Databricks for dashboard metadata and data access.</p>
-          </CardContent>
-        </Card>
+        <Alert variant="destructive" className="border-destructive/50">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load dashboards</AlertTitle>
+          <AlertDescription>
+            Check that the backend is running and can reach Databricks for dashboard metadata. Table view below may show sample data when backend is unavailable.
+          </AlertDescription>
+        </Alert>
       )}
 
+      <Tabs defaultValue="cards" className="space-y-4">
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="cards">Cards</TabsTrigger>
+          <TabsTrigger value="table">Table</TabsTrigger>
+        </TabsList>
+        <TabsContent value="table" className="space-y-4">
+          <DashboardTable
+            dashboards={isError ? MOCK_DASHBOARDS : dashboards}
+            isLoading={loading}
+            onViewInApp={openEmbed}
+            onOpenInTab={(d) => d.url_path && handleDashboardClick(d)}
+          />
+        </TabsContent>
+        <TabsContent value="cards" className="space-y-6">
       {/* More dashboards (when viewing All) or full grid (when category selected) */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -562,6 +560,8 @@ export function Component() {
           </ul>
         </CardContent>
       </Card>
+        </TabsContent>
+        </Tabs>
         </>
       )}
     </div>

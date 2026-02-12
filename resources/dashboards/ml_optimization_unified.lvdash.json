@@ -1,0 +1,1209 @@
+{
+  "datasets": [
+    {
+      "name": "m0_ds_routing",
+      "displayName": "Solution Performance",
+      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m0_ds_card_network",
+      "displayName": "Card Network Performance",
+      "query": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m1_ds_top_decline",
+      "displayName": "Top Decline Reasons",
+      "query": "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+    },
+    {
+      "name": "m1_ds_recovery",
+      "displayName": "Decline Recovery Opportunities",
+      "query": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
+    },
+    {
+      "name": "m2_ds_fraud_kpis",
+      "displayName": "Fraud & Risk KPIs",
+      "query": "SELECT total_transactions, approved_count, declined_count, avg_fraud_score, avg_aml_risk_score, total_transaction_value FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+    },
+    {
+      "name": "m2_ds_decline_risk",
+      "displayName": "Declines by Fraud Score",
+      "query": "SELECT decline_reason, decline_count, avg_fraud_score, total_declined_value, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+    },
+    {
+      "name": "m3_ds_auth_kpis",
+      "displayName": "3DS Usage",
+      "query": "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+    },
+    {
+      "name": "m3_ds_merchant_auth",
+      "displayName": "Auth by Segment",
+      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m4_ds_financial",
+      "displayName": "Transaction Value",
+      "query": "SELECT total_transaction_value, approved_value, declined_value, avg_transaction_amount, total_transactions, approved_count, declined_count FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+    },
+    {
+      "name": "m4_ds_decline_value",
+      "displayName": "Declined Value by Reason",
+      "query": "SELECT decline_reason, total_declined_value, decline_count, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY total_declined_value DESC"
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_routing",
+      "displayName": "Smart Routing & Optimization",
+      "layout": [
+        {
+          "widget": {
+            "name": "096e80a4949c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_routing",
+                  "fields": [
+                    {
+                      "name": "payment_solution",
+                      "expression": "`payment_solution`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Solution Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "19333057a434",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_card_network",
+                  "fields": [
+                    {
+                      "name": "card_network",
+                      "expression": "`card_network`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "card_network",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Card Network",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Card Network Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_decline",
+      "displayName": "Decline Analysis & Recovery",
+      "layout": [
+        {
+          "widget": {
+            "name": "c09102716ecf",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_top_decline",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Decline Count",
+                  "axis": {
+                    "title": "Decline Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top Decline Reasons",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "483b2f87c43d",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_recovery",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant Segment",
+                  "axis": {
+                    "title": "Merchant Segment"
+                  }
+                },
+                "color": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Decline Count"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Decline Recovery Opportunities",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_fraud",
+      "displayName": "Fraud & Risk Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "0f181df6b6ba",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m2_ds_fraud_kpis",
+                  "fields": [
+                    {
+                      "name": "total_transactions",
+                      "expression": "`total_transactions`"
+                    },
+                    {
+                      "name": "approved_count",
+                      "expression": "`approved_count`"
+                    },
+                    {
+                      "name": "declined_count",
+                      "expression": "`declined_count`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    },
+                    {
+                      "name": "avg_aml_risk_score",
+                      "expression": "`avg_aml_risk_score`"
+                    },
+                    {
+                      "name": "total_transaction_value",
+                      "expression": "`total_transaction_value`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "total_transactions",
+                    "fieldName": "total_transactions",
+                    "displayName": "Total Transactions",
+                    "title": "Total Transactions",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approved_count",
+                    "fieldName": "approved_count",
+                    "displayName": "Approved Count",
+                    "title": "Approved Count",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declined_count",
+                    "fieldName": "declined_count",
+                    "displayName": "Declined Count",
+                    "title": "Declined Count",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score",
+                    "title": "Avg Fraud Score",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_aml_risk_score",
+                    "fieldName": "avg_aml_risk_score",
+                    "displayName": "Avg Aml Risk Score",
+                    "title": "Avg Aml Risk Score",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "total_transaction_value",
+                    "fieldName": "total_transaction_value",
+                    "displayName": "Total Transaction Value",
+                    "title": "Total Transaction Value",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Fraud & Risk KPIs",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "73bafc0d400d",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m2_ds_decline_risk",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(decline_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Decline Count",
+                  "axis": {
+                    "title": "Decline Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Declines by Fraud Score",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_auth",
+      "displayName": "3DS Authentication & Security Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "40556991a5b1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m3_ds_auth_kpis",
+                  "fields": [
+                    {
+                      "name": "total_transactions",
+                      "expression": "`total_transactions`"
+                    },
+                    {
+                      "name": "auth_3ds_usage_pct",
+                      "expression": "`auth_3ds_usage_pct`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "total_transactions",
+                    "fieldName": "total_transactions",
+                    "displayName": "Total Transactions",
+                    "title": "Total Transactions",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "auth_3ds_usage_pct",
+                    "fieldName": "auth_3ds_usage_pct",
+                    "displayName": "Auth 3Ds Usage Pct",
+                    "title": "Auth 3Ds Usage Pct",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approval_rate_pct",
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval Rate Pct",
+                    "title": "Approval Rate Pct",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score",
+                    "title": "Avg Fraud Score",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "3DS Usage",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "8b5d1175a7e7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m3_ds_merchant_auth",
+                  "fields": [
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Auth by Segment",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 5,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_financial",
+      "displayName": "Financial Impact & ROI Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "f4169b2b26c9",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m4_ds_financial",
+                  "fields": [
+                    {
+                      "name": "total_transaction_value",
+                      "expression": "`total_transaction_value`"
+                    },
+                    {
+                      "name": "approved_value",
+                      "expression": "`approved_value`"
+                    },
+                    {
+                      "name": "declined_value",
+                      "expression": "`declined_value`"
+                    },
+                    {
+                      "name": "avg_transaction_amount",
+                      "expression": "`avg_transaction_amount`"
+                    },
+                    {
+                      "name": "total_transactions",
+                      "expression": "`total_transactions`"
+                    },
+                    {
+                      "name": "approved_count",
+                      "expression": "`approved_count`"
+                    },
+                    {
+                      "name": "declined_count",
+                      "expression": "`declined_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "total_transaction_value",
+                    "fieldName": "total_transaction_value",
+                    "displayName": "Total Transaction Value",
+                    "title": "Total Transaction Value",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approved_value",
+                    "fieldName": "approved_value",
+                    "displayName": "Approved Value",
+                    "title": "Approved Value",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declined_value",
+                    "fieldName": "declined_value",
+                    "displayName": "Declined Value",
+                    "title": "Declined Value",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_transaction_amount",
+                    "fieldName": "avg_transaction_amount",
+                    "displayName": "Avg Transaction Amount",
+                    "title": "Avg Transaction Amount",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "total_transactions",
+                    "fieldName": "total_transactions",
+                    "displayName": "Total Transactions",
+                    "title": "Total Transactions",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approved_count",
+                    "fieldName": "approved_count",
+                    "displayName": "Approved Count",
+                    "title": "Approved Count",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declined_count",
+                    "fieldName": "declined_count",
+                    "displayName": "Declined Count",
+                    "title": "Declined Count",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Transaction Value",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "5737c4841382",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m4_ds_decline_value",
+                  "fields": [
+                    {
+                      "name": "decline_reason",
+                      "expression": "`decline_reason`"
+                    },
+                    {
+                      "name": "sum(total_declined_value)",
+                      "expression": "SUM(`total_declined_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "decline_reason",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "displayName": "Decline Reason",
+                  "axis": {
+                    "title": "Decline Reason"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(total_declined_value)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Total Declined Value",
+                  "axis": {
+                    "title": "Total Declined Value"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Declined Value by Reason",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,12 @@
 # AI/BI Dashboard definitions (Lakeview / .lvdash.json)
 
-**Reference dashboard (Lakeview v3):** The app can use a published Lakeview dashboard as the Executive Overview. When the workspace matches the reference (e.g. `https://adb-984752964297111.11.azuredatabricks.net`), or when `DATABRICKS_LAKEVIEW_ID_EXECUTIVE_OVERVIEW` is set, the backend returns the dashboardsv3 URL (`/dashboardsv3/<id>/published?o=<workspace_id>`) so "Executive Dashboard" opens that dashboard. Reference: [published dashboard](https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111).
+**Reference dashboard (Lakeview v3) — colors and chart settings:** Use this as the source of truth for visualization palette, chart widget types, and dataset/column assignment:
+
+- **URL:** [Executive Overview published](https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111)
+- **Verification:** Colors, chart widget settings (datasets and columns assigned to each visual), and “paint the results” **must be configured in ALL dashboards**. Run `uv run python scripts/dashboards.py check-widgets` to verify; run `ensure-paint` (or `best-widgets` then `fix-widget-settings`) to apply.
+- **Layout:** Run `uv run python scripts/dashboards.py optimize-layout` to set widget sizes and positions on a 12-column grid (counter 4×2, line/area 8×4, choropleth 8×5, table 12×4) for an intuitive dashboard.
+
+The app uses the same published Lakeview dashboard as the Executive Overview when the workspace matches the reference or when `DATABRICKS_LAKEVIEW_ID_EXECUTIVE_OVERVIEW` is set (dashboardsv3 URL).
 
 Dashboard JSONs are prepared by `scripts/dashboards.py prepare` (catalog/schema substitution) and deployed via the bundle (`resources/dashboards.yml`). Each file follows the [dbdemos](https://github.com/databricks-demos/dbdemos) and [Apps Cookbook](https://apps-cookbook.dev/docs/intro) pattern:
 
@@ -18,7 +24,7 @@ This project is configured in line with [dbdemos AI/BI](https://github.com/datab
 | **Dataset definition** | Single `query` string; catalog/schema match bundle config | Single `query` with `__CATALOG__.__SCHEMA__` placeholder (replaced at prepare) |
 | **Widget → dataset** | Widgets reference datasets by name | Each data widget has `queries[].query.datasetName` pointing to a dataset in the same file |
 | **Widget fields** | Query fields and encodings for visualizations | `query.fields` (name, expression) and `spec.encodings.columns` (fieldName, visible, etc.) so Lakeview has fields selected |
-| **Validation** | — | `check-widgets`: every dataset has ≥1 widget; every widget has datasetName, fields, spec, position |
+| **Validation** | — | `check-widgets`: every dataset has ≥1 widget; every widget has datasetName, fields, spec, position; chart widgets must have encodings to paint (x/y, value, angle/color, etc.) |
 | **File location** | `_resources/dashboards/` or `_dashboards`, filename = bundle id | Source: `resources/dashboards/*.lvdash.json`; bundle uses `file_path: ./dashboards/<name>.lvdash.json` (prepare writes to repo root `dashboards/`) |
 
 We do not use `queryLines` (API allows only one of `query` or `query_lines` per dataset). Table widgets have full column encodings so Lakeview does not show "Visualization has no fields selected."
@@ -78,11 +84,14 @@ So for every dataset we use a type that matches the official “best for” guid
 
 Chart widgets use **single objects** for `encodings.x` and `encodings.y` (not arrays). `spec.frame` can include `showTitle`, `title`, and `showDescription`. Validation (`check-widgets`) accepts aggregate field names like `sum(column_name)` as referring to the dataset column `column_name`.
 
-## Making widgets show visual results
+## Making widgets show visual results (paint the results)
 
-1. **Deploy** the bundle (including `resources/dashboards.yml`) so dashboards exist in the workspace.
-2. Dashboards include a **layout** with one table widget per dataset (linked by `datasetName`). Open each dashboard in Databricks (SQL → Dashboards) to view data or add more visualizations (bar, line, counter) via **Add visualization** using the same datasets.
-3. **Publish** for sharing/embed: run `uv run python scripts/dashboards.py publish` after deploy, or use the dashboard's **Publish** action in the UI with **Share with data permissions** (embed credentials) so the app can embed the dashboard.
+**This must be configured in ALL dashboards:** datasets and columns must be assigned to each visual so results are painted. Use the [reference dashboard](https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111) for colors and chart widget settings.
+
+1. Run **`ensure-paint`** (or **`best-widgets`** then **`fix-widget-settings`**) so every widget has `query.fields` and `spec.encodings` set from the dataset. **Design and colors:** `fix-widget-settings` applies the reference palette (Getnet red, neon cyan, green, indigo, amber, violet) to categorical color encodings (pie, bar/line/area with group-by); single-series line/bar/area charts use the primary color (Getnet red) so all visuals are attractive and consistent.
+2. Run **`check-widgets`** to verify: every chart widget has the encodings required to paint (line/bar: x,y; pie: angle,color; counter: value; table: columns; etc.).
+3. **Deploy** the bundle so dashboards exist in the workspace.
+4. **Publish** for sharing/embed: `uv run python scripts/dashboards.py publish` after deploy, or use the dashboard **Publish** action with **Share with data permissions** (embed credentials).
 
 The Gold Views job must have been run in the same catalog/schema so the views exist and widgets return data.
 

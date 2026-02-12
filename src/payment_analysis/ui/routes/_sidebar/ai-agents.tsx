@@ -117,24 +117,15 @@ function AIAgents() {
           <div className="flex gap-3">
             <Bot className="w-8 h-8 text-primary flex-shrink-0" />
             <div>
-              <h1 className="text-3xl font-bold">Databricks AI Agents</h1>
-              <p className="text-muted-foreground mt-1">
-                Genie, Model Serving, and{" "}
-                <a
-                  href="https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                >
-                  Mosaic AI Gateway
-                </a>{" "}
-                (LLM) agents. Run the agent framework from Setup & Run (step 6); one task runs the orchestrator and all specialists. Agents use approval rules from Lakebase when configured.
+              <h1 className="text-2xl font-bold">AI Agents</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Genie (Ask Data) and Orchestrator + specialists. The floating Chat uses the Orchestrator when Job 6 is deployed. Each card opens in Databricks.
               </p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={openAgentsFolder}>
             <ExternalLink className="w-4 h-4 mr-2" />
-            Open agents folder in Workspace
+            Agents folder
           </Button>
         </div>
       </div>
@@ -153,7 +144,7 @@ function AIAgents() {
             Ask Data with Genie
           </CardTitle>
           <CardDescription>
-            Chat with Genie in natural language to explore payment data. Open Genie in Databricks to run these prompts and more.
+            Natural-language analytics over approval and decline data. Opens Genie in Databricks.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -180,7 +171,7 @@ function AIAgents() {
             <ExternalLink className="w-3 h-3 ml-2" />
           </Button>
           <p className="text-xs text-muted-foreground">
-            Data is fetched from your Databricks workspace when you use Genie. Ensure backend and Databricks (catalog, schema, warehouse) are configured for connectivity and data access.
+            Data from your Databricks workspace (catalog, schema, warehouse).
           </p>
         </CardContent>
       </Card>

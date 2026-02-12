@@ -14,7 +14,29 @@
 # COMMAND ----------
 
 import os
+import sys
 import json
+
+# Ensure payment_analysis package is importable when run as a Databricks job (no pip install of the repo).
+# Repo root is either from __file__ (e.g. .../files/src/payment_analysis/agents/agentbricks_register.py -> .../files/src)
+# or from workspace_path widget / WORKSPACE_ROOT env (bundle workspace path, e.g. .../files).
+_src_root = None
+try:
+    _agentbricks_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.basename(_agentbricks_dir) == "agents":
+        _src_root = os.path.abspath(os.path.join(_agentbricks_dir, "..", ".."))
+except NameError:
+    pass
+if not _src_root or not os.path.isdir(_src_root):
+    try:
+        from databricks.sdk.runtime import dbutils
+        _workspace_path = (dbutils.widgets.get("workspace_path") or "").strip()
+    except Exception:
+        _workspace_path = os.environ.get("WORKSPACE_ROOT", "").strip()
+    if _workspace_path:
+        _src_root = os.path.join(_workspace_path, "src")
+if _src_root and os.path.isdir(_src_root) and _src_root not in sys.path:
+    sys.path.insert(0, _src_root)
 
 # COMMAND ----------
 

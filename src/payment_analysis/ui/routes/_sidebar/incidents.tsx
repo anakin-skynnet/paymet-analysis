@@ -13,7 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Code2, AlertTriangle, Activity } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ExternalLink, Code2, AlertTriangle, Activity, HelpCircle } from "lucide-react";
 import { getDashboardUrl, openInDatabricks } from "@/config/workspace";
 
 const REFRESH_MS = 5000;
@@ -63,18 +68,44 @@ function Incidents() {
     <div className="space-y-6">
       <div>
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Real-Time Monitor</h1>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            Real-Time Monitor
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-help text-muted-foreground hover:text-foreground" aria-label="What is Real-Time Monitor?">
+                  <HelpCircle className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                Live payment throughput, last-hour volume, and incident tracking. Use this page to monitor streaming TPS, create or view incidents (e.g. MID failures, processor issues), and open the Real-Time Monitoring dashboard or pipeline in Databricks.
+              </TooltipContent>
+            </Tooltip>
+          </h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={openDashboard}>
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Monitoring Dashboard
-              <ExternalLink className="w-3 h-3 ml-2" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => openNotebook("realtime_pipeline")}>
-              <Code2 className="w-4 h-4 mr-2" />
-              Alert Pipeline
-              <ExternalLink className="w-3 h-3 ml-2" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={openDashboard}>
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Monitoring Dashboard
+                  <ExternalLink className="w-3 h-3 ml-2" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Open the Real-Time Monitoring dashboard in Databricks (volume by second, latency, alerts, and data quality).
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={() => openNotebook("realtime_pipeline")}>
+                  <Code2 className="w-4 h-4 mr-2" />
+                  Alert Pipeline
+                  <ExternalLink className="w-3 h-3 ml-2" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Open the real-time pipeline notebook in the workspace (streaming payment events and alert processing).
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
@@ -84,54 +115,108 @@ function Incidents() {
 
       {/* Real-time stats strip */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border border-[var(--neon-cyan)]/20 bg-[var(--neon-cyan)]/5">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Activity className="h-4 w-4 text-[var(--neon-cyan)]" />
-              TPS (live)
-            </div>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--neon-cyan)]">
-              {tpsQ.isLoading ? "—" : (latestTps ?? eventsPerSec ?? "—")}
-            </p>
-            <p className="text-xs text-muted-foreground">transactions/sec</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Last hour volume</div>
-            <p className="mt-1 text-2xl font-bold tabular-nums">
-              {lastHourQ.isLoading ? "—" : (lastHour?.transactions_last_hour?.toLocaleString() ?? "—")}
-            </p>
-            <p className="text-xs text-muted-foreground">approval {lastHour?.approval_rate_pct != null ? `${lastHour.approval_rate_pct.toFixed(1)}%` : "—"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-sm text-muted-foreground">Incidents</div>
-            <p className="mt-1 text-2xl font-bold tabular-nums">{items.length}</p>
-            <p className="text-xs text-muted-foreground">open + resolved</p>
-          </CardContent>
-        </Card>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Card className="border border-[var(--neon-cyan)]/20 bg-[var(--neon-cyan)]/5 cursor-help">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Activity className="h-4 w-4 text-[var(--neon-cyan)]" />
+                  TPS (live)
+                </div>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--neon-cyan)]">
+                  {tpsQ.isLoading ? "—" : (latestTps ?? eventsPerSec ?? "—")}
+                </p>
+                <p className="text-xs text-muted-foreground">transactions/sec</p>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            Live transactions per second from the streaming pipeline. Reflects current throughput (or last-hour average if live TPS is unavailable).
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Card className="cursor-help">
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">Last hour volume</div>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {lastHourQ.isLoading ? "—" : (lastHour?.transactions_last_hour?.toLocaleString() ?? "—")}
+                </p>
+                <p className="text-xs text-muted-foreground">approval {lastHour?.approval_rate_pct != null ? `${lastHour.approval_rate_pct.toFixed(1)}%` : "—"}</p>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            Total transactions and approval rate in the last hour. Helps you spot volume and approval trends at a glance.
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Card className="cursor-help">
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">Incidents</div>
+                <p className="mt-1 text-2xl font-bold tabular-nums">{items.length}</p>
+                <p className="text-xs text-muted-foreground">open + resolved</p>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            Number of recorded incidents (open and resolved). Use &quot;Create incident&quot; below to add new ones for tracking and remediation.
+          </TooltipContent>
+        </Tooltip>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Create incident</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2 md:grid-cols-3">
-          <Input value={category} onChange={(e) => setCategory(e.target.value)} />
-          <Input value={key} onChange={(e) => setKey(e.target.value)} />
-          <Button onClick={() => create.mutate()} disabled={create.isPending}>
-            Create
-          </Button>
-        </CardContent>
-      </Card>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Card className="cursor-help">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Create incident
+                <HelpCircle className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 md:grid-cols-3">
+              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Category (e.g. mid_failure)" />
+              <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. MID=demo)" />
+              <Button onClick={() => create.mutate()} disabled={create.isPending}>
+                Create
+              </Button>
+            </CardContent>
+          </Card>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-sm">
+          Record a payment or system incident (e.g. MID failure, processor outage) for tracking and remediation. Incidents appear in the list below and can be opened in the Real-Time Monitoring dashboard. Category and key identify the issue (e.g. <code className="rounded bg-muted px-1">mid_failure</code>, <code className="rounded bg-muted px-1">MID=demo</code>).
+        </TooltipContent>
+      </Tooltip>
 
       <div className="space-y-3">
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No incidents yet.</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-sm text-muted-foreground cursor-help inline-flex items-center gap-1.5">
+                No incidents yet.
+                <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+              </p>
+            </TooltipTrigger>
+            <TooltipContent>
+              Recorded incidents appear here. Use &quot;Create incident&quot; above to add one; click a card to open the Real-Time Monitoring dashboard.
+            </TooltipContent>
+          </Tooltip>
         ) : (
-          items.map((inc) => <IncidentRow key={inc.id} inc={inc} />)
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="text-sm font-medium text-muted-foreground cursor-help inline-flex items-center gap-1.5 w-fit">
+                  Incident list
+                  <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>
+                Recorded incidents. Click a card to open the Real-Time Monitoring dashboard in Databricks. Resolve via the API or your ops process.
+              </TooltipContent>
+            </Tooltip>
+            {items.map((inc) => <IncidentRow key={inc.id} inc={inc} />)}
+          </>
         )}
       </div>
     </div>

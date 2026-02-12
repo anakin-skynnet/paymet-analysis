@@ -1,0 +1,1169 @@
+{
+  "datasets": [
+    {
+      "name": "m0_ds_exec_kpis",
+      "displayName": "Executive KPIs",
+      "query": "SELECT total_transactions, approved_count, declined_count, approval_rate_pct, avg_fraud_score, total_transaction_value, approved_value, declined_value, avg_transaction_amount, auth_3ds_usage_pct, period_start, period_end FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+    },
+    {
+      "name": "m0_ds_approval_trends",
+      "displayName": "Approval Trends (Real-Time)",
+      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m0_ds_solution_perf",
+      "displayName": "Solution Performance",
+      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m0_ds_geography",
+      "displayName": "Performance by Geography",
+      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC LIMIT 50"
+    },
+    {
+      "name": "m1_ds_daily",
+      "displayName": "Daily Trends",
+      "query": "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM __CATALOG__.__SCHEMA__.v_daily_trends ORDER BY event_date DESC LIMIT 90"
+    },
+    {
+      "name": "m1_ds_by_second",
+      "displayName": "Real-Time Approval Trends (by second)",
+      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+    },
+    {
+      "name": "m2_ds_merchant_segment",
+      "displayName": "Merchant Segment Performance",
+      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m3_ds_latency",
+      "displayName": "Latency by Solution",
+      "query": "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+    },
+    {
+      "name": "m3_ds_network_latency",
+      "displayName": "Latency by Card Network",
+      "query": "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_overview",
+      "displayName": "Executive Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "d234271c7a41",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_exec_kpis",
+                  "fields": [
+                    {
+                      "name": "total_transactions",
+                      "expression": "`total_transactions`"
+                    },
+                    {
+                      "name": "approved_count",
+                      "expression": "`approved_count`"
+                    },
+                    {
+                      "name": "declined_count",
+                      "expression": "`declined_count`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    },
+                    {
+                      "name": "total_transaction_value",
+                      "expression": "`total_transaction_value`"
+                    },
+                    {
+                      "name": "approved_value",
+                      "expression": "`approved_value`"
+                    },
+                    {
+                      "name": "declined_value",
+                      "expression": "`declined_value`"
+                    },
+                    {
+                      "name": "avg_transaction_amount",
+                      "expression": "`avg_transaction_amount`"
+                    },
+                    {
+                      "name": "auth_3ds_usage_pct",
+                      "expression": "`auth_3ds_usage_pct`"
+                    },
+                    {
+                      "name": "period_start",
+                      "expression": "`period_start`"
+                    },
+                    {
+                      "name": "period_end",
+                      "expression": "`period_end`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "total_transactions",
+                    "fieldName": "total_transactions",
+                    "displayName": "Total Transactions",
+                    "title": "Total Transactions",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approved_count",
+                    "fieldName": "approved_count",
+                    "displayName": "Approved Count",
+                    "title": "Approved Count",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declined_count",
+                    "fieldName": "declined_count",
+                    "displayName": "Declined Count",
+                    "title": "Declined Count",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approval_rate_pct",
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval Rate Pct",
+                    "title": "Approval Rate Pct",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score",
+                    "title": "Avg Fraud Score",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "total_transaction_value",
+                    "fieldName": "total_transaction_value",
+                    "displayName": "Total Transaction Value",
+                    "title": "Total Transaction Value",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approved_value",
+                    "fieldName": "approved_value",
+                    "displayName": "Approved Value",
+                    "title": "Approved Value",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declined_value",
+                    "fieldName": "declined_value",
+                    "displayName": "Declined Value",
+                    "title": "Declined Value",
+                    "order": 7,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_transaction_amount",
+                    "fieldName": "avg_transaction_amount",
+                    "displayName": "Avg Transaction Amount",
+                    "title": "Avg Transaction Amount",
+                    "order": 8,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "auth_3ds_usage_pct",
+                    "fieldName": "auth_3ds_usage_pct",
+                    "displayName": "Auth 3Ds Usage Pct",
+                    "title": "Auth 3Ds Usage Pct",
+                    "order": 9,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "period_start",
+                    "fieldName": "period_start",
+                    "displayName": "Period Start",
+                    "title": "Period Start",
+                    "order": 10,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "period_end",
+                    "fieldName": "period_end",
+                    "displayName": "Period End",
+                    "title": "Period End",
+                    "order": 11,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Executive KPIs",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "83705662489f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_approval_trends",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Approval Trends (Real-Time)",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "68d646173dd7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_solution_perf",
+                  "fields": [
+                    {
+                      "name": "payment_solution",
+                      "expression": "`payment_solution`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Solution Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 5,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bd0a015c5986",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_geography",
+                  "fields": [
+                    {
+                      "name": "country",
+                      "expression": "`country`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "choropleth",
+              "encodings": {
+                "color": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "region": {
+                  "fieldName": "country",
+                  "displayName": "Country"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Performance by Geography",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 8,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_trends",
+      "displayName": "Daily Trends & Historical Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "4b99327e637f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_daily",
+                  "fields": [
+                    {
+                      "name": "event_date",
+                      "expression": "`event_date`"
+                    },
+                    {
+                      "name": "transactions",
+                      "expression": "`transactions`"
+                    },
+                    {
+                      "name": "approval_rate",
+                      "expression": "`approval_rate`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    },
+                    {
+                      "name": "total_value",
+                      "expression": "`total_value`"
+                    },
+                    {
+                      "name": "dod_volume_change",
+                      "expression": "`dod_volume_change`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "name": "event_date",
+                    "fieldName": "event_date",
+                    "displayName": "Event Date",
+                    "title": "Event Date",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "transactions",
+                    "fieldName": "transactions",
+                    "displayName": "Transactions",
+                    "title": "Transactions",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "approval_rate",
+                    "fieldName": "approval_rate",
+                    "displayName": "Approval Rate",
+                    "title": "Approval Rate",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score",
+                    "title": "Avg Fraud Score",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "total_value",
+                    "fieldName": "total_value",
+                    "displayName": "Total Value",
+                    "title": "Total Value",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "dod_volume_change",
+                    "fieldName": "dod_volume_change",
+                    "displayName": "Dod Volume Change",
+                    "title": "Dod Volume Change",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Trends",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "7576bc174e36",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m1_ds_by_second",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Event Second",
+                  "axis": {
+                    "title": "Event Second"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Transaction Count",
+                  "axis": {
+                    "title": "Transaction Count"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Real-Time Approval Trends (by second)",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 8,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_merchant",
+      "displayName": "Merchant Performance & Segmentation",
+      "layout": [
+        {
+          "widget": {
+            "name": "e2c81561b682",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m2_ds_merchant_segment",
+                  "fields": [
+                    {
+                      "name": "merchant_segment",
+                      "expression": "`merchant_segment`"
+                    },
+                    {
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Merchant Segment Performance",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_perf",
+      "displayName": "Technical Performance & Latency Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "7426dd4f8880",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m3_ds_latency",
+                  "fields": [
+                    {
+                      "name": "payment_solution",
+                      "expression": "`payment_solution`"
+                    },
+                    {
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(avg_latency_ms)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg Latency Ms"
+                },
+                "color": {
+                  "fieldName": "payment_solution",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Payment Solution",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Latency by Solution",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "c19d32947c95",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m3_ds_network_latency",
+                  "fields": [
+                    {
+                      "name": "card_network",
+                      "expression": "`card_network`"
+                    },
+                    {
+                      "name": "sum(avg_latency_ms)",
+                      "expression": "SUM(`avg_latency_ms`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "sum(avg_latency_ms)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg Latency Ms"
+                },
+                "color": {
+                  "fieldName": "card_network",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Card Network",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Latency by Card Network",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 0,
+            "width": 5,
+            "height": 4
+          }
+        }
+      ]
+    }
+  ]
+}

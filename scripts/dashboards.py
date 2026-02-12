@@ -2,19 +2,28 @@
 """
 Dashboard operations: prepare (for bundle), validate-assets (list dependencies), publish (after deploy).
 
+Reference dashboard (colors and chart widget settings):
+  https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111
+  Use this as the source of truth for visualization palette, chart types, and dataset/column assignment.
+  ALL dashboards MUST have: datasets defined; every widget linked to a dataset (query.datasetName);
+  query.fields and spec.encodings set so that the visual is painted (no "no fields selected").
+
 Usage:
   uv run python scripts/dashboards.py prepare [--catalog X] [--schema Y]
   uv run python scripts/dashboards.py validate-assets [--catalog X] [--schema Y]
   uv run python scripts/dashboards.py publish [--path /Workspace/Users/.../payment-analysis] [--dry-run]
+  uv run python scripts/dashboards.py check-widgets
+  uv run python scripts/dashboards.py best-widgets
+  uv run python scripts/dashboards.py fix-widget-settings
+  uv run python scripts/dashboards.py ensure-paint
 
 Prepare: copies dashboard JSONs to dashboards/ (workspace root) and gold_views.sql to .build/transform/ with catalog/schema.
 Validate-assets: lists tables/views required by dashboards (no DB connection).
 Publish: after deploy, publishes all 12 dashboards with embed credentials (Databricks CLI).
-
-Dashboard JSONs (resources/dashboards/*.lvdash.json) follow dbdemos/cookbook pattern: each file has "datasets"
-(SQL queries using __CATALOG__.__SCHEMA__) and "pages". Each page should have a "layout" with widgets that
-reference datasets via query.datasetName (see dbdemos aibi-marketing-campaign). Use "link-widgets" to add
-minimal table widgets linked to each dataset so visual components show data without manual "Add visualization".
+check-widgets: verify datasets, widget datasetName/fields/spec/position and that chart widgets have encodings to paint.
+best-widgets: set best widget type and encodings from dataset columns (line/bar/pie/table/counter/area/choropleth/heatmap/scatter).
+fix-widget-settings: frame title, axis titles, legend.
+ensure-paint: run best-widgets then fix-widget-settings so every widget has datasets and columns assigned and paints results.
 """
 from __future__ import annotations
 
@@ -28,6 +37,33 @@ import uuid
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Reference dashboard: colors and chart widget settings (Databricks Lakeview v3 published).
+REFERENCE_DASHBOARD_URL = "https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111"
+# Default visualization palette (align with reference dashboard when customizing).
+# https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published
+REFERENCE_PALETTE = [
+    "#EC0000",  # Santander/Getnet red (primary)
+    "#00E5FF",  # Neon cyan
+    "#22C55E",  # Green
+    "#6366F1",  # Indigo
+    "#F59E0B",  # Amber
+    "#8B5CF6",  # Violet
+]
+
+# Recommended widget sizes (width x height) for a 12-column grid — beautiful, descriptive layout.
+# Counter: compact; Table: full-width for detail, half for KPI; Line/Area: wide for time axis; Choropleth: tall for map.
+WIDGET_SIZE_BY_TYPE: dict[str, tuple[int, int]] = {
+    "counter": (4, 2),
+    "table": (12, 4),
+    "line": (8, 4),
+    "area": (8, 4),
+    "bar": (6, 4),
+    "pie": (5, 4),
+    "scatter": (6, 4),
+    "heatmap": (6, 4),
+    "choropleth": (8, 5),
+}
+GRID_COLUMNS = 12
 # Placeholder in source dashboard JSONs (resources/dashboards/*.lvdash.json); replaced with catalog.schema during prepare.
 CATALOG_SCHEMA_PLACEHOLDER = "__CATALOG__.__SCHEMA__"
 SOURCE_DIR = REPO_ROOT / "resources" / "dashboards"
@@ -66,6 +102,29 @@ ASSETS = [
     ("payments_enriched_silver", "Lakeflow pipeline (silver table)"),
 ]
 PUBLISH_TIMEOUT = 60
+
+# Logical grouping for unified dashboards (business users / approval-rate analysis).
+# Each key = new dashboard id; value = list of source dashboard ids to merge (from OUT_DIR or SOURCE_DIR).
+MERGE_GROUPS = {
+    "data_quality_unified": [
+        "streaming_data_quality",   # Stream ingestion volume, data quality summary
+        "realtime_monitoring",     # Real-time TPS, last hour, active alerts
+        "global_coverage",         # Countries, geography
+    ],
+    "ml_optimization_unified": [
+        "routing_optimization",    # Smart routing, payment solutions
+        "decline_analysis",        # Decline reasons, recovery
+        "fraud_risk_analysis",     # Risk/fraud predictions
+        "authentication_security", # 3DS behavior, smart checkout
+        "financial_impact",        # ROI, retry impact, value
+    ],
+    "executive_trends_unified": [
+        "executive_overview",      # KPIs, approval rates
+        "daily_trends",           # Historical trends
+        "merchant_performance",   # Merchant/segment performance
+        "performance_latency",    # Technical performance
+    ],
+}
 
 
 def _select_columns_from_query(query: str) -> list[str]:
@@ -166,8 +225,22 @@ def _make_table_widget(dataset_name: str, columns: list[str], x: int, y: int, wi
     }
 
 
+# Required encoding keys per widget type so the visual is painted (no "no fields selected").
+_REQUIRED_ENCODINGS_BY_TYPE: dict[str, set[str]] = {
+    "line": {"x", "y"},
+    "bar": {"x", "y"},
+    "area": {"x", "y"},
+    "pie": {"angle", "color"},
+    "counter": {"value"},
+    "table": {"columns"},
+    "choropleth": {"region", "color"},
+    "heatmap": {"x", "y", "color"},
+    "scatter": {"x", "y"},
+}
+
+
 def cmd_check_widgets() -> int:
-    """Verify dashboard structure and widget settings per dbdemos pattern (see README and dbdemos/installer_dashboard)."""
+    """Verify dashboard structure and widget settings per dbdemos pattern. Ensures datasets and columns are assigned and visuals paint."""
     errors: list[str] = []
     for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
         try:
@@ -251,6 +324,17 @@ def cmd_check_widgets() -> int:
                             errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] spec missing 'widgetType'")
                         if spec.get("widgetType") == "table" and "encodings" in spec and "columns" not in spec["encodings"]:
                             errors.append(f"{path.name}: page[{pidx}] layout[{lidx}] table widget spec.encodings missing 'columns'")
+                        # Paint the results: chart widgets MUST have encodings so the visual is drawn (reference dashboard).
+                        wt = spec.get("widgetType")
+                        required = _REQUIRED_ENCODINGS_BY_TYPE.get(wt)
+                        if required:
+                            enc = spec.get("encodings") or {}
+                            missing_enc = required - set(enc)
+                            if missing_enc:
+                                errors.append(
+                                    f"{path.name}: page[{pidx}] layout[{lidx}] widgetType={wt} missing encodings to paint: {sorted(missing_enc)}. "
+                                    "Assign datasets and columns in all dashboards (run best-widgets or ensure-paint)."
+                                )
         missing = dataset_names - referenced
         if missing:
             errors.append(f"{path.name}: dataset(s) with no widget: {', '.join(sorted(missing))}")
@@ -272,12 +356,13 @@ def _strip_optional_widget_spec_keys(data: dict) -> None:
 
 
 def _table_column_spec(field_name: str, order: int) -> dict:
-    """Single column encoding for a table widget so Lakeview has fields selected."""
+    """Single column encoding for a table widget so Lakeview has fields selected. Uses human-readable displayName/title."""
+    display = _display_name(field_name)
     return {
         "name": field_name,
         "fieldName": field_name,
-        "displayName": field_name,
-        "title": field_name,
+        "displayName": display,
+        "title": display,
         "order": order,
         "visible": True,
         "type": "string",
@@ -385,7 +470,11 @@ def _recommend_widget_type(columns: list[str], query: str) -> tuple[str, list[st
             "x": {"fieldName": x_col, "scale": {"type": "temporal"}, "displayName": x_display, "axis": {"title": x_display}},
             "y": {"fieldName": f"sum({y_col})", "scale": {"type": "quantitative"}, "displayName": y_display, "axis": {"title": y_display}},
         }
-        use_area = bool(re.search(r"records_per_second|record_count|volume", y_col, re.IGNORECASE))
+        # Area for volume/throughput/cumulative; line for rates and trends (best for: time series, trends)
+        use_area = bool(re.search(
+            r"records_per_second|record_count|volume|bronze_record_count|silver_record_count|transaction_count|approved_count|declined_count",
+            y_col, re.IGNORECASE,
+        ))
         return "area" if use_area else "line", fields, encodings
     # Two numeric columns (no time) → scatter
     if len(columns) >= 2 and not time_cols:
@@ -647,6 +736,17 @@ def cmd_fix_widget_settings() -> int:
                     changed = True
                 enc = spec.get("encodings") or {}
                 wt = spec.get("widgetType")
+                # Table: human-readable column displayName and title (attractive design)
+                if wt == "table":
+                    for col in enc.get("columns") or []:
+                        fn = col.get("fieldName") or col.get("name")
+                        if not fn:
+                            continue
+                        display = _display_name(fn)
+                        if col.get("displayName") != display or col.get("title") != display:
+                            col["displayName"] = display
+                            col["title"] = display
+                            changed = True
                 if wt in ("line", "bar"):
                     for key in ("x", "y"):
                         e = enc.get(key)
@@ -662,11 +762,69 @@ def cmd_fix_widget_settings() -> int:
                     if color_enc and not color_enc.get("legend"):
                         color_enc["legend"] = {"position": "bottom", "hideTitle": False}
                         changed = True
+                # Reference dashboard colors: always use Getnet palette for categorical (beautiful, consistent).
+                if wt in ("pie", "bar", "line", "area") and enc.get("color"):
+                    color_enc = enc["color"]
+                    scale = color_enc.get("scale") or {}
+                    if scale.get("type") == "categorical":
+                        if scale.get("range") != REFERENCE_PALETTE:
+                            scale["range"] = REFERENCE_PALETTE
+                            color_enc["scale"] = scale
+                            changed = True
+                # Single-series line/bar/area: primary color (Getnet red) for attractive charts.
+                if wt in ("line", "bar", "area") and not enc.get("color") and enc.get("y"):
+                    y_enc = enc["y"]
+                    scale = y_enc.get("scale") or {}
+                    if scale.get("type") == "quantitative":
+                        want_range = [REFERENCE_PALETTE[0]]
+                        if scale.get("range") != want_range:
+                            scale["range"] = want_range
+                            y_enc["scale"] = scale
+                            changed = True
         if changed:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
             print(f"Fixed widget settings: {path.name}")
             updated += 1
     print(f"Updated {updated} dashboard(s) with widget settings (frame, axis, legend).")
+    return 0
+
+
+def cmd_optimize_layout() -> int:
+    """Set widget positions and sizes for a beautiful, intuitive 12-column grid layout.
+    Sizes by type: counter compact, line/area wide for time, choropleth tall, table full-width."""
+    updated = 0
+    for path in sorted(SOURCE_DIR.glob("*.lvdash.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            print(f"Error reading {path}: {e}", file=sys.stderr)
+            return 1
+        changed = False
+        for page in data.get("pages", []):
+            layout = page.get("layout", [])
+            x, y, row_height = 0, 0, 0
+            for item in layout:
+                w = item.get("widget", {})
+                spec = w.get("spec", {})
+                wt = spec.get("widgetType") or "table"
+                width, height = WIDGET_SIZE_BY_TYPE.get(wt, (6, 4))
+                if x + width > GRID_COLUMNS:
+                    x = 0
+                    y += row_height
+                    row_height = 0
+                pos = item.get("position") or {}
+                if pos.get("x") != x or pos.get("y") != y or pos.get("width") != width or pos.get("height") != height:
+                    item["position"] = {"x": x, "y": y, "width": width, "height": height}
+                    changed = True
+                x += width
+                row_height = max(row_height, height)
+            if x > 0:
+                y += row_height
+        if changed:
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            print(f"Optimized layout: {path.name}")
+            updated += 1
+    print(f"Updated {updated} dashboard(s) with optimized sizes and positions.")
     return 0
 
 
@@ -731,6 +889,19 @@ def cmd_fix_visualization_fields() -> int:
     return 0
 
 
+def cmd_ensure_paint() -> int:
+    """Ensure all dashboards have datasets and columns assigned and visuals paint (reference dashboard pattern).
+    Runs best-widgets then fix-widget-settings so every widget has query.fields and spec.encodings configured."""
+    r1 = cmd_best_widgets()
+    if r1 != 0:
+        return r1
+    r2 = cmd_fix_widget_settings()
+    if r2 != 0:
+        return r2
+    print("ensure-paint: All dashboards have widgets configured to paint results (datasets and columns assigned).")
+    return 0
+
+
 def cmd_link_widgets() -> int:
     """Add minimal layout with one table widget per dataset so widgets are linked (dbdemos pattern)."""
     updated = 0
@@ -781,6 +952,89 @@ def cmd_link_widgets() -> int:
             print(f"Updated {path.name}: linked widgets to datasets")
             updated += 1
     print(f"Linked widgets in {updated} dashboard(s).")
+    return 0
+
+
+def _merge_dashboards(source_dir: Path, source_ids: list[str]) -> dict:
+    """Load source dashboard JSONs and merge into one: combined datasets (prefixed) and pages (one per source)."""
+    all_datasets: list[dict] = []
+    all_pages: list[dict] = []
+    seen_names: set[str] = set()
+
+    for idx, sid in enumerate(source_ids):
+        path = source_dir / f"{sid}.lvdash.json"
+        if not path.exists():
+            raise FileNotFoundError(f"Source dashboard not found: {path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        # Short prefix to avoid dataset name clashes (e.g. dq_, rt_, gc_ or ml1_, ml2_, ...)
+        prefix = f"m{idx}_"
+        name_map: dict[str, str] = {}  # old name -> new name
+        for ds in data.get("datasets", []):
+            name = ds.get("name")
+            if not name:
+                continue
+            new_name = f"{prefix}{name}"
+            if new_name in seen_names:
+                new_name = f"{prefix}{name}_{idx}"
+            seen_names.add(new_name)
+            name_map[name] = new_name
+            new_ds = dict(ds)
+            new_ds["name"] = new_name
+            if new_ds.get("displayName"):
+                new_ds["displayName"] = f"{ds.get('displayName', name)}"
+            all_datasets.append(new_ds)
+            # Normalize query to use placeholder for prepare
+            q = _get_dataset_query(ds)
+            if q:
+                new_ds["query"] = re.sub(
+                    r"\b(?:ahs_demos_catalog|prod_catalog)\.(?:payment_analysis)\b",
+                    CATALOG_SCHEMA_PLACEHOLDER,
+                    q,
+                    flags=re.IGNORECASE,
+                )
+            if "queryLines" in new_ds:
+                new_ds.pop("queryLines", None)
+
+        for page in data.get("pages", []):
+            new_page = {"name": page.get("name", f"page_{idx}"), "displayName": page.get("displayName", sid), "layout": []}
+            for item in page.get("layout", []):
+                widget = item.get("widget")
+                pos = item.get("position", {})
+                if not widget:
+                    continue
+                new_widget = json.loads(json.dumps(widget))
+                for q in new_widget.get("queries", []):
+                    qq = q.get("query", {})
+                    dn = qq.get("datasetName")
+                    if dn and dn in name_map:
+                        qq["datasetName"] = name_map[dn]
+                new_page["layout"].append({"widget": new_widget, "position": pos})
+            all_pages.append(new_page)
+
+    return {"datasets": all_datasets, "pages": all_pages}
+
+
+def _merged_content_with_placeholder(merged: dict) -> str:
+    """Serialize merged dashboard and replace catalog.schema with placeholder for prepare."""
+    raw = json.dumps(merged, indent=2)
+    return re.sub(r"ahs_demos_catalog\.payment_analysis", CATALOG_SCHEMA_PLACEHOLDER, raw)
+
+
+def cmd_merge() -> int:
+    """Merge source dashboards into unified dashboards (data quality, ML & optimization, executive & trends)."""
+    source_dir = OUT_DIR if (OUT_DIR / "executive_overview.lvdash.json").exists() else SOURCE_DIR
+    SOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    for new_id, source_ids in MERGE_GROUPS.items():
+        try:
+            merged = _merge_dashboards(source_dir, source_ids)
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        out_path = SOURCE_DIR / f"{new_id}.lvdash.json"
+        content = _merged_content_with_placeholder(merged)
+        out_path.write_text(content, encoding="utf-8")
+        print(f"Wrote {out_path} ({len(merged['datasets'])} datasets, {len(merged['pages'])} pages)")
+    print(f"Merged {len(MERGE_GROUPS)} unified dashboards into {SOURCE_DIR}. Run prepare then deploy.")
     return 0
 
 
@@ -1106,6 +1360,8 @@ def cmd_publish(path: str | None, dry_run: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dashboard operations: prepare, validate-assets, publish, link-widgets")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    # merge
+    sub.add_parser("merge", help="Merge source dashboards into unified dashboards (data_quality_unified, ml_optimization_unified, executive_trends_unified). Writes to resources/dashboards/. Run prepare after.")
     # prepare
     p_prepare = sub.add_parser("prepare", help="Copy dashboard JSONs to dashboards/ and gold_views.sql to .build/transform/ with catalog/schema")
     p_prepare.add_argument("--catalog", default=os.environ.get("BUNDLE_VAR_catalog", "ahs_demos_catalog"))
@@ -1126,7 +1382,9 @@ def main() -> int:
     sub.add_parser("fix-visualization-fields", help="Set widget columns/values from dataset query (table widgets)")
     # best-widgets
     sub.add_parser("best-widgets", help="Set best widget type (line/bar/table) and required columns from dataset")
-    sub.add_parser("fix-widget-settings", help="Apply missing visualization settings: frame title, axis titles, legend")
+    sub.add_parser("fix-widget-settings", help="Apply missing visualization settings: frame title, axis titles, legend, reference colors")
+    sub.add_parser("optimize-layout", help="Set widget sizes and positions for a 12-column grid (counter compact, line/area wide, choropleth tall)")
+    sub.add_parser("ensure-paint", help="Run best-widgets + fix-widget-settings so all dashboards paint results (datasets/columns assigned)")
     # delete-workspace-dashboards
     p_del = sub.add_parser("delete-workspace-dashboards", help="Delete workspace .../dashboards so deploy recreates them from config")
     p_del.add_argument("--path", default=None, help="Workspace root path")
@@ -1144,6 +1402,8 @@ def main() -> int:
     p_clean_all.add_argument("--dry-run", action="store_true", help="Only list dashboards that would be deleted")
     args = parser.parse_args()
 
+    if args.cmd == "merge":
+        return cmd_merge()
     if args.cmd == "prepare":
         cmd_prepare(args.catalog, args.schema)
         return 0
@@ -1162,6 +1422,10 @@ def main() -> int:
         return cmd_best_widgets()
     if args.cmd == "fix-widget-settings":
         return cmd_fix_widget_settings()
+    if args.cmd == "optimize-layout":
+        return cmd_optimize_layout()
+    if args.cmd == "ensure-paint":
+        return cmd_ensure_paint()
     if args.cmd == "delete-workspace-dashboards":
         return cmd_delete_workspace_dashboards(args.path, recursive=not getattr(args, "no_recursive", False))
     if args.cmd == "clean-workspace-except-dbdemos":

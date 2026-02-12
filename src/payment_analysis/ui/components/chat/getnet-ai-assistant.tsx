@@ -12,26 +12,61 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   genieUrl?: string | null;
+  runPageUrl?: string | null;
+  agentsUsed?: string[];
 }
 
 const TITLE = "Getnet AI Assistant";
 const PLACEHOLDER = "Ask about approval rates, declines, trends…";
 
-async function sendMessage(message: string): Promise<{ reply: string; genie_url?: string | null }> {
-  const res = await fetch("/api/agents/chat", {
+/** Try Orchestrator (Databricks Job) first; fall back to /chat (Genie link) when job not configured. */
+async function sendMessage(message: string): Promise<{
+  reply: string;
+  genie_url?: string | null;
+  run_page_url?: string | null;
+  agents_used?: string[];
+}> {
+  const body = { message: message.trim() };
+  const orchestratorRes = await fetch("/api/agents/orchestrator/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: message.trim() }),
+    body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const text = await res.text();
+  if (orchestratorRes.ok) {
+    const data = await orchestratorRes.json();
+    return {
+      reply: data.reply ?? "",
+      run_page_url: data.run_page_url ?? null,
+      agents_used: data.agents_used ?? [],
+    };
+  }
+  const fallbackRes = await fetch("/api/agents/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!fallbackRes.ok) {
+    const text = await fallbackRes.text();
     throw new Error(text || "Failed to get response");
   }
-  return res.json();
+  const fallback = await fallbackRes.json();
+  return {
+    reply: fallback.reply ?? "",
+    genie_url: fallback.genie_url ?? null,
+  };
 }
 
-export function GetnetAIAssistant() {
-  const [open, setOpen] = useState(false);
+export interface GetnetAIAssistantProps {
+  /** Controlled open state: when provided, parent can open/close the assistant from the page. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function GetnetAIAssistant({ open: controlledOpen, onOpenChange }: GetnetAIAssistantProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? onOpenChange : setInternalOpen;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,10 +86,16 @@ export function GetnetAIAssistant() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
     try {
-      const { reply, genie_url } = await sendMessage(text);
+      const out = await sendMessage(text);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: reply, genieUrl: genie_url ?? undefined },
+        {
+          role: "assistant",
+          content: out.reply,
+          genieUrl: out.genie_url ?? undefined,
+          runPageUrl: out.run_page_url ?? undefined,
+          agentsUsed: out.agents_used,
+        },
       ]);
       setTimeout(scrollToBottom, 50);
     } catch (e) {
@@ -89,7 +130,7 @@ export function GetnetAIAssistant() {
         type="button"
         variant="default"
         size="lg"
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
+        className="fixed bottom-6 right-6 z-[100] h-14 w-14 rounded-full shadow-lg"
         aria-label={`Open ${TITLE}`}
         onClick={() => setOpen(true)}
       >
@@ -101,7 +142,7 @@ export function GetnetAIAssistant() {
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 z-50 flex w-[min(420px,calc(100vw-2rem))] flex-col rounded-xl border border-border bg-card text-card-foreground shadow-xl"
+        "fixed bottom-6 right-6 z-[100] flex w-[min(420px,calc(100vw-2rem))] flex-col rounded-xl border border-border bg-card text-card-foreground shadow-xl"
       )}
       role="dialog"
       aria-label={TITLE}
@@ -131,8 +172,7 @@ export function GetnetAIAssistant() {
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-sm">
-            Ask about approval rates, decline reasons, trends, or open Genie for full
-            natural-language analytics.
+            Uses the Orchestrator agent (Databricks) when deployed; otherwise suggests Genie for approval and decline analytics.
           </p>
         )}
         {messages.map((m, i) => (
@@ -159,16 +199,31 @@ export function GetnetAIAssistant() {
               )}
             >
               <p className="whitespace-pre-wrap">{m.content}</p>
-              {m.role === "assistant" && m.genieUrl && (
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="mt-2 h-auto p-0 text-primary underline"
-                  onClick={openGenie}
-                >
-                  Open in Genie
-                </Button>
+              {m.role === "assistant" && (m.genieUrl || m.runPageUrl) && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {m.runPageUrl && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-primary underline"
+                      onClick={() => window.open(m.runPageUrl!, "_blank", "noopener,noreferrer")}
+                    >
+                      View run in Databricks
+                    </Button>
+                  )}
+                  {m.genieUrl && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-primary underline"
+                      onClick={openGenie}
+                    >
+                      Open in Genie
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
             {m.role === "user" && <span className="h-6 w-6 shrink-0" />}

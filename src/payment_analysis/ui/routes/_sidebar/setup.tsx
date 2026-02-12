@@ -357,9 +357,25 @@ function SetupRun() {
       {defaults && (
         <Card className={host && defaults.token_received && Object.values(defaults.jobs || {}).some((id) => id && id !== "0") ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              Connection status
+            <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Connection status
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                onClick={() => refetchDefaults()}
+                disabled={refetchingDefaults}
+              >
+                {refetchingDefaults ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Refresh status
+              </Button>
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Run buttons are enabled when token is received, workspace URL is set, and job IDs are resolved from your workspace.
@@ -394,8 +410,9 @@ function SetupRun() {
                   <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
                 )}
                 <span>
-                  <strong>Job IDs resolved:</strong>{" "}
-                  {Object.values(defaults.jobs || {}).filter((id) => id && id !== "0").length} of {Object.keys(defaults.jobs || {}).length} (requires token + workspace URL)
+                  <strong>Job IDs:</strong>{" "}
+                  <strong className="tabular-nums">{Object.values(defaults.jobs || {}).filter((id) => id && id !== "0").length}/{Object.keys(defaults.jobs || {}).length}</strong>
+                  {" "}(resolved from workspace; requires token + URL)
                 </span>
               </li>
             </ul>

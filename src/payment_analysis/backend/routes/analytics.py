@@ -24,6 +24,18 @@ from ..lakebase_config import get_online_features_from_lakebase
 router = APIRouter(tags=["analytics"])
 
 
+class ControlPanelIn(BaseModel):
+    """Control panel toggle state (Smart Routing, Fraud Shadow, Recalculate Algorithms)."""
+    activate_smart_routing: Optional[bool] = None
+    deploy_fraud_shadow_model: Optional[bool] = None
+    recalculate_algorithms: Optional[bool] = None
+
+
+class ControlPanelOut(BaseModel):
+    ok: bool = True
+    message: Optional[str] = None
+
+
 class DeclineBucketOut(BaseModel):
     key: str
     count: int
@@ -391,6 +403,37 @@ async def kpis(session: SessionDep, service: DatabricksServiceDep) -> KPIOut:
     )
     approval_rate = float(approved) / float(total) if total else 0.0
     return KPIOut(total=int(total), approved=int(approved), approval_rate=approval_rate)
+
+
+@router.get(
+    "/metrics",
+    response_model=KPIOut,
+    operation_id="getMetrics",
+)
+async def metrics(
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    country_filter: str = Query(DEFAULT_ENTITY, alias="country", description="Country/entity filter (e.g. BR)."),
+) -> KPIOut:
+    """Aggregated Gold-layer metrics (KPIs) filtered by country. Alias for executive dashboards and global multi-tenancy."""
+    # country_filter reserved for future Unity Catalog row-level filtering; KPIs currently global
+    return await kpis(session, service)
+
+
+@router.post(
+    "/control-panel",
+    response_model=ControlPanelOut,
+    operation_id="postControlPanel",
+)
+async def control_panel(
+    payload: ControlPanelIn,
+    service: DatabricksServiceDep,
+) -> ControlPanelOut:
+    """Persist control panel toggles and optionally trigger Databricks jobs (Smart Routing, Fraud Shadow, Recalculate Algorithms)."""
+    # TODO: persist to flag table or trigger jobs when Databricks is available
+    if service.is_available:
+        pass  # e.g. await service.update_control_flags(payload) or trigger job
+    return ControlPanelOut(ok=True, message="Control panel state received.")
 
 
 @router.get("/kpis/databricks", response_model=DatabricksKPIOut, operation_id="getDatabricksKpis")

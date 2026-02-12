@@ -1,4 +1,5 @@
-/** Sidebar layout and breadcrumb — getnet Global Payments Command Center. */
+/** Sidebar layout and breadcrumb — Getnet Global Payments Command Center (Pro-Dark, glassmorphism). */
+import { useState } from "react";
 import { Outlet, useLocation, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
@@ -20,14 +21,20 @@ import {
 import SidebarUserFooter from "@/components/apx/sidebar-user-footer";
 import { ModeToggle } from "@/components/apx/mode-toggle";
 import { CountrySelect } from "@/components/apx/country-select";
+import { DateRangePresetSelect, type DateRangePreset } from "@/components/apx/date-range-preset";
 import Logo from "@/components/apx/logo";
 import { cn } from "@/lib/utils";
+import { AssistantProvider, useAssistant } from "@/contexts/assistant-context";
+import { GetnetAIAssistant } from "@/components/chat";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Bot } from "lucide-react";
 
 const PATH_LABELS: Record<string, string> = {
-  "/command-center": "Command Center",
+  "/command-center": "Overview",
   "/about": "About this platform",
   "/initiatives": "Payment Services & Data",
-  "/dashboard": "Executive overview",
+  "/dashboard": "Overview",
   "/dashboards": "Dashboards",
   "/setup": "Control panel",
   "/notebooks": "Notebooks",
@@ -47,18 +54,9 @@ const PATH_LABELS: Record<string, string> = {
 
 // Friendly names for embedded dashboard breadcrumb (id -> label)
 const DASHBOARD_EMBED_LABELS: Record<string, string> = {
-  executive_overview: "Executive Overview",
-  decline_analysis: "Decline Analysis",
-  realtime_monitoring: "Realtime Monitoring",
-  fraud_risk_analysis: "Fraud Risk Analysis",
-  merchant_performance: "Merchant Performance",
-  routing_optimization: "Routing Optimization",
-  daily_trends: "Daily Trends",
-  authentication_security: "Authentication & Security",
-  financial_impact: "Financial Impact",
-  performance_latency: "Performance & Latency",
-  streaming_data_quality: "Streaming Data Quality",
-  global_coverage: "Global Coverage",
+  data_quality_unified: "Data & Quality",
+  ml_optimization_unified: "ML & Optimization",
+  executive_trends_unified: "Executive & Trends",
 };
 
 function Breadcrumb() {
@@ -97,18 +95,48 @@ function Breadcrumb() {
   );
 }
 
+/** Floating AI assistant wired to global context so it appears on every page and can be opened from Overview. */
+function GlobalAssistant() {
+  const { open, setOpen } = useAssistant();
+  return <GetnetAIAssistant open={open} onOpenChange={setOpen} />;
+}
+
 interface SidebarLayoutProps {
   children?: ReactNode;
 }
 
-function SidebarLayout({ children }: SidebarLayoutProps) {
+function HeaderActions() {
+  const { openAssistant } = useAssistant();
   return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={openAssistant}
+          aria-label="Open AI chat"
+        >
+          <Bot className="h-4 w-4" />
+          <span className="hidden sm:inline">AI chat</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Chat with Databricks AI agents</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SidebarLayout({ children }: SidebarLayoutProps) {
+  const [dateRange, setDateRange] = useState<DateRangePreset>("30");
+  return (
+    <AssistantProvider>
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="sidebar-header">
           <div className="sidebar-header-inner">
             <Logo to="/" showText />
-            <p className="text-[11px] font-medium text-primary tracking-wide px-2 pt-0.5" aria-hidden>PagoNxt Getnet · Accelerate approval rates</p>
+            <p className="text-[11px] font-medium text-primary tracking-wide px-2 pt-0.5" aria-hidden>Approval rates optimizations</p>
           </div>
         </SidebarHeader>
         <SidebarContent>{children}</SidebarContent>
@@ -129,23 +157,29 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           <SidebarTrigger className="-ml-1 cursor-pointer rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-label="Toggle sidebar" />
           <div className="flex flex-col min-w-0 flex-1 md:flex-row md:items-center md:gap-4">
             <h1 className="text-base md:text-lg font-semibold text-foreground truncate order-2 md:order-1">
-              Getnet Global Payments Command Center
+              Global Payments Command Center
             </h1>
             <Breadcrumb />
           </div>
-          <div className="flex items-center gap-2 shrink-0" role="group" aria-label="Workspace and profile">
+          <div className="flex items-center gap-2 shrink-0" role="group" aria-label="Top bar filters and profile">
+            <HeaderActions />
             <CountrySelect className="hidden sm:flex" />
+            <DateRangePresetSelect value={dateRange} onChange={setDateRange} className="hidden md:flex" />
             <ModeToggle />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
                   to="/profile"
-                  className="rounded-full bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  className="flex items-center gap-2 rounded-full bg-muted/80 px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/60"
+                  aria-label="CEO profile"
                 >
-                  CCO Login
+                  <Avatar className="h-6 w-6 border border-border">
+                    <AvatarFallback className="text-[10px] bg-primary/20 text-primary">CEO</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:inline">CEO profile</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent>User profile and settings.</TooltipContent>
+              <TooltipContent>CEO profile and settings.</TooltipContent>
             </Tooltip>
           </div>
         </header>
@@ -170,8 +204,10 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
             <Outlet />
           </motion.div>
         </main>
+        <GlobalAssistant />
       </SidebarInset>
     </SidebarProvider>
+    </AssistantProvider>
   );
 }
 export default SidebarLayout;

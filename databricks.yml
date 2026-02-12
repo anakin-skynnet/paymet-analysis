@@ -6,6 +6,10 @@
 # Payment approval optimization: Smart Checkout, Reason Codes, Smart Retry.
 # All parameters have defaults or are set at deployment (target/variables).
 # Docs: docs/GUIDE.md, docs/DEPLOYMENT.md
+#
+# Deploy app: ./scripts/bundle.sh deploy [dev|prod]
+# Required: catalog exists; app env LAKEBASE_* + DATABRICKS_WAREHOUSE_ID (see DEPLOYMENT.md).
+# App resources/scopes: resources/fastapi_app.yml (sql-warehouse, jobs 1–7, user_api_scopes: sql, jobs, pipelines).
 # =============================================================================
 
 bundle:
@@ -91,6 +95,9 @@ variables:
   genie_space_id:
     description: "Genie space ID (e.g. UUID of 'Approvals domain expert' from Genie UI). Set when uncommenting genie-space in resources/fastapi_app.yml."
     default: ""
+  pipelines_development:
+    description: "If true, pipelines use development mode (e.g. lower cost). Set false for prod."
+    default: true
 
 # -----------------------------------------------------------------------------
 # Sync: paths uploaded to workspace for job/pipeline execution and app
@@ -144,18 +151,24 @@ targets:
 
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       environment: prod
       catalog: prod_catalog
       schema: payment_analysis
       warehouse_id: ${resources.sql_warehouses.payment_analysis_warehouse.id}
+      pipelines_development: false
     presets:
       name_prefix: "[PROD] "
       pipelines_development: false
-    run_as:
-      service_principal_name: payment-analysis-sp
+    # run_as is not set here: dashboards and apps do not support run_as different from owner.
+    # To run jobs/pipelines as a service principal in prod, set run_as on each job in resources/ml_jobs.yml (or pipelines.yml).
     permissions:
       - level: CAN_VIEW
         group_name: data-analysts
       - level: CAN_MANAGE
         group_name: data-engineers
+      # Include deployer so CAN_MANAGE applies when deploying as current user
+      - level: CAN_MANAGE
+        user_name: ${workspace.current_user.userName}
