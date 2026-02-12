@@ -259,201 +259,6 @@
         },
         {
           "widget": {
-            "name": "realtime_vol_widget",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "m0_ds_quality_summary",
-                  "fields": [
-                    {
-                      "name": "bronze_last_24h",
-                      "expression": "`bronze_last_24h`"
-                    },
-                    {
-                      "name": "silver_last_24h",
-                      "expression": "`silver_last_24h`"
-                    },
-                    {
-                      "name": "retention_pct_24h",
-                      "expression": "`retention_pct_24h`"
-                    },
-                    {
-                      "name": "latest_bronze_ingestion",
-                      "expression": "`latest_bronze_ingestion`"
-                    },
-                    {
-                      "name": "latest_silver_event",
-                      "expression": "`latest_silver_event`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 1,
-              "widgetType": "table",
-              "encodings": {
-                "columns": [
-                  {
-                    "name": "bronze_last_24h",
-                    "fieldName": "bronze_last_24h",
-                    "displayName": "Bronze Last 24H",
-                    "title": "Bronze Last 24H",
-                    "order": 0,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "silver_last_24h",
-                    "fieldName": "silver_last_24h",
-                    "displayName": "Silver Last 24H",
-                    "title": "Silver Last 24H",
-                    "order": 1,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "retention_pct_24h",
-                    "fieldName": "retention_pct_24h",
-                    "displayName": "Retention Pct 24H",
-                    "title": "Retention Pct 24H",
-                    "order": 2,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "latest_bronze_ingestion",
-                    "fieldName": "latest_bronze_ingestion",
-                    "displayName": "Latest Bronze Ingestion",
-                    "title": "Latest Bronze Ingestion",
-                    "order": 3,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "latest_silver_event",
-                    "fieldName": "latest_silver_event",
-                    "displayName": "Latest Silver Event",
-                    "title": "Latest Silver Event",
-                    "order": 4,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  }
-                ]
-              },
-              "frame": {
-                "showTitle": true,
-                "title": "Data Quality Summary",
-                "showDescription": false
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 4,
-            "width": 12,
-            "height": 4
-          }
-        },
-        {
-          "widget": {
             "name": "line_volume_per_second",
             "queries": [
               {
@@ -729,8 +534,8 @@
                       "expression": "`event_second`"
                     },
                     {
-                      "name": "sum(transaction_count)",
-                      "expression": "SUM(`transaction_count`)"
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
                     }
                   ],
                   "disaggregated": false
@@ -739,35 +544,35 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "area",
+              "widgetType": "line",
               "encodings": {
                 "x": {
                   "fieldName": "event_second",
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Event Second",
+                  "displayName": "Time",
                   "axis": {
-                    "title": "Event Second"
+                    "title": "Time"
                   }
                 },
                 "y": {
-                  "fieldName": "sum(transaction_count)",
+                  "fieldName": "approval_rate_pct",
                   "scale": {
                     "type": "quantitative",
                     "range": [
-                      "#EC0000"
+                      "#22C55E"
                     ]
                   },
-                  "displayName": "Transaction Count",
+                  "displayName": "Approval Rate (%)",
                   "axis": {
-                    "title": "Transaction Count"
+                    "title": "Approval Rate (%)"
                   }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Performance by Second (Real-Time)",
+                "title": "Approval Rate Over Time",
                 "showDescription": false
               }
             }
@@ -795,6 +600,26 @@
                     {
                       "name": "approval_rate_pct",
                       "expression": "`approval_rate_pct`"
+                    },
+                    {
+                      "name": "avg_fraud_score",
+                      "expression": "`avg_fraud_score`"
+                    },
+                    {
+                      "name": "total_value",
+                      "expression": "`total_value`"
+                    },
+                    {
+                      "name": "active_segments",
+                      "expression": "`active_segments`"
+                    },
+                    {
+                      "name": "high_risk_transactions",
+                      "expression": "`high_risk_transactions`"
+                    },
+                    {
+                      "name": "declines_last_hour",
+                      "expression": "`declines_last_hour`"
                     }
                   ],
                   "disaggregated": true
@@ -802,29 +627,207 @@
               }
             ],
             "spec": {
-              "version": 3,
-              "widgetType": "scatter",
+              "version": 1,
+              "widgetType": "table",
               "encodings": {
-                "x": {
-                  "fieldName": "transactions_last_hour",
-                  "scale": {
-                    "type": "quantitative"
+                "columns": [
+                  {
+                    "name": "transactions_last_hour",
+                    "fieldName": "transactions_last_hour",
+                    "displayName": "Transactions (Last Hour)",
+                    "title": "Transactions (Last Hour)",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   },
-                  "displayName": "Transactions Last Hour",
-                  "axis": {
-                    "title": "Transactions Last Hour"
-                  }
-                },
-                "y": {
-                  "fieldName": "approval_rate_pct",
-                  "scale": {
-                    "type": "quantitative"
+                  {
+                    "name": "approval_rate_pct",
+                    "fieldName": "approval_rate_pct",
+                    "displayName": "Approval Rate (%)",
+                    "title": "Approval Rate (%)",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   },
-                  "displayName": "Approval Rate Pct",
-                  "axis": {
-                    "title": "Approval Rate Pct"
+                  {
+                    "name": "avg_fraud_score",
+                    "fieldName": "avg_fraud_score",
+                    "displayName": "Avg Fraud Score",
+                    "title": "Avg Fraud Score",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "total_value",
+                    "fieldName": "total_value",
+                    "displayName": "Total Value",
+                    "title": "Total Value",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "active_segments",
+                    "fieldName": "active_segments",
+                    "displayName": "Active Segments",
+                    "title": "Active Segments",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "high_risk_transactions",
+                    "fieldName": "high_risk_transactions",
+                    "displayName": "High Risk Count",
+                    "title": "High Risk Count",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "declines_last_hour",
+                    "fieldName": "declines_last_hour",
+                    "displayName": "Declines (Last Hour)",
+                    "title": "Declines (Last Hour)",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   }
-                }
+                ]
               },
               "frame": {
                 "showTitle": true,
@@ -850,45 +853,240 @@
                   "datasetName": "m1_ds_alerts",
                   "fields": [
                     {
-                      "name": "first_detected",
-                      "expression": "`first_detected`"
+                      "name": "alert_type",
+                      "expression": "`alert_type`"
                     },
                     {
-                      "name": "sum(current_value)",
-                      "expression": "SUM(`current_value`)"
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "metric_name",
+                      "expression": "`metric_name`"
+                    },
+                    {
+                      "name": "current_value",
+                      "expression": "`current_value`"
+                    },
+                    {
+                      "name": "threshold_value",
+                      "expression": "`threshold_value`"
+                    },
+                    {
+                      "name": "alert_message",
+                      "expression": "`alert_message`"
+                    },
+                    {
+                      "name": "first_detected",
+                      "expression": "`first_detected`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
             "spec": {
-              "version": 3,
-              "widgetType": "line",
+              "version": 1,
+              "widgetType": "table",
               "encodings": {
-                "x": {
-                  "fieldName": "first_detected",
-                  "scale": {
-                    "type": "temporal"
+                "columns": [
+                  {
+                    "name": "alert_type",
+                    "fieldName": "alert_type",
+                    "displayName": "Alert Type",
+                    "title": "Alert Type",
+                    "order": 0,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   },
-                  "displayName": "First Detected",
-                  "axis": {
-                    "title": "First Detected"
-                  }
-                },
-                "y": {
-                  "fieldName": "sum(current_value)",
-                  "scale": {
-                    "type": "quantitative",
-                    "range": [
-                      "#EC0000"
-                    ]
+                  {
+                    "name": "severity",
+                    "fieldName": "severity",
+                    "displayName": "Severity",
+                    "title": "Severity",
+                    "order": 1,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   },
-                  "displayName": "Current Value",
-                  "axis": {
-                    "title": "Current Value"
+                  {
+                    "name": "metric_name",
+                    "fieldName": "metric_name",
+                    "displayName": "Metric",
+                    "title": "Metric",
+                    "order": 2,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "current_value",
+                    "fieldName": "current_value",
+                    "displayName": "Current Value",
+                    "title": "Current Value",
+                    "order": 3,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "threshold_value",
+                    "fieldName": "threshold_value",
+                    "displayName": "Threshold",
+                    "title": "Threshold",
+                    "order": 4,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "alert_message",
+                    "fieldName": "alert_message",
+                    "displayName": "Message",
+                    "title": "Message",
+                    "order": 5,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
+                  },
+                  {
+                    "name": "first_detected",
+                    "fieldName": "first_detected",
+                    "displayName": "First Detected",
+                    "title": "First Detected",
+                    "order": 6,
+                    "visible": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "allowSearch": true,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true
                   }
-                }
+                ]
               },
               "frame": {
                 "showTitle": true,

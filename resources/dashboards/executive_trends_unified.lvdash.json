@@ -554,6 +554,70 @@
         },
         {
           "widget": {
+            "name": "approval_rate_line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "m0_ds_approval_trends",
+                  "fields": [
+                    {
+                      "name": "event_second",
+                      "expression": "`event_second`"
+                    },
+                    {
+                      "name": "approval_rate_pct",
+                      "expression": "`approval_rate_pct`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "event_second",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Time",
+                  "axis": {
+                    "title": "Time"
+                  }
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#22C55E"
+                    ]
+                  },
+                  "displayName": "Approval Rate (%)",
+                  "axis": {
+                    "title": "Approval Rate (%)"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Approval Rate Trend Over Time",
+                "showDescription": false
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 4,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
             "name": "68d646173dd7",
             "queries": [
               {
@@ -1064,8 +1128,8 @@
                       "expression": "`payment_solution`"
                     },
                     {
-                      "name": "sum(avg_latency_ms)",
-                      "expression": "SUM(`avg_latency_ms`)"
+                      "name": "avg_latency_ms",
+                      "expression": "`avg_latency_ms`"
                     }
                   ],
                   "disaggregated": false
@@ -1074,32 +1138,32 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "bar",
               "encodings": {
-                "angle": {
-                  "fieldName": "sum(avg_latency_ms)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Latency Ms"
-                },
-                "color": {
+                "x": {
                   "fieldName": "payment_solution",
                   "scale": {
                     "type": "categorical",
-                    "range": [
-                      "#EC0000",
-                      "#00E5FF",
-                      "#22C55E",
-                      "#6366F1",
-                      "#F59E0B",
-                      "#8B5CF6"
-                    ]
+                    "sort": {
+                      "by": "y-reversed"
+                    }
                   },
                   "displayName": "Payment Solution",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "axis": {
+                    "title": "Payment Solution"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_latency_ms",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Avg Latency (ms)",
+                  "axis": {
+                    "title": "Avg Latency (ms)"
                   }
                 }
               },
@@ -1113,7 +1177,7 @@
           "position": {
             "x": 0,
             "y": 0,
-            "width": 5,
+            "width": 6,
             "height": 4
           }
         },
@@ -1131,8 +1195,8 @@
                       "expression": "`card_network`"
                     },
                     {
-                      "name": "sum(avg_latency_ms)",
-                      "expression": "SUM(`avg_latency_ms`)"
+                      "name": "avg_latency_ms",
+                      "expression": "`avg_latency_ms`"
                     }
                   ],
                   "disaggregated": false
@@ -1141,32 +1205,32 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "pie",
+              "widgetType": "bar",
               "encodings": {
-                "angle": {
-                  "fieldName": "sum(avg_latency_ms)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Latency Ms"
-                },
-                "color": {
+                "x": {
                   "fieldName": "card_network",
                   "scale": {
                     "type": "categorical",
-                    "range": [
-                      "#EC0000",
-                      "#00E5FF",
-                      "#22C55E",
-                      "#6366F1",
-                      "#F59E0B",
-                      "#8B5CF6"
-                    ]
+                    "sort": {
+                      "by": "y-reversed"
+                    }
                   },
                   "displayName": "Card Network",
-                  "legend": {
-                    "position": "bottom",
-                    "hideTitle": false
+                  "axis": {
+                    "title": "Card Network"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_latency_ms",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Avg Latency (ms)",
+                  "axis": {
+                    "title": "Avg Latency (ms)"
                   }
                 }
               },
@@ -1178,9 +1242,9 @@
             }
           },
           "position": {
-            "x": 5,
+            "x": 6,
             "y": 0,
-            "width": 5,
+            "width": 6,
             "height": 4
           }
         }
