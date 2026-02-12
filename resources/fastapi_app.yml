@@ -40,89 +40,11 @@ resources:
             securable_type: VOLUME
             securable_full_name: "${var.catalog}.${var.schema}.reports"
             permission: READ_VOLUME
-        # Genie space — Payment Analytics (set --var genie_space_id=<uuid>)
-        - name: genie-space
-          description: Genie space Payment Analytics
-          genie_space:
-            name: "Payment Analytics"
-            space_id: ${var.genie_space_id}
-            permission: CAN_EDIT
-        # MLflow experiments
-        - name: experiment
-          description: MLflow experiment
-          experiment:
-            experiment_id: "276177355410657"
-            permission: CAN_EDIT
-        - name: experiment-2
-          description: MLflow experiment 2
-          experiment:
-            experiment_id: "276177355500503"
-            permission: CAN_EDIT
+        # Genie: add in Apps UI or set --var genie_space_id=<uuid> and uncomment genie-space block in this file
         # Serving endpoint
         - name: serving-endpoint
           description: Model serving endpoint
           serving_endpoint:
             name: "mas-b6e74e87-endpoint"
             permission: CAN_QUERY
-        # Vector search index
-        - name: vector-search-index
-          description: Similar transactions vector search index
-          vector_search_index:
-            index_name: "ahs_demos_catalog.payment_analysis.similar_transactions_index"
-            permission: CAN_SELECT
-        # UC functions (agent tools)
-        - name: function
-          description: get_cascade_recommendations
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_cascade_recommendations"
-            permission: CAN_EXECUTE
-        - name: function-2
-          description: get_decline_by_segment
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_decline_by_segment"
-            permission: CAN_EXECUTE
-        - name: function-3
-          description: get_decline_trends
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_decline_trends"
-            permission: CAN_EXECUTE
-        - name: function-4
-          description: get_high_risk_transactions
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_high_risk_transactions"
-            permission: CAN_EXECUTE
-        - name: function-5
-          description: get_kpi_summary
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_kpi_summary"
-            permission: CAN_EXECUTE
-        - name: function-6
-          description: get_optimization_opportunities
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_optimization_opportunities"
-            permission: CAN_EXECUTE
-        - name: function-7
-          description: get_recovery_opportunities
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_recovery_opportunities"
-            permission: CAN_EXECUTE
-        - name: function-8
-          description: get_retry_success_rates
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_retry_success_rates"
-            permission: CAN_EXECUTE
-        - name: function-9
-          description: get_risk_distribution
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_risk_distribution"
-            permission: CAN_EXECUTE
-        - name: function-10
-          description: get_route_performance
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_route_performance"
-            permission: CAN_EXECUTE
-        - name: function-11
-          description: get_trend_analysis
-          function:
-            function_name: "ahs_demos_catalog.payment_analysis.get_trend_analysis"
-            permission: CAN_EXECUTE
+        # experiment, vector_search_index, function: add in Workspace → Apps → payment-analysis → Configure → App resources (bundle schema does not support them yet)
