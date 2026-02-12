@@ -123,6 +123,9 @@ def register_agents():
 
     set_registry_uri("databricks-uc")
 
+    # Unity Catalog requires models to have a signature; input_example lets MLflow infer it.
+    input_example = {"messages": [{"role": "user", "content": "example query"}]}
+
     with tempfile.TemporaryDirectory(prefix="agentbricks_mfc_") as tmpdir:
         code_paths = [_src_root]
 
@@ -138,6 +141,7 @@ def register_agents():
                     artifact_path="model",
                     registered_model_name=model_name,
                     code_paths=code_paths,
+                    input_example=input_example,
                 )
             registered.append(model_name)
             print(f"Registered: {model_name}")
@@ -153,6 +157,7 @@ def register_agents():
                 artifact_path="model",
                 registered_model_name=model_name,
                 code_paths=code_paths,
+                input_example=input_example,
             )
             registered.append(model_name)
             print(f"Registered: {model_name}")
