@@ -30,53 +30,20 @@ def _get_dbutils():
 
 
 def _resolve_src_root():
-    """Resolve path to repo src/ (for sys.path).
-
-    Resolution order:
-    1. ``__file__`` — when run as a Python script / imported module.
-    2. Notebook context — parse the running notebook path for ``/src/``.
-    3. ``workspace_path`` widget or ``WORKSPACE_ROOT`` env var.
-    """
-    # 1. From __file__ (e.g. .../src/payment_analysis/agents/agentbricks_register.py)
+    """Resolve path to repo src/ (for sys.path). Prefer __file__, then widget, then env."""
     root = None
     if "__file__" in globals():
         agentbricks_dir = os.path.dirname(os.path.abspath(__file__))
         if os.path.basename(agentbricks_dir) == "agents":
             root = os.path.abspath(os.path.join(agentbricks_dir, "..", ".."))
-    if root and os.path.isdir(root):
-        return root
-
-    # 2. Notebook context — derive src/ from the running notebook path
-    dbutils = _get_dbutils()
-    if dbutils:
-        try:
-            nb_path = (
-                dbutils.notebook.entry_point
-                .getDbutils().notebook().getContext()
-                .notebookPath().get()
-            )
-            if "/src/" in nb_path:
-                candidate = nb_path.split("/src/")[0] + "/src"
-                if os.path.isdir(candidate):
-                    return candidate
-        except Exception:
-            pass
-
-    # 3. Widget / env var fallback
-    workspace_path = ""
-    if dbutils:
-        try:
-            workspace_path = (dbutils.widgets.get("workspace_path") or "").strip()
-        except Exception:
-            pass
-    if not workspace_path:
-        workspace_path = os.environ.get("WORKSPACE_ROOT", "").strip()
-    if workspace_path:
-        root = os.path.join(workspace_path, "src")
-        if os.path.isdir(root):
-            return root
-
-    return None
+    if not root or not os.path.isdir(root):
+        dbutils = _get_dbutils()
+        workspace_path = (dbutils.widgets.get("workspace_path") or "").strip() if dbutils else ""
+        if not workspace_path:
+            workspace_path = os.environ.get("WORKSPACE_ROOT", "").strip()
+        if workspace_path:
+            root = os.path.join(workspace_path, "src")
+    return root if root and os.path.isdir(root) else None
 
 
 _src_root = _resolve_src_root()
@@ -290,25 +257,32 @@ def register_agents():
             pip_requirements=SERVING_PIP_REQUIREMENTS,
         )
 
-        # Register all agents (specialists + orchestrator) in one loop.
-        agents_to_register = [
-            *(
-                (suffix, False) for _, suffix in get_all_agent_builders()
-            ),
-            ("orchestrator", True),
-        ]
-
-        for suffix, is_orchestrator in agents_to_register:
+        # 1. Register each specialist (Tool-Calling Agent)
+        for create_fn, suffix in get_all_agent_builders():
             model_name = f"{catalog}.{model_schema}.{suffix}"
             script_path = os.path.join(tmpdir, f"agent_{suffix}.py")
             with open(script_path, "w") as f:
-                f.write(_agent_script_content(suffix, is_orchestrator=is_orchestrator))
+                f.write(_agent_script_content(suffix, is_orchestrator=False))
             with mlflow.start_run(run_name=f"register_{suffix}"):
                 mlflow.pyfunc.log_model(
                     python_model=script_path,
                     registered_model_name=model_name,
                     **log_kwargs,
                 )
+            registered.append(model_name)
+            print(f"Registered (ResponsesAgent): {model_name}")
+
+        # 2. Register Orchestrator (Multi-Agent System)
+        script_path = os.path.join(tmpdir, "agent_orchestrator.py")
+        with open(script_path, "w") as f:
+            f.write(_agent_script_content("orchestrator", is_orchestrator=True))
+        with mlflow.start_run(run_name="register_orchestrator"):
+            model_name = f"{catalog}.{model_schema}.orchestrator"
+            mlflow.pyfunc.log_model(
+                python_model=script_path,
+                registered_model_name=model_name,
+                **log_kwargs,
+            )
             registered.append(model_name)
             print(f"Registered (ResponsesAgent): {model_name}")
 

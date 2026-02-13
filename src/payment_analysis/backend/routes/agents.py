@@ -42,8 +42,7 @@ _databricks_config = AppConfig().databricks
 
 # Default catalog.schema used in AGENTS; replaced with effective config when returning.
 def _default_uc_prefix() -> str:
-    catalog = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog")
-    return f"{catalog}.{get_default_schema()}"
+    return f"ahs_demos_catalog.{get_default_schema()}"
 
 
 # =============================================================================
@@ -167,8 +166,8 @@ AGENTS = [
             AgentCapability.REAL_TIME_DECISIONING,
         ],
         use_case="Real-time approval probability scoring for intelligent routing decisions. Route high-propensity transactions to optimal payment solutions and flag low-propensity transactions for review.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.approval_propensity_model",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.approval_propensity_model",
+        databricks_resource="Model: ahs_demos_catalog.payment_analysis.approval_propensity_model",
+        workspace_url=f"{get_workspace_url()}/ml/models/ahs_demos_catalog.payment_analysis.approval_propensity_model",
         tags=["model-serving", "ml", "propensity", "real-time"],
         example_queries=[
             "What's the approval probability for this transaction?",
@@ -188,8 +187,8 @@ AGENTS = [
             AgentCapability.REAL_TIME_DECISIONING,
         ],
         use_case="Automatically select the best payment solution (standard, 3DS, network token, passkey) to maximize approval rates while balancing fraud risk and processing costs.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.smart_routing_policy",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.smart_routing_policy",
+        databricks_resource="Model: ahs_demos_catalog.payment_analysis.smart_routing_policy",
+        workspace_url=f"{get_workspace_url()}/ml/models/ahs_demos_catalog.payment_analysis.smart_routing_policy",
         tags=["model-serving", "routing", "optimization", "decisioning"],
         example_queries=[
             "What's the best payment solution for this merchant?",
@@ -208,8 +207,8 @@ AGENTS = [
             AgentCapability.AUTOMATED_RECOMMENDATIONS,
         ],
         use_case="Increase revenue recovery by 15-25% through intelligent retry strategies. Predicts retry success probability and suggests optimal retry timing for different decline types.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.smart_retry_policy",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.smart_retry_policy",
+        databricks_resource="Model: ahs_demos_catalog.payment_analysis.smart_retry_policy",
+        workspace_url=f"{get_workspace_url()}/ml/models/ahs_demos_catalog.payment_analysis.smart_retry_policy",
         tags=["model-serving", "retry", "recovery", "revenue"],
         example_queries=[
             "Should we retry this declined transaction?",
@@ -230,8 +229,8 @@ AGENTS = [
             AgentCapability.NATURAL_LANGUAGE_ANALYTICS,
         ],
         use_case="Ask complex questions about payment performance, get AI-generated insights, and receive personalized recommendations for improving approval rates based on your specific merchant portfolio.",
-        databricks_resource=f"Mosaic AI Gateway: {os.getenv('AI_GATEWAY_ENDPOINT', 'databricks-meta-llama-3-3-70b-instruct')}",
-        workspace_url=f"{get_workspace_url()}/serving-endpoints/{os.getenv('AI_GATEWAY_ENDPOINT', 'databricks-meta-llama-3-3-70b-instruct')}",
+        databricks_resource="Mosaic AI Gateway: databricks-meta-llama-3-3-70b-instruct",
+        workspace_url=f"{get_workspace_url()}/serving-endpoints/databricks-meta-llama-3-3-70b-instruct",
         tags=["ai-gateway", "llm", "conversational", "insights"],
         example_queries=[
             "Explain why our approval rate dropped last week",
@@ -253,8 +252,8 @@ AGENTS = [
             AgentCapability.REAL_TIME_DECISIONING,
         ],
         use_case="Real-time risk consultation for high-value or suspicious transactions. Get natural language explanations of risk factors and specific recommendations for fraud prevention.",
-        databricks_resource=f"Mosaic AI Gateway: {os.getenv('AI_GATEWAY_ENDPOINT', 'databricks-meta-llama-3-3-70b-instruct')}",
-        workspace_url=f"{get_workspace_url()}/serving-endpoints/{os.getenv('AI_GATEWAY_ENDPOINT', 'databricks-meta-llama-3-3-70b-instruct')}",
+        databricks_resource="Mosaic AI Gateway: databricks-meta-llama-3-3-70b-instruct",
+        workspace_url=f"{get_workspace_url()}/serving-endpoints/databricks-meta-llama-3-3-70b-instruct",
         tags=["ai-gateway", "risk", "fraud", "aml"],
         example_queries=[
             "Is this transaction risky? Explain the risk factors.",
@@ -304,11 +303,11 @@ def _apply_uc_config(agent: AgentInfo, catalog: str, schema: str) -> AgentInfo:
 
 
 def _effective_uc(request: Request) -> tuple[str, str]:
-    """Return (catalog, schema) from app state or default (env-based, not hardcoded)."""
+    """Return (catalog, schema) from app state or default."""
     uc = getattr(request.app.state, "uc_config", None)
     if uc and len(uc) == 2 and uc[0] and uc[1]:
         return (uc[0], uc[1])
-    return (os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"), get_default_schema())
+    return ("ahs_demos_catalog", get_default_schema())
 
 
 # =============================================================================
@@ -411,15 +410,11 @@ async def chat(
     if space_id and ws is not None:
         try:
             import datetime
-
-            def _genie_query() -> Any:
-                return ws.genie.start_conversation_and_wait(
-                    space_id=space_id,
-                    content=body.message.strip(),
-                    timeout=datetime.timedelta(minutes=2),
-                )
-
-            msg = await asyncio.to_thread(_genie_query)
+            msg = ws.genie.start_conversation_and_wait(
+                space_id=space_id,
+                content=body.message.strip(),
+                timeout=datetime.timedelta(minutes=2),
+            )
             reply = _extract_genie_reply(msg)
             if reply:
                 return ChatOut(reply=reply, genie_url=genie_url)
@@ -451,11 +446,7 @@ class OrchestratorChatOut(BaseModel):
 
 
 def _orchestrator_job_id() -> str:
-    """Resolve orchestrator job ID from environment."""
-    job_id = (os.getenv("DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT") or "").strip()
-    if not job_id:
-        job_id = (os.getenv("DATABRICKS_JOB_ID_JOB_6_DEPLOY_AGENTS") or "").strip()
-    return job_id
+    return (os.getenv("DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT") or "").strip() or "582671124403091"
 
 
 def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_message: str) -> tuple[str, list[str]]:
@@ -500,9 +491,7 @@ async def orchestrator_chat(
     endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
     if endpoint_name:
         try:
-            reply, agents_used = await asyncio.to_thread(
-                _query_orchestrator_endpoint, ws, endpoint_name, body.message.strip()
-            )
+            reply, agents_used = _query_orchestrator_endpoint(ws, endpoint_name, body.message.strip())
             return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
         except Exception as e:
             logger.warning(
@@ -560,7 +549,7 @@ async def orchestrator_chat(
             min(ORCHESTRATOR_JOB_POLL_INTERVAL_S, ORCHESTRATOR_JOB_POLL_TIMEOUT_S - elapsed)
         )
         elapsed += ORCHESTRATOR_JOB_POLL_INTERVAL_S
-        run_info = await asyncio.to_thread(ws.jobs.get_run, run_id)
+        run_info = ws.jobs.get_run(run_id)
         state_obj = getattr(run_info, "state", None)
         state = getattr(state_obj, "life_cycle_state", None) or ""
         if state == "TERMINATED":
@@ -572,7 +561,7 @@ async def orchestrator_chat(
                     agents_used=[],
                 )
             try:
-                out = await asyncio.to_thread(ws.jobs.get_run_output, run_id)
+                out = ws.jobs.get_run_output(run_id)
                 nb_out = getattr(out, "notebook_output", None)
                 notebook_result = getattr(nb_out, "result", None) if nb_out else None
                 if notebook_result:

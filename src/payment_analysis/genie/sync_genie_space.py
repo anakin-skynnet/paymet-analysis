@@ -1,7 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # Genie Space Configuration Sync
-# MAGIC 
+# MAGIC
 # MAGIC This notebook configures and maintains the Genie Space for Payment Analytics.
 
 # COMMAND ----------

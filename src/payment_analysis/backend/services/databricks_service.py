@@ -42,26 +42,11 @@ class RiskTier(str, Enum):
     HIGH = "HIGH"
     
     @classmethod
-    def from_score(
-        cls,
-        score: float,
-        *,
-        low_max: float | None = None,
-        medium_max: float | None = None,
-    ) -> "RiskTier":
-        """Determine risk tier from numeric score.
-
-        Thresholds can be overridden; defaults come from env vars
-        ``RISK_TIER_LOW_MAX`` (default 0.3) and ``RISK_TIER_MEDIUM_MAX``
-        (default 0.7) for consistency with Lakebase ``decisionconfig``.
-        """
-        if low_max is None:
-            low_max = float(os.getenv("RISK_TIER_LOW_MAX", "0.35"))
-        if medium_max is None:
-            medium_max = float(os.getenv("RISK_TIER_MEDIUM_MAX", "0.75"))
-        if score < low_max:
+    def from_score(cls, score: float) -> "RiskTier":
+        """Determine risk tier from numeric score."""
+        if score < 0.3:
             return cls.LOW
-        elif score < medium_max:
+        elif score < 0.7:
             return cls.MEDIUM
         return cls.HIGH
 
@@ -96,7 +81,7 @@ class DatabricksConfig:
             token=os.getenv("DATABRICKS_TOKEN"),
             client_id=os.getenv("DATABRICKS_CLIENT_ID"),
             client_secret=os.getenv("DATABRICKS_CLIENT_SECRET"),
-            warehouse_id=os.getenv("DATABRICKS_WAREHOUSE_ID") or None,
+            warehouse_id=os.getenv("DATABRICKS_WAREHOUSE_ID", "148ccb90800933a1"),
             catalog=os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"),
             schema=os.getenv("DATABRICKS_SCHEMA") or get_default_schema(),
         )
@@ -311,7 +296,7 @@ class DatabricksService:
                 total_transaction_value,
                 period_start,
                 period_end
-            FROM {self._validated_full_schema}.v_executive_kpis
+            FROM {self.config.full_schema_name}.v_executive_kpis
             LIMIT 1
         """
         
@@ -345,7 +330,7 @@ class DatabricksService:
         query = f"""
             SELECT event_second, transaction_count, approved_count,
                    approval_rate_pct, avg_fraud_score, total_value
-            FROM {self._validated_full_schema}.v_approval_trends_hourly
+            FROM {self.config.full_schema_name}.v_approval_trends_hourly
             ORDER BY event_second DESC
             LIMIT {seconds}
         """
@@ -358,7 +343,7 @@ class DatabricksService:
         query = f"""
             SELECT decline_reason, decline_count, pct_of_declines,
                    total_declined_value, avg_amount, recoverable_pct
-            FROM {self._validated_full_schema}.v_top_decline_reasons
+            FROM {self.config.full_schema_name}.v_top_decline_reasons
             ORDER BY decline_count DESC
             LIMIT 10
         """
@@ -371,7 +356,7 @@ class DatabricksService:
         query = f"""
             SELECT payment_solution, transaction_count, approved_count,
                    approval_rate_pct, avg_amount, total_value
-            FROM {self._validated_full_schema}.v_solution_performance
+            FROM {self.config.full_schema_name}.v_solution_performance
             ORDER BY transaction_count DESC
         """
         
@@ -392,7 +377,7 @@ class DatabricksService:
               total_value,
               antifraud_declines,
               antifraud_pct_of_declines
-            FROM {self._validated_full_schema}.v_smart_checkout_service_path_br
+            FROM {self.config.full_schema_name}.v_smart_checkout_service_path_br
             ORDER BY transaction_count DESC
             LIMIT {limit}
         """
@@ -409,7 +394,7 @@ class DatabricksService:
               approved_count,
               approval_rate_pct,
               total_value
-            FROM {self._validated_full_schema}.v_smart_checkout_path_performance_br
+            FROM {self.config.full_schema_name}.v_smart_checkout_path_performance_br
             ORDER BY transaction_count DESC
             LIMIT {limit}
         """
@@ -430,7 +415,7 @@ class DatabricksService:
               three_ds_friction_rate_pct,
               three_ds_authentication_rate_pct,
               issuer_approval_post_auth_rate_pct
-            FROM {self._validated_full_schema}.v_3ds_funnel_br
+            FROM {self.config.full_schema_name}.v_3ds_funnel_br
             WHERE event_date >= CURRENT_DATE - {days}
             ORDER BY event_date DESC
         """
@@ -452,7 +437,7 @@ class DatabricksService:
               total_declined_value,
               avg_amount,
               affected_merchants
-            FROM {self._validated_full_schema}.v_reason_codes_br
+            FROM {self.config.full_schema_name}.v_reason_codes_br
             ORDER BY decline_count DESC
             LIMIT {limit}
         """
@@ -475,7 +460,7 @@ class DatabricksService:
               estimated_recoverable_declines,
               estimated_recoverable_value,
               priority
-            FROM {self._validated_full_schema}.v_reason_code_insights_br
+            FROM {self.config.full_schema_name}.v_reason_code_insights_br
             ORDER BY priority ASC, estimated_recoverable_value DESC
             LIMIT {limit}
         """
@@ -491,7 +476,7 @@ class DatabricksService:
               approved_count,
               approval_rate_pct,
               total_value
-            FROM {self._validated_full_schema}.v_entry_system_distribution_br
+            FROM {self.config.full_schema_name}.v_entry_system_distribution_br
             ORDER BY transaction_count DESC
         """
         results = await self.execute_query(query)
@@ -502,7 +487,7 @@ class DatabricksService:
         query = f"""
             SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value,
                    active_segments, high_risk_transactions, declines_last_hour
-            FROM {self._validated_full_schema}.v_last_hour_performance
+            FROM {self.config.full_schema_name}.v_last_hour_performance
             LIMIT 1
         """
         results = await self.execute_query(query)
@@ -523,7 +508,7 @@ class DatabricksService:
         """Fetch last-60-seconds performance for real-time live metrics (v_last_60_seconds_performance)."""
         query = f"""
             SELECT transactions_last_60s, approval_rate_pct, avg_fraud_score, total_value, declines_last_60s
-            FROM {self._validated_full_schema}.v_last_60_seconds_performance
+            FROM {self.config.full_schema_name}.v_last_60_seconds_performance
             LIMIT 1
         """
         results = await self.execute_query(query)
@@ -543,7 +528,7 @@ class DatabricksService:
         limit_seconds = max(10, min(limit_seconds, 3600))
         query = f"""
             SELECT event_second, records_per_second
-            FROM {self._validated_full_schema}.v_streaming_volume_per_second
+            FROM {self.config.full_schema_name}.v_streaming_volume_per_second
             ORDER BY event_second ASC
             LIMIT {limit_seconds}
         """
@@ -561,21 +546,16 @@ class DatabricksService:
             logger.debug("get_streaming_tps failed: %s", e)
         return MockDataGenerator.streaming_tps(limit_seconds=limit_seconds)
 
-    # Entry system throughput shares (configurable via env; default: PD 62%, WS 34%, SEP 3%, Checkout 1%)
-    _ENTRY_SHARES = tuple(
-        float(x)
-        for x in os.getenv("ENTRY_SYSTEM_SHARES", "0.62,0.34,0.03,0.01").split(",")
-    )
-
     async def get_command_center_entry_throughput(
         self, entity: str = DEFAULT_ENTITY, limit_minutes: int = 30
     ) -> list[dict[str, Any]]:
-        """Throughput by entry system (PD, WS, SEP, Checkout) for Command Center. Databricks first: derive from v_streaming_volume_per_second with configurable shares; else mock."""
+        """Throughput by entry system (PD, WS, SEP, Checkout) for Command Center. Databricks first: derive from v_streaming_volume_per_second with fixed shares; else mock."""
         limit_seconds = max(1, min(limit_minutes, 60)) * 60
         try:
             tps_list = await self.get_streaming_tps(limit_seconds=limit_seconds)
             if tps_list:
-                shares = self._ENTRY_SHARES
+                # Derive PD/WS/SEP/Checkout from total TPS using standard shares (62%, 34%, 3%, 1%)
+                shares = (0.62, 0.34, 0.03, 0.01)
                 return [
                     {
                         "ts": row["event_second"],
@@ -597,7 +577,7 @@ class DatabricksService:
         query = f"""
             SELECT bronze_last_24h, silver_last_24h, retention_pct_24h,
                    latest_bronze_ingestion, latest_silver_event
-            FROM {self._validated_full_schema}.v_data_quality_summary
+            FROM {self.config.full_schema_name}.v_data_quality_summary
             LIMIT 1
         """
         try:
@@ -621,7 +601,7 @@ class DatabricksService:
         query = f"""
             SELECT alert_type, severity, metric_name, current_value, threshold_value,
                    alert_message, first_detected
-            FROM {self._validated_full_schema}.v_active_alerts
+            FROM {self.config.full_schema_name}.v_active_alerts
             ORDER BY severity DESC, first_detected DESC
             LIMIT {limit}
         """
@@ -649,7 +629,7 @@ class DatabricksService:
         limit = max(1, min(limit, 200))
         query = f"""
             SELECT country, transaction_count, approval_rate_pct, total_transaction_value
-            FROM {self._validated_full_schema}.v_performance_by_geography
+            FROM {self.config.full_schema_name}.v_performance_by_geography
             ORDER BY transaction_count DESC
             LIMIT {limit}
         """
@@ -661,7 +641,7 @@ class DatabricksService:
         limit = max(1, min(limit, 500))
         query = f"""
             SELECT code, name
-            FROM {self._validated_full_schema}.countries
+            FROM {self.config.full_schema_name}.countries
             WHERE is_active = true
             ORDER BY display_order ASC, name ASC
             LIMIT {limit}
@@ -682,7 +662,7 @@ class DatabricksService:
               avg_rows_per_key,
               avg_entry_systems_per_key,
               avg_transaction_ids_per_key
-            FROM {self._validated_full_schema}.v_dedup_collision_stats
+            FROM {self.config.full_schema_name}.v_dedup_collision_stats
             LIMIT 1
         """
         results = await self.execute_query(query)
@@ -697,7 +677,7 @@ class DatabricksService:
               reviewed_insights,
               false_insights,
               false_insights_pct
-            FROM {self._validated_full_schema}.v_false_insights_metric
+            FROM {self.config.full_schema_name}.v_false_insights_metric
             WHERE event_date >= CURRENT_DATE - {days}
             ORDER BY event_date DESC
         """
@@ -721,91 +701,19 @@ class DatabricksService:
               baseline_approval_pct,
               incremental_lift_pct,
               effectiveness
-            FROM {self._validated_full_schema}.v_retry_performance
+            FROM {self.config.full_schema_name}.v_retry_performance
             ORDER BY retry_attempts DESC
             LIMIT {limit}
         """
         results = await self.execute_query(query)
         return results or MockDataGenerator.retry_performance(limit)
 
-    async def get_decline_recovery_opportunities(self, limit: int = 20) -> list[dict[str, Any]]:
-        """Fetch decline recovery opportunities by reason/merchant/card for actionable insights."""
-        limit = max(1, min(limit, 100))
-        query = f"""
-            SELECT decline_reason_standard, decline_reason_group, decline_count,
-                   recovery_rate_pct, estimated_recoverable_value, recommended_action
-            FROM {self._validated_full_schema}.v_decline_recovery_opportunities
-            ORDER BY estimated_recoverable_value DESC
-            LIMIT {limit}
-        """
-        try:
-            results = await self.execute_query(query)
-            if results:
-                return results
-        except Exception as e:
-            logger.debug("get_decline_recovery_opportunities failed: %s", e)
-        return []
-
-    async def get_card_network_performance(self, limit: int = 20) -> list[dict[str, Any]]:
-        """Fetch approval rate and volume by card network (Visa, Mastercard, Amex, etc.)."""
-        limit = max(1, min(limit, 50))
-        query = f"""
-            SELECT card_network, transaction_count, approval_rate_pct,
-                   avg_processing_time_ms, total_transaction_value
-            FROM {self._validated_full_schema}.v_card_network_performance
-            ORDER BY transaction_count DESC
-            LIMIT {limit}
-        """
-        try:
-            results = await self.execute_query(query)
-            if results:
-                return results
-        except Exception as e:
-            logger.debug("get_card_network_performance failed: %s", e)
-        return []
-
-    async def get_merchant_segment_performance(self, limit: int = 20) -> list[dict[str, Any]]:
-        """Fetch approval rate and volume by merchant segment."""
-        limit = max(1, min(limit, 50))
-        query = f"""
-            SELECT merchant_segment, transaction_count, approval_rate_pct,
-                   avg_fraud_score, total_transaction_value
-            FROM {self._validated_full_schema}.v_merchant_segment_performance
-            ORDER BY transaction_count DESC
-            LIMIT {limit}
-        """
-        try:
-            results = await self.execute_query(query)
-            if results:
-                return results
-        except Exception as e:
-            logger.debug("get_merchant_segment_performance failed: %s", e)
-        return []
-
-    async def get_daily_trends(self, days: int = 30) -> list[dict[str, Any]]:
-        """Fetch daily approval rate and volume trends."""
-        days = max(1, min(days, 90))
-        query = f"""
-            SELECT event_date, transaction_count, approval_rate_pct,
-                   avg_fraud_score, total_value
-            FROM {self._validated_full_schema}.v_daily_trends
-            ORDER BY event_date DESC
-            LIMIT {days}
-        """
-        try:
-            results = await self.execute_query(query)
-            if results:
-                return results
-        except Exception as e:
-            logger.debug("get_daily_trends failed: %s", e)
-        return []
-
     async def get_recommendations_from_lakehouse(self, limit: int = 20) -> list[dict[str, Any]]:
         """Fetch approval recommendations from Lakehouse (UC table) for similar cases / Vector Search results."""
         limit = max(1, min(limit, 100))
         query = f"""
             SELECT id, context_summary, recommended_action, score, source_type, created_at
-            FROM {self._validated_full_schema}.v_recommendations_from_lakehouse
+            FROM {self.config.full_schema_name}.v_recommendations_from_lakehouse
             LIMIT {limit}
         """
         try:
@@ -815,34 +723,16 @@ class DatabricksService:
             return MockDataGenerator.recommendations(limit)
 
     def _escape_sql_string(self, s: str) -> str:
-        """Escape special characters for SQL string literals (defense-in-depth)."""
-        if not s:
-            return ""
-        return s.replace("\\", "\\\\").replace("'", "''").replace("\x00", "")
-
-    @staticmethod
-    def _validate_identifier(name: str, label: str = "identifier") -> str:
-        """Validate a SQL identifier (schema, table, column) to prevent injection."""
-        import re
-
-        if not name or not re.match(r"^[a-zA-Z_][a-zA-Z0-9_.\-]*$", name):
-            raise ValueError(f"Invalid SQL {label}: {name!r}")
-        return name
-
-    @property
-    def _validated_full_schema(self) -> str:
-        """Return validated fully qualified schema name (catalog.schema)."""
-        catalog = self._validate_identifier(self.config.catalog, "catalog")
-        schema = self._validate_identifier(self.config.schema, "schema")
-        return f"{catalog}.{schema}"
+        """Escape single quotes for SQL string literals."""
+        return (s or "").replace("'", "''")
 
     async def read_app_config(self) -> tuple[str, str] | None:
         """
         Read effective catalog and schema from app_config table.
-        Table lives at self._validated_full_schema (bootstrap from env).
+        Table lives at self.config.full_schema_name (bootstrap from env).
         Returns (catalog, schema) or None if table/row missing.
         """
-        table = self._validated_full_schema + ".app_config"
+        table = self.config.full_schema_name + ".app_config"
         query = f"SELECT catalog, schema FROM {table} LIMIT 1"
         try:
             rows = await self.execute_query(query)
@@ -858,10 +748,10 @@ class DatabricksService:
     async def _ensure_app_config_table(self) -> bool:
         """
         Create app_config table if it does not exist and seed initial row if empty.
-        Table lives at self._validated_full_schema (env catalog/schema).
+        Table lives at self.config.full_schema_name (env catalog/schema).
         Allows "Save catalog & schema" to work before the Lakehouse Bootstrap job has been run.
         """
-        table = self._validated_full_schema + ".app_config"
+        table = self.config.full_schema_name + ".app_config"
         create_sql = f"""
             CREATE TABLE IF NOT EXISTS {table} (
                 id INT NOT NULL DEFAULT 1,
@@ -884,13 +774,11 @@ class DatabricksService:
     async def write_app_config(self, catalog: str, schema: str) -> bool:
         """
         Write catalog and schema to app_config table (single row id=1).
-        Table lives at self._validated_full_schema (bootstrap from env).
+        Table lives at self.config.full_schema_name (bootstrap from env).
         Creates the table and seed row if they do not exist (so Save works before Lakehouse Bootstrap).
         """
-        catalog = self._validate_identifier(catalog, "catalog")
-        schema = self._validate_identifier(schema, "schema")
         await self._ensure_app_config_table()
-        table = self._validated_full_schema + ".app_config"
+        table = self.config.full_schema_name + ".app_config"
         c, s = self._escape_sql_string(catalog), self._escape_sql_string(schema)
         stmt = f"""
             MERGE INTO {table} AS t
@@ -910,7 +798,7 @@ class DatabricksService:
     ) -> list[dict[str, Any]]:
         """Fetch approval rules from Lakehouse. Used by app and by ML/Agents to accelerate approval rates."""
         limit = max(1, min(limit, 500))
-        table = self._validated_full_schema + ".approval_rules"
+        table = self.config.full_schema_name + ".approval_rules"
         where_clauses = []
         if rule_type:
             where_clauses.append(f"rule_type = '{self._escape_sql_string(rule_type)}'")
@@ -941,7 +829,7 @@ class DatabricksService:
         is_active: bool = True,
     ) -> bool:
         """Insert one approval rule into the Lakehouse table."""
-        table = self._validated_full_schema + ".approval_rules"
+        table = self.config.full_schema_name + ".approval_rules"
         cond = f"'{self._escape_sql_string(condition_expression)}'" if condition_expression else "NULL"
         stmt = f"""
             INSERT INTO {table} (id, name, rule_type, condition_expression, action_summary, priority, is_active, updated_at)
@@ -970,7 +858,7 @@ class DatabricksService:
         is_active: bool | None = None,
     ) -> bool:
         """Update an approval rule by id."""
-        table = self._validated_full_schema + ".approval_rules"
+        table = self.config.full_schema_name + ".approval_rules"
         updates = ["updated_at = current_timestamp()"]
         if name is not None:
             updates.append(f"name = '{self._escape_sql_string(name)}'")
@@ -981,7 +869,6 @@ class DatabricksService:
         if action_summary is not None:
             updates.append(f"action_summary = '{self._escape_sql_string(action_summary)}'")
         if priority is not None:
-            priority = int(priority)  # Ensure it's a safe integer
             updates.append(f"priority = {priority}")
         if is_active is not None:
             updates.append(f"is_active = {str(is_active).upper()}")
@@ -990,8 +877,7 @@ class DatabricksService:
 
     async def delete_approval_rule(self, id: str) -> bool:
         """Delete an approval rule by id."""
-        # TODO: migrate to parameterized queries when Databricks SDK supports named parameters in DML
-        table = self._validated_full_schema + ".approval_rules"
+        table = self.config.full_schema_name + ".approval_rules"
         stmt = f"DELETE FROM {table} WHERE id = '{self._escape_sql_string(id)}'"
         return await self.execute_non_query(stmt)
 
@@ -1003,7 +889,7 @@ class DatabricksService:
     ) -> list[dict[str, Any]]:
         """Fetch online features from Lakehouse (ML and AI processes) for UI."""
         limit = max(1, min(limit, 500))
-        table = self._validated_full_schema + ".online_features"
+        table = self.config.full_schema_name + ".online_features"
         where = "WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS"
         if source and source.lower() in ("ml", "agent"):
             where += f" AND source = '{self._escape_sql_string(source.lower())}'"
@@ -1103,10 +989,10 @@ class DatabricksService:
         def esc(v: str | None) -> str:
             if v is None:
                 return "NULL"
-            return "'" + self._escape_sql_string(str(v)) + "'"
+            return "'" + v.replace("'", "''") + "'"
 
         statement = f"""
-        INSERT INTO {self._validated_full_schema}.insight_feedback_silver
+        INSERT INTO {self.config.full_schema_name}.insight_feedback_silver
         (insight_id, insight_type, reviewer, verdict, reason, model_version, prompt_version, reviewed_at)
         VALUES
         ({esc(insight_id)}, {esc(insight_type)}, {esc(reviewer)}, {esc(verdict)}, {esc(reason)}, {esc(model_version)}, {esc(prompt_version)}, current_timestamp())
@@ -1118,32 +1004,26 @@ class DatabricksService:
     # ML Model Serving
     # =========================================================================
     
-    # Model endpoint names (configurable via env; match resources/model_serving.yml)
-    _ENDPOINT_APPROVAL = os.getenv("ML_ENDPOINT_APPROVAL", "approval-propensity")
-    _ENDPOINT_RISK = os.getenv("ML_ENDPOINT_RISK", "risk-scoring")
-    _ENDPOINT_ROUTING = os.getenv("ML_ENDPOINT_ROUTING", "smart-routing")
-    _ENDPOINT_RETRY = os.getenv("ML_ENDPOINT_RETRY", "smart-retry")
-
     async def call_approval_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call approval propensity model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=self._ENDPOINT_APPROVAL,
+            endpoint_name=f"approval-propensity-{os.getenv('ENVIRONMENT', 'dev')}",
             features=features,
             mock_fallback=lambda: MockDataGenerator.approval_prediction(features),
         )
-
+    
     async def call_risk_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call risk scoring model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=self._ENDPOINT_RISK,
+            endpoint_name=f"risk-scoring-{os.getenv('ENVIRONMENT', 'dev')}",
             features=features,
             mock_fallback=lambda: MockDataGenerator.risk_prediction(features),
         )
-
+    
     async def call_routing_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call smart routing model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=self._ENDPOINT_ROUTING,
+            endpoint_name=f"smart-routing-{os.getenv('ENVIRONMENT', 'dev')}",
             features=features,
             mock_fallback=lambda: MockDataGenerator.routing_prediction(features),
         )
@@ -1151,7 +1031,7 @@ class DatabricksService:
     async def call_retry_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call smart retry model endpoint (retry success likelihood and recovery)."""
         return await self._call_model_endpoint(
-            endpoint_name=self._ENDPOINT_RETRY,
+            endpoint_name=f"smart-retry-{os.getenv('ENVIRONMENT', 'dev')}",
             features=features,
             mock_fallback=lambda: MockDataGenerator.retry_prediction(features),
         )
@@ -1578,10 +1458,10 @@ class MockDataGenerator:
     def command_center_entry_throughput(
         country_code: str = "BR", limit_minutes: int = 30
     ) -> list[dict[str, Any]]:
-        """Mock entry-system throughput for Command Center real-time chart. Shares configurable via ENTRY_SYSTEM_SHARES."""
+        """Mock entry-system throughput (PD 62%, WS 34%, SEP 3%, Checkout 1%) for Command Center real-time chart."""
         import random
         base_tps = 420 if country_code == "BR" else 180 if country_code == "MX" else 90
-        shares = tuple(float(x) for x in os.getenv("ENTRY_SYSTEM_SHARES", "0.62,0.34,0.03,0.01").split(","))
+        shares = (0.62, 0.34, 0.03, 0.01)
         now = datetime.now()
         n = min(limit_minutes * 60, 3600)
         out: list[dict[str, Any]] = []
