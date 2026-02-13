@@ -21,7 +21,8 @@ resources:
               events_per_second: "1000"
               duration_minutes: "60"
               output_mode: "delta"
-          timeout_seconds: 3600
+          timeout_seconds: 7200
+          max_retries: 2
       tags:
         environment: ${var.environment}
         project: payment-analysis

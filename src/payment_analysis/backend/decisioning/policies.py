@@ -211,9 +211,17 @@ def decide_routing(
 
 
 def serialize_context(ctx: DecisionContext) -> dict:
-    # Pydantic v2: `model_dump` is available; keep compatibility via getattr.
+    """Serialize a DecisionContext to a plain dict.
+
+    Compatible with both Pydantic v1 (``.dict()``) and v2 (``.model_dump()``).
+    """
     dump = getattr(ctx, "model_dump", None)
     if callable(dump):
         return dump()
-    return ctx.dict()
+    # Pydantic v1 fallback; removed in v3+.
+    legacy = getattr(ctx, "dict", None)
+    if callable(legacy):
+        return legacy()
+    # Last resort: dataclass or plain-object fallback
+    return dict(ctx)  # type: ignore[call-overload]
 

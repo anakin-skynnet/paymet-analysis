@@ -173,9 +173,12 @@ def payments_stream_metrics_10s():
 def payments_stream_alerts():
     """
     Real-time alert generation for anomalies (10-second windows).
-    Note: No backend or dashboard reads this table. Safe to drop from pipeline if streaming alerts are not needed (see docs/SCHEMA_TABLES_VIEWS.md).
+
+    Note: Uses ``dlt.readStream`` for incremental processing from the upstream
+    streaming metrics table.  No backend or dashboard reads this table. Safe to
+    drop from pipeline if streaming alerts are not needed.
     """
-    metrics = dlt.read("payments_stream_metrics_10s")
+    metrics = dlt.readStream("payments_stream_metrics_10s")
     
     return (
         metrics

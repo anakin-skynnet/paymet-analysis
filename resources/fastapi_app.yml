@@ -58,19 +58,21 @@ resources:
             name: "Payment Analytics"
             space_id: ${var.genie_space_id}
             permission: CAN_EDIT
-        # Model serving — uncomment when endpoints exist (use ./scripts/deploy_with_dependencies.sh for two-phase deploy).
-        # - name: serving-orchestrator
-        #   serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
-        # - name: serving-decline-analyst
-        #   serving_endpoint: { name: "decline-analyst-${var.environment}", permission: CAN_QUERY }
-        # - name: serving-approval-prop
-        #   serving_endpoint: { name: "approval-propensity-${var.environment}", permission: CAN_QUERY }
-        # - name: serving-risk-scoring
-        #   serving_endpoint: { name: "risk-scoring-${var.environment}", permission: CAN_QUERY }
-        # - name: serving-smart-routing
-        #   serving_endpoint: { name: "smart-routing-${var.environment}", permission: CAN_QUERY }
-        # - name: serving-smart-retry
-        #   serving_endpoint: { name: "smart-retry-${var.environment}", permission: CAN_QUERY }
+        # Model serving — all 6 endpoints (4 ML models + 2 ResponsesAgent LangGraph agents).
+        # Agent endpoints use ResponsesAgent (MLflow 3.x); see model_serving.yml.
+        # Orchestrator chat falls back to Job 6 if the serving endpoint is unavailable.
+        - name: serving-orchestrator
+          serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
+        - name: serving-decline-analyst
+          serving_endpoint: { name: "decline-analyst", permission: CAN_QUERY }
+        - name: serving-approval-prop
+          serving_endpoint: { name: "approval-propensity", permission: CAN_QUERY }
+        - name: serving-risk-scoring
+          serving_endpoint: { name: "risk-scoring", permission: CAN_QUERY }
+        - name: serving-smart-routing
+          serving_endpoint: { name: "smart-routing", permission: CAN_QUERY }
+        - name: serving-smart-retry
+          serving_endpoint: { name: "smart-retry", permission: CAN_QUERY }
         # Optional: legacy/external LLM endpoint (uncomment if used)
         # - name: serving-endpoint
         #   description: External model endpoint

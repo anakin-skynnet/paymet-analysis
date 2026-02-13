@@ -541,3 +541,26 @@
     scrollbar-color: oklch(0.5 0.02 260 / 0.5) transparent;
   }
 }
+
+@theme inline {
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+  from {
+    height: 0;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}

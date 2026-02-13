@@ -6,8 +6,18 @@
 
 # COMMAND ----------
 
-from pyspark.sql.functions import *
-from pyspark.sql.types import *
+from pyspark.sql.functions import (  # type: ignore[import-untyped]
+    avg,
+    col,
+    count,
+    current_timestamp,
+    hour,
+    minute,
+    sum,
+    to_date,
+    when,
+    window,
+)
 
 # COMMAND ----------
 

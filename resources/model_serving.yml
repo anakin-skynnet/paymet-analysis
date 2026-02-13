@@ -1,50 +1,60 @@
 # =============================================================================
 # Model Serving Endpoints & Mosaic AI Gateway
 # =============================================================================
-# Six endpoints: payment-analysis-orchestrator (supervisor), decline_analyst, approval propensity,
-# risk scoring, smart routing, smart retry. Orchestrator is registered to catalog.agents (Job 6 task 2).
-# Enable this include after models/agents are trained and registered in Unity Catalog.
+# Six endpoints: orchestrator (supervisor agent), decline_analyst (LangGraph agent),
+# plus 4 ML models (approval propensity, risk scoring, smart routing, smart retry).
+#
+# LangGraph agents are registered as MLflow ResponsesAgent (catalog.agents, Job 6 task 2).
+# ML models are registered to catalog.schema (Job 5).
+#
+# Agent endpoints use ResponsesAgent (MLflow 3.x) with lazy LangGraph initialization and
+# explicit pip_requirements + environment_vars (CATALOG, SCHEMA, LLM_ENDPOINT).
+# See: https://mlflow.org/docs/latest/genai/flavors/responses-agent-intro/
+#      https://learn.microsoft.com/en-us/azure/databricks/generative-ai/agent-framework/author-agent
 # =============================================================================
 
 resources:
   model_serving_endpoints:
-    # Supervisor / Orchestrator (AgentBricks). Set ORCHESTRATOR_SERVING_ENDPOINT to this name so app chat uses it.
+    # Supervisor / Orchestrator (ResponsesAgent wrapping LangGraph multi-agent).
+    # App env ORCHESTRATOR_SERVING_ENDPOINT points to this endpoint name.
     payment_analysis_orchestrator_endpoint:
       name: "payment-analysis-orchestrator"
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "1"
+            entity_version: "5"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-            environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
+            environment_vars:
+              ENABLE_MLFLOW_TRACING: "true"
+              CATALOG: "${var.catalog}"
+              SCHEMA: "${var.schema}"
+              LLM_ENDPOINT: "${var.llm_endpoint}"
         traffic_config:
-          routes: [{ served_model_name: "orchestrator-1", traffic_percentage: 100 }]
-      ai_gateway:
-        rate_limits: [{ key: "user", renewal_period: "minute", calls: 60 }]
-        usage_tracking_config: { enabled: true }
+          routes: [{ served_model_name: "orchestrator-5", traffic_percentage: 100 }]
 
-    # Decline analyst agent (LangGraph); register in catalog.schema before deploy
+    # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
     decline_analyst_endpoint:
-      name: "decline-analyst-${var.environment}"
+      name: "decline-analyst"
       config:
         served_entities:
-          - entity_name: "${var.catalog}.${var.schema}.decline_analyst"
-            entity_version: "1"
+          - entity_name: "${var.catalog}.agents.decline_analyst"
+            entity_version: "11"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
-            environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
+            environment_vars:
+              ENABLE_MLFLOW_TRACING: "true"
+              CATALOG: "${var.catalog}"
+              SCHEMA: "${var.schema}"
+              LLM_ENDPOINT: "${var.llm_endpoint}"
         traffic_config:
-          routes: [{ served_model_name: "decline_analyst-1", traffic_percentage: 100 }]
-      ai_gateway:
-        rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
-        usage_tracking_config: { enabled: true }
+          routes: [{ served_model_name: "decline_analyst-11", traffic_percentage: 100 }]
 
     # Predicts transaction approval probability
     approval_propensity_endpoint:
-      name: "approval-propensity-${var.environment}"
+      name: "approval-propensity"
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.approval_propensity_model"
@@ -55,18 +65,13 @@ resources:
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
           routes: [{ served_model_name: "approval_propensity_model-1", traffic_percentage: 100 }]
-        auto_capture_config:
-          catalog_name: ${var.catalog}
-          schema_name: ${var.schema}
-          table_name_prefix: "approval_propensity_inf"
-          enabled: true
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         usage_tracking_config: { enabled: true }
 
-    # Fraud risk scoring with PII guardrails
+    # Fraud risk scoring
     risk_scoring_endpoint:
-      name: "risk-scoring-${var.environment}"
+      name: "risk-scoring"
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.risk_scoring_model"
@@ -79,14 +84,11 @@ resources:
           routes: [{ served_model_name: "risk_scoring_model-1", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
-        guardrails:
-          input: { pii: { behavior: "BLOCK" } }
-          output: { safety: true, pii: { behavior: "MASK" } }
         usage_tracking_config: { enabled: true }
 
     # Optimal payment route recommendation
     smart_routing_endpoint:
-      name: "smart-routing-${var.environment}"
+      name: "smart-routing"
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_routing_policy"
@@ -102,7 +104,7 @@ resources:
 
     # Retry success likelihood and recovery
     smart_retry_endpoint:
-      name: "smart-retry-${var.environment}"
+      name: "smart-retry"
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_retry_policy"

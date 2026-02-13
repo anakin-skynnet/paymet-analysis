@@ -69,7 +69,7 @@ resources:
               lakebase_branch_id: ${var.lakebase_branch_id}
               lakebase_endpoint_id: ${var.lakebase_endpoint_id}
               lakebase_database_name: ${var.lakebase_database_name}
-              lakebase_schema: "payment_analysis"
+              lakebase_schema: ${var.schema}
               warehouse_id: ${var.warehouse_id}
               default_events_per_second: "1000"
               default_duration_minutes: "60"

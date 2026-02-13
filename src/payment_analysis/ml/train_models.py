@@ -26,9 +26,8 @@ from sklearn.model_selection import train_test_split  # type: ignore[import-unty
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score  # type: ignore[import-untyped]
 from sklearn.preprocessing import LabelEncoder  # type: ignore[import-untyped]
 from mlflow.models.signature import infer_signature  # type: ignore[import-untyped]
-import pickle
+import joblib  # type: ignore[import-untyped]
 import warnings
-warnings.filterwarnings('ignore')
 
 # Get parameters from widgets (when run as job, catalog/schema = bundle var.catalog, var.schema)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
@@ -190,6 +189,7 @@ except Exception as e:
         0.05 * df['uses_3ds'] -
         0.05 * df['is_cross_border']
     )
+    approval_prob = np.clip(approval_prob, 0, 1)
     df['is_approved'] = (np.random.random(n_samples) < approval_prob).astype(int)
     
     print(f"✓ Created {len(df)} synthetic transactions")
@@ -376,8 +376,7 @@ try:
         })
         mlflow.log_metrics({"accuracy": accuracy, "n_classes": len(le.classes_)})
         
-        with open("/tmp/label_encoder.pkl", "wb") as f:
-            pickle.dump(le, f)
+        joblib.dump(le, "/tmp/label_encoder.pkl")
         mlflow.log_artifact("/tmp/label_encoder.pkl")
         
         signature = infer_signature(X_train, model.predict(X_train))

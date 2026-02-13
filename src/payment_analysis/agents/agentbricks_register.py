@@ -77,49 +77,152 @@ def _get_config():
 # COMMAND ----------
 
 def _agent_script_content(suffix: str, is_orchestrator: bool) -> str:
-    """Generate model-from-code script content. LangChain v1+ requires lc_model to be a path to script with set_model()."""
+    """Generate a models-from-code script that wraps the LangGraph agent in
+    ``mlflow.pyfunc.ResponsesAgent`` — the MLflow 3.x recommended interface for
+    deploying agents to Databricks Model Serving.
+
+    Key design decisions:
+    1. **ResponsesAgent** (not ChatModel / PythonModel / langchain flavor).
+       Provides OpenAI Responses-API-compatible I/O, streaming, tool-call
+       messages, and automatic signature inference.
+    2. **Lazy LangGraph initialization** in ``_ensure_agent()`` so the serving
+       container can reach READY before the first Databricks / UC connection.
+    3. **``output_to_responses_items_stream``** converts LangChain messages
+       returned by LangGraph into the Responses-API event stream.
+
+    References:
+    - https://mlflow.org/docs/latest/genai/flavors/responses-agent-intro/
+    - https://learn.microsoft.com/en-us/azure/databricks/generative-ai/agent-framework/author-agent
+    """
     import_name = "create_orchestrator_agent" if is_orchestrator else f"create_{suffix}_agent"
     return f'''"""
-MLflow model-from-code script for {suffix}. Built at registration time; uses env CATALOG, SCHEMA, LLM_ENDPOINT.
-See https://mlflow.org/docs/latest/model/models-from-code.html
+MLflow ResponsesAgent wrapper for the **{suffix}** LangGraph agent.
+
+Uses ``mlflow.pyfunc.ResponsesAgent`` (MLflow 3.x) for Databricks Model Serving
+with OpenAI Responses API compatibility, streaming, and tool-call support.
+The LangGraph agent is built lazily on the first ``predict()`` call.
+
+Env vars (set via Model Serving environment_vars):
+  CATALOG, SCHEMA, LLM_ENDPOINT
 """
 import os
+import sys
+import traceback
+from typing import Generator
+
+import mlflow
+from mlflow.entities import SpanType
 from mlflow.models import set_model
-from payment_analysis.agents.langgraph_agents import {import_name}
+from mlflow.pyfunc import ResponsesAgent
+from mlflow.types.responses import (
+    ResponsesAgentRequest,
+    ResponsesAgentResponse,
+    ResponsesAgentStreamEvent,
+    output_to_responses_items_stream,
+    to_chat_completions_input,
+)
 
-def _build():
-    catalog = os.environ.get("CATALOG", "ahs_demos_catalog")
-    schema = os.environ.get("SCHEMA", "payment_analysis")
-    llm_endpoint = os.environ.get("LLM_ENDPOINT", "databricks-meta-llama-3-3-70b-instruct")
-    return {import_name}(catalog, schema=schema, llm_endpoint=llm_endpoint)
 
-set_model(_build())
+class _LangGraphResponsesAgent(ResponsesAgent):
+    """ResponsesAgent that wraps a LangGraph compiled graph with lazy init."""
+
+    def __init__(self):
+        self._agent = None
+        self._init_error = None
+
+    def _ensure_agent(self):
+        if self._agent is not None:
+            return
+        if self._init_error is not None:
+            raise RuntimeError(self._init_error)
+        try:
+            from payment_analysis.agents.langgraph_agents import {import_name}
+
+            catalog = os.environ.get("CATALOG", "ahs_demos_catalog")
+            schema = os.environ.get("SCHEMA", "payment_analysis")
+            llm_endpoint = os.environ.get(
+                "LLM_ENDPOINT", "databricks-meta-llama-3-3-70b-instruct"
+            )
+            self._agent = {import_name}(
+                catalog, schema=schema, llm_endpoint=llm_endpoint
+            )
+        except Exception as exc:
+            self._init_error = f"{{type(exc).__name__}}: {{exc}}"
+            traceback.print_exc(file=sys.stderr)
+            raise
+
+    @mlflow.trace(span_type=SpanType.AGENT)
+    def predict(
+        self, request: ResponsesAgentRequest
+    ) -> ResponsesAgentResponse:
+        """Collect all stream events into a single ResponsesAgentResponse."""
+        outputs = [
+            event.item
+            for event in self.predict_stream(request)
+            if event.type == "response.output_item.done"
+        ]
+        return ResponsesAgentResponse(
+            output=outputs, custom_outputs=request.custom_inputs
+        )
+
+    @mlflow.trace(span_type=SpanType.AGENT)
+    def predict_stream(
+        self, request: ResponsesAgentRequest
+    ) -> Generator[ResponsesAgentStreamEvent, None, None]:
+        """Invoke the LangGraph agent and yield Responses-API stream events."""
+        self._ensure_agent()
+
+        # Convert Responses-API input to ChatCompletion messages (what LangGraph expects)
+        cc_msgs = to_chat_completions_input(
+            [i.model_dump() for i in request.input]
+        )
+
+        # Invoke the compiled graph
+        result = self._agent.invoke({{"messages": cc_msgs}})
+
+        # Convert LangChain messages back to Responses-API stream events
+        yield from output_to_responses_items_stream(
+            result.get("messages", [])
+        )
+
+
+mlflow.langchain.autolog()
+agent = _LangGraphResponsesAgent()
+set_model(agent)
 '''
 
 
-def _make_agent_signature():
-    """Build ModelSignature for LangChain/LangGraph chat agents. UC requires both input and output specs."""
-    from mlflow.models.signature import ModelSignature, infer_signature
-
-    # UC requires explicit input and output types. Try infer from dict; else use explicit Schema.
-    input_example = {"messages": [{"type": "human", "content": "What are the top decline reasons?"}]}
-    output_example = {"messages": [{"type": "ai", "content": "Summary of decline reasons and recommendations."}]}
-    try:
-        sig = infer_signature(input_example, output_example)
-        if sig.inputs is not None and sig.outputs is not None:
-            return sig
-    except Exception:
-        pass
-    # Fallback: explicit schema (Unity Catalog accepts string columns for chat payloads)
-    from mlflow.types.schema import ColSpec, Schema
-
-    inputs = Schema([ColSpec("string", "messages")])
-    outputs = Schema([ColSpec("string", "messages")])
-    return ModelSignature(inputs=inputs, outputs=outputs)
+# ---------------------------------------------------------------------------
+# Pinned pip requirements for Model Serving.
+# Must match Job 6 environment (resources/agents.yml).  Without explicit
+# requirements the serving container may get incomplete / conflicting deps.
+# ---------------------------------------------------------------------------
+SERVING_PIP_REQUIREMENTS = [
+    "databricks-sdk==0.86.0",
+    "databricks-langchain==0.15.0",
+    "unitycatalog-langchain[databricks]==0.3.0",
+    "langgraph==1.0.8",
+    "langchain-core==1.2.11",
+    "mlflow==3.9.0",
+    "pydantic>=2",
+]
 
 
 def register_agents():
-    """Log each agent to MLflow (models-from-code) and register to UC. Returns list of registered model names."""
+    """Log each agent as an MLflow ``ResponsesAgent`` (models-from-code) and
+    register to Unity Catalog.
+
+    ``ResponsesAgent`` (MLflow 3.x) is the recommended interface for deploying
+    agents on Databricks Model Serving.  It provides:
+    - OpenAI Responses API compatible I/O
+    - Streaming (``predict_stream``)
+    - Tool-call message history
+    - Automatic model signature inference
+
+    See: https://mlflow.org/docs/latest/genai/flavors/responses-agent-intro/
+
+    Returns list of registered model names.
+    """
     import tempfile
     import mlflow
     from mlflow import set_registry_uri
@@ -133,7 +236,6 @@ def register_agents():
     llm_endpoint = config["llm_endpoint"]
     registered = []
 
-    # LangChain v1+ only supports models-from-code: lc_model must be a path to a script that calls set_model().
     os.environ["CATALOG"] = catalog
     os.environ["SCHEMA"] = schema
     os.environ["LLM_ENDPOINT"] = llm_endpoint
@@ -144,12 +246,16 @@ def register_agents():
 
     set_registry_uri("databricks-uc")
 
-    # Unity Catalog requires an explicit model signature (input + output). Infer from examples.
-    input_example = {"messages": [{"type": "human", "content": "What are the top decline reasons?"}]}
-    signature = _make_agent_signature()
-
     with tempfile.TemporaryDirectory(prefix="agentbricks_mfc_") as tmpdir:
         code_paths = [_src_root]
+
+        # ResponsesAgent auto-infers signature and input_example;
+        # we only pass pip_requirements and code_paths.
+        log_kwargs = dict(
+            artifact_path="model",
+            code_paths=code_paths,
+            pip_requirements=SERVING_PIP_REQUIREMENTS,
+        )
 
         # 1. Register each specialist (Tool-Calling Agent)
         for create_fn, suffix in get_all_agent_builders():
@@ -158,16 +264,13 @@ def register_agents():
             with open(script_path, "w") as f:
                 f.write(_agent_script_content(suffix, is_orchestrator=False))
             with mlflow.start_run(run_name=f"register_{suffix}"):
-                mlflow.langchain.log_model(
-                    lc_model=script_path,
-                    artifact_path="model",
+                mlflow.pyfunc.log_model(
+                    python_model=script_path,
                     registered_model_name=model_name,
-                    code_paths=code_paths,
-                    signature=signature,
-                    input_example=input_example,
+                    **log_kwargs,
                 )
             registered.append(model_name)
-            print(f"Registered: {model_name}")
+            print(f"Registered (ResponsesAgent): {model_name}")
 
         # 2. Register Orchestrator (Multi-Agent System)
         script_path = os.path.join(tmpdir, "agent_orchestrator.py")
@@ -175,16 +278,13 @@ def register_agents():
             f.write(_agent_script_content("orchestrator", is_orchestrator=True))
         with mlflow.start_run(run_name="register_orchestrator"):
             model_name = f"{catalog}.{model_schema}.orchestrator"
-            mlflow.langchain.log_model(
-                lc_model=script_path,
-                artifact_path="model",
+            mlflow.pyfunc.log_model(
+                python_model=script_path,
                 registered_model_name=model_name,
-                code_paths=code_paths,
-                signature=signature,
-                input_example=input_example,
+                **log_kwargs,
             )
             registered.append(model_name)
-            print(f"Registered: {model_name}")
+            print(f"Registered (ResponsesAgent): {model_name}")
 
     return registered
 

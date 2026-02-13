@@ -58,5 +58,5 @@ resources:
             path: ${workspace.root_path}/src/payment_analysis/streaming/realtime_pipeline
       serverless: true
       continuous: true  # Pipeline mode = Continuous (UI); required for real-time stream
-      development: false
+      development: ${var.pipelines_development}
       photon: true

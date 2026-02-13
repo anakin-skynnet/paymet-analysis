@@ -8,11 +8,14 @@ See docs/GUIDE.md §10 (Data sources & code guidelines).
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import desc, func
+
+logger = logging.getLogger(__name__)
 from sqlmodel import select
 
 from ..config import DEFAULT_ENTITY
@@ -408,7 +411,7 @@ async def kpis(session: SessionDep, service: DatabricksServiceDep) -> KPIOut:
                 approval_rate = float(approved) / float(total)
             return KPIOut(total=total, approved=approved, approval_rate=approval_rate)
         except Exception:
-            pass
+            logger.debug("UC view KPI query unavailable; falling back to local DB", exc_info=True)
     total = session.exec(select(func.count(AuthorizationEvent.id))).one() or 0
     approved = (
         session.exec(
@@ -809,7 +812,7 @@ async def decline_summary(
                 for row in data[:limit]
             ]
         except Exception:
-            pass
+            logger.debug("UC view recommendations unavailable; falling back to local DB", exc_info=True)
     limit = max(1, min(limit, 100))
     stmt = (
         select(

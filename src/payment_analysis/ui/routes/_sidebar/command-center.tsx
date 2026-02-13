@@ -32,9 +32,18 @@ import {
   useGetFalseInsightsMetric,
   useGetRetryPerformance,
   useGetEntrySystemDistribution,
+  useGetApprovalTrends,
   postControlPanel,
   usePostControlPanel,
+  type ApprovalTrendOut,
 } from "@/lib/api";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Area, AreaChart, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useEntity } from "@/contexts/entity-context";
 import { useAssistant } from "@/contexts/assistant-context";
 import { PageHeader } from "@/components/apx/page-header";
@@ -64,6 +73,10 @@ const REFRESH_CHART_MS = 500;
 const SANTANDER_RED = "#EC0000";
 const NEON_CYAN = "#00E5FF";
 const VIBRANT_GREEN = "#22C55E";
+
+const approvalTrendChartConfig = {
+  approval_rate: { label: "Approval Rate %", color: "hsl(var(--chart-1))" },
+} satisfies ChartConfig;
 
 export const Route = createFileRoute("/_sidebar/command-center")({
   component: () => (
@@ -272,6 +285,26 @@ function CommandCenter() {
     query: { refetchInterval: REFRESH_MS },
   });
 
+  const approvalTrendsQ = useGetApprovalTrends({
+    params: { seconds: 3600 },
+    query: { refetchInterval: REFRESH_MS },
+  });
+
+  const approvalTrendData = useMemo(() => {
+    const raw: ApprovalTrendOut[] = approvalTrendsQ.data?.data ?? [];
+    if (!raw.length) return [];
+    // Sample to max 60 points for chart readability
+    const step = Math.max(1, Math.floor(raw.length / 60));
+    return raw
+      .filter((_: ApprovalTrendOut, i: number) => i % step === 0)
+      .map((pt: ApprovalTrendOut) => ({
+        time: new Date(pt.event_second).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        approval_rate: Number((pt.approval_rate_pct * 100).toFixed(1)),
+        approved_count: pt.approved_count,
+        total_value: pt.total_value,
+      }));
+  }, [approvalTrendsQ.data?.data]);
+
   const entryPoints: EntrySystemPoint[] = useMemo(() => {
     const raw = entryThroughputQ.data?.data;
     if (!raw?.length) return [];
@@ -412,6 +445,47 @@ function CommandCenter() {
             accent="muted"
           />
         </section>
+
+        {/* Approval Rate Trend — last hour from Databricks */}
+        <Card className="glass-card border border-border/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              Approval Rate Trend (Last Hour)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {approvalTrendsQ.isLoading ? (
+              <Skeleton className="h-[200px] w-full rounded-lg" />
+            ) : approvalTrendData.length === 0 ? (
+              <div className="flex h-[200px] items-center justify-center rounded-lg bg-muted/20 text-sm text-muted-foreground">
+                No trend data yet. Run the simulator and ETL to see approval rate over time.
+              </div>
+            ) : (
+              <ChartContainer config={approvalTrendChartConfig} className="h-[200px] w-full">
+                <AreaChart data={approvalTrendData} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="approvalGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="time" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="approval_rate"
+                    stroke="hsl(var(--chart-1))"
+                    strokeWidth={2}
+                    fill="url(#approvalGradient)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
 
         <GeographyWorldMap />
 

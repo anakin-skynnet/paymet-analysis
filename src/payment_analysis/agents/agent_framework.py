@@ -13,10 +13,11 @@
 # COMMAND ----------
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Callable, Any
+from datetime import datetime, timezone
 from enum import Enum
-from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class AgentMessage:
     role: str
     content: str
     metadata: Optional[Dict] = None
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -60,6 +61,28 @@ class AgentTool:
     def execute(self, **kwargs) -> Any:
         """Execute the tool with given parameters."""
         return self.function(**kwargs)
+
+
+_SQL_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9_ .-]+$")
+
+
+def _sanitize_sql_string(value: str, max_len: int = 128) -> str:
+    """Sanitize a string value for safe SQL interpolation. Rejects anything that
+    could be used for SQL injection (quotes, semicolons, comments)."""
+    if not isinstance(value, str) or len(value) > max_len:
+        raise ValueError(f"Invalid SQL parameter: {value!r}")
+    if not _SQL_SAFE_IDENTIFIER.match(value):
+        raise ValueError(f"SQL parameter contains unsafe characters: {value!r}")
+    return value
+
+
+def _sanitize_sql_number(value: Any, min_val: float = 0, max_val: float = 1e12) -> float:
+    """Cast and clamp a numeric SQL parameter."""
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"Expected numeric SQL parameter, got: {value!r}")
+    return max(min_val, min(num, max_val))
 
 
 class BaseAgent:
@@ -380,7 +403,7 @@ Always provide:
 
         def get_cascade_recommendations(**kwargs):
             """Get recommended cascade configuration."""
-            segment = kwargs.get("merchant_segment", "Retail")
+            segment = _sanitize_sql_string(kwargs.get("merchant_segment", "Retail"))
             query = f"""
             SELECT 
                 payment_solution,
@@ -494,7 +517,7 @@ Always provide:
 
         def get_recovery_opportunities(**kwargs):
             """Find high-value recovery opportunities."""
-            min_amount = kwargs.get("min_amount", 100)
+            min_amount = int(_sanitize_sql_number(kwargs.get("min_amount", 100), min_val=0, max_val=1_000_000))
             query = f"""
             SELECT 
                 decline_reason,
@@ -682,7 +705,7 @@ while protecting against actual fraud."""
 
         def get_high_risk_transactions(**kwargs):
             """Get high-risk transactions for review."""
-            threshold = kwargs.get("threshold", 0.7)
+            threshold = _sanitize_sql_number(kwargs.get("threshold", 0.7), min_val=0.0, max_val=1.0)
             query = f"""
             SELECT 
                 transaction_id,

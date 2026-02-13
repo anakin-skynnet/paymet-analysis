@@ -419,7 +419,7 @@ async def chat(
             if reply:
                 return ChatOut(reply=reply, genie_url=genie_url)
         except Exception:
-            pass
+            logger.debug("Genie space query failed; falling back to orchestrator", exc_info=True)
 
     reply = (
         "I can help you explore payment and approval data. For natural language questions "
