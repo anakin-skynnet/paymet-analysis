@@ -30,7 +30,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 | **ML models** (approval, risk, routing, retry) | Real-time scores per transaction | Decisions based on predicted likelihood and risk. |
 | **Rules engine** (Lakebase/Lakehouse) | Configurable business rules | Operators tune approve/decline/retry without code. |
 | **Vector Search** | Similar-transaction lookup | “Similar cases” for retry and routing. |
-| **7 AI agents** | Natural-language analytics and recommendations | Explains patterns and suggests actions. |
+| **7 AI agents** | Natural-language analytics and recommendations | Explains patterns and suggests actions. Can use AgentBricks Supervisor (GA Feb 2026) for managed orchestration. |
 | **12 dashboards** | KPIs, funnels, reason codes | Visibility into what drives approvals/declines. |
 | **FastAPI + React app** | Decision API and control panel | Single place to run jobs, view dashboards, manage rules. |
 
@@ -152,13 +152,15 @@ All UI data goes through the FastAPI backend. No direct Lakebase or Databricks c
 
 ## 6. Control panel & UI
 
-All data is **fetched from the Databricks backend** and is **interactive**.
+All data is **fetched from the Databricks backend** and is **interactive**. The UI was redesigned for **CEO-level clarity** with initiative-specific pages (Smart Checkout, Reason Codes, Smart Retry), intuitive sidebar grouping, and data foundation context.
 
 ### Setup & Run (Operations)
 
-- **Run jobs** — Steps 1–6. **Run** starts the job via `POST /api/setup/run-job`; **Open** opens the job in the workspace.
+- **Run jobs** — Steps 1–10 (reordered for logical flow). **Run** starts the job via `POST /api/setup/run-job`; **Open in Databricks** opens the job run page in a new tab.
+- **Execution order:** (1) Lakehouse Bootstrap, (2) Vector Search, (3) Create Gold Views, (4) Events Producer Simulator, (5) Lakeflow ETL Pipeline, (6) ML Models Training, (7) Genie Sync, (8) Deploy Agents, (9) Publish Dashboards, (10) Optional real-time streaming.
 - **Pipelines** — Start ETL and Real-Time via **Run** → `POST /api/setup/run-pipeline`.
-- **Catalog & schema** — Form from `GET /api/setup/defaults`; **Save catalog & schema** → `PATCH /api/setup/config`.
+- **Catalog & schema** — Form from `GET /api/setup/defaults`; **Save catalog & schema** → `PATCH /api/setup/config`. The backend now creates the `app_config` table if it doesn't exist (no more "Failed to write app_config" error when Lakehouse Bootstrap hasn't run yet).
+- **Job/pipeline ID resolution** — When opened from **Compute → Apps** (or with PAT set), the backend resolves job and pipeline IDs from the workspace by name. Run buttons are disabled when IDs are not configured.
 - **Data & config** — App config & settings, countries, online features from backend (Lakebase/Lakehouse).
 
 ### Dashboards
@@ -183,6 +185,24 @@ All data is **fetched from the Databricks backend** and is **interactive**.
 | Countries | Lakehouse / UC | Setup → Data & config; country dropdowns |
 | Online features | Lakebase → Lakehouse | Setup → Data & config |
 | Approval rules | Lakebase → Lakehouse | Rules page (CRUD) |
+
+### Lakebase integration
+
+Lakebase (Databricks managed PostgreSQL) provides **low-latency transactional storage** for operational data that requires fast reads/writes from the app:
+
+| Table | Purpose | How it helps approval rates |
+|-------|---------|---------------------------|
+| **app_config** | Effective catalog/schema for the app | Ensures all components use the same data source |
+| **approval_rules** | Business rules for approve/decline/retry/route | Operators tune rules without code; changes take effect immediately |
+| **online_features** | ML/AI feature output | Fast feature lookup for real-time scoring |
+| **app_settings** | Key-value config (warehouse_id, etc.) | Runtime configuration without redeployment |
+| **countries** | Entity filter dropdown | Geographic filtering (Brazil ~70% of volume) |
+
+**Connection:** App connects via `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID` env vars (Autoscaling). Alternative: `LAKEBASE_CONNECTION_STRING` + `LAKEBASE_OAUTH_TOKEN`. Provisioned by Job 1 task `create_lakebase_autoscaling`; seeded by task `lakebase_data_init`.
+
+**Fallback:** When Lakebase is unavailable, the app falls back to Lakehouse (Unity Catalog) tables for rules, countries, and config.
+
+**Why Lakebase (not just Lakehouse):** Lakehouse (Delta) is optimized for analytics; Lakebase (Postgres) is optimized for OLTP — fast single-row reads/writes for rules, config, and feature lookups. Together they provide both analytical depth (dashboards, ML, agents) and operational speed (decisioning API, rules CRUD).
 
 ### 6b. Two chatbots
 
@@ -245,11 +265,11 @@ Header buttons: “AI Chatbot” (Orchestrator) and “Genie Assistant”. Comma
 | Full verify (build, smoke, dashboards, bundle) | `./scripts/bundle.sh verify dev` |
 | Deploy resources (phase 1: all except App) | `./scripts/bundle.sh deploy dev` |
 | Deploy app (phase 2: App with model serving) | `./scripts/bundle.sh deploy app dev` |
-| Automated two-phase deploy | `./scripts/deploy_with_dependencies.sh dev` |
+| Incremental deploy (skip build) | `./scripts/bundle.sh deploy dev --skip-build` |
 
 **Data source indicator:** Command Center footer shows **“Data: Databricks”** when `GET /api/v1/health/databricks` returns `analytics_source === "Unity Catalog"`, otherwise **“Data: Sample (mock)”**. If you see mock, check app env (DATABRICKS_WAREHOUSE_ID, DATABRICKS_HOST or open from Compute → Apps) and user auth scopes.
 
-**Deployment summary:** Two-phase: `./scripts/bundle.sh deploy dev` (phase 1: resources) → run jobs 5 & 6 → `./scripts/bundle.sh deploy app dev` (phase 2: App). Or automated: `./scripts/deploy_with_dependencies.sh dev`. App env: defined in **`app.yml`** (e.g. LAKEBASE_*, ORCHESTRATOR_SERVING_ENDPOINT); override in App Environment (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
+**Deployment summary:** Two-phase: `./scripts/bundle.sh deploy dev` (phase 1: resources) → run jobs 5 & 6 → `./scripts/bundle.sh deploy app dev` (phase 2: App). Use `--skip-build`, `--skip-clean`, `--skip-publish` flags for incremental deploys. App env: defined in **`app.yml`** (e.g. LAKEBASE_*, ORCHESTRATOR_SERVING_ENDPOINT); override in App Environment (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). Full steps and troubleshooting: [Deployment](DEPLOYMENT.md).
 
 ---
 

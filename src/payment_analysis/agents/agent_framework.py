@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 import logging
+import os
 import re
 
 logger = logging.getLogger(__name__)
@@ -998,8 +999,8 @@ For complex queries, engage multiple agents and synthesize responses."""
 
 
 def setup_agent_framework(
-    catalog: str = "ahs_demos_catalog",
-    schema: str = "payment_analysis",
+    catalog: str = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"),
+    schema: str = os.getenv("DATABRICKS_SCHEMA", "payment_analysis"),
     *,
     lakebase_project_id: str = "",
     lakebase_branch_id: str = "",
@@ -1026,18 +1027,21 @@ def setup_agent_framework(
 
 def get_notebook_config() -> Dict[str, Any]:
     """Read job/notebook parameters from Databricks widgets or return defaults. Used as single source for catalog, schema, query, Lakebase connection, and model registry (AgentBricks UC registry)."""
+    _catalog = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog")
+    _schema = os.getenv("DATABRICKS_SCHEMA", "payment_analysis")
+    _llm = os.getenv("AI_GATEWAY_ENDPOINT", "databricks-meta-llama-3-3-70b-instruct")
     defaults = {
-        "catalog": "ahs_demos_catalog",
-        "schema": "payment_analysis",
+        "catalog": _catalog,
+        "schema": _schema,
         "query": "Run comprehensive payment analysis: routing, retries, declines, risk, and performance optimizations.",
         "agent_role": "orchestrator",
-        "lakebase_project_id": "",
-        "lakebase_branch_id": "",
-        "lakebase_endpoint_id": "",
-        "lakebase_schema": "payment_analysis",
-        "model_registry_catalog": "ahs_demos_catalog",
+        "lakebase_project_id": os.getenv("LAKEBASE_PROJECT_ID", ""),
+        "lakebase_branch_id": os.getenv("LAKEBASE_BRANCH_ID", ""),
+        "lakebase_endpoint_id": os.getenv("LAKEBASE_ENDPOINT_ID", ""),
+        "lakebase_schema": os.getenv("LAKEBASE_SCHEMA", _schema),
+        "model_registry_catalog": _catalog,
         "model_registry_schema": "agents",
-        "llm_endpoint": "databricks-meta-llama-3-3-70b-instruct",
+        "llm_endpoint": _llm,
     }
     try:
         from databricks.sdk.runtime import dbutils

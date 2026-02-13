@@ -1,26 +1,24 @@
 """Decisioning API: real-time auth, retry, and routing decisions with A/B experiment support.
 
-ML predictions (approval, risk, routing) are fetched from Databricks Model Serving
-when the connection is available; otherwise mock predictions are returned.
+ML predictions (approval, risk, routing, retry) are fetched from Databricks Model Serving
+and enriched into the DecisionContext by the DecisionEngine. Decision parameters (thresholds,
+decline codes, route scores) are loaded from Lakebase and cached with a 60s TTL.
+
 Validate with GET /api/v1/health/databricks. See docs/GUIDE.md §10 (Data sources & code guidelines).
 """
 
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from sqlmodel import select
 
 from ..db_models import DecisionLog, Experiment, ExperimentAssignment
-from ..decisioning.policies import (
-    decide_authentication,
-    decide_retry,
-    decide_routing,
-    serialize_context,
-)
+from ..decisioning.engine import DecisionEngine
+from ..decisioning.policies import serialize_context
 from ..decisioning.schemas import (
     AuthDecisionOut,
     DecisionContext,
@@ -72,6 +70,12 @@ def _with_ab(decision: Any, experiment_id: str | None, variant: str | None) -> d
     return out
 
 
+def _get_engine(request: Request, session: SessionDep, service: DatabricksServiceDep) -> DecisionEngine:
+    """Create a DecisionEngine with runtime, session, and service."""
+    runtime = getattr(request.app.state, "runtime", None)
+    return DecisionEngine(session=session, service=service, runtime=runtime)
+
+
 class MLPredictionInput(BaseModel):
     """Input for ML model predictions."""
     amount: float
@@ -112,14 +116,39 @@ class RetryPredictionOut(BaseModel):
     model_version: str
 
 
+class DecisionOutcomeIn(BaseModel):
+    """Input for recording a decision outcome (learning loop)."""
+    audit_id: str
+    decision_type: str  # authentication | retry | routing
+    outcome: str  # approved | declined | timeout | error
+    outcome_code: Optional[str] = None
+    outcome_reason: Optional[str] = None
+    latency_ms: Optional[int] = None
+    metadata: dict[str, Any] = {}
+
+
+class DecisionOutcomeOut(BaseModel):
+    """Response for decision outcome recording."""
+    accepted: bool
+    audit_id: str
+
+
 @router.post(
     "/authentication", response_model=AuthDecisionOut, operation_id="decideAuthentication"
 )
-def authentication(ctx: DecisionContext, session: SessionDep) -> AuthDecisionOut:
+async def authentication(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    request: Request,
+) -> AuthDecisionOut:
     subject_key = ctx.subject_key or ctx.merchant_id
     variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
     variant = variant if variant is not None else "control"
-    decision = decide_authentication(ctx, variant=variant)
+
+    engine = _get_engine(request, session, service)
+    decision = await engine.decide_authentication(ctx, variant=variant)
+
     response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
@@ -134,11 +163,19 @@ def authentication(ctx: DecisionContext, session: SessionDep) -> AuthDecisionOut
 
 
 @router.post("/retry", response_model=RetryDecisionOut, operation_id="decideRetry")
-def retry(ctx: DecisionContext, session: SessionDep) -> RetryDecisionOut:
+async def retry(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    request: Request,
+) -> RetryDecisionOut:
     subject_key = ctx.subject_key or ctx.merchant_id
     variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
     variant = variant if variant is not None else "control"
-    decision = decide_retry(ctx, variant=variant)
+
+    engine = _get_engine(request, session, service)
+    decision = await engine.decide_retry(ctx, variant=variant)
+
     response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
@@ -153,11 +190,19 @@ def retry(ctx: DecisionContext, session: SessionDep) -> RetryDecisionOut:
 
 
 @router.post("/routing", response_model=RoutingDecisionOut, operation_id="decideRouting")
-def routing(ctx: DecisionContext, session: SessionDep) -> RoutingDecisionOut:
+async def routing(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    request: Request,
+) -> RoutingDecisionOut:
     subject_key = ctx.subject_key or ctx.merchant_id
     variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
     variant = variant if variant is not None else "control"
-    decision = decide_routing(ctx, variant=variant)
+
+    engine = _get_engine(request, session, service)
+    decision = await engine.decide_routing(ctx, variant=variant)
+
     response = _with_ab(decision, ctx.experiment_id, variant)
     session.add(
         DecisionLog(
@@ -169,6 +214,41 @@ def routing(ctx: DecisionContext, session: SessionDep) -> RoutingDecisionOut:
     )
     session.commit()
     return RoutingDecisionOut(**response)
+
+
+# Decision Outcome (learning loop)
+
+
+@router.post(
+    "/outcome",
+    response_model=DecisionOutcomeOut,
+    operation_id="recordDecisionOutcome",
+)
+async def record_outcome(
+    payload: DecisionOutcomeIn,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    request: Request,
+) -> DecisionOutcomeOut:
+    """Record the actual outcome of a decision (approved/declined/timeout) for the learning loop.
+
+    This endpoint links a decision (by audit_id) to its real-world result, enabling:
+    - Model retraining with actual outcomes
+    - Rule effectiveness measurement
+    - A/B experiment analysis
+    - Continuous improvement of approval rates
+    """
+    engine = _get_engine(request, session, service)
+    ok = engine.record_outcome(
+        audit_id=payload.audit_id,
+        decision_type=payload.decision_type,
+        outcome=payload.outcome,
+        outcome_code=payload.outcome_code,
+        outcome_reason=payload.outcome_reason,
+        latency_ms=payload.latency_ms,
+        metadata=payload.metadata,
+    )
+    return DecisionOutcomeOut(accepted=ok, audit_id=payload.audit_id)
 
 
 # ML Model Serving Endpoints
@@ -228,4 +308,3 @@ async def predict_retry(
     """Get retry success likelihood from smart retry model (recovery optimization)."""
     result = await service.call_retry_model(features.model_dump())
     return RetryPredictionOut(**result)
-

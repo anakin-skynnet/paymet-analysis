@@ -13,7 +13,7 @@ If jobs fail with "Catalog ... or schema ... not found": create the catalog in t
 is created (resources/unity_catalog.yml). Re-run jobs after that.
 
 Usage:
-  uv run python scripts/run_and_validate_jobs.py [--dry-run] [--job KEY] [--run-pipelines] [--no-wait] [--results-file PATH]
+  uv run python scripts/run_and_validate_jobs.py [--dry-run] [--job KEY] [--jobs KEY1 KEY2 ...] [--run-pipelines] [--no-wait] [--results-file PATH]
   uv run python scripts/run_and_validate_jobs.py status [--results-file PATH] [--once]
   uv run python scripts/run_and_validate_jobs.py pipelines
   DATABRICKS_HOST=... DATABRICKS_TOKEN=... uv run python scripts/run_and_validate_jobs.py --run-pipelines
@@ -21,6 +21,7 @@ Usage:
 Options:
   --dry-run        List matched jobs only, do not run.
   --job KEY        Run only this job key (e.g. job_3_initialize_ingestion).
+  --jobs KEY1 KEY2 Run multiple specific jobs in parallel (e.g. --jobs job_5_train_models_and_serving job_6_deploy_agents).
   --run-pipelines  Run ETL pipeline (8. Payment Analysis ETL) and wait until idle before jobs. Use before job_3 so payments_enriched_silver exists.
   --no-wait        Start runs but do not wait for completion.
   --results-file   Write run_id per key (JSON) so "status" can poll later.
@@ -125,6 +126,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run and validate payment-analysis Databricks jobs")
     parser.add_argument("--dry-run", action="store_true", help="List jobs only, do not run")
     parser.add_argument("--job", type=str, metavar="KEY", help="Run only this job key")
+    parser.add_argument("--jobs", type=str, nargs="+", metavar="KEY", help="Run multiple specific jobs in parallel (e.g. --jobs job_5_train_models_and_serving job_6_deploy_agents)")
     parser.add_argument("--no-wait", action="store_true", help="Start runs but do not wait")
     parser.add_argument("--run-pipelines", action="store_true", help="Run ETL pipeline (8. Payment Analysis ETL) and wait until idle before running jobs. Required for job_3_initialize_ingestion unless pipeline was run separately.")
     parser.add_argument("--results-file", type=str, default=str(DEFAULT_RESULTS_FILE), help="Write/read run IDs (JSON) for status command")
@@ -263,6 +265,12 @@ def main() -> int:
             print(f"Job key {args.job!r} not found. Available: {', '.join(sorted(key_to_job))}", file=sys.stderr)
             return 1
         key_to_job = {args.job: key_to_job[args.job]}
+    elif args.jobs:
+        missing = [k for k in args.jobs if k not in key_to_job]
+        if missing:
+            print(f"Job key(s) not found: {', '.join(missing)}. Available: {', '.join(sorted(key_to_job))}", file=sys.stderr)
+            return 1
+        key_to_job = {k: key_to_job[k] for k in args.jobs}
 
     if not key_to_job:
         print("No payment-analysis jobs found in workspace.", file=sys.stderr)

@@ -49,7 +49,7 @@ Deployment is **two-phase**: first deploy all resources except the App, then dep
 4. **Setup & Run (in order):** Jobs **1** → **2** → (ETL pipeline) → **3** → **4** → **5** → **6** → **7** (Create Data Repositories, Simulate Events, Initialize Ingestion, Deploy Dashboards, Train Models, Deploy Agents, Genie Sync).
 5. **App environment:** Defined in **`app.yml`** at project root (e.g. `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `ORCHESTRATOR_SERVING_ENDPOINT`). Override in **Workspace → Apps → payment-analysis → Edit → Environment** (e.g. `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN`). Redeploy to apply `app.yml` changes.
 
-**Automated two-phase:** `./scripts/deploy_with_dependencies.sh dev` runs phase 1, executes jobs 5 and 6 automatically, then runs phase 2.
+**Automated two-phase:** `./scripts/bundle.sh deploy dev` (phase 1) → run jobs 5 & 6 → `./scripts/bundle.sh deploy app dev` (phase 2). Use `--skip-build` or `--skip-clean` flags on `bundle.sh` for incremental deploys.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 

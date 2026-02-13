@@ -530,11 +530,11 @@ export function Component() {
             </p>
           ) : (
             <ul className="space-y-3 mb-4">
-              {recentDecisions.map((log) => {
+              {recentDecisions.map((log, index) => {
                 const reason = friendlyReason(log.response?.reason as string);
                 const variant = log.response?.variant as string | undefined;
                 return (
-                  <li key={log.audit_id ?? log.id ?? Math.random()} className="text-sm border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                  <li key={log.audit_id ?? log.id ?? `decision-${index}`} className="text-sm border-b border-border/50 pb-3 last:border-0 last:pb-0">
                     <div className="flex flex-wrap items-center gap-2 mb-0.5">
                       <Badge variant="secondary" className="font-mono text-xs">
                         {log.decision_type}

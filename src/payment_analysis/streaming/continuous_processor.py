@@ -24,12 +24,26 @@ from pyspark.sql.functions import (  # type: ignore[import-untyped]
 # Get parameters (when run as job, catalog/schema = bundle var.catalog, var.schema)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
 dbutils.widgets.text("schema", "payment_analysis")
-dbutils.widgets.text("checkpoint_location", "/tmp/checkpoints/stream_processor")
+dbutils.widgets.text("checkpoint_location", "")  # Leave empty to use Volumes path
 dbutils.widgets.text("trigger_interval", "1 second")
+# Risk and enrichment thresholds (configurable per deployment; align with Lakebase decisionconfig)
+dbutils.widgets.text("risk_threshold_high", "0.75")
+dbutils.widgets.text("risk_threshold_medium", "0.35")
+dbutils.widgets.text("risk_weight_fraud", "0.5")
+dbutils.widgets.text("risk_weight_aml", "0.3")
+dbutils.widgets.text("risk_weight_device", "0.2")
 
 CATALOG = dbutils.widgets.get("catalog")
 SCHEMA = dbutils.widgets.get("schema")
-CHECKPOINT_LOCATION = dbutils.widgets.get("checkpoint_location")
+RISK_HIGH = float(dbutils.widgets.get("risk_threshold_high"))
+RISK_MEDIUM = float(dbutils.widgets.get("risk_threshold_medium"))
+RISK_W_FRAUD = float(dbutils.widgets.get("risk_weight_fraud"))
+RISK_W_AML = float(dbutils.widgets.get("risk_weight_aml"))
+RISK_W_DEVICE = float(dbutils.widgets.get("risk_weight_device"))
+# Use Volumes for durable checkpoint (survives cluster restarts)
+_checkpoint_widget = dbutils.widgets.get("checkpoint_location")
+CHECKPOINT_BASE = f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints/stream_processor"
+CHECKPOINT_LOCATION = _checkpoint_widget.strip() if _checkpoint_widget and _checkpoint_widget.strip() else CHECKPOINT_BASE
 TRIGGER_INTERVAL = dbutils.widgets.get("trigger_interval")
 
 print(f"Configuration:")
@@ -53,7 +67,7 @@ stream_df = (
     spark.readStream
     .format("delta")
     .option("readChangeFeed", "true")
-    .option("startingVersion", 0)
+    .option("startingVersion", "latest")
     .table(source_table)
     .filter(col("_change_type").isin(["insert", "update_postimage"]))
 )
@@ -75,10 +89,10 @@ enriched_stream = (
     .withColumn("event_hour", hour(col("event_timestamp")))
     .withColumn("event_minute", minute(col("event_timestamp")))
     
-    # Risk categorization
+    # Risk categorization (thresholds from widgets; aligned with Lakebase decisionconfig)
     .withColumn("risk_tier", 
-        when(col("fraud_score") > 0.7, "high")
-        .when(col("fraud_score") > 0.3, "medium")
+        when(col("fraud_score") > RISK_HIGH, "high")
+        .when(col("fraud_score") > RISK_MEDIUM, "medium")
         .otherwise("low")
     )
     
@@ -91,9 +105,9 @@ enriched_stream = (
         .otherwise("very_large")
     )
     
-    # Composite risk score
+    # Composite risk score (weights from widgets)
     .withColumn("composite_risk_score",
-        (col("fraud_score") * 0.5 + col("aml_risk_score") * 0.3 + (1 - col("device_trust_score")) * 0.2)
+        (col("fraud_score") * RISK_W_FRAUD + col("aml_risk_score") * RISK_W_AML + (1 - col("device_trust_score")) * RISK_W_DEVICE)
     )
     
     # Processing timestamp

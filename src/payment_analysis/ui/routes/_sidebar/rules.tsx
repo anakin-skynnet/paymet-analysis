@@ -35,6 +35,7 @@ function Rules() {
   const [filterType, setFilterType] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     rule_type: "authentication",
@@ -177,10 +178,7 @@ function Rules() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          if (confirm("Delete this rule?")) deleteMut.mutate({ params: { rule_id: r.id } });
-                        }}
-                        disabled={deleteMut.isPending}
+                        onClick={() => setDeleteTarget(r.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -373,6 +371,33 @@ function Rules() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <Card className="w-full max-w-sm p-6">
+            <CardTitle className="text-base mb-2">Delete rule?</CardTitle>
+            <p className="text-sm text-muted-foreground mb-4">This action cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteMut.isPending}
+                onClick={() => {
+                  deleteMut.mutate(
+                    { params: { rule_id: deleteTarget } },
+                    { onSettled: () => setDeleteTarget(null) }
+                  );
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );

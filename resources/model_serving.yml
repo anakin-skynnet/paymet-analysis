@@ -22,7 +22,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "5"
+            entity_version: "${var.orchestrator_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -31,6 +31,7 @@ resources:
               CATALOG: "${var.catalog}"
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint}"
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "orchestrator-5", traffic_percentage: 100 }]
 
@@ -40,7 +41,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.decline_analyst"
-            entity_version: "11"
+            entity_version: "${var.decline_analyst_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -49,6 +50,7 @@ resources:
               CATALOG: "${var.catalog}"
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint}"
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "decline_analyst-11", traffic_percentage: 100 }]
 
@@ -58,11 +60,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.approval_propensity_model"
-            entity_version: "1"
+            entity_version: "${var.approval_propensity_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "approval_propensity_model-1", traffic_percentage: 100 }]
       ai_gateway:
@@ -75,11 +78,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.risk_scoring_model"
-            entity_version: "1"
+            entity_version: "${var.risk_scoring_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "risk_scoring_model-1", traffic_percentage: 100 }]
       ai_gateway:
@@ -92,10 +96,11 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_routing_policy"
-            entity_version: "1"
+            entity_version: "${var.smart_routing_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "smart_routing_policy-1", traffic_percentage: 100 }]
       ai_gateway:
@@ -108,10 +113,11 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_retry_policy"
-            entity_version: "1"
+            entity_version: "${var.smart_retry_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
+        # Note: Update served_model_name when entity_version changes
         traffic_config:
           routes: [{ served_model_name: "smart_retry_policy-1", traffic_percentage: 100 }]
       ai_gateway:

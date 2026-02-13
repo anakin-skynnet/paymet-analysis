@@ -7,7 +7,6 @@ embedded in the FastAPI application.
 
 from __future__ import annotations
 
-import logging
 from enum import Enum
 from typing import Any
 
@@ -21,8 +20,6 @@ from ..config import (
     ensure_absolute_workspace_url,
 )
 from ..dependencies import ConfigDep, EffectiveWorkspaceUrlDep
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["dashboards"])
 

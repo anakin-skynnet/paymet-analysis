@@ -63,8 +63,8 @@ variables:
     description: Unity Catalog schema name. Always "payment_analysis" (same in dev and prod).
     default: payment_analysis
   warehouse_id:
-    description: SQL Warehouse ID for dashboards and SQL tasks; in dev, set from deployed warehouse resource
-    default: "148ccb90800933a1"
+    default: ""
+    description: "SQL Warehouse ID. Set via target or --var. Dev target overrides with the bundle-managed warehouse."
   # Lakebase (managed Postgres) - required for UI CRUD and ML features
   # If the bundle does not create the project (e.g. "unknown field: postgres_project"), create a Lakebase project in Compute → Lakebase, then set these three vars to your project/branch/endpoint IDs (e.g. --var lakebase_project_id=my-project --var lakebase_branch_id=main --var lakebase_endpoint_id=primary).
   lakebase_project_id:
@@ -95,6 +95,18 @@ variables:
   llm_endpoint:
     description: "Model Serving endpoint for LLM inference (used by agents, model serving environment_vars). Foundation Model API or external."
     default: "databricks-meta-llama-3-3-70b-instruct"
+  orchestrator_model_version:
+    default: "5"
+  decline_analyst_model_version:
+    default: "11"
+  approval_propensity_model_version:
+    default: "1"
+  risk_scoring_model_version:
+    default: "1"
+  smart_routing_model_version:
+    default: "1"
+  smart_retry_model_version:
+    default: "1"
   pipelines_development:
     description: "If true, pipelines use development mode (e.g. lower cost). Set false for prod."
     default: true

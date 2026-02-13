@@ -14,7 +14,9 @@ command:
 env:
   - name: PYTHONPATH
     value: src
-  # Lakebase Autoscaling (example defaults; override via bundle vars or workspace)
+  # Note: These values should match the bundle variables in databricks.yml.
+  # They are set here because app.yml is consumed by the Databricks App runtime,
+  # not by the DAB engine, so ${var.*} interpolation is not available.
   - name: LAKEBASE_PROJECT_ID
     value: payment-analysis-db
   - name: LAKEBASE_BRANCH_ID

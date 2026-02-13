@@ -74,29 +74,29 @@ def _pipeline_id_env_key(key: str) -> str:
 # Job/pipeline IDs from bundle deploy (target workspace). Override via env: DATABRICKS_JOB_ID_<NAME>, DATABRICKS_PIPELINE_ID_<NAME>.
 # See docs/DEPLOYMENT.md for the list of env vars.
 DEFAULT_IDS: _DefaultIds = {
-    "warehouse_id": os.getenv("DATABRICKS_WAREHOUSE_ID", "148ccb90800933a1") or "",
+    "warehouse_id": os.getenv("DATABRICKS_WAREHOUSE_ID", "") or "",
     "catalog": os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog") or "",
     "schema": get_default_schema(),
     "jobs": {
-        "transaction_stream_simulator": os.getenv(_job_id_env_key("transaction_stream_simulator"), "782493643247677") or "782493643247677",
-        "create_gold_views": os.getenv(_job_id_env_key("create_gold_views"), "775632375108394") or "775632375108394",
+        "transaction_stream_simulator": os.getenv(_job_id_env_key("transaction_stream_simulator"), "0") or "0",
+        "create_gold_views": os.getenv(_job_id_env_key("create_gold_views"), "0") or "0",
         "ensure_catalog_schema": os.getenv(_job_id_env_key("ensure_catalog_schema"), "0") or "0",
         "create_lakebase_autoscaling": os.getenv(_job_id_env_key("create_lakebase_autoscaling"), "0") or "0",
         "lakebase_data_init": os.getenv(_job_id_env_key("lakebase_data_init"), "0") or "0",
         "lakehouse_bootstrap": os.getenv(_job_id_env_key("lakehouse_bootstrap"), "0") or "0",
         "vector_search_index": os.getenv(_job_id_env_key("vector_search_index"), "0") or "0",
-        "train_ml_models": os.getenv(_job_id_env_key("train_ml_models"), "231255282351595") or "231255282351595",
+        "train_ml_models": os.getenv(_job_id_env_key("train_ml_models"), "0") or "0",
         "genie_sync": os.getenv(_job_id_env_key("genie_sync"), "0") or "0",
         "run_agent_framework": os.getenv(_job_id_env_key("run_agent_framework"), "0") or "0",
-        "orchestrator_agent": os.getenv(_job_id_env_key("orchestrator_agent"), "582671124403091") or "582671124403091",
+        "orchestrator_agent": os.getenv(_job_id_env_key("orchestrator_agent"), "0") or "0",
         "test_agent_framework": os.getenv(_job_id_env_key("test_agent_framework"), "0") or "0",
-        "continuous_stream_processor": os.getenv(_job_id_env_key("continuous_stream_processor"), "1124715161556931") or "1124715161556931",
+        "continuous_stream_processor": os.getenv(_job_id_env_key("continuous_stream_processor"), "0") or "0",
         "prepare_dashboards": os.getenv(_job_id_env_key("prepare_dashboards"), "0") or "0",
         "publish_dashboards": os.getenv(_job_id_env_key("publish_dashboards"), "0") or "0",
     },
     "pipelines": {
-        "payment_analysis_etl": os.getenv(_pipeline_id_env_key("payment_analysis_etl"), "eb4edb4a-0069-4208-9261-2151f4bf33d9") or "eb4edb4a-0069-4208-9261-2151f4bf33d9",
-        "payment_realtime_pipeline": os.getenv(_pipeline_id_env_key("payment_realtime_pipeline"), "0ef506fd-d386-4581-a609-57fb9a23291c") or "0ef506fd-d386-4581-a609-57fb9a23291c",
+        "payment_analysis_etl": os.getenv(_pipeline_id_env_key("payment_analysis_etl"), "0") or "0",
+        "payment_realtime_pipeline": os.getenv(_pipeline_id_env_key("payment_realtime_pipeline"), "0") or "0",
     },
 }
 

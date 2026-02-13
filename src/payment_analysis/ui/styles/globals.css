@@ -357,6 +357,9 @@
     @apply inline-flex items-center gap-1 rounded bg-green-500/10 px-2 py-0.5;
     color: var(--vibrant-green);
   }
+  .data-source-backend {
+    @apply text-xs text-muted-foreground opacity-60;
+  }
   /* Embed container min height for dashboard iframes */
   .min-h-embed {
     min-height: 70vh;

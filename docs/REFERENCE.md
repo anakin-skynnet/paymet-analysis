@@ -38,21 +38,45 @@ The solution is Databricks-native and aligned with current product naming (Lakef
 
 **No-code Supervisor:** Workspace → Agents → Supervisor Agent can combine Genie, UC functions, and other agents. Deploy it as a serving endpoint and set **ORCHESTRATOR_SERVING_ENDPOINT** to that endpoint name to use it from the app.
 
+### AgentBricks Supervisor Agent (GA Feb 2026)
+
+AgentBricks Supervisor Agent is now **Generally Available** (Feb 10, 2026). It provides a managed orchestration layer that can replace or complement the custom LangGraph orchestrator.
+
+| Feature | Current (LangGraph) | AgentBricks Supervisor |
+|---------|---------------------|----------------------|
+| Creation | Code-based (Python) | **UI-based** (Agents > Supervisor Agent > Build) |
+| Routing | Custom LLM router node | **Managed** (Databricks handles routing) |
+| Sub-agents | In-process LangGraph nodes | Genie Spaces, Knowledge Assistant endpoints, UC functions, MCP servers (up to 10) |
+| Improvement | Change code, redeploy | **ALHF** (Agent Learning on Human Feedback from SMEs) |
+| Auth | Custom config | **OBO** (On-Behalf-Of, Unity Catalog governed) |
+| SDK creation | N/A | Not yet available (UI only) |
+
+**Migration path:** (1) Create a Supervisor Agent in the workspace UI. (2) Add the 11 UC functions as tools and the Genie Space as a sub-agent. (3) Set instructions for payment analysis routing. (4) Update `ORCHESTRATOR_SERVING_ENDPOINT` in `app.yml` to point to the new Supervisor endpoint. The existing backend code (`_query_orchestrator_endpoint`) works with the Supervisor endpoint with zero changes. Keep the LangGraph orchestrator as Job 6 fallback.
+
+**Requirements:** Workspace in `us-east-1` or `us-west-2`; serverless compute; Unity Catalog; OBO authorization enabled; `databricks-gte-large-en` with AI Guardrails disabled.
+
+**Limitation:** Only Knowledge Assistant agent endpoints are supported as sub-agents (not custom LangGraph endpoints). However, the 11 UC functions can be added directly as tools, achieving the same result.
+
+**References:** [Agent Bricks: Supervisor Agent](https://docs.databricks.com/aws/en/generative-ai/agent-bricks/multi-agent-supervisor), [Blog: Supervisor Agent GA](https://www.databricks.com/blog/agent-bricks-supervisor-agent-now-ga-orchestrate-enterprise-agents).
+
 ---
 
 ## 3. Model serving & UC functions
 
-### Model serving endpoints (5)
+### Model serving endpoints (5+1)
 
-| App resource | Endpoint name (dev) | Purpose |
-|--------------|---------------------|--------|
-| serving-decline-analyst | decline-analyst-dev | Decline analyst agent (LangGraph). |
-| serving-approval-prop | approval-propensity-dev | Approval probability; Decisioning. |
-| serving-risk-scoring | risk-scoring-dev | Fraud risk; risk-based auth. |
-| serving-smart-routing | smart-routing-dev | Optimal route (standard, 3DS, token, passkey). |
-| serving-smart-retry | smart-retry-dev | Retry success likelihood and timing. |
+| App resource | Endpoint name | Purpose |
+|--------------|---------------|--------|
+| serving-orchestrator | payment-analysis-orchestrator | Orchestrator agent (LangGraph Supervisor). |
+| serving-decline-analyst | decline-analyst | Decline analyst agent (LangGraph). |
+| serving-approval-prop | approval-propensity | Approval probability; Decisioning. |
+| serving-risk-scoring | risk-scoring | Fraud risk; risk-based auth. |
+| serving-smart-routing | smart-routing | Optimal route (standard, 3DS, token, passkey). |
+| serving-smart-retry | smart-retry | Retry success likelihood and timing. |
 
-**Creation:** Run **Step 5 (Train ML Models)** so models exist in UC. Then run `./scripts/bundle.sh deploy app dev` (phase 2) — it uncomments `model_serving.yml` and serving bindings and deploys. Or use `./scripts/deploy_with_dependencies.sh dev` for automated two-phase deploy.
+**Note:** Endpoint names do **not** include the environment suffix (e.g. `approval-propensity`, not `approval-propensity-dev`). The backend's `databricks_service.py` was updated to remove the `-{ENVIRONMENT}` suffix to match DAB-deployed names.
+
+**Creation:** Run **Step 5 (Train ML Models)** so models exist in UC. Then run `./scripts/bundle.sh deploy app dev` (phase 2) — it uncomments `model_serving.yml` and serving bindings and deploys.
 
 **Business value:** Approval propensity reduces false declines; risk enables frictionless vs step-up; routing and retry improve approval rate and recovery.
 
@@ -68,9 +92,12 @@ Created by **Job 3** task **create_uc_agent_tools** from `src/payment_analysis/a
 
 **Current:** App can call Job 6 → custom `agent_framework.py` (LLM = Mosaic AI; tools = Statement Execution). **AgentBricks path:** `langgraph_agents.py` — LangGraph + ChatDatabricks + UC functions; register to UC and deploy to Model Serving.
 
-**Recommendation:** Use AgentBricks as primary for production (single supervisor endpoint, lower latency, MLflow tracing). Keep custom framework as fallback. Deploy orchestrator to Model Serving and set **ORCHESTRATOR_SERVING_ENDPOINT** so the app calls it.
+**Recommendation:** Use AgentBricks Supervisor Agent (GA Feb 2026) as the primary orchestrator for production — managed, built-in ALHF, OBO auth, no custom code to maintain. Keep the LangGraph orchestrator (Model Serving endpoint `payment-analysis-orchestrator`) as the secondary path, and Job 6 (custom Python) as the fallback. Set **ORCHESTRATOR_SERVING_ENDPOINT** to whichever endpoint you prefer.
 
-**Conversion (high level):** (1) UC functions from Job 3. (2) LangGraph agents in `langgraph_agents.py`. (3) Log/register to UC (e.g. `catalog.agents.orchestrator`). (4) Deploy to Model Serving. (5) Optionally use Workspace Multi-Agent Supervisor.
+**Conversion paths:**
+- **(A) AgentBricks Supervisor (recommended for new setups):** Create in workspace UI → add 11 UC functions + Genie Space → set `ORCHESTRATOR_SERVING_ENDPOINT` to the Supervisor endpoint.
+- **(B) LangGraph + Model Serving (current):** (1) UC functions from Job 3. (2) LangGraph agents in `langgraph_agents.py`. (3) Log/register to UC via Job 6 task 2. (4) Deploy to Model Serving via `model_serving.yml`. (5) Set `ORCHESTRATOR_SERVING_ENDPOINT = payment-analysis-orchestrator`.
+- **(C) Hybrid:** Supervisor as primary → LangGraph endpoint as fallback → Job 6 as last resort.
 
 ---
 

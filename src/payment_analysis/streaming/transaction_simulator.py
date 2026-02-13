@@ -10,7 +10,7 @@ import time
 import random
 import uuid
 import builtins
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pyspark.sql.functions import col, current_timestamp, to_timestamp  # type: ignore[import-untyped]
 from pyspark.sql.types import (  # type: ignore[import-untyped]
@@ -33,12 +33,32 @@ dbutils.widgets.text("schema", "payment_analysis")
 dbutils.widgets.text("events_per_second", "1000")
 dbutils.widgets.text("duration_minutes", "60")
 dbutils.widgets.text("output_mode", "delta")
+# Business-logic tuning (align with Lakebase decisionconfig for consistency)
+dbutils.widgets.text("base_decline_prob", "0.08")
+dbutils.widgets.text("fraud_decline_weight", "0.30")
+dbutils.widgets.text("br_geo_factor", "0.05")
+dbutils.widgets.text("non_br_geo_factor", "0.02")
+dbutils.widgets.text("network_token_effect", "0.95")
+dbutils.widgets.text("passkey_effect", "0.90")
+dbutils.widgets.text("data_only_effect", "0.98")
+dbutils.widgets.text("three_ds_post_auth_approval_rate", "0.80")
+dbutils.widgets.text("antifraud_decline_attribution_pct", "0.45")
 
 CATALOG = dbutils.widgets.get("catalog")
 SCHEMA = dbutils.widgets.get("schema")
 EVENTS_PER_SECOND = int(dbutils.widgets.get("events_per_second"))
 DURATION_MINUTES = int(dbutils.widgets.get("duration_minutes"))
 OUTPUT_MODE = dbutils.widgets.get("output_mode")
+# Business logic params
+BASE_DECLINE_PROB = float(dbutils.widgets.get("base_decline_prob"))
+FRAUD_DECLINE_WEIGHT = float(dbutils.widgets.get("fraud_decline_weight"))
+BR_GEO_FACTOR = float(dbutils.widgets.get("br_geo_factor"))
+NON_BR_GEO_FACTOR = float(dbutils.widgets.get("non_br_geo_factor"))
+NETWORK_TOKEN_EFFECT = float(dbutils.widgets.get("network_token_effect"))
+PASSKEY_EFFECT = float(dbutils.widgets.get("passkey_effect"))
+DATA_ONLY_EFFECT = float(dbutils.widgets.get("data_only_effect"))
+THREE_DS_POST_AUTH_APPROVAL = float(dbutils.widgets.get("three_ds_post_auth_approval_rate"))
+ANTIFRAUD_DECLINE_ATTRIBUTION = float(dbutils.widgets.get("antifraud_decline_attribution_pct"))
 
 print(f"Configuration:")
 print(f"  Catalog: {CATALOG}")
@@ -127,16 +147,16 @@ def generate_event():
     # Antifraud: attribute ~40–50% of declines in BR payment links
     antifraud_used = random.random() < 0.85
 
-    # Base approval probability before interventions
-    base_decline_prob = 0.08 + fraud_score * 0.30 + (0.05 if geo_country == "BR" else 0.02)
+    # Base approval probability before interventions (widget-driven)
+    base_decline_prob = BASE_DECLINE_PROB + fraud_score * FRAUD_DECLINE_WEIGHT + (BR_GEO_FACTOR if geo_country == "BR" else NON_BR_GEO_FACTOR)
 
-    # Apply simplified Smart Checkout effects
+    # Apply simplified Smart Checkout effects (widget-driven)
     if is_network_token:
-        base_decline_prob *= 0.95
+        base_decline_prob *= NETWORK_TOKEN_EFFECT
     if has_passkey:
-        base_decline_prob *= 0.90
+        base_decline_prob *= PASSKEY_EFFECT
     if data_only_used:
-        base_decline_prob *= 0.98
+        base_decline_prob *= DATA_ONLY_EFFECT
 
     # 3DS can reduce issuer declines if authenticated; otherwise it declines
     if three_ds_routed:
@@ -144,7 +164,7 @@ def generate_event():
             is_approved = False
             decline_reason = "3DS_AUTH_FAILED"
         else:
-            is_approved = random.random() < 0.80  # 80% of authenticated are approved
+            is_approved = random.random() < THREE_DS_POST_AUTH_APPROVAL
             decline_reason = None if is_approved else "DO_NOT_HONOR"
     else:
         is_approved = random.random() > base_decline_prob
@@ -154,7 +174,7 @@ def generate_event():
     antifraud_result = "not_run"
     if antifraud_used:
         antifraud_result = "pass"
-        if (not is_approved) and geo_country == "BR" and is_payment_link and random.random() < 0.45:
+        if (not is_approved) and geo_country == "BR" and is_payment_link and random.random() < ANTIFRAUD_DECLINE_ATTRIBUTION:
             antifraud_result = "fail"
             decline_reason = "FRAUD_SUSPECTED"
 
@@ -208,7 +228,7 @@ def generate_event():
         "decline_reason": decline_reason,
         "decline_code_raw": decline_code_raw,
         "processing_time_ms": random.randint(50, 500),
-        "event_timestamp": datetime.utcnow().isoformat()
+        "event_timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 def generate_batch(batch_size):

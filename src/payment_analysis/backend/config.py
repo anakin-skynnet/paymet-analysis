@@ -123,9 +123,10 @@ def get_default_schema() -> str:
 
 # Reference workspace and Lakeview dashboard (Azure) for aligning app dashboard links.
 # When set, executive_overview uses the Lakeview v3 published URL: /dashboardsv3/<id>/published?o=<workspace_id>
-REFERENCE_WORKSPACE_HOST = "https://adb-984752964297111.11.azuredatabricks.net"
-REFERENCE_WORKSPACE_ID = "984752964297111"
-REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE = "01efef6277e1146bb92982fc1364845d"
+# Override via env: DATABRICKS_REFERENCE_WORKSPACE_HOST, DATABRICKS_REFERENCE_WORKSPACE_ID, DATABRICKS_REFERENCE_LAKEVIEW_ID_EXECUTIVE
+REFERENCE_WORKSPACE_HOST = os.getenv("DATABRICKS_REFERENCE_WORKSPACE_HOST", "")
+REFERENCE_WORKSPACE_ID = os.getenv("DATABRICKS_REFERENCE_WORKSPACE_ID", "")
+REFERENCE_LAKEVIEW_DASHBOARD_ID_EXECUTIVE = os.getenv("DATABRICKS_REFERENCE_LAKEVIEW_ID_EXECUTIVE", "")
 
 
 class DatabricksConfig(BaseSettings):

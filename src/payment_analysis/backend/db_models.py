@@ -111,3 +111,74 @@ class RemediationTask(SQLModel, table=True):
     action: Optional[str] = None
     owner: Optional[str] = None
 
+
+class DecisionConfig(SQLModel, table=True):
+    """
+    Tunable decision parameters stored in Lakebase.
+
+    Single-row-per-key config table. The DecisionEngine caches these values
+    and refreshes every ~60 s so real-time tuning does not require a redeploy.
+    """
+
+    key: str = Field(primary_key=True)
+    value: str
+    description: Optional[str] = None
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class RetryableDeclineCode(SQLModel, table=True):
+    """
+    Configurable soft decline codes that qualify for Smart Retry.
+
+    Each row maps a decline code to backoff timing and retry parameters.
+    Managed by ops teams via the app UI; consumed by the retry policy.
+    """
+
+    code: str = Field(primary_key=True)
+    label: str
+    category: str = Field(default="soft", index=True)  # soft | transient | issuer
+    default_backoff_seconds: int = Field(default=900)  # 15 min default
+    max_attempts: int = Field(default=3)
+    is_active: bool = Field(default=True, index=True)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class RoutePerformance(SQLModel, table=True):
+    """
+    Route performance snapshot (approval rate, latency, cost) per PSP route.
+
+    Updated periodically from Gold views or real-time streaming aggregates.
+    The routing policy uses these scores instead of hardcoded values.
+    """
+
+    route_name: str = Field(primary_key=True)
+    approval_rate_pct: float = Field(default=50.0)
+    avg_latency_ms: float = Field(default=500.0)
+    cost_score: float = Field(default=0.5)  # 0 = cheapest, 1 = most expensive
+    is_active: bool = Field(default=True, index=True)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class DecisionOutcome(SQLModel, table=True):
+    """
+    Feedback loop: links a decision (by audit_id) to its actual outcome.
+
+    The app or downstream systems call POST /api/decisions/outcome to record
+    whether an approved/retried/routed transaction was ultimately successful.
+    This data feeds the learning loop for model retraining and rule tuning.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=utcnow, index=True)
+
+    audit_id: str = Field(index=True)  # links to DecisionLog.audit_id
+    decision_type: str = Field(index=True)  # authentication | retry | routing
+    outcome: str = Field(index=True)  # approved | declined | timeout | error
+    outcome_code: Optional[str] = None  # raw issuer/psp code
+    outcome_reason: Optional[str] = None
+    latency_ms: Optional[int] = None
+
+    extra: dict[str, Any] = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
+

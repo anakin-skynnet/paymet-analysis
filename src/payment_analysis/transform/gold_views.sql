@@ -29,14 +29,14 @@ SELECT
     ROUND(SUM(CASE WHEN NOT is_approved THEN amount ELSE 0 END), 2) as declined_value,
     ROUND(AVG(amount), 2) as avg_transaction_amount,
     ROUND(SUM(CASE WHEN uses_3ds THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as auth_3ds_usage_pct,
-    MIN(event_time) as period_start,
-    MAX(event_time) as period_end
+    MIN(event_timestamp) as period_start,
+    MAX(event_timestamp) as period_end
 FROM payments_enriched_silver;
 
 -- View 2: Approval Trends by Second (real-time). View name v_approval_trends_hourly kept for backward compatibility.
 CREATE OR REPLACE VIEW v_approval_trends_hourly AS
 SELECT 
-    DATE_TRUNC('second', event_time) as event_second,
+    DATE_TRUNC('second', event_timestamp) as event_second,
     COUNT(*) as transaction_count,
     SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) as approved_count,
     ROUND(SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as approval_rate_pct,
@@ -44,23 +44,23 @@ SELECT
     ROUND(SUM(amount), 2) as total_value,
     COUNT(DISTINCT merchant_segment) as active_segments
 FROM payments_enriched_silver
-WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR
-GROUP BY DATE_TRUNC('second', event_time)
+WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR
+GROUP BY DATE_TRUNC('second', event_timestamp)
 ORDER BY event_second DESC
 LIMIT 3600;
 
 -- View 2b: Approval Trends by Second (real-time, last hour)
 CREATE OR REPLACE VIEW v_approval_trends_by_second AS
 SELECT 
-    DATE_TRUNC('second', event_time) as event_second,
+    DATE_TRUNC('second', event_timestamp) as event_second,
     COUNT(*) as transaction_count,
     SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) as approved_count,
     ROUND(SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as approval_rate_pct,
     ROUND(AVG(fraud_score), 3) as avg_fraud_score,
     ROUND(SUM(amount), 2) as total_value
 FROM payments_enriched_silver
-WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR
-GROUP BY DATE_TRUNC('second', event_time)
+WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR
+GROUP BY DATE_TRUNC('second', event_timestamp)
 ORDER BY event_second DESC
 LIMIT 3600;
 
@@ -141,7 +141,7 @@ SELECT
     SUM(CASE WHEN fraud_score > 0.7 THEN 1 ELSE 0 END) as high_risk_transactions,
     SUM(CASE WHEN NOT is_approved THEN 1 ELSE 0 END) as declines_last_hour
 FROM payments_enriched_silver
-WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR;
+WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL 1 HOUR;
 
 -- View 6b: Last 60 Seconds Performance (real-time live metrics)
 CREATE OR REPLACE VIEW v_last_60_seconds_performance AS
@@ -152,7 +152,7 @@ SELECT
     ROUND(SUM(amount), 2) as total_value,
     SUM(CASE WHEN NOT is_approved THEN 1 ELSE 0 END) as declines_last_60s
 FROM payments_enriched_silver
-WHERE event_time >= CURRENT_TIMESTAMP() - INTERVAL '60' SECOND;
+WHERE event_timestamp >= CURRENT_TIMESTAMP() - INTERVAL '60' SECOND;
 
 -- View 7: Active Alerts
 CREATE OR REPLACE VIEW v_active_alerts AS

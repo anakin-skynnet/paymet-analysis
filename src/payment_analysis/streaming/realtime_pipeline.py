@@ -26,6 +26,18 @@ from pyspark.sql.functions import (  # type: ignore[import-untyped]
 
 # COMMAND ----------
 
+# Configurable thresholds (set via pipeline config or spark.conf; aligned with Lakebase decisionconfig)
+RISK_THRESHOLD_HIGH = float(spark.conf.get("spark.payment.risk_threshold_high", "0.75"))
+RISK_THRESHOLD_MEDIUM = float(spark.conf.get("spark.payment.risk_threshold_medium", "0.35"))
+RISK_WEIGHT_FRAUD = float(spark.conf.get("spark.payment.risk_weight_fraud", "0.5"))
+RISK_WEIGHT_AML = float(spark.conf.get("spark.payment.risk_weight_aml", "0.3"))
+RISK_WEIGHT_DEVICE = float(spark.conf.get("spark.payment.risk_weight_device", "0.2"))
+ALERT_APPROVAL_RATE_WARNING = float(spark.conf.get("spark.payment.alert_approval_rate_warning", "80"))
+ALERT_APPROVAL_RATE_CRITICAL = float(spark.conf.get("spark.payment.alert_approval_rate_critical", "70"))
+ALERT_FRAUD_SCORE_WARNING = float(spark.conf.get("spark.payment.alert_fraud_score_warning", "0.5"))
+ALERT_FRAUD_SCORE_CRITICAL = float(spark.conf.get("spark.payment.alert_fraud_score_critical", "0.7"))
+ALERT_LATENCY_WARNING = float(spark.conf.get("spark.payment.alert_latency_warning", "500"))
+
 # MAGIC %md
 # MAGIC ## Bronze: Stream Input (CDC from simulator table)
 
@@ -91,10 +103,10 @@ def payments_stream_silver():
         # the lightweight features needed by the 10-second windowed aggregations
         # and alert generation downstream.
         
-        # Risk categorization
+        # Risk categorization (thresholds from pipeline config; aligned with Lakebase decisionconfig)
         .withColumn("risk_tier", 
-            when(col("fraud_score") > 0.7, "high")
-            .when(col("fraud_score") > 0.3, "medium")
+            when(col("fraud_score") > RISK_THRESHOLD_HIGH, "high")
+            .when(col("fraud_score") > RISK_THRESHOLD_MEDIUM, "medium")
             .otherwise("low")
         )
         
@@ -107,9 +119,9 @@ def payments_stream_silver():
             .otherwise("very_large")
         )
         
-        # Composite risk
+        # Composite risk (weights from pipeline config)
         .withColumn("composite_risk_score",
-            (col("fraud_score") * 0.5 + col("aml_risk_score") * 0.3 + (1 - col("device_trust_score")) * 0.2)
+            (col("fraud_score") * RISK_WEIGHT_FRAUD + col("aml_risk_score") * RISK_WEIGHT_AML + (1 - col("device_trust_score")) * RISK_WEIGHT_DEVICE)
         )
         
         .withColumn("_processed_at", current_timestamp())
@@ -183,19 +195,19 @@ def payments_stream_alerts():
     return (
         metrics
         .filter(
-            (col("approval_rate_pct") < 80) |  # Low approval rate
-            (col("avg_fraud_score") > 0.5) |   # High fraud
-            (col("avg_latency_ms") > 500)      # High latency
+            (col("approval_rate_pct") < ALERT_APPROVAL_RATE_WARNING) |
+            (col("avg_fraud_score") > ALERT_FRAUD_SCORE_WARNING) |
+            (col("avg_latency_ms") > ALERT_LATENCY_WARNING)
         )
         .withColumn("alert_type",
-            when(col("approval_rate_pct") < 80, "LOW_APPROVAL_RATE")
-            .when(col("avg_fraud_score") > 0.5, "HIGH_FRAUD_RATE")
-            .when(col("avg_latency_ms") > 500, "HIGH_LATENCY")
+            when(col("approval_rate_pct") < ALERT_APPROVAL_RATE_WARNING, "LOW_APPROVAL_RATE")
+            .when(col("avg_fraud_score") > ALERT_FRAUD_SCORE_WARNING, "HIGH_FRAUD_RATE")
+            .when(col("avg_latency_ms") > ALERT_LATENCY_WARNING, "HIGH_LATENCY")
             .otherwise("UNKNOWN")
         )
         .withColumn("severity",
-            when(col("approval_rate_pct") < 70, "CRITICAL")
-            .when(col("avg_fraud_score") > 0.7, "CRITICAL")
+            when(col("approval_rate_pct") < ALERT_APPROVAL_RATE_CRITICAL, "CRITICAL")
+            .when(col("avg_fraud_score") > ALERT_FRAUD_SCORE_CRITICAL, "CRITICAL")
             .otherwise("WARNING")
         )
         .withColumn("alert_message",

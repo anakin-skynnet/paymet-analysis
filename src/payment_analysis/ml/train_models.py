@@ -27,7 +27,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.preprocessing import LabelEncoder  # type: ignore[import-untyped]
 from mlflow.models.signature import infer_signature  # type: ignore[import-untyped]
 import joblib  # type: ignore[import-untyped]
-import warnings
 
 # Get parameters from widgets (when run as job, catalog/schema = bundle var.catalog, var.schema)
 dbutils.widgets.text("catalog", "ahs_demos_catalog")
@@ -113,6 +112,8 @@ print(f"  Experiment: {EXPERIMENT_PATH}")
 # COMMAND ----------
 
 # Try to load from Unity Catalog, fall back to synthetic data
+# Limit training data to prevent OOM on the driver; use distributed training for larger datasets
+MAX_TRAINING_ROWS = 100_000
 data_query = f"""
 SELECT 
     transaction_id,
@@ -137,7 +138,7 @@ SELECT
     processing_time_ms
 FROM {CATALOG}.{SCHEMA}.payments_enriched_silver
 WHERE event_date >= CURRENT_DATE() - INTERVAL 30 DAYS
-LIMIT 500000
+LIMIT {MAX_TRAINING_ROWS}
 """
 
 try:
@@ -149,7 +150,7 @@ try:
             df[c] = df[c].astype("Int64").fillna(0).astype(int)
         elif hasattr(df[c].dtype, "numpy_dtype"):  # nullable Int64, Float64, etc.
             df[c] = df[c].fillna(0)
-    print(f"✓ Loaded {len(df)} transactions from Silver table (capped at 500k)")
+    print(f"✓ Loaded {len(df)} transactions from Silver table (capped at {MAX_TRAINING_ROWS:,})")
     print(f"  Approval rate: {df['is_approved'].mean()*100:.1f}%")
 except Exception as e:
     print(f"⚠ Table not found, creating synthetic data for training...")

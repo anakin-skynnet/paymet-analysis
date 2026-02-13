@@ -26,6 +26,10 @@ from pyspark.sql.functions import (  # type: ignore[import-untyped]
     when,
 )
 
+# Configurable thresholds (set via pipeline config; aligned with Lakebase decisionconfig)
+RETRY_EFFECTIVENESS_HIGH = float(spark.conf.get("spark.payment.retry_effectiveness_high", "40"))
+RETRY_EFFECTIVENESS_MODERATE = float(spark.conf.get("spark.payment.retry_effectiveness_moderate", "20"))
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -77,8 +81,8 @@ def v_retry_performance():
             round(col("success_rate_pct") - col("baseline_approval_pct"), 2)
         )
         .withColumn("effectiveness",
-            when(col("success_rate_pct") > 40, "Effective")
-            .when(col("success_rate_pct") > 20, "Moderate")
+            when(col("success_rate_pct") > RETRY_EFFECTIVENESS_HIGH, "Effective")
+            .when(col("success_rate_pct") > RETRY_EFFECTIVENESS_MODERATE, "Moderate")
             .otherwise("Low")
         )
         .orderBy("retry_scenario", "decline_reason_standard", "retry_count")
@@ -232,14 +236,24 @@ def v_reason_codes_br():
 def v_reason_code_insights_br():
     rc = dlt.read("v_reason_codes_br")
 
-    # Heuristic recoverability factors (placeholder; replace with learned estimates)
+    # Heuristic recoverability factors (configurable via pipeline config; replace with ML-learned estimates)
+    # Recovery rates by decline reason: how likely a declined transaction can be recovered via retry/re-route
+    recovery_funds = float(spark.conf.get("spark.payment.recovery_rate_funds", "0.25"))
+    recovery_issuer_tech = float(spark.conf.get("spark.payment.recovery_rate_issuer_tech", "0.40"))
+    recovery_do_not_honor = float(spark.conf.get("spark.payment.recovery_rate_do_not_honor", "0.20"))
+    recovery_card_expired = float(spark.conf.get("spark.payment.recovery_rate_card_expired", "0.05"))
+    recovery_fraud = float(spark.conf.get("spark.payment.recovery_rate_fraud", "0.10"))
+    recovery_default = float(spark.conf.get("spark.payment.recovery_rate_default", "0.05"))
+    priority_high_threshold = float(spark.conf.get("spark.payment.priority_high_value_threshold", "100000"))
+    priority_medium_threshold = float(spark.conf.get("spark.payment.priority_medium_value_threshold", "10000"))
+
     factor = (
-        when(col("decline_reason_standard") == lit("FUNDS_OR_LIMIT"), lit(0.25))
-        .when(col("decline_reason_standard") == lit("ISSUER_TECHNICAL"), lit(0.40))
-        .when(col("decline_reason_standard") == lit("ISSUER_DO_NOT_HONOR"), lit(0.20))
-        .when(col("decline_reason_standard") == lit("CARD_EXPIRED"), lit(0.05))
-        .when(col("decline_reason_standard") == lit("FRAUD_SUSPECTED"), lit(0.10))
-        .otherwise(lit(0.05))
+        when(col("decline_reason_standard") == lit("FUNDS_OR_LIMIT"), lit(recovery_funds))
+        .when(col("decline_reason_standard") == lit("ISSUER_TECHNICAL"), lit(recovery_issuer_tech))
+        .when(col("decline_reason_standard") == lit("ISSUER_DO_NOT_HONOR"), lit(recovery_do_not_honor))
+        .when(col("decline_reason_standard") == lit("CARD_EXPIRED"), lit(recovery_card_expired))
+        .when(col("decline_reason_standard") == lit("FRAUD_SUSPECTED"), lit(recovery_fraud))
+        .otherwise(lit(recovery_default))
     )
 
     return (
@@ -248,8 +262,8 @@ def v_reason_code_insights_br():
         .withColumn("estimated_recoverable_value", round(col("total_declined_value") * factor, 2))
         .withColumn(
             "priority",
-            when(col("estimated_recoverable_value") >= 100000, lit(1))
-            .when(col("estimated_recoverable_value") >= 10000, lit(2))
+            when(col("estimated_recoverable_value") >= priority_high_threshold, lit(1))
+            .when(col("estimated_recoverable_value") >= priority_medium_threshold, lit(2))
             .otherwise(lit(3)),
         )
         .orderBy(col("priority").asc(), col("estimated_recoverable_value").desc())

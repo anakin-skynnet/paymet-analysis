@@ -280,7 +280,7 @@ with psycopg.connect(conn_str, row_factory=dict_row) as conn:
         settings_defaults = [
             ("catalog", catalog),
             ("schema", schema),
-            ("warehouse_id", warehouse_id or "148ccb90800933a1"),
+            ("warehouse_id", warehouse_id or ""),
             ("default_events_per_second", default_events_per_second),
             ("default_duration_minutes", default_duration_minutes),
         ]
@@ -295,6 +295,142 @@ with psycopg.connect(conn_str, row_factory=dict_row) as conn:
             )
         conn.commit()
         print(f"app_settings seeded: {[k for k, _ in settings_defaults]}.")
+
+        # Decision config: tunable parameters for auth, retry, routing policies
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".decisionconfig (
+                key VARCHAR(255) PRIMARY KEY,
+                value TEXT NOT NULL,
+                description TEXT,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        cur.execute(f'SELECT COUNT(*) AS n FROM "{lakebase_schema}".decisionconfig')
+        row = cur.fetchone()
+        n = row["n"] if row and isinstance(row, dict) else (row[0] if row else 0)
+        if n == 0:
+            decision_defaults = [
+                ("risk_threshold_high", "0.75", "Risk score >= this → high risk tier (require step-up auth)"),
+                ("risk_threshold_medium", "0.35", "Risk score >= this → medium risk tier (3DS frictionless)"),
+                ("device_trust_low_risk", "0.90", "Device trust score >= this → low risk when no risk_score provided"),
+                ("retry_max_attempts_control", "3", "Max retry attempts for control group"),
+                ("retry_max_attempts_treatment", "4", "Max retry attempts for treatment group (A/B)"),
+                ("retry_backoff_recurring_control", "900", "Backoff seconds for recurring soft declines (control)"),
+                ("retry_backoff_recurring_treatment", "300", "Backoff seconds for recurring soft declines (treatment)"),
+                ("retry_backoff_transient", "60", "Backoff seconds for transient issuer/system declines (91, 96)"),
+                ("retry_backoff_soft_treatment", "1800", "Backoff seconds for do_not_honor soft decline (treatment)"),
+                ("routing_domestic_country", "BR", "Domestic country code for routing preference"),
+                ("ml_enrichment_enabled", "true", "Enable ML model score enrichment in decision flow"),
+                ("ml_enrichment_timeout_ms", "2000", "Timeout for ML model calls during decision enrichment"),
+                ("rule_engine_enabled", "true", "Enable Lakebase approval_rules evaluation in decision flow"),
+            ]
+            for key, value, desc in decision_defaults:
+                cur.execute(
+                    f"""
+                    INSERT INTO "{lakebase_schema}".decisionconfig (key, value, description)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (key, value, desc),
+                )
+            conn.commit()
+            print(f"Inserted {len(decision_defaults)} default decision config entries.")
+        else:
+            print("decisionconfig already has rows; skipping defaults.")
+
+        # Retryable decline codes: configurable soft decline codes for Smart Retry
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".retryabledeclinecode (
+                code VARCHAR(100) PRIMARY KEY,
+                label VARCHAR(500) NOT NULL,
+                category VARCHAR(50) NOT NULL DEFAULT 'soft',
+                default_backoff_seconds INT NOT NULL DEFAULT 900,
+                max_attempts INT NOT NULL DEFAULT 3,
+                is_active BOOLEAN NOT NULL DEFAULT true,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        cur.execute(f'SELECT COUNT(*) AS n FROM "{lakebase_schema}".retryabledeclinecode')
+        row = cur.fetchone()
+        n = row["n"] if row and isinstance(row, dict) else (row[0] if row else 0)
+        if n == 0:
+            decline_defaults = [
+                ("51", "Insufficient funds", "soft", 7200, 2),
+                ("91", "Issuer unavailable", "transient", 60, 3),
+                ("96", "System malfunction", "transient", 60, 3),
+                ("try_again_later", "Try again later (generic)", "soft", 900, 3),
+                ("do_not_honor_soft", "Do not honor (soft variant)", "soft", 1800, 2),
+                ("FUNDS_OR_LIMIT", "Funds or limit (standardized)", "soft", 7200, 2),
+                ("ISSUER_TECHNICAL", "Issuer technical (standardized)", "transient", 60, 3),
+                ("TEMPORARY_FAILURE", "Temporary failure (standardized)", "transient", 120, 3),
+            ]
+            for code, label, cat, backoff, max_att in decline_defaults:
+                cur.execute(
+                    f"""
+                    INSERT INTO "{lakebase_schema}".retryabledeclinecode (code, label, category, default_backoff_seconds, max_attempts)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (code, label, cat, backoff, max_att),
+                )
+            conn.commit()
+            print(f"Inserted {len(decline_defaults)} default retryable decline codes.")
+        else:
+            print("retryabledeclinecode already has rows; skipping defaults.")
+
+        # Route performance: historical performance per PSP route for smart routing
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".routeperformance (
+                route_name VARCHAR(255) PRIMARY KEY,
+                approval_rate_pct DOUBLE PRECISION NOT NULL DEFAULT 50.0,
+                avg_latency_ms DOUBLE PRECISION NOT NULL DEFAULT 500.0,
+                cost_score DOUBLE PRECISION NOT NULL DEFAULT 0.5,
+                is_active BOOLEAN NOT NULL DEFAULT true,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+            )
+        """)
+        conn.commit()
+        cur.execute(f'SELECT COUNT(*) AS n FROM "{lakebase_schema}".routeperformance')
+        row = cur.fetchone()
+        n = row["n"] if row and isinstance(row, dict) else (row[0] if row else 0)
+        if n == 0:
+            route_defaults = [
+                ("psp_primary", 72.5, 180.0, 0.3),
+                ("psp_secondary", 68.0, 220.0, 0.5),
+                ("psp_tertiary", 55.0, 350.0, 0.7),
+            ]
+            for rname, ar, lat, cost in route_defaults:
+                cur.execute(
+                    f"""
+                    INSERT INTO "{lakebase_schema}".routeperformance (route_name, approval_rate_pct, avg_latency_ms, cost_score)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (rname, ar, lat, cost),
+                )
+            conn.commit()
+            print(f"Inserted {len(route_defaults)} default route performance entries.")
+        else:
+            print("routeperformance already has rows; skipping defaults.")
+
+        # Decision outcome: feedback loop linking decisions to actual outcomes
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{lakebase_schema}".decisionoutcome (
+                id SERIAL PRIMARY KEY,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
+                audit_id VARCHAR(255) NOT NULL,
+                decision_type VARCHAR(100) NOT NULL,
+                outcome VARCHAR(100) NOT NULL,
+                outcome_code VARCHAR(100),
+                outcome_reason TEXT,
+                latency_ms INT,
+                extra JSONB NOT NULL DEFAULT '{{}}'::jsonb
+            )
+        """)
+        conn.commit()
+        cur.execute(f'CREATE INDEX IF NOT EXISTS idx_decisionoutcome_audit_id ON "{lakebase_schema}".decisionoutcome (audit_id)')
+        cur.execute(f'CREATE INDEX IF NOT EXISTS idx_decisionoutcome_decision_type ON "{lakebase_schema}".decisionoutcome (decision_type)')
+        conn.commit()
+        print("decisionoutcome table ensured.")
 
         # Countries/entities: for UI filter dropdown (same as Lakehouse; editable by users)
         cur.execute(f"""

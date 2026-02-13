@@ -32,13 +32,15 @@ This **validates** that all app dependencies exist (runs `toggle_app_resources.p
 
 Output: *"App deployed with all dependencies and resources assigned and uncommented."*
 
-### Automated two-phase deploy
+### Incremental deploys
+
+Use flags on `bundle.sh` for faster deploys:
 
 ```bash
-./scripts/deploy_with_dependencies.sh dev
+./scripts/bundle.sh deploy dev --skip-build     # Skip frontend build (reuse existing)
+./scripts/bundle.sh deploy dev --skip-clean      # Skip dashboard cleanup
+./scripts/bundle.sh deploy dev --skip-publish    # Skip dashboard publish step
 ```
-
-Runs phase 1, automatically executes Job 5 and Job 6 and waits for completion, then runs phase 2. Single command for the full flow.
 
 ### Validate without deploying
 
@@ -50,22 +52,24 @@ Runs phase 1, automatically executes Job 5 and Job 6 and waits for completion, t
 
 ## Steps at a glance
 
-Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in order: **1 → 2 → 3 → 4 → 5 → 6 → 7**. Pipelines (Lakeflow ETL and Real-time) are separate resources; start them when needed.
+Jobs are consolidated into **10 execution steps** in the Setup & Run page. Run in order. Pipelines (Lakeflow ETL and Real-time) are separate resources; start them when needed.
 
-| # | Job (step) | Action |
-|---|------------|--------|
+| # | Step | Action |
+|---|------|--------|
 | 0 | Deploy bundle | `./scripts/bundle.sh deploy dev` (includes prepare; no missing files) |
-| 1 | **1. Create Data Repositories** | **Setup & Run** → Run job 1 (ensure catalog & schema → **create Lakebase Autoscaling** project/branch/endpoint → **Lakebase data init** — app_config, approval_rules, online_features, app_settings → lakehouse bootstrap → vector search). Run once. Creates everything needed for later jobs and the app. |
-| 2 | **2. Simulate Transaction Events** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines) |
-| — | **Pipeline (before Step 3)** | Start **Payment Analysis ETL** (Lakeflow) at least once so it creates `payments_enriched_silver` (and `payments_raw_bronze`) in the catalog/schema. Step 3 (Gold Views) depends on this table. |
-| 3 | **3. Initialize Ingestion** | **Setup & Run** → Run job 3 (create gold views → **create UC agent tools** → sync vector search; requires pipeline so `payments_enriched_silver` exists) |
-| 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
-| 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
-| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
-| 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
-| — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
-| — | Dashboards & app | 3 unified dashboards + app deployed by bundle |
+| 1 | **Lakehouse Bootstrap** | **Setup & Run** → Run (ensure catalog & schema → **create Lakebase Autoscaling** → **Lakebase data init** → lakehouse bootstrap → vector search). Run once. Creates everything needed for later steps. |
+| 2 | **Vector Search** | Created as part of Step 1 (task 5). Creates Vector Search endpoint and delta-sync index. |
+| 3 | **Create Gold Views** | **Setup & Run** → Run (create gold views → **create UC agent tools** → sync vector search). Requires pipeline so `payments_enriched_silver` exists. |
+| 4 | **Events Producer Simulator** | **Setup & Run** → Run **Transaction Stream Simulator** (producer; events ingested later by pipelines). |
+| 5 | **Lakeflow ETL Pipeline** | **Setup & Run** → Start **Payment Analysis ETL** (Lakeflow). Creates `payments_enriched_silver` and gold tables. Required before Step 3 gold views return data. |
+| 6 | **ML Models Training** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy. |
+| 7 | **Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (syncs Genie space config and sample questions). |
+| 8 | **Deploy Agents** | **Setup & Run** → Run **Orchestrator** + specialist agents (Job 6). Registers LangGraph agents to UC via MLflow. |
+| 9 | **Publish Dashboards** | **Setup & Run** → Run (prepare assets → publish dashboards with embed credentials). |
+| 10 | **Real-Time Streaming** (optional) | **Setup & Run** → Start **Real-Time Stream** pipeline and/or **Stream Processor** job. |
 | — | Verify | **Dashboard**, **Rules**, **Decisioning**, **ML Models** in app |
+
+**Note:** All "Open" buttons in Setup & Run open the corresponding Databricks workspace resource (job run page, pipeline page, etc.) in a new tab. Buttons are disabled when the workspace host or resource ID is not configured.
 
 All jobs and pipelines can be run from the UI. To connect: use your credentials (open app from **Compute → Apps**) or set **DATABRICKS_TOKEN** (PAT) in the app environment. When you open the app from Compute → Apps (or with PAT set), the Setup & Run page resolves job and pipeline IDs from the workspace by name so you can run steps without setting `DATABRICKS_JOB_ID_*` / `DATABRICKS_PIPELINE_ID_*`. See **Setup & Run → Connect to Databricks**.
 
@@ -398,8 +402,8 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 | Script | Purpose |
 |--------|---------|
 | **bundle.sh** | Two-phase deploy: `deploy [target]` (phase 1: resources, no App); `deploy app [target]` (phase 2: App with model serving); `validate` / `verify` for checks. Also: `redeploy` = same as `deploy`. |
-| **deploy_with_dependencies.sh** | Automated two-phase deploy: phase 1 → runs Job 5 & 6 → phase 2. Single command. |
-| **toggle_app_resources.py** | Toggle serving endpoint bindings in `fastapi_app.yml`: `--enable-serving-endpoints`, `--disable-serving-endpoints`, `--check-app-deployable`. Used by bundle.sh and deploy_with_dependencies.sh. |
+| ~~deploy_with_dependencies.sh~~ | Removed. Use `bundle.sh deploy dev` (phase 1) → run jobs 5 & 6 → `bundle.sh deploy app dev` (phase 2). |
+| **toggle_app_resources.py** | Toggle serving endpoint bindings in `fastapi_app.yml`: `--enable-serving-endpoints`, `--disable-serving-endpoints`, `--check-app-deployable`. Used by bundle.sh. |
 | **dashboards.py** | **prepare** (by bundle.sh): writes `.build/dashboards/`, `.build/transform/gold_views.sql`, `.build/transform/lakehouse_bootstrap.sql` with catalog/schema. **validate-assets**, **publish** (optional). Run: `uv run python scripts/dashboards.py` |
 | **run_and_validate_jobs.py** | Run and validate bundle jobs; optional `--run-pipelines` runs ETL pipeline and waits before running jobs. `pipelines` lists pipelines. Run: `uv run python scripts/run_and_validate_jobs.py [--run-pipelines] [--job KEY]` |
 | **sync_requirements_from_lock.py** | Generate `requirements.txt` from `uv.lock` for the Databricks App. Run after `uv lock`: `uv run python scripts/sync_requirements_from_lock.py` |
@@ -407,8 +411,8 @@ Runtime loads **`app.yml`** at deployed app root (command, env). After edits run
 ## Demo setup & one-click run
 
 1. **Deploy once:** `./scripts/bundle.sh deploy dev` (prepare + build + deploy; all job files present).
-2. **Run in order from the app:** Open the app → **Setup & Run** → run jobs **1** (Create Data Repositories), **2** (Simulate Transaction Events), **3** (Initialize Ingestion), **4** (Deploy Dashboards), **5** (Train Models & Model Serving), **6** (Deploy Agents), **7** (Genie Space Sync, optional). Start Lakeflow pipelines when needed.
-3. **Optional:** Set `DATABRICKS_JOB_ID_*` in the app environment to job IDs from **Workflows** if Run uses a different workspace.
+2. **Run in order from the app:** Open the app from **Compute → Apps** → **Setup & Run** → run steps in order: (1) Lakehouse Bootstrap, (2) Vector Search (auto with step 1), (3) Create Gold Views, (4) Events Simulator, (5) ETL Pipeline, (6) ML Training, (7) Genie Sync, (8) Deploy Agents, (9) Publish Dashboards, (10) Real-Time Streaming (optional). All "Open" buttons link to the corresponding Databricks workspace page.
+3. **Job/pipeline ID resolution:** When opened from Compute → Apps, the backend resolves job and pipeline IDs by name from the workspace. No manual `DATABRICKS_JOB_ID_*` env vars needed.
 
 **Estimated time:** 45–60 min. Job/pipeline IDs: **Workflows** / **Lakeflow** or `databricks bundle run <job_name> -t dev`.
 

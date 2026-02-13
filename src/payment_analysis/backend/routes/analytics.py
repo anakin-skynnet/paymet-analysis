@@ -765,6 +765,58 @@ async def submit_insight_feedback(
     return InsightFeedbackOut(accepted=bool(ok))
 
 
+@router.get(
+    "/declines/recovery-opportunities",
+    response_model=list[dict],
+    operation_id="getDeclineRecoveryOpportunities",
+)
+async def decline_recovery_opportunities(
+    service: DatabricksServiceDep,
+    limit: int = Query(20, ge=1, le=100, description="Max rows"),
+) -> list[dict]:
+    """Decline recovery opportunities ranked by estimated recoverable value. Data from v_decline_recovery_opportunities."""
+    return await service.get_decline_recovery_opportunities(limit=limit)
+
+
+@router.get(
+    "/card-network-performance",
+    response_model=list[dict],
+    operation_id="getCardNetworkPerformance",
+)
+async def card_network_performance(
+    service: DatabricksServiceDep,
+    limit: int = Query(20, ge=1, le=50, description="Max rows"),
+) -> list[dict]:
+    """Approval rate and volume by card network (Visa, Mastercard, Amex). Data from v_card_network_performance."""
+    return await service.get_card_network_performance(limit=limit)
+
+
+@router.get(
+    "/merchant-segment-performance",
+    response_model=list[dict],
+    operation_id="getMerchantSegmentPerformance",
+)
+async def merchant_segment_performance(
+    service: DatabricksServiceDep,
+    limit: int = Query(20, ge=1, le=50, description="Max rows"),
+) -> list[dict]:
+    """Approval rate and volume by merchant segment. Data from v_merchant_segment_performance."""
+    return await service.get_merchant_segment_performance(limit=limit)
+
+
+@router.get(
+    "/daily-trends",
+    response_model=list[dict],
+    operation_id="getDailyTrends",
+)
+async def daily_trends(
+    service: DatabricksServiceDep,
+    days: int = Query(30, ge=1, le=90, description="Number of days"),
+) -> list[dict]:
+    """Daily approval rate and volume trends. Data from v_daily_trends."""
+    return await service.get_daily_trends(days=days)
+
+
 @router.post("/events", response_model=AuthorizationEvent, operation_id="ingestAuthEvent")
 def ingest_event(event: AuthorizationEvent, session: SessionDep) -> AuthorizationEvent:
     # For demo purposes: allow inserting directly.

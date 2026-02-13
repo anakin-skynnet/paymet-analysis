@@ -17,5 +17,8 @@
 #
 # See: https://docs.databricks.com/oltp/projects/
 # =============================================================================
+# Lakebase Autoscaling is provisioned by Job 1 (create_lakebase_autoscaling notebook).
+# This file exists as a placeholder for DAB variables and future Lakebase resource support.
+# =============================================================================
 
 resources: {}

@@ -229,6 +229,17 @@ export interface DatabricksKPIOut {
   total_value: number;
 }
 
+export interface DecisionConfigOut {
+  description?: string | null;
+  key: string;
+  updated_at?: string | null;
+  value: string;
+}
+
+export interface DecisionConfigUpdateIn {
+  value: string;
+}
+
 export interface DecisionContext {
   amount_minor: number;
   attempt_number?: number;
@@ -256,6 +267,21 @@ export interface DecisionLog {
   id?: number | null;
   request?: Record<string, unknown>;
   response?: Record<string, unknown>;
+}
+
+export interface DecisionOutcomeIn {
+  audit_id: string;
+  decision_type: string;
+  latency_ms?: number | null;
+  metadata?: Record<string, unknown>;
+  outcome: string;
+  outcome_code?: string | null;
+  outcome_reason?: string | null;
+}
+
+export interface DecisionOutcomeOut {
+  accepted: boolean;
+  audit_id: string;
 }
 
 export interface DeclineBucketOut {
@@ -566,6 +592,25 @@ export interface RetryPredictionOut {
   should_retry: boolean;
 }
 
+export interface RetryableDeclineCodeIn {
+  category?: string;
+  code: string;
+  default_backoff_seconds?: number;
+  is_active?: boolean;
+  label: string;
+  max_attempts?: number;
+}
+
+export interface RetryableDeclineCodeOut {
+  category: string;
+  code: string;
+  default_backoff_seconds: number;
+  is_active: boolean;
+  label: string;
+  max_attempts: number;
+  updated_at?: string | null;
+}
+
 export interface RiskPredictionOut {
   is_high_risk: boolean;
   risk_score: number;
@@ -579,6 +624,23 @@ export const RiskTier = {
 } as const;
 
 export type RiskTier = (typeof RiskTier)[keyof typeof RiskTier];
+
+export interface RoutePerformanceIn {
+  approval_rate_pct?: number;
+  avg_latency_ms?: number;
+  cost_score?: number;
+  is_active?: boolean;
+  route_name: string;
+}
+
+export interface RoutePerformanceOut {
+  approval_rate_pct: number;
+  avg_latency_ms: number;
+  cost_score: number;
+  is_active: boolean;
+  route_name: string;
+  updated_at?: string | null;
+}
 
 export interface RoutingDecisionOut {
   audit_id: string;
@@ -756,6 +818,10 @@ export interface GetActiveAlertsParams {
   limit?: number;
 }
 
+export interface GetCardNetworkPerformanceParams {
+  limit?: number;
+}
+
 export interface GetCommandCenterEntryThroughputParams {
   entity?: string;
   limit_minutes?: number;
@@ -765,9 +831,17 @@ export interface GetCountriesParams {
   limit?: number;
 }
 
+export interface GetDailyTrendsParams {
+  days?: number;
+}
+
 export interface RecentDecisionsParams {
   limit?: number;
   decision_type?: string | null;
+}
+
+export interface GetDeclineRecoveryOpportunitiesParams {
+  limit?: number;
 }
 
 export interface DeclineSummaryParams {
@@ -785,6 +859,10 @@ export interface GetGeographyParams {
 
 export interface GetFalseInsightsMetricParams {
   days?: number;
+}
+
+export interface GetMerchantSegmentPerformanceParams {
+  limit?: number;
 }
 
 export interface GetMetricsParams {
@@ -857,6 +935,14 @@ export interface GetDashboardParams {
 export interface GetDashboardUrlParams {
   dashboard_id: string;
   embed?: boolean;
+}
+
+export interface UpdateDecisionConfigParams {
+  key: string;
+}
+
+export interface DeleteRetryableDeclineCodeParams {
+  code: string;
 }
 
 export interface ListExperimentsParams {
@@ -1096,6 +1182,33 @@ export function useGetActiveAlertsSuspense<TData = { data: ActiveAlertOut[] }>(o
   return useSuspenseQuery({ queryKey: getActiveAlertsKey(options?.params), queryFn: () => getActiveAlerts(options?.params), ...options?.query });
 }
 
+export const getCardNetworkPerformance = async (params?: GetCardNetworkPerformanceParams, options?: RequestInit): Promise<{ data: Record<string, unknown>[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/card-network-performance?${queryString}` : `/api/analytics/card-network-performance`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getCardNetworkPerformanceKey = (params?: GetCardNetworkPerformanceParams) => {
+  return ["/api/analytics/card-network-performance", params] as const;
+};
+
+export function useGetCardNetworkPerformance<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetCardNetworkPerformanceParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getCardNetworkPerformanceKey(options?.params), queryFn: () => getCardNetworkPerformance(options?.params), ...options?.query });
+}
+
+export function useGetCardNetworkPerformanceSuspense<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetCardNetworkPerformanceParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getCardNetworkPerformanceKey(options?.params), queryFn: () => getCardNetworkPerformance(options?.params), ...options?.query });
+}
+
 export const getCommandCenterEntryThroughput = async (params?: GetCommandCenterEntryThroughputParams, options?: RequestInit): Promise<{ data: CommandCenterEntryThroughputPointOut[] }> => {
   const searchParams = new URLSearchParams();
   if (params?.entity != null) searchParams.set("entity", String(params?.entity));
@@ -1164,6 +1277,33 @@ export function useGetCountries<TData = { data: CountryOut[] }>(options?: { para
 
 export function useGetCountriesSuspense<TData = { data: CountryOut[] }>(options?: { params?: GetCountriesParams; query?: Omit<UseSuspenseQueryOptions<{ data: CountryOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getCountriesKey(options?.params), queryFn: () => getCountries(options?.params), ...options?.query });
+}
+
+export const getDailyTrends = async (params?: GetDailyTrendsParams, options?: RequestInit): Promise<{ data: Record<string, unknown>[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.days != null) searchParams.set("days", String(params?.days));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/daily-trends?${queryString}` : `/api/analytics/daily-trends`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getDailyTrendsKey = (params?: GetDailyTrendsParams) => {
+  return ["/api/analytics/daily-trends", params] as const;
+};
+
+export function useGetDailyTrends<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetDailyTrendsParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getDailyTrendsKey(options?.params), queryFn: () => getDailyTrends(options?.params), ...options?.query });
+}
+
+export function useGetDailyTrendsSuspense<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetDailyTrendsParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getDailyTrendsKey(options?.params), queryFn: () => getDailyTrends(options?.params), ...options?.query });
 }
 
 export const getDataQualitySummary = async (options?: RequestInit): Promise<{ data: DataQualitySummaryOut }> => {
@@ -1238,6 +1378,33 @@ export function useGetDatabricksDeclines<TData = { data: DeclineBucketOut[] }>(o
 
 export function useGetDatabricksDeclinesSuspense<TData = { data: DeclineBucketOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: DeclineBucketOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getDatabricksDeclinesKey(), queryFn: () => getDatabricksDeclines(), ...options?.query });
+}
+
+export const getDeclineRecoveryOpportunities = async (params?: GetDeclineRecoveryOpportunitiesParams, options?: RequestInit): Promise<{ data: Record<string, unknown>[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/declines/recovery-opportunities?${queryString}` : `/api/analytics/declines/recovery-opportunities`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getDeclineRecoveryOpportunitiesKey = (params?: GetDeclineRecoveryOpportunitiesParams) => {
+  return ["/api/analytics/declines/recovery-opportunities", params] as const;
+};
+
+export function useGetDeclineRecoveryOpportunities<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetDeclineRecoveryOpportunitiesParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getDeclineRecoveryOpportunitiesKey(options?.params), queryFn: () => getDeclineRecoveryOpportunities(options?.params), ...options?.query });
+}
+
+export function useGetDeclineRecoveryOpportunitiesSuspense<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetDeclineRecoveryOpportunitiesParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getDeclineRecoveryOpportunitiesKey(options?.params), queryFn: () => getDeclineRecoveryOpportunities(options?.params), ...options?.query });
 }
 
 export const declineSummary = async (params?: DeclineSummaryParams, options?: RequestInit): Promise<{ data: DeclineBucketOut[] }> => {
@@ -1469,6 +1636,33 @@ export function useGetLastHourPerformance<TData = { data: LastHourPerformanceOut
 
 export function useGetLastHourPerformanceSuspense<TData = { data: LastHourPerformanceOut }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: LastHourPerformanceOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getLastHourPerformanceKey(), queryFn: () => getLastHourPerformance(), ...options?.query });
+}
+
+export const getMerchantSegmentPerformance = async (params?: GetMerchantSegmentPerformanceParams, options?: RequestInit): Promise<{ data: Record<string, unknown>[] }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/analytics/merchant-segment-performance?${queryString}` : `/api/analytics/merchant-segment-performance`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getMerchantSegmentPerformanceKey = (params?: GetMerchantSegmentPerformanceParams) => {
+  return ["/api/analytics/merchant-segment-performance", params] as const;
+};
+
+export function useGetMerchantSegmentPerformance<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetMerchantSegmentPerformanceParams; query?: Omit<UseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getMerchantSegmentPerformanceKey(options?.params), queryFn: () => getMerchantSegmentPerformance(options?.params), ...options?.query });
+}
+
+export function useGetMerchantSegmentPerformanceSuspense<TData = { data: Record<string, unknown>[] }>(options?: { params?: GetMerchantSegmentPerformanceParams; query?: Omit<UseSuspenseQueryOptions<{ data: Record<string, unknown>[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getMerchantSegmentPerformanceKey(options?.params), queryFn: () => getMerchantSegmentPerformance(options?.params), ...options?.query });
 }
 
 export const getMetrics = async (params?: GetMetricsParams, options?: RequestInit): Promise<{ data: KPIOut }> => {
@@ -2067,6 +2261,135 @@ export function useGetDashboardUrlSuspense<TData = { data: Record<string, unknow
   return useSuspenseQuery({ queryKey: getDashboardUrlKey(options.params), queryFn: () => getDashboardUrl(options.params), ...options?.query });
 }
 
+export const getDecisionConfig = async (options?: RequestInit): Promise<{ data: DecisionConfigOut[] }> => {
+  const res = await fetch("/api/decision/admin/config", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getDecisionConfigKey = () => {
+  return ["/api/decision/admin/config"] as const;
+};
+
+export function useGetDecisionConfig<TData = { data: DecisionConfigOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: DecisionConfigOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getDecisionConfigKey(), queryFn: () => getDecisionConfig(), ...options?.query });
+}
+
+export function useGetDecisionConfigSuspense<TData = { data: DecisionConfigOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: DecisionConfigOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getDecisionConfigKey(), queryFn: () => getDecisionConfig(), ...options?.query });
+}
+
+export const updateDecisionConfig = async (params: UpdateDecisionConfigParams, data: DecisionConfigUpdateIn, options?: RequestInit): Promise<{ data: DecisionConfigOut }> => {
+  const res = await fetch(`/api/decision/admin/config/${params.key}`, { ...options, method: "PUT", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useUpdateDecisionConfig(options?: { mutation?: UseMutationOptions<{ data: DecisionConfigOut }, ApiError, { params: UpdateDecisionConfigParams; data: DecisionConfigUpdateIn }> }) {
+  return useMutation({ mutationFn: (vars) => updateDecisionConfig(vars.params, vars.data), ...options?.mutation });
+}
+
+export const getRetryableDeclineCodes = async (options?: RequestInit): Promise<{ data: RetryableDeclineCodeOut[] }> => {
+  const res = await fetch("/api/decision/admin/decline-codes", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getRetryableDeclineCodesKey = () => {
+  return ["/api/decision/admin/decline-codes"] as const;
+};
+
+export function useGetRetryableDeclineCodes<TData = { data: RetryableDeclineCodeOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: RetryableDeclineCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getRetryableDeclineCodesKey(), queryFn: () => getRetryableDeclineCodes(), ...options?.query });
+}
+
+export function useGetRetryableDeclineCodesSuspense<TData = { data: RetryableDeclineCodeOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: RetryableDeclineCodeOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getRetryableDeclineCodesKey(), queryFn: () => getRetryableDeclineCodes(), ...options?.query });
+}
+
+export const createRetryableDeclineCode = async (data: RetryableDeclineCodeIn, options?: RequestInit): Promise<{ data: RetryableDeclineCodeOut }> => {
+  const res = await fetch("/api/decision/admin/decline-codes", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useCreateRetryableDeclineCode(options?: { mutation?: UseMutationOptions<{ data: RetryableDeclineCodeOut }, ApiError, RetryableDeclineCodeIn> }) {
+  return useMutation({ mutationFn: (data) => createRetryableDeclineCode(data), ...options?.mutation });
+}
+
+export const deleteRetryableDeclineCode = async (params: DeleteRetryableDeclineCodeParams, options?: RequestInit): Promise<{ data: Record<string, unknown> }> => {
+  const res = await fetch(`/api/decision/admin/decline-codes/${params.code}`, { ...options, method: "DELETE" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useDeleteRetryableDeclineCode(options?: { mutation?: UseMutationOptions<{ data: Record<string, unknown> }, ApiError, { params: DeleteRetryableDeclineCodeParams }> }) {
+  return useMutation({ mutationFn: (vars) => deleteRetryableDeclineCode(vars.params), ...options?.mutation });
+}
+
+export const getRoutePerformance = async (options?: RequestInit): Promise<{ data: RoutePerformanceOut[] }> => {
+  const res = await fetch("/api/decision/admin/routes", { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const getRoutePerformanceKey = () => {
+  return ["/api/decision/admin/routes"] as const;
+};
+
+export function useGetRoutePerformance<TData = { data: RoutePerformanceOut[] }>(options?: { query?: Omit<UseQueryOptions<{ data: RoutePerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: getRoutePerformanceKey(), queryFn: () => getRoutePerformance(), ...options?.query });
+}
+
+export function useGetRoutePerformanceSuspense<TData = { data: RoutePerformanceOut[] }>(options?: { query?: Omit<UseSuspenseQueryOptions<{ data: RoutePerformanceOut[] }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: getRoutePerformanceKey(), queryFn: () => getRoutePerformance(), ...options?.query });
+}
+
+export const upsertRoutePerformance = async (data: RoutePerformanceIn, options?: RequestInit): Promise<{ data: RoutePerformanceOut }> => {
+  const res = await fetch("/api/decision/admin/routes", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useUpsertRoutePerformance(options?: { mutation?: UseMutationOptions<{ data: RoutePerformanceOut }, ApiError, RoutePerformanceIn> }) {
+  return useMutation({ mutationFn: (data) => upsertRoutePerformance(data), ...options?.mutation });
+}
+
 export const decideAuthentication = async (data: DecisionContext, options?: RequestInit): Promise<{ data: AuthDecisionOut }> => {
   const res = await fetch("/api/decision/authentication", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
   if (!res.ok) {
@@ -2140,6 +2463,21 @@ export const predictRouting = async (data: MLPredictionInput, options?: RequestI
 
 export function usePredictRouting(options?: { mutation?: UseMutationOptions<{ data: RoutingPredictionOut }, ApiError, MLPredictionInput> }) {
   return useMutation({ mutationFn: (data) => predictRouting(data), ...options?.mutation });
+}
+
+export const recordDecisionOutcome = async (data: DecisionOutcomeIn, options?: RequestInit): Promise<{ data: DecisionOutcomeOut }> => {
+  const res = await fetch("/api/decision/outcome", { ...options, method: "POST", headers: { "Content-Type": "application/json", ...options?.headers }, body: JSON.stringify(data) });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useRecordDecisionOutcome(options?: { mutation?: UseMutationOptions<{ data: DecisionOutcomeOut }, ApiError, DecisionOutcomeIn> }) {
+  return useMutation({ mutationFn: (data) => recordDecisionOutcome(data), ...options?.mutation });
 }
 
 export const decideRetry = async (data: DecisionContext, options?: RequestInit): Promise<{ data: RetryDecisionOut }> => {

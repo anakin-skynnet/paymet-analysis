@@ -38,9 +38,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # Reference dashboard: colors and chart widget settings (Databricks Lakeview v3 published).
-REFERENCE_DASHBOARD_URL = "https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111"
+# Override via env: DASHBOARDS_REFERENCE_URL
+REFERENCE_DASHBOARD_URL = os.getenv(
+    "DASHBOARDS_REFERENCE_URL",
+    "https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111",
+)
 # Default visualization palette (align with reference dashboard when customizing).
-# https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published
 REFERENCE_PALETTE = [
     "#EC0000",  # Santander/Getnet red (primary)
     "#00E5FF",  # Neon cyan

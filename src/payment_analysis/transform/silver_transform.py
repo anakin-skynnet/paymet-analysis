@@ -37,6 +37,15 @@ from pyspark.sql.window import Window  # type: ignore[import-untyped]
 
 # COMMAND ----------
 
+# Configurable thresholds (set via pipeline config; aligned with Lakebase decisionconfig)
+RISK_THRESHOLD_HIGH = float(spark.conf.get("spark.payment.risk_threshold_high", "0.75"))
+RISK_THRESHOLD_MEDIUM = float(spark.conf.get("spark.payment.risk_threshold_medium", "0.35"))
+RISK_WEIGHT_FRAUD = float(spark.conf.get("spark.payment.risk_weight_fraud", "0.5"))
+RISK_WEIGHT_AML = float(spark.conf.get("spark.payment.risk_weight_aml", "0.3"))
+RISK_WEIGHT_DEVICE = float(spark.conf.get("spark.payment.risk_weight_device", "0.2"))
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Silver Table: Payments Enriched
 
@@ -104,10 +113,10 @@ def payments_enriched_silver():
             ),
         )
         
-        # Risk categorization
+        # Risk categorization (thresholds from pipeline config; aligned with Lakebase decisionconfig)
         .withColumn("risk_tier", 
-            when(col("fraud_score") > 0.7, "high")
-            .when(col("fraud_score") > 0.3, "medium")
+            when(col("fraud_score") > RISK_THRESHOLD_HIGH, "high")
+            .when(col("fraud_score") > RISK_THRESHOLD_MEDIUM, "medium")
             .otherwise("low")
         )
         
@@ -120,9 +129,9 @@ def payments_enriched_silver():
             .otherwise("very_large")
         )
         
-        # Composite risk score
+        # Composite risk score (weights from pipeline config)
         .withColumn("composite_risk_score",
-            (col("fraud_score") * 0.5 + col("aml_risk_score") * 0.3 + (1 - col("device_trust_score")) * 0.2)
+            (col("fraud_score") * RISK_WEIGHT_FRAUD + col("aml_risk_score") * RISK_WEIGHT_AML + (1 - col("device_trust_score")) * RISK_WEIGHT_DEVICE)
         )
 
         # Smart Retry scenario split (conceptual)
@@ -210,11 +219,12 @@ def payments_enriched_silver():
             "prior_approved_count",
             spark_sum(when(col("is_approved") == True, lit(1)).otherwise(lit(0))).over(w_prior),
         )
+        # Merchant retry policy: max attempts per risk tier (configurable via pipeline config)
         .withColumn(
             "merchant_retry_policy_max_attempts",
-            when(col("merchant_risk_tier") == lit("high"), lit(1))
-            .when(col("merchant_risk_tier") == lit("medium"), lit(2))
-            .otherwise(lit(3)),
+            when(col("merchant_risk_tier") == lit("high"), lit(int(spark.conf.get("spark.payment.retry_max_high_risk", "1"))))
+            .when(col("merchant_risk_tier") == lit("medium"), lit(int(spark.conf.get("spark.payment.retry_max_medium_risk", "2"))))
+            .otherwise(lit(int(spark.conf.get("spark.payment.retry_max_low_risk", "3")))),
         )
     )
 
