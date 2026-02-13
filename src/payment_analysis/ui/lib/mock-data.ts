@@ -5,6 +5,7 @@
  */
 
 import type { DashboardInfo, DashboardCategory } from "@/lib/api";
+import { LAKEVIEW_DASHBOARD_IDS } from "@/config/workspace";
 
 /** Mock category counts (mirrors DashboardList.categories from backend). Used with MOCK_DASHBOARDS when API fails. */
 export const MOCK_DASHBOARD_CATEGORIES: Record<string, number> = {
@@ -13,7 +14,7 @@ export const MOCK_DASHBOARD_CATEGORIES: Record<string, number> = {
   technical: 1,
 };
 
-/** Mock dashboards list (mirrors DashboardList.dashboards from backend). */
+/** Mock dashboards list (mirrors DashboardList.dashboards from backend). Dashboard IDs sourced from LAKEVIEW_DASHBOARD_IDS. */
 export const MOCK_DASHBOARDS: DashboardInfo[] = [
   {
     id: "data_quality_unified",
@@ -21,7 +22,7 @@ export const MOCK_DASHBOARDS: DashboardInfo[] = [
     description: "Stream ingestion, data quality, real-time monitoring, alerts, and country coverage.",
     category: "technical" as DashboardCategory,
     tags: ["streaming", "data-quality", "countries", "risks"],
-    url_path: "/dashboardsv3/01f1090059311b079903b08b73dc03d8/published",
+    url_path: `/dashboardsv3/${LAKEVIEW_DASHBOARD_IDS.data_quality_unified}/published`,
   },
   {
     id: "ml_optimization_unified",
@@ -29,7 +30,7 @@ export const MOCK_DASHBOARDS: DashboardInfo[] = [
     description: "Predictions, behavior, smart retry impact, smart checkout, routing, decline, fraud, 3DS, financial impact.",
     category: "analytics" as DashboardCategory,
     tags: ["ml", "predictions", "routing", "decline", "fraud", "approval-rates"],
-    url_path: "/dashboardsv3/01f10900593c19f19eaa6453cb1af0d8/published",
+    url_path: `/dashboardsv3/${LAKEVIEW_DASHBOARD_IDS.ml_optimization_unified}/published`,
   },
   {
     id: "executive_trends_unified",
@@ -37,6 +38,6 @@ export const MOCK_DASHBOARDS: DashboardInfo[] = [
     description: "KPIs, approval rates, trends, merchant performance, and latency for business analysis.",
     category: "executive" as DashboardCategory,
     tags: ["kpi", "overview", "executive", "approval-rates"],
-    url_path: "/dashboardsv3/01f10900592f18cb82d7a57547ac57ca/published",
+    url_path: `/dashboardsv3/${LAKEVIEW_DASHBOARD_IDS.executive_trends_unified}/published`,
   },
 ];

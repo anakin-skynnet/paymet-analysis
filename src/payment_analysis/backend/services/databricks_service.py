@@ -81,7 +81,7 @@ class DatabricksConfig:
             token=os.getenv("DATABRICKS_TOKEN"),
             client_id=os.getenv("DATABRICKS_CLIENT_ID"),
             client_secret=os.getenv("DATABRICKS_CLIENT_SECRET"),
-            warehouse_id=os.getenv("DATABRICKS_WAREHOUSE_ID", "148ccb90800933a1"),
+            warehouse_id=os.getenv("DATABRICKS_WAREHOUSE_ID") or None,
             catalog=os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"),
             schema=os.getenv("DATABRICKS_SCHEMA") or get_default_schema(),
         )

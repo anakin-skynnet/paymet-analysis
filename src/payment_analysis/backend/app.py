@@ -97,9 +97,18 @@ async def lifespan(app: FastAPI):
     )
 
     runtime = Runtime(config)
-    runtime.validate_db()
-    runtime.initialize_models()
-    # When LAKEBASE_* env vars are not set, DB is skipped; app still starts (e.g. before Job 1 has run).
+    # Validate and initialize DB (Lakebase). Non-fatal: if Lakebase is unreachable
+    # (endpoint suspended, not yet created, auth failure), the app still starts and
+    # serves dashboards, analytics, and AI features. CRUD routes will return errors
+    # until Lakebase becomes available.
+    try:
+        runtime.validate_db()
+        runtime.initialize_models()
+    except Exception as db_err:
+        logger.warning(
+            "Database initialization failed (app will start without Lakebase CRUD): %s",
+            db_err,
+        )
 
     # Load config and settings from Lakebase first (backend reads these tables before starting)
     app.state.lakebase_settings = {}

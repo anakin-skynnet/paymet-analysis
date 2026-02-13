@@ -22,7 +22,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "5"
+            entity_version: "9"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -32,7 +32,7 @@ resources:
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint}"
         traffic_config:
-          routes: [{ served_model_name: "orchestrator-5", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "orchestrator-9", traffic_percentage: 100 }]
 
     # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
     decline_analyst_endpoint:
@@ -40,7 +40,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.decline_analyst"
-            entity_version: "11"
+            entity_version: "15"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -50,7 +50,7 @@ resources:
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint}"
         traffic_config:
-          routes: [{ served_model_name: "decline_analyst-11", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "decline_analyst-15", traffic_percentage: 100 }]
 
     # Predicts transaction approval probability
     approval_propensity_endpoint:
@@ -58,13 +58,13 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.approval_propensity_model"
-            entity_version: "1"
+            entity_version: "19"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes: [{ served_model_name: "approval_propensity_model-1", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "approval_propensity_model-19", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         usage_tracking_config: { enabled: true }
@@ -75,13 +75,13 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.risk_scoring_model"
-            entity_version: "1"
+            entity_version: "19"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes: [{ served_model_name: "risk_scoring_model-1", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "risk_scoring_model-19", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         usage_tracking_config: { enabled: true }
@@ -92,12 +92,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_routing_policy"
-            entity_version: "1"
+            entity_version: "19"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
         traffic_config:
-          routes: [{ served_model_name: "smart_routing_policy-1", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "smart_routing_policy-19", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
         usage_tracking_config: { enabled: true }
@@ -108,12 +108,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_retry_policy"
-            entity_version: "1"
+            entity_version: "19"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
         traffic_config:
-          routes: [{ served_model_name: "smart_retry_policy-1", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "smart_retry_policy-19", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
         usage_tracking_config: { enabled: true }
