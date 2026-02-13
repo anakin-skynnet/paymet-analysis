@@ -4,14 +4,16 @@
 # Task 1 (run_agent_framework): Custom Python framework (agent_framework.py) — orchestrator
 # + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender.
 # Same notebook used by the app's Orchestrator chat; output (synthesis, agents_used) is read by Jobs API.
-# Task 2 (register_agentbricks): Optional LangGraph/AgentBricks register to UC (langgraph_agents.py).
+# Task 2 (register_responses_agent): Register the new ResponsesAgent (agent.py) to UC and deploy
+# to Model Serving. Uses databricks-openai, OpenAI Responses API, MLflow 3.x best practices.
+# Task 3 (register_agentbricks): Legacy LangGraph/AgentBricks register to UC (langgraph_agents.py).
 # =============================================================================
 
 resources:
   jobs:
     "job_6_deploy_agents":
       name: "[${var.environment}] 6. Deploy Agents (Orchestrator & Specialists)"
-      description: "Run agent framework (orchestrator + specialists). Task 1 runs agent_framework.py; task 2 optionally registers LangGraph agents to UC. App Orchestrator chat uses task 1."
+      description: "Run agent framework (orchestrator + specialists). Task 1 runs agent_framework.py; task 2 registers ResponsesAgent; task 3 optionally registers LangGraph agents. App Orchestrator chat uses task 1."
       max_concurrent_runs: 1
       environments:
         - environment_key: lakebase_sdk
@@ -25,6 +27,15 @@ resources:
               - "langchain-core==1.2.11"
               - "mlflow==3.9.0"
               - "psycopg[binary]==3.3.2"
+        - environment_key: responses_agent
+          spec:
+            environment_version: "4"
+            dependencies:
+              - "databricks-sdk==0.86.0"
+              - "databricks-openai"
+              - "backoff"
+              - "mlflow==3.9.0"
+              - "databricks-agents"
       tasks:
         - task_key: run_agent_framework
           description: "Run agent framework (orchestrator + all specialists); output used by app Orchestrator chat"
@@ -39,8 +50,20 @@ resources:
               agent_role: "orchestrator"
           timeout_seconds: 3600
           max_retries: 2
+        - task_key: register_responses_agent
+          description: "Register the ResponsesAgent (agent.py) to Unity Catalog and deploy to Model Serving"
+          environment_key: responses_agent
+          notebook_task:
+            notebook_path: ${workspace.root_path}/src/payment_analysis/agents/register_responses_agent
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              model_registry_schema: "agents"
+              llm_endpoint: ${var.llm_endpoint}
+          timeout_seconds: 1800
+          max_retries: 2
         - task_key: register_agentbricks
-          description: "Log and register AgentBricks agents to Unity Catalog (MLflow) for Model Serving / Agents UI"
+          description: "Log and register LangGraph AgentBricks agents to Unity Catalog (MLflow) for Model Serving / Agents UI"
           environment_key: lakebase_sdk
           notebook_task:
             notebook_path: ${workspace.root_path}/src/payment_analysis/agents/agentbricks_register

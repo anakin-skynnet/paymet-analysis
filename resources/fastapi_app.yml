@@ -70,6 +70,54 @@ resources:
           serving_endpoint: { name: "smart-routing", permission: CAN_QUERY }
         - name: serving-smart-retry
           serving_endpoint: { name: "smart-retry", permission: CAN_QUERY }
+        # Lakeflow jobs — app backend uses ws.jobs.list/run_now/get_run for Setup & Run and Orchestrator chat.
+        # All 7 jobs need CAN_MANAGE_RUN so the app can trigger and poll them.
+        - name: job-1-create-data-repos
+          description: "Job 1: Create Data Repositories (Lakehouse, Vector Search, Lakebase)"
+          job:
+            id: ${resources.jobs.job_1_create_data_repositories.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-2-simulate-events
+          description: "Job 2: Simulate Transaction Events (Streaming)"
+          job:
+            id: ${resources.jobs.job_2_simulate_transaction_events.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-3-initialize-ingestion
+          description: "Job 3: Initialize Ingestion (UC tools, data init)"
+          job:
+            id: ${resources.jobs.job_3_initialize_ingestion.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-4-deploy-dashboards
+          description: "Job 4: Deploy Dashboards (prepare + publish)"
+          job:
+            id: ${resources.jobs.job_4_deploy_dashboards.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-5-train-models
+          description: "Job 5: Train ML Models and Publish to Serving"
+          job:
+            id: ${resources.jobs.job_5_train_models_and_serving.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-6-deploy-agents
+          description: "Job 6: Deploy Agents (Orchestrator + Specialists, ResponsesAgent)"
+          job:
+            id: ${resources.jobs.job_6_deploy_agents.id}
+            permission: CAN_MANAGE_RUN
+        - name: job-7-genie-sync
+          description: "Job 7: Genie Space Sync"
+          job:
+            id: ${resources.jobs.job_7_genie_sync.id}
+            permission: CAN_MANAGE_RUN
+        # ------------------------------------------------------------------------------------------
+        # Pipelines: The backend uses ws.pipelines.list_pipelines() and ws.pipelines.start_update()
+        # for pipelines 8 & 9 from the Setup & Run page. However, **pipelines are NOT a supported
+        # Databricks Apps resource type**. To grant access:
+        #   1. In Workspace → Pipelines → [pipeline] → Permissions, add the app's service principal
+        #      (payment-analysis) with "Can Manage Run" permission. OR
+        #   2. In the pipeline permissions section of pipelines.yml (DAB), add the app SP.
+        # Pipeline IDs:
+        #   8. ETL: ${resources.pipelines.payment_analysis_etl.id}
+        #   9. Real-Time Stream: ${resources.pipelines.payment_realtime_pipeline.id}
+        # ------------------------------------------------------------------------------------------
         # Optional: legacy/external LLM endpoint (uncomment if used)
         # - name: serving-endpoint
         #   description: External model endpoint

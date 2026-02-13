@@ -15,6 +15,7 @@ resources:
       name: "[${var.environment}] 8. Payment Analysis ETL"
       catalog: ${var.catalog}
       schema: ${var.schema}
+      root_path: ${workspace.root_path}/src/payment_analysis
       channel: CURRENT
       configuration:
         catalog_name: ${var.catalog}
@@ -46,6 +47,7 @@ resources:
       name: "[${var.environment}] 9. Payment Real-Time Stream"
       catalog: ${var.catalog}
       schema: ${var.schema}
+      root_path: ${workspace.root_path}/src/payment_analysis
       channel: CURRENT
       configuration:
         catalog_name: ${var.catalog}
