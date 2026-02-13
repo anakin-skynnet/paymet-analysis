@@ -123,6 +123,18 @@ sync:
     - "**/node_modules"
     - "**/.env"
     - "**/.env.*"
+    # Exclude build-system and frontend config files from the workspace.
+    # The Databricks App runtime only needs: app.yml, requirements.txt, src/.
+    # pyproject.toml causes pip to attempt `pip install .` with uv-dynamic-versioning
+    # (a uv-only build plugin) which fails. package.json triggers npm/bun install.
+    # Other config files (tsconfig, vite, components.json) are build-time only.
+    - pyproject.toml
+    - uv.lock
+    - bun.lock
+    - package.json
+    - tsconfig.json
+    - vite.config.ts
+    - components.json
 
 # Build artifact for app deployment (served at /)
 artifacts:
