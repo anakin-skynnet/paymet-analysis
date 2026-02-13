@@ -12,7 +12,6 @@ import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { PageHeader } from "@/components/layout";
 import { DashboardTable } from "@/components/dashboards";
 import { friendlyReason } from "@/lib/reasoning";
-import { MOCK_DASHBOARDS, MOCK_DASHBOARD_CATEGORIES } from "@/lib/mock-data";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
 export const Route = createFileRoute("/_sidebar/dashboards")({
@@ -61,8 +60,8 @@ export function Component() {
     query: { enabled: !!embedId },
   });
 
-  const dashboards = (isError ? MOCK_DASHBOARDS : dashboardList?.data.dashboards) ?? [];
-  const categories = (isError ? MOCK_DASHBOARD_CATEGORIES : dashboardList?.data.categories) ?? {};
+  const dashboards = dashboardList?.data.dashboards ?? [];
+  const categories = dashboardList?.data.categories ?? {};
   const { data: decisionsData } = useRecentDecisions({
     params: { limit: 5 },
     query: { refetchInterval: 15_000 },
@@ -286,13 +285,13 @@ export function Component() {
         })}
       </div>
 
-      {/* Error state: backend unavailable — use Alert (consistent style); table view can show mock data */}
+      {/* Error state: backend unavailable */}
       {isError && (
         <Alert variant="destructive" className="border-destructive/50">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Failed to load dashboards</AlertTitle>
           <AlertDescription>
-            Check that the backend is running and can reach Databricks for dashboard metadata. Table view below may show fallback data when backend is unavailable.
+            Could not fetch dashboard metadata from the backend. Verify the backend is running and can reach Databricks.
           </AlertDescription>
         </Alert>
       )}

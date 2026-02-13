@@ -45,7 +45,7 @@ include:
   - resources/agents.yml
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
-  - resources/dashboards.yml
+  # - resources/dashboards.yml  # Temporarily disabled: dashboard IDs were deleted; re-enable after recreating
   - resources/model_serving.yml
   - resources/fastapi_app.yml
 

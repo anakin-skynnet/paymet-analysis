@@ -349,12 +349,18 @@ function PredictionCard<T>({
   result: T | undefined;
   render: (d: T) => string;
 }) {
+  const isMock = result && typeof result === "object" && "_source" in result && (result as Record<string, unknown>)._source === "mock";
   return (
-    <Card>
+    <Card className={isMock ? "border-amber-500/40" : undefined}>
       <CardHeader className="py-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           {icon}
           {title}
+          {isMock && (
+            <Badge variant="outline" className="ml-auto text-[10px] font-normal border-amber-500/60 text-amber-600 dark:text-amber-400">
+              heuristic
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="py-2">

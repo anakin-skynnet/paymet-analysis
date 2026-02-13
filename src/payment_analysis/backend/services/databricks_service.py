@@ -96,6 +96,48 @@ class DatabricksConfig:
 # Service Implementation
 # =============================================================================
 
+# ML model registry: static metadata enriched with live UC metrics in get_ml_models().
+_ML_MODEL_DEFINITIONS: list[dict[str, Any]] = [
+    {
+        "id": "approval_propensity",
+        "name": "Approval Propensity Model",
+        "description": "Predicts the probability that a transaction will be approved (binary classification). Used for routing and retry decisions to prioritize high-propensity flows.",
+        "model_type": "RandomForestClassifier",
+        "features": ["amount", "fraud_score", "device_trust_score", "is_cross_border", "retry_count", "uses_3ds"],
+        "model_suffix": "approval_propensity_model",
+    },
+    {
+        "id": "risk_scoring",
+        "name": "Risk Scoring Model",
+        "description": "Classifies transactions as high-risk (fraud or decline) vs low-risk. Combines fraud score, AML score, and behavioral signals for decline and routing decisions.",
+        "model_type": "RandomForestClassifier",
+        "features": ["amount", "fraud_score", "aml_risk_score", "is_cross_border", "processing_time_ms", "device_trust_score"],
+        "model_suffix": "risk_scoring_model",
+    },
+    {
+        "id": "smart_routing",
+        "name": "Smart Routing Policy",
+        "description": "Multiclass classifier that recommends payment solution (standard, 3DS, network token, passkey) to maximize approval rate given merchant segment, risk, and 3DS usage.",
+        "model_type": "RandomForestClassifier",
+        "features": ["amount", "fraud_score", "is_cross_border", "uses_3ds", "device_trust_score", "merchant_segment_*"],
+        "model_suffix": "smart_routing_policy",
+    },
+    {
+        "id": "smart_retry",
+        "name": "Smart Retry Policy",
+        "description": "Predicts whether a declined transaction is recoverable (worth retrying). Trained on decline reason, retry context, and merchant policy to recommend retry timing and strategy.",
+        "model_type": "RandomForestClassifier",
+        "features": [
+            "decline_encoded", "retry_scenario_encoded", "retry_count", "amount",
+            "is_recurring", "fraud_score", "device_trust_score", "attempt_sequence",
+            "time_since_last_attempt_seconds", "prior_approved_count",
+            "merchant_retry_policy_max_attempts",
+        ],
+        "model_suffix": "smart_retry_policy",
+    },
+]
+
+
 @dataclass
 class DatabricksService:
     """
@@ -561,26 +603,45 @@ class DatabricksService:
     ) -> list[dict[str, Any]]:
         """Throughput by entry system (PD, WS, SEP, Checkout) for Command Center.
 
-        Derived from real-time TPS (v_streaming_volume_per_second) with approximate
-        entry-system shares (PD 62%, WS 34%, SEP 3%, Checkout 1%).  Returns empty
-        list when no streaming data is available.
+        First tries to derive real shares from ``v_entry_system_distribution`` for the
+        entity, then multiplies them by real-time TPS from ``v_streaming_volume_per_second``.
+        Returns empty list when no streaming data is available.
         """
         limit_seconds = max(1, min(limit_minutes, 60)) * 60
         try:
             tps_list = await self.get_streaming_tps(limit_seconds=limit_seconds)
-            if tps_list:
-                # Derive PD/WS/SEP/Checkout from total TPS using standard shares (62%, 34%, 3%, 1%)
-                shares = (0.62, 0.34, 0.03, 0.01)
-                return [
-                    {
-                        "ts": row["event_second"],
-                        "PD": int(row["records_per_second"] * shares[0]),
-                        "WS": int(row["records_per_second"] * shares[1]),
-                        "SEP": int(row["records_per_second"] * shares[2]),
-                        "Checkout": max(0, int(row["records_per_second"] * shares[3])),
-                    }
-                    for row in tps_list
-                ]
+            if not tps_list:
+                return []
+
+            # Get real entry-system shares from Databricks
+            shares: dict[str, float] = {"PD": 0.62, "WS": 0.34, "SEP": 0.03, "Checkout": 0.01}
+            try:
+                dist_data = await self.get_entry_system_distribution(entity=entity)
+                if dist_data:
+                    total = sum(int(r.get("transaction_count", 0)) for r in dist_data)
+                    if total > 0:
+                        real_shares: dict[str, float] = {}
+                        for r in dist_data:
+                            es = str(r.get("entry_system", "")).strip()
+                            cnt = int(r.get("transaction_count", 0))
+                            # Normalize entry system name → short code
+                            key = es if es in ("PD", "WS", "SEP", "Checkout") else es[:10]
+                            real_shares[key] = cnt / total
+                        if real_shares:
+                            shares = real_shares
+            except Exception:
+                pass  # Use default shares if distribution view unavailable
+
+            return [
+                {
+                    "ts": row["event_second"],
+                    **{
+                        k: max(0, int(row["records_per_second"] * v))
+                        for k, v in shares.items()
+                    },
+                }
+                for row in tps_list
+            ]
         except Exception as e:
             logger.debug("get_command_center_entry_throughput failed: %s", e)
         return []
@@ -921,65 +982,72 @@ class DatabricksService:
             return []
 
     async def get_ml_models(self, entity: str = DEFAULT_ENTITY) -> list[dict[str, Any]]:
-        """Return ML model metadata and optional metrics. Catalog path uses config (catalog.schema). entity for future filtering.
-        All four models are trained in train_models notebook; model_type and features must match that notebook.
+        """Return ML model metadata enriched with live metrics from Unity Catalog model registry.
+
+        Queries ``system.ml.model_versions`` to fetch the latest version info and
+        ``system.ml.model_version_tags`` for logged metrics. Falls back to static
+        metadata if the UC query fails (e.g. no system catalog permissions).
         """
-        base = [
-            {
-                "id": "approval_propensity",
-                "name": "Approval Propensity Model",
-                "description": "Predicts the probability that a transaction will be approved (binary classification). Used for routing and retry decisions to prioritize high-propensity flows.",
-                "model_type": "RandomForestClassifier",
-                "features": ["amount", "fraud_score", "device_trust_score", "is_cross_border", "retry_count", "uses_3ds"],
-                "model_suffix": "approval_propensity_model",
-                "metrics": [],
-            },
-            {
-                "id": "risk_scoring",
-                "name": "Risk Scoring Model",
-                "description": "Classifies transactions as high-risk (fraud or decline) vs low-risk. Combines fraud score, AML score, and behavioral signals for decline and routing decisions.",
-                "model_type": "RandomForestClassifier",
-                "features": ["amount", "fraud_score", "aml_risk_score", "is_cross_border", "processing_time_ms", "device_trust_score"],
-                "model_suffix": "risk_scoring_model",
-                "metrics": [],
-            },
-            {
-                "id": "smart_routing",
-                "name": "Smart Routing Policy",
-                "description": "Multiclass classifier that recommends payment solution (standard, 3DS, network token, passkey) to maximize approval rate given merchant segment, risk, and 3DS usage.",
-                "model_type": "RandomForestClassifier",
-                "features": ["amount", "fraud_score", "is_cross_border", "uses_3ds", "device_trust_score", "merchant_segment_*"],
-                "model_suffix": "smart_routing_policy",
-                "metrics": [],
-            },
-            {
-                "id": "smart_retry",
-                "name": "Smart Retry Policy",
-                "description": "Predicts whether a declined transaction is recoverable (worth retrying). Trained on decline reason, retry context, and merchant policy to recommend retry timing and strategy.",
-                "model_type": "RandomForestClassifier",
-                "features": [
-                    "decline_encoded",
-                    "retry_scenario_encoded",
-                    "retry_count",
-                    "amount",
-                    "is_recurring",
-                    "fraud_score",
-                    "device_trust_score",
-                    "attempt_sequence",
-                    "time_since_last_attempt_seconds",
-                    "prior_approved_count",
-                    "merchant_retry_policy_max_attempts",
-                ],
-                "model_suffix": "smart_retry_policy",
-                "metrics": [],
-            },
-        ]
         catalog_path_prefix = f"{self.config.catalog}.{self.config.schema}."
+
+        # Try to fetch live metrics from UC model registry
+        uc_metrics: dict[str, list[dict[str, str]]] = {}
+        uc_versions: dict[str, dict[str, Any]] = {}
+        if self.is_available:
+            try:
+                # Fetch latest version and run_id for each model
+                suffixes = [str(m["model_suffix"]) for m in _ML_MODEL_DEFINITIONS]
+                model_names = ", ".join(f"'{catalog_path_prefix}{s}'" for s in suffixes)
+                version_query = f"""
+                    SELECT full_name, version, run_id, creation_timestamp, status
+                    FROM system.ml.model_versions
+                    WHERE full_name IN ({model_names})
+                    ORDER BY full_name, version DESC
+                """
+                version_rows = await self.execute_query(version_query)
+                # Keep latest version per model
+                for row in version_rows:
+                    fname = str(row.get("full_name", ""))
+                    if fname not in uc_versions:
+                        uc_versions[fname] = row
+
+                # Fetch logged metrics via model_version_tags (MLflow logs metrics as tags)
+                if uc_versions:
+                    for fname, vinfo in uc_versions.items():
+                        run_id = vinfo.get("run_id")
+                        if run_id:
+                            try:
+                                metric_query = f"""
+                                    SELECT key, value FROM system.ml.model_version_tags
+                                    WHERE full_name = '{fname}' AND version = {vinfo['version']}
+                                    AND key LIKE 'metric.%'
+                                """
+                                tag_rows = await self.execute_query(metric_query)
+                                metrics_list = [
+                                    {"name": str(r["key"]).replace("metric.", ""), "value": str(r["value"])}
+                                    for r in tag_rows
+                                ]
+                                if metrics_list:
+                                    uc_metrics[fname] = metrics_list
+                            except Exception:
+                                pass
+            except Exception as e:
+                logger.debug("UC model registry query failed (using static metadata): %s", e)
+
         out: list[dict[str, Any]] = []
-        for m in base:
+        for m in _ML_MODEL_DEFINITIONS:
             suffix = str(m["model_suffix"])
+            catalog_path = catalog_path_prefix + suffix
             row = {k: v for k, v in m.items() if k != "model_suffix"}
-            row["catalog_path"] = catalog_path_prefix + suffix
+            row["catalog_path"] = catalog_path
+
+            # Enrich with UC version info
+            vinfo = uc_versions.get(catalog_path)
+            if vinfo:
+                row["model_type"] = f"{row['model_type']} (v{vinfo.get('version', '?')})"
+
+            # Add live metrics or empty
+            row["metrics"] = uc_metrics.get(catalog_path, [])
             out.append(row)
         return out
 
@@ -1074,23 +1142,23 @@ class DatabricksService:
     async def call_approval_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call approval propensity model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=f"approval-propensity-{os.getenv('ENVIRONMENT', 'dev')}",
+            endpoint_name="approval-propensity",
             features=features,
             mock_fallback=lambda: MockDataGenerator.approval_prediction(features),
         )
-    
+
     async def call_risk_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call risk scoring model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=f"risk-scoring-{os.getenv('ENVIRONMENT', 'dev')}",
+            endpoint_name="risk-scoring",
             features=features,
             mock_fallback=lambda: MockDataGenerator.risk_prediction(features),
         )
-    
+
     async def call_routing_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call smart routing model endpoint."""
         return await self._call_model_endpoint(
-            endpoint_name=f"smart-routing-{os.getenv('ENVIRONMENT', 'dev')}",
+            endpoint_name="smart-routing",
             features=features,
             mock_fallback=lambda: MockDataGenerator.routing_prediction(features),
         )
@@ -1098,7 +1166,7 @@ class DatabricksService:
     async def call_retry_model(self, features: dict[str, Any]) -> dict[str, Any]:
         """Call smart retry model endpoint (retry success likelihood and recovery)."""
         return await self._call_model_endpoint(
-            endpoint_name=f"smart-retry-{os.getenv('ENVIRONMENT', 'dev')}",
+            endpoint_name="smart-retry",
             features=features,
             mock_fallback=lambda: MockDataGenerator.retry_prediction(features),
         )
@@ -1177,6 +1245,9 @@ class MockDataGenerator:
     Serving endpoint is unreachable.  They are **not** used by analytics
     methods — those always return real Databricks data or empty results so
     the UI shows proper "no data" empty states.
+
+    All mock responses include ``_source: "mock"`` so the frontend can
+    display a "model unavailable" indicator.
     """
 
     @staticmethod
@@ -1189,7 +1260,8 @@ class MockDataGenerator:
         return {
             "approval_probability": round(prob, 3),
             "should_approve": prob > 0.5,
-            "model_version": "mock-v1",
+            "model_version": "heuristic-fallback",
+            "_source": "mock",
         }
 
     @staticmethod
@@ -1203,6 +1275,7 @@ class MockDataGenerator:
             "risk_score": round(risk, 3),
             "is_high_risk": risk > 0.7,
             "risk_tier": RiskTier.from_score(risk).value,
+            "_source": "mock",
         }
 
     @staticmethod
@@ -1221,6 +1294,7 @@ class MockDataGenerator:
             "recommended_solution": recommended,
             "confidence": 0.85,
             "alternatives": [s for s in all_solutions if s != recommended],
+            "_source": "mock",
         }
 
     @staticmethod
@@ -1233,7 +1307,8 @@ class MockDataGenerator:
         return {
             "should_retry": prob > 0.5,
             "retry_success_probability": round(prob, 3),
-            "model_version": "mock-v1",
+            "model_version": "heuristic-fallback",
+            "_source": "mock",
         }
 
 

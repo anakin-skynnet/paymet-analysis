@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGetSmartCheckoutServicePaths,
   useGetThreeDsFunnel,
   useGetSmartCheckoutPathPerformance,
+  useGetKpis,
 } from "@/lib/api";
 import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
@@ -30,6 +32,7 @@ const REFRESH_ANALYTICS_MS = 15_000;
 
 function SmartCheckout() {
   const { entity } = useEntity();
+  const kpisQ = useGetKpis({ query: { refetchInterval: REFRESH_ANALYTICS_MS } });
   const servicePathsQ = useGetSmartCheckoutServicePaths({
     params: { entity, limit: 25 },
     query: { refetchInterval: REFRESH_ANALYTICS_MS },
@@ -42,6 +45,18 @@ function SmartCheckout() {
     params: { entity, limit: 20 },
     query: { refetchInterval: REFRESH_ANALYTICS_MS },
   });
+
+  const kpis = kpisQ.data?.data;
+  const approvalPct = kpis?.approval_rate != null
+    ? `${(kpis.approval_rate * 100).toFixed(1)}%`
+    : null;
+  const totalTx = kpis?.total != null
+    ? kpis.total >= 1_000_000
+      ? `${(kpis.total / 1_000_000).toFixed(1)}M`
+      : kpis.total >= 1_000
+        ? `${(kpis.total / 1_000).toFixed(0)}K`
+        : `${kpis.total}`
+    : null;
 
   const servicePaths = servicePathsQ.data?.data ?? [];
   const funnel = funnelQ.data?.data ?? [];
@@ -61,12 +76,22 @@ function SmartCheckout() {
         <div className="mt-4 flex flex-wrap gap-3">
           <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-2 text-sm">
             <span className="text-muted-foreground">Scope: </span>
-            <span className="font-medium">~5M transactions/year (Payment Link)</span>
+            {totalTx ? (
+              <span className="font-medium">{totalTx} transactions (Payment Link)</span>
+            ) : (
+              <Skeleton className="inline-block h-4 w-24" />
+            )}
           </div>
           <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-2 text-sm">
             <span className="text-muted-foreground">Overall approval: </span>
-            <span className="font-semibold text-foreground">~73%</span>
-            <span className="text-muted-foreground"> (varies by seller profile)</span>
+            {approvalPct ? (
+              <>
+                <span className="font-semibold text-foreground">{approvalPct}</span>
+                <span className="text-muted-foreground"> (varies by seller profile)</span>
+              </>
+            ) : (
+              <Skeleton className="inline-block h-4 w-16" />
+            )}
           </div>
         </div>
       </div>
