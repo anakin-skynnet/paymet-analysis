@@ -46,7 +46,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  - resources/model_serving.yml   # Uncomment for two-phase deploy (deploy_with_dependencies.sh) when endpoints exist
+  - resources/model_serving.yml
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------
@@ -105,7 +105,10 @@ variables:
 sync:
   include:
     - .build
-    - dashboards
+    # NOTE: Do NOT sync "dashboards" or "resources/dashboards" here.
+    # Dashboards are managed by DAB resources (resources/dashboards.yml) which reads
+    # from .build/dashboards/ via file_path. Syncing the dashboards/ folder would
+    # create duplicate DASHBOARD objects in the same workspace directory.
     - src/payment_analysis/__dist__   # UI build output (created by artifacts.default build); required for app web UI
     - src/payment_analysis/ml
     - src/payment_analysis/streaming
@@ -114,7 +117,6 @@ sync:
     - src/payment_analysis/genie
     - src/payment_analysis/vector_search
     - scripts
-    - resources/dashboards
   exclude:
     - "**/__pycache__"
     - "**/*.pyc"

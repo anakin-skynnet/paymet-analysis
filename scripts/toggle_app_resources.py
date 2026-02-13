@@ -24,11 +24,11 @@ def _serving_block_lines() -> list[tuple[str, str]]:
     # (resource name, endpoint name in YAML)
     names = [
         ("serving-orchestrator", "payment-analysis-orchestrator"),
-        ("serving-decline-analyst", "decline-analyst-${var.environment}"),
-        ("serving-approval-prop", "approval-propensity-${var.environment}"),
-        ("serving-risk-scoring", "risk-scoring-${var.environment}"),
-        ("serving-smart-routing", "smart-routing-${var.environment}"),
-        ("serving-smart-retry", "smart-retry-${var.environment}"),
+        ("serving-decline-analyst", "decline-analyst"),
+        ("serving-approval-prop", "approval-propensity"),
+        ("serving-risk-scoring", "risk-scoring"),
+        ("serving-smart-routing", "smart-routing"),
+        ("serving-smart-retry", "smart-retry"),
     ]
     pairs = []
     for name, endpoint in names:
