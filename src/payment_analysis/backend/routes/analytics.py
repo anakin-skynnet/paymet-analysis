@@ -322,11 +322,28 @@ class OnlineFeatureOut(BaseModel):
 @router.get("/online-features", response_model=list[OnlineFeatureOut], operation_id="getOnlineFeatures")
 async def get_online_features(
     request: Request,
+    response: Response,
     service: DatabricksServiceDep,
     source: Optional[str] = Query(None, description="Filter by source: ml or agent"),
     limit: int = Query(100, ge=1, le=500, description="Max number of features to return"),
 ) -> list[OnlineFeatureOut]:
-    """Get online features from Lakebase (if available) or Lakehouse (ML and AI processes). Presented in the UI."""
+    """Get online features from Lakebase (if available) or Lakehouse (ML and AI processes). Mock when toggle is on."""
+    if _is_mock_request(request):
+        _set_data_source_header(response, service, forced_mock=True)
+        rows = _mock.mock_online_features(limit=limit)
+        return [
+            OnlineFeatureOut(
+                id=r["id"],
+                source=r["source"],
+                feature_set=r.get("feature_set"),
+                feature_name=r["feature_name"],
+                feature_value=float(r["feature_value"]) if r.get("feature_value") is not None else None,
+                feature_value_str=r.get("feature_value_str"),
+                entity_id=r.get("entity_id"),
+                created_at=str(r["created_at"]) if r.get("created_at") else None,
+            )
+            for r in rows
+        ]
     runtime = getattr(request.app.state, "runtime", None)
     if runtime and runtime._db_configured():
         rows = get_online_features_from_lakebase(runtime, source=source, limit=limit)
@@ -363,16 +380,19 @@ async def get_online_features(
 @router.get("/recommendations", response_model=list[RecommendationOut], operation_id="getRecommendations")
 async def get_recommendations(
     request: Request,
+    response: Response,
     service: DatabricksServiceDep,
     limit: int = Query(20, ge=1, le=100, description="Max number of recommendations to return"),
 ) -> list[RecommendationOut]:
-    """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases; mock fallback."""
+    """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases; mock when toggle on or fallback."""
     if _is_mock_request(request):
+        _set_data_source_header(response, service, forced_mock=True)
         rows = _mock.mock_recommendations()[:limit]
     else:
         rows = await service.get_recommendations_from_lakehouse(limit=limit)
         if not rows:
             rows = _mock.mock_recommendations()[:limit]
+        _set_data_source_header(response, service)
     return [
         RecommendationOut(
             id=r["id"],
@@ -389,10 +409,14 @@ async def get_recommendations(
 @router.get("/countries", response_model=list[CountryOut], operation_id="getCountries")
 async def list_countries(
     request: Request,
+    response: Response,
     service: DatabricksServiceDep,
     limit: int = Query(200, ge=1, le=500, description="Max number of countries to return"),
 ) -> list[CountryOut]:
-    """List countries/entities from Lakebase (when configured) or Lakehouse for the filter dropdown. Users can add/remove rows to change options."""
+    """List countries/entities from Lakebase (when configured) or Lakehouse. Mock when toggle is on."""
+    if _is_mock_request(request):
+        _set_data_source_header(response, service, forced_mock=True)
+        return [CountryOut(code=r["code"], name=r["name"]) for r in _mock.mock_countries(limit=limit)]
     runtime = getattr(request.app.state, "runtime", None)
     if runtime and runtime._db_configured():
         rows = get_countries_from_lakebase(runtime, limit=limit)
@@ -404,11 +428,18 @@ async def list_countries(
 
 @router.get("/models", response_model=list[ModelOut], operation_id="getModels")
 async def list_models(
+    request: Request,
+    response: Response,
     service: DatabricksServiceDep,
     entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
 ) -> list[ModelOut]:
-    """List ML models with catalog path and optional metrics from backend (catalog/schema from config)."""
-    data = await service.get_ml_models(entity=entity)
+    """List ML models with catalog path and optional metrics. Mock when toggle is on."""
+    if _is_mock_request(request):
+        _set_data_source_header(response, service, forced_mock=True)
+        data = _mock.mock_models(entity=entity)
+    else:
+        data = await service.get_ml_models(entity=entity)
+        _set_data_source_header(response, service)
     return [
         ModelOut(
             id=m["id"],

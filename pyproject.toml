@@ -16,6 +16,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "apx==0.2.6",
+    "backoff==2.2.1",
     "ty==0.0.15",
 ]
 
@@ -32,6 +33,21 @@ root = "src/payment_analysis/ui"
 [tool.apx.ui.registries]
 "@animate-ui" = "https://animate-ui.com/r/{name}.json"
 "@ai-elements" = "https://registry.ai-sdk.dev/{name}.json"
+
+[tool.ty.rules]
+# Raw SQL with text() uses session.execute(); SQLModel recommends exec() for ORM select() only
+deprecated = "ignore"
+
+[tool.ty.src]
+# Exclude Databricks runtime-only code (spark, dbutils, dlt injected at runtime)
+exclude = [
+    "src/payment_analysis/agents/**",
+    "src/payment_analysis/transform/**",
+    "src/payment_analysis/streaming/**",
+    "src/payment_analysis/ml/**",
+    "src/payment_analysis/vector_search/**",
+    "src/payment_analysis/genie/**",
+]
 
 [tool.uv]
 index-url = "https://pypi.org/simple"

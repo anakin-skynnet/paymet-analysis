@@ -10,11 +10,12 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from sqlmodel import select
 
 from ..db_models import DecisionLog, Experiment, ExperimentAssignment
+from ..services.databricks_service import MockDataGenerator
 from ..decisioning.policies import (
     decide_authentication,
     decide_retry,
@@ -30,6 +31,11 @@ from ..decisioning.schemas import (
 from ..dependencies import SessionDep, DatabricksServiceDep
 
 router = APIRouter(tags=["decisioning"])
+
+
+def _is_mock_request(request: Request) -> bool:
+    """True when the frontend toggle is on; backend returns mock data for all components."""
+    return request.headers.get("x-mock-data", "").lower() == "true"
 
 
 def _get_or_assign_variant(
@@ -180,10 +186,14 @@ def routing(ctx: DecisionContext, session: SessionDep) -> RoutingDecisionOut:
     operation_id="predictApproval",
 )
 async def predict_approval(
+    request: Request,
     service: DatabricksServiceDep,
     features: MLPredictionInput,
 ) -> ApprovalPredictionOut:
-    """Get approval probability from ML model serving endpoint."""
+    """Get approval probability from ML model serving endpoint. Mock when toggle is on."""
+    if _is_mock_request(request):
+        result = MockDataGenerator.approval_prediction(features.model_dump())
+        return ApprovalPredictionOut(**{k: v for k, v in result.items() if k != "_source"})
     result = await service.call_approval_model(features.model_dump())
     return ApprovalPredictionOut(**result)
 
@@ -194,10 +204,14 @@ async def predict_approval(
     operation_id="predictRisk",
 )
 async def predict_risk(
+    request: Request,
     service: DatabricksServiceDep,
     features: MLPredictionInput,
 ) -> RiskPredictionOut:
-    """Get risk score from ML model serving endpoint."""
+    """Get risk score from ML model serving endpoint. Mock when toggle is on."""
+    if _is_mock_request(request):
+        result = MockDataGenerator.risk_prediction(features.model_dump())
+        return RiskPredictionOut(**{k: v for k, v in result.items() if k != "_source"})
     result = await service.call_risk_model(features.model_dump())
     return RiskPredictionOut(**result)
 
@@ -208,10 +222,14 @@ async def predict_risk(
     operation_id="predictRouting",
 )
 async def predict_routing(
+    request: Request,
     service: DatabricksServiceDep,
     features: MLPredictionInput,
 ) -> RoutingPredictionOut:
-    """Get optimal routing recommendation from ML model."""
+    """Get optimal routing recommendation from ML model. Mock when toggle is on."""
+    if _is_mock_request(request):
+        result = MockDataGenerator.routing_prediction(features.model_dump())
+        return RoutingPredictionOut(**{k: v for k, v in result.items() if k != "_source"})
     result = await service.call_routing_model(features.model_dump())
     return RoutingPredictionOut(**result)
 
@@ -222,10 +240,14 @@ async def predict_routing(
     operation_id="predictRetry",
 )
 async def predict_retry(
+    request: Request,
     service: DatabricksServiceDep,
     features: MLPredictionInput,
 ) -> RetryPredictionOut:
-    """Get retry success likelihood from smart retry model (recovery optimization)."""
+    """Get retry success likelihood from smart retry model. Mock when toggle is on."""
+    if _is_mock_request(request):
+        result = MockDataGenerator.retry_prediction(features.model_dump())
+        return RetryPredictionOut(**{k: v for k, v in result.items() if k != "_source"})
     result = await service.call_retry_model(features.model_dump())
     return RetryPredictionOut(**result)
 

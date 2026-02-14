@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from .schemas import (
@@ -42,6 +42,8 @@ def _risk_tier(ctx: DecisionContext) -> RiskTier:
 def decide_authentication(
     ctx: DecisionContext,
     variant: Optional[str] = None,
+    *,
+    params: Optional[Any] = None,
 ) -> AuthDecisionOut:
     tier = _risk_tier(ctx)
     is_treatment = variant == "treatment" or variant == "B"
@@ -106,6 +108,9 @@ _SOFT_DECLINE_CODES = {
 def decide_retry(
     ctx: DecisionContext,
     variant: Optional[str] = None,
+    *,
+    params: Optional[Any] = None,
+    decline_codes: Optional[Any] = None,
 ) -> RetryDecisionOut:
     is_treatment = variant == "treatment" or variant == "B"
     max_attempts = 4 if is_treatment else 3
@@ -187,6 +192,9 @@ class RouteCandidate:
 def decide_routing(
     ctx: DecisionContext,
     variant: Optional[str] = None,
+    *,
+    params: Optional[Any] = None,
+    route_scores: Optional[Any] = None,
 ) -> RoutingDecisionOut:
     """
     Minimal routing scaffold. A/B: treatment prefers secondary first (different route order).
@@ -242,5 +250,5 @@ def serialize_context(ctx: DecisionContext) -> dict:
     if callable(legacy):
         return legacy()
     # Last resort: dataclass or plain-object fallback
-    return dict(ctx)  # type: ignore[call-overload]
+    return dict(ctx)
 

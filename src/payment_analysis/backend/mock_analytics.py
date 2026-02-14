@@ -372,6 +372,39 @@ def mock_entry_throughput() -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
+# Online features, countries, models (for toggle = mock when no Lakebase/UC)
+# ---------------------------------------------------------------------------
+
+def mock_online_features(limit: int = 100) -> list[dict[str, Any]]:
+    """Mock online feature rows for UI when mock toggle is on."""
+    now = _now()
+    return [
+        {"id": "of-1", "source": "ml", "feature_set": "approval", "feature_name": "fraud_score", "feature_value": 0.12, "feature_value_str": None, "entity_id": "tx-001", "created_at": _ts_str(now)},
+        {"id": "of-2", "source": "ml", "feature_set": "approval", "feature_name": "amount", "feature_value": 89.5, "feature_value_str": None, "entity_id": "tx-001", "created_at": _ts_str(now)},
+        {"id": "of-3", "source": "agent", "feature_set": "context", "feature_name": "merchant_segment", "feature_value": None, "feature_value_str": "retail", "entity_id": "tx-002", "created_at": _ts_str(now - timedelta(minutes=5))},
+    ][:limit]
+
+
+def mock_countries(limit: int = 200) -> list[dict[str, Any]]:
+    """Mock country/entity rows for filter dropdown when mock toggle is on."""
+    return [
+        {"code": "BR", "name": "Brazil"},
+        {"code": "US", "name": "United States"},
+        {"code": "MX", "name": "Mexico"},
+        {"code": "CO", "name": "Colombia"},
+        {"code": "AR", "name": "Argentina"},
+    ][:limit]
+
+
+def mock_models(entity: str = "BR") -> list[dict[str, Any]]:
+    """Mock ML model list when mock toggle is on."""
+    return [
+        {"id": "approval-propensity", "name": "Approval Propensity", "description": "Predicts approval probability", "model_type": "classification", "features": ["amount", "fraud_score", "device_trust_score"], "catalog_path": "catalog.schema.approval_propensity", "metrics": [{"name": "accuracy", "value": "0.89"}]},
+        {"id": "risk-scoring", "name": "Risk Scoring", "description": "Fraud risk score", "model_type": "regression", "features": ["amount", "merchant_segment"], "catalog_path": "catalog.schema.risk_scoring", "metrics": [{"name": "rmse", "value": "0.12"}]},
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Recommendations
 # ---------------------------------------------------------------------------
 

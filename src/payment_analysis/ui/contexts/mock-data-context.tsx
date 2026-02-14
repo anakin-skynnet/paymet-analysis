@@ -12,6 +12,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const STORAGE_KEY = "payment-analysis-mock-data";
 
+/**
+ * Default is false: UI uses real Databricks data. Only when the user has
+ * explicitly turned the toggle ON is this true (stored in localStorage).
+ */
 function loadMockSetting(): boolean {
   if (typeof window === "undefined") return false;
   try {

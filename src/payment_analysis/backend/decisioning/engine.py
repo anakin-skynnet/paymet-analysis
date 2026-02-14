@@ -276,6 +276,8 @@ class DecisionEngine:
     # -- Lakebase readers (raw SQL via session) -------------------------------
 
     def _read_decision_config_from_lakebase(self) -> list[dict[str, str]]:
+        if not self._runtime:
+            return []
         from sqlalchemy import text as sa_text
 
         schema = self._get_schema_name()
@@ -285,6 +287,8 @@ class DecisionEngine:
             return [{"key": str(r[0]), "value": str(r[1])} for r in result.fetchall()]
 
     def _read_decline_codes_from_lakebase(self) -> list[dict[str, Any]]:
+        if not self._runtime:
+            return []
         from sqlalchemy import text as sa_text
 
         schema = self._get_schema_name()
@@ -306,6 +310,8 @@ class DecisionEngine:
             ]
 
     def _read_route_performance_from_lakebase(self) -> list[dict[str, Any]]:
+        if not self._runtime:
+            return []
         from sqlalchemy import text as sa_text
 
         schema = self._get_schema_name()
