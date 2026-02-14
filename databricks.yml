@@ -107,8 +107,8 @@ variables:
     description: "LLM for simple lookups, basic formatting, and low-latency tasks."
     default: "databricks-meta-llama-3-3-70b-instruct"
   pipelines_development:
-    description: "If true, pipelines use development mode (e.g. lower cost). Set false for prod."
-    default: true
+    description: "If true, pipelines use development mode (stops after processing). Set false for continuous real-time processing."
+    default: false
 
 # -----------------------------------------------------------------------------
 # Sync: paths uploaded to workspace for job/pipeline execution and app
@@ -172,7 +172,7 @@ targets:
       lakebase_branch_id: production
       lakebase_endpoint_id: primary
     presets:
-      pipelines_development: true
+      pipelines_development: false  # false = continuous production mode (real-time processing)
       jobs_max_concurrent_runs: 1
       trigger_pause_status: PAUSED
 
