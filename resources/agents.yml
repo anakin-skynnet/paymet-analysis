@@ -20,23 +20,23 @@ resources:
           spec:
             environment_version: "4"
             dependencies:
-              - "databricks-sdk==0.86.0"
+              - "databricks-sdk==0.88.0"
               - "databricks-langchain==0.15.0"
               - "unitycatalog-langchain[databricks]==0.3.0"
               - "langgraph==1.0.8"
-              - "langchain-core==1.2.11"
+              - "langchain-core==1.2.12"
               - "mlflow==3.9.0"
               - "psycopg[binary]==3.3.2"
         - environment_key: responses_agent
           spec:
             environment_version: "4"
             dependencies:
-              - "databricks-sdk==0.86.0"
-              - "databricks-openai==0.5.0"
-              - "unitycatalog-ai[databricks]==0.4.0"
+              - "databricks-sdk==0.88.0"
+              - "databricks-openai==0.10.0"
+              - "unitycatalog-ai[databricks]==0.3.2"
               - "backoff==2.2.1"
               - "mlflow==3.9.0"
-              - "databricks-agents==0.19.0"
+              - "databricks-agents==0.22.1"
       tasks:
         - task_key: run_agent_framework
           description: "Run agent framework (orchestrator + all specialists); output used by app Orchestrator chat"

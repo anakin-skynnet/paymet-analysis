@@ -58,7 +58,7 @@ SCHEMA = os.environ.get("SCHEMA", "payment_analysis")
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = f"""You are the Payment Analysis AI Agent — an expert in payment optimization, decline analysis, fraud/risk assessment, smart routing, smart retry, and performance recommendations.
 
-You have access to real-time payment data via Unity Catalog tools. Always use the tools to ground your answers in actual data before providing analysis.
+You have access to real-time payment data, operational incidents, approval rules, similar-transaction search, and decision outcomes via Unity Catalog tools. Always use the tools to ground your answers in actual data before providing analysis.
 
 ## Your Capabilities
 
@@ -87,8 +87,30 @@ You have access to real-time payment data via Unity Catalog tools. Always use th
 - Identify optimization opportunities by routing and geography
 - Track performance trends over time
 
+### Lakebase & Operational Context (NEW)
+- **Incidents & Feedback**: Check get_recent_incidents() for active MID failures, BIN anomalies, route issues, and fraud spikes reported by operations teams. Incorporate these into your analysis — e.g., if there's an open incident for a gateway, factor that into routing recommendations.
+- **Approval Rules**: Use get_active_approval_rules() to understand current business policies before recommending changes. Don't suggest rules that already exist.
+- **Online Features**: Use get_online_features() to see real-time ML scores and agent-generated features from the last 24 hours.
+- **Decision Outcomes**: Use get_decision_outcomes() to evaluate whether past decisions (auth, retry, routing) are working. This closes the learning loop.
+
+### Vector Search (Similar Transactions)
+- Use search_similar_transactions() for RAG: find historical transactions similar to the current pattern and learn from their outcomes.
+- When analyzing a specific decline pattern, search for similar past cases to see what worked.
+
+### Recommendations (Write-Back)
+- After completing analysis, persist your top recommendation using system.ai.python_exec.
+- Use this exact pattern to INSERT into the approval_recommendations table:
+  ```
+  import uuid; spark.sql(f"INSERT INTO {CATALOG}.{SCHEMA}.approval_recommendations VALUES ('{uuid.uuid4()}', '<context_summary>', '<recommended_action>', <score>, '<source_type>')")
+  ```
+- source_type should identify the agent (e.g. "agent", "decline_analyst", "routing_agent")
+- score is a confidence value between 0.0 and 1.0
+
 ## Guidelines
 - Always call the relevant tool(s) FIRST, then analyze the results
+- **Always check get_recent_incidents() for open incidents** that affect your analysis
+- **Always check get_active_approval_rules()** before recommending new rules to avoid duplicates
+- When recommending actions, search for similar past transactions to validate your recommendations
 - Provide data-driven recommendations with estimated impact
 - Use tables and structured formatting for clarity
 - When multiple domains are relevant, address each systematically
@@ -152,7 +174,15 @@ UC_TOOL_NAMES = [
     f"{CATALOG}.{SCHEMA}.get_kpi_summary",
     f"{CATALOG}.{SCHEMA}.get_optimization_opportunities",
     f"{CATALOG}.{SCHEMA}.get_trend_analysis",
-    # General-purpose Python exec (for ad-hoc analysis)
+    # Lakebase & Operational Context
+    f"{CATALOG}.{SCHEMA}.get_active_approval_rules",
+    f"{CATALOG}.{SCHEMA}.get_recent_incidents",
+    f"{CATALOG}.{SCHEMA}.get_online_features",
+    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
+    # Vector Search (Similar Transactions)
+    f"{CATALOG}.{SCHEMA}.search_similar_transactions",
+    f"{CATALOG}.{SCHEMA}.get_approval_recommendations",
+    # General-purpose Python exec (for ad-hoc analysis and recommendation write-back)
     "system.ai.python_exec",
 ]
 
@@ -213,7 +243,8 @@ class PaymentAnalysisAgent(ResponsesAgent):
         messages: list[dict[str, Any]],
     ) -> ResponsesAgentStreamEvent:
         """Execute a tool call, append result to message history, and return stream event."""
-        args = json.loads(tool_call["arguments"])
+        raw_args = tool_call.get("arguments") or "{}"
+        args = json.loads(raw_args)
         result = str(self.execute_tool(tool_name=tool_call["name"], args=args))
 
         tool_call_output = self.create_function_call_output_item(

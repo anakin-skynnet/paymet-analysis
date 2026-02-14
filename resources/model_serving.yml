@@ -28,7 +28,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "9"
+            entity_version: "20"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -42,7 +42,7 @@ resources:
               # Specialist-level for delegated agent calls
               LLM_ENDPOINT_SPECIALIST: "${var.llm_endpoint_specialist}"
         traffic_config:
-          routes: [{ served_model_name: "orchestrator-9", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "orchestrator-20", traffic_percentage: 100 }]
 
     # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
     # Uses balanced specialist model (Sonnet) for tool-calling and analysis.
@@ -51,7 +51,7 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.decline_analyst"
-            entity_version: "15"
+            entity_version: "26"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -61,7 +61,7 @@ resources:
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
         traffic_config:
-          routes: [{ served_model_name: "decline_analyst-15", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "decline_analyst-26", traffic_percentage: 100 }]
 
     # Predicts transaction approval probability
     approval_propensity_endpoint:

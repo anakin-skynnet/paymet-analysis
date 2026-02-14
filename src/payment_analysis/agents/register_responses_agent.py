@@ -15,7 +15,7 @@
 # MAGIC - UC agent tool functions exist (Job 3: create_uc_agent_tools)
 # MAGIC - Schema `agents` exists in the catalog
 # MAGIC
-# MAGIC **Outcome:** Model registered as `{catalog}.agents.payment_analysis_agent`.
+# MAGIC **Outcome:** Model registered as `{catalog}.agents.payment_analysis_agent`, deployed to endpoint **payment-response-agent**.
 
 # COMMAND ----------
 
@@ -190,17 +190,31 @@ from mlflow.models.resources import (
 # DatabricksFunction: UC functions used as tools by the agent.
 # See: https://docs.databricks.com/en/generative-ai/agent-framework/agent-authentication-model-serving
 UC_TOOL_NAMES = [
+    # Decline Analyst
     f"{CATALOG}.{SCHEMA}.get_decline_trends",
     f"{CATALOG}.{SCHEMA}.get_decline_by_segment",
+    # Smart Routing
     f"{CATALOG}.{SCHEMA}.get_route_performance",
     f"{CATALOG}.{SCHEMA}.get_cascade_recommendations",
+    # Smart Retry
     f"{CATALOG}.{SCHEMA}.get_retry_success_rates",
     f"{CATALOG}.{SCHEMA}.get_recovery_opportunities",
+    # Risk Assessor
     f"{CATALOG}.{SCHEMA}.get_high_risk_transactions",
     f"{CATALOG}.{SCHEMA}.get_risk_distribution",
+    # Performance Recommender
     f"{CATALOG}.{SCHEMA}.get_kpi_summary",
     f"{CATALOG}.{SCHEMA}.get_optimization_opportunities",
     f"{CATALOG}.{SCHEMA}.get_trend_analysis",
+    # Lakebase & Operational Context
+    f"{CATALOG}.{SCHEMA}.get_active_approval_rules",
+    f"{CATALOG}.{SCHEMA}.get_recent_incidents",
+    f"{CATALOG}.{SCHEMA}.get_online_features",
+    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
+    # Vector Search (Similar Transactions)
+    f"{CATALOG}.{SCHEMA}.search_similar_transactions",
+    f"{CATALOG}.{SCHEMA}.get_approval_recommendations",
+    # General-purpose Python exec (for ad-hoc analysis and recommendation write-back)
     "system.ai.python_exec",
 ]
 
@@ -216,10 +230,10 @@ with mlflow.start_run(run_name="register_payment_analysis_agent"):
         name="agent",
         python_model=str(agent_path),
         pip_requirements=[
-            "databricks-openai==0.5.0",
-            "unitycatalog-ai[databricks]==0.4.0",
+            "databricks-openai==0.10.0",
+            "unitycatalog-ai[databricks]==0.3.2",
             "backoff==2.2.1",
-            "databricks-sdk==0.86.0",
+            "databricks-sdk==0.88.0",
         ],
         resources=resources,
     )
@@ -312,16 +326,19 @@ print(f"Registered: {UC_MODEL_NAME} (version {uc_registered_model_info.version})
 # MAGIC %md
 # MAGIC ## Deploy the agent to Model Serving
 # MAGIC
-# MAGIC Creates a Model Serving endpoint with automatic auth passthrough.
+# MAGIC Creates a Model Serving endpoint named **payment-response-agent** with automatic auth passthrough.
 
 # COMMAND ----------
 
 from databricks import agents
 
+ENDPOINT_NAME = "payment-response-agent"
+
 try:
     agents.deploy(
         UC_MODEL_NAME,
         uc_registered_model_info.version,
+        endpoint_name=ENDPOINT_NAME,
         tags={
             "endpointSource": "payment-analysis",
             "domain": "payment-analytics",
@@ -329,7 +346,7 @@ try:
         },
         deploy_feedback_model=False,
     )
-    print(f"Deployed: {UC_MODEL_NAME} v{uc_registered_model_info.version}")
+    print(f"Deployed: {UC_MODEL_NAME} v{uc_registered_model_info.version} → endpoint={ENDPOINT_NAME}")
 except Exception as deploy_err:
     # If deploy fails due to duplicate tags (endpoint already exists), retry without tags
     if "Duplicate key" in str(deploy_err) or "tags" in str(deploy_err).lower():
@@ -337,9 +354,10 @@ except Exception as deploy_err:
         agents.deploy(
             UC_MODEL_NAME,
             uc_registered_model_info.version,
+            endpoint_name=ENDPOINT_NAME,
             deploy_feedback_model=False,
         )
-        print(f"Deployed (without tags): {UC_MODEL_NAME} v{uc_registered_model_info.version}")
+        print(f"Deployed (without tags): {UC_MODEL_NAME} v{uc_registered_model_info.version} → endpoint={ENDPOINT_NAME}")
     else:
         raise
 

@@ -1,7 +1,7 @@
 # Direct dependencies for Databricks App runtime.
 # Transitive deps resolved by pip; only pin direct deps to avoid conflicts.
-databricks-sdk==0.86.0
-fastapi==0.128.7
+databricks-sdk==0.88.0
+fastapi==0.129.0
 uvicorn==0.40.0
 pydantic-settings==2.12.0
 sqlmodel==0.0.32

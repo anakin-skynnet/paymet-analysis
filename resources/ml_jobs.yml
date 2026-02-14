@@ -28,7 +28,7 @@ resources:
           spec:
             environment_version: "4"
             dependencies:
-              - "databricks-sdk==0.86.0"
+              - "databricks-sdk==0.88.0"
               - "psycopg[binary]==3.3.2"
       tasks:
         - task_key: ensure_catalog_schema

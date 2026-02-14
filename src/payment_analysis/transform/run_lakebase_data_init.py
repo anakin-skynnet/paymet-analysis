@@ -16,7 +16,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "psycopg[binary]==3.3.2" "databricks-sdk==0.86.0" --quiet
+# MAGIC %pip install "psycopg[binary]==3.3.2" "databricks-sdk==0.88.0" --quiet
 
 # COMMAND ----------
 
@@ -63,7 +63,7 @@ postgres_api = getattr(ws, "postgres", None)
 if postgres_api is None:
     raise AttributeError(
         "WorkspaceClient has no attribute 'postgres'. The Postgres (Lakebase Autoscaling) API requires "
-        "databricks-sdk>=0.86.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.86.0\" --quiet, "
+        "databricks-sdk>=0.88.0. Ensure the first notebook cell runs: %pip install \"databricks-sdk==0.88.0\" --quiet, "
         "then re-run the notebook; or use a cluster/job with a newer Databricks runtime that includes it."
     )
 endpoint_name = f"projects/{lakebase_project_id}/branches/{lakebase_branch_id}/endpoints/{lakebase_endpoint_id}"

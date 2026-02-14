@@ -216,11 +216,11 @@ set_model(agent)
 # requirements the serving container may get incomplete / conflicting deps.
 # ---------------------------------------------------------------------------
 SERVING_PIP_REQUIREMENTS = [
-    "databricks-sdk==0.86.0",
+    "databricks-sdk==0.88.0",
     "databricks-langchain==0.15.0",
     "unitycatalog-langchain[databricks]==0.3.0",
     "langgraph==1.0.8",
-    "langchain-core==1.2.11",
+    "langchain-core==1.2.12",
     "mlflow==3.9.0",
     "pydantic>=2",
 ]
@@ -232,11 +232,37 @@ SERVING_PIP_REQUIREMENTS = [
 # See: https://docs.databricks.com/en/generative-ai/agent-framework/agent-authentication-model-serving
 # ---------------------------------------------------------------------------
 SPECIALIST_UC_TOOLS: dict[str, list[str]] = {
-    "decline_analyst": ["get_decline_trends", "get_decline_by_segment"],
-    "smart_routing": ["get_route_performance", "get_cascade_recommendations"],
-    "smart_retry": ["get_retry_success_rates", "get_recovery_opportunities"],
-    "risk_assessor": ["get_high_risk_transactions", "get_risk_distribution"],
-    "performance_recommender": ["get_kpi_summary", "get_optimization_opportunities", "get_trend_analysis"],
+    "decline_analyst": [
+        "get_decline_trends", "get_decline_by_segment",
+        # Lakebase & Vector Search integration
+        "get_recent_incidents", "search_similar_transactions",
+        "get_active_approval_rules", "get_approval_recommendations",
+    ],
+    "smart_routing": [
+        "get_route_performance", "get_cascade_recommendations",
+        # Lakebase & operational context
+        "get_recent_incidents", "get_active_approval_rules",
+        "get_decision_outcomes", "get_online_features",
+    ],
+    "smart_retry": [
+        "get_retry_success_rates", "get_recovery_opportunities",
+        # Lakebase & operational context
+        "get_recent_incidents", "get_active_approval_rules",
+        "get_decision_outcomes", "search_similar_transactions",
+    ],
+    "risk_assessor": [
+        "get_high_risk_transactions", "get_risk_distribution",
+        # Lakebase & operational context
+        "get_recent_incidents", "get_online_features",
+        "get_active_approval_rules", "search_similar_transactions",
+    ],
+    "performance_recommender": [
+        "get_kpi_summary", "get_optimization_opportunities", "get_trend_analysis",
+        # Lakebase & operational context + write-back
+        "get_recent_incidents", "get_active_approval_rules",
+        "get_decision_outcomes", "get_online_features",
+        "get_approval_recommendations",
+    ],
 }
 
 # Orchestrator uses all specialist tools (it delegates to all of them).

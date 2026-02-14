@@ -147,7 +147,59 @@ SELECT code, name, display_order FROM (
 WHERE (SELECT COUNT(*) FROM countries) = 0;
 
 -- ----------------------------------------------------------------------------
--- 4. Online features (ML and AI output for app UI)
+-- 4. Incidents (Lakehouse mirror of Lakebase incidents for UC agent access)
+-- ----------------------------------------------------------------------------
+-- The primary incidents table lives in Lakebase (Postgres), managed by the
+-- FastAPI backend (db_models.py → Incident). This Lakehouse mirror enables
+-- UC agent tools to query incident/feedback data via SQL, enriching agent
+-- analysis with real-world operational feedback.
+-- Sync: The backend writes to both Lakebase and this table, or a periodic
+-- sync job copies new Lakebase incidents here (see sync_incidents_to_lakehouse below).
+
+CREATE TABLE IF NOT EXISTS incidents_lakehouse (
+    id STRING NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+    category STRING NOT NULL COMMENT 'mid_failure | bin_anomaly | route_issue | fraud_spike | entry_mode',
+    incident_key STRING NOT NULL COMMENT 'Entity key (e.g. MID=..., BIN=..., route=...)',
+    severity STRING NOT NULL DEFAULT 'medium' COMMENT 'low | medium | high',
+    status STRING NOT NULL DEFAULT 'open' COMMENT 'open | mitigating | resolved',
+    details STRING COMMENT 'JSON string with incident details, notes, resolution'
+)
+USING DELTA
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.feature.allowColumnDefaults' = 'supported'
+)
+COMMENT 'Lakehouse mirror of Lakebase incidents for UC agent access. Agents use get_recent_incidents() to incorporate user/ops feedback into analysis.';
+
+-- Seed some sample incidents to bootstrap agent context (only if empty)
+INSERT INTO incidents_lakehouse (id, category, incident_key, severity, status, details)
+SELECT id, category, incident_key, severity, status, details FROM (
+    SELECT 'inc-seed-1' AS id, 'mid_failure' AS category, 'MID=merchant_42' AS incident_key,
+           'high' AS severity, 'open' AS status,
+           '{"description": "Merchant 42 experiencing 90% decline rate since 08:00 UTC", "affected_txns": 1200, "root_cause": "Acquirer connectivity issue"}' AS details
+    UNION ALL
+    SELECT 'inc-seed-2', 'bin_anomaly', 'BIN=411111', 'medium', 'mitigating',
+           '{"description": "BIN 411111 showing unusual fraud spike in Travel segment", "fraud_rate": 0.15, "normal_rate": 0.02}'
+    UNION ALL
+    SELECT 'inc-seed-3', 'route_issue', 'route=gateway_b', 'high', 'open',
+           '{"description": "Gateway B latency increased to 2000ms avg, causing timeouts", "avg_latency_ms": 2000, "normal_latency_ms": 200}'
+    UNION ALL
+    SELECT 'inc-seed-4', 'fraud_spike', 'segment=Gaming', 'high', 'mitigating',
+           '{"description": "Gaming segment fraud rate doubled in last 4 hours", "current_fraud_rate": 0.08, "threshold": 0.04}'
+) seed
+WHERE (SELECT COUNT(*) FROM incidents_lakehouse) = 0;
+
+-- View for agent access (latest incidents first)
+CREATE OR REPLACE VIEW v_incidents_recent AS
+SELECT id, created_at, category, incident_key, severity, status, details
+FROM incidents_lakehouse
+WHERE created_at >= current_timestamp() - INTERVAL 7 DAYS
+ORDER BY created_at DESC
+LIMIT 200;
+
+-- ----------------------------------------------------------------------------
+-- 5. Online features (ML and AI output for app UI)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS online_features (
     id STRING NOT NULL,
