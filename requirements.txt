@@ -1,7 +1,5 @@
 # Direct dependencies for Databricks App runtime.
 # Transitive deps resolved by pip; only pin direct deps to avoid conflicts.
-# NOTE: Do NOT include package.json in the deployed workspace — it triggers
-# npm install which fails. The UI is pre-built into __dist__/.
 databricks-sdk==0.86.0
 fastapi==0.128.7
 uvicorn==0.40.0
