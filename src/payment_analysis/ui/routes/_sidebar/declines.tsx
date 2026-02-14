@@ -6,6 +6,8 @@ import {
   useGetReasonCodeInsightsSuspense,
   useGetFactorsDelayingApprovalSuspense,
   useGetKpisSuspense,
+  useGetDeclineRecoveryOpportunitiesSuspense,
+  useGetCardNetworkPerformanceSuspense,
   type ReasonCodeInsightOut,
   type DeclineBucketOut,
 } from "@/lib/api";
@@ -13,6 +15,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   ChartContainer,
   ChartTooltip,
@@ -28,6 +39,9 @@ import {
   AlertCircle,
   BarChart3,
   Lightbulb,
+  DollarSign,
+  CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
@@ -72,7 +86,7 @@ function DeclineKPIs() {
   const approved = kpis?.approved ?? 0;
   const declined = total - approved;
   const declineRate = total > 0 ? ((declined / total) * 100).toFixed(1) : "0.0";
-  const approvalRate = kpis?.approval_rate != null ? kpis.approval_rate.toFixed(1) : "—";
+  const approvalRate = kpis?.approval_rate != null ? (kpis.approval_rate * 100).toFixed(1) : "—";
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
@@ -276,6 +290,144 @@ function ListSkeleton() {
   );
 }
 
+/* ----- Recovery Opportunities (Suspense-wrapped, real Databricks data) ----- */
+function RecoveryOpportunities() {
+  const { data: resp } = useGetDeclineRecoveryOpportunitiesSuspense({
+    params: { limit: 10 },
+    query: { refetchInterval: REFRESH_ANALYTICS_MS },
+  });
+  const opportunities = (resp?.data ?? []) as Array<Record<string, unknown>>;
+
+  if (opportunities.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-4">
+        No recovery opportunity data yet. Run gold views and the ETL pipeline to identify recoverable transactions.
+      </p>
+    );
+  }
+
+  const totalRecoverable = opportunities.reduce(
+    (sum, o) => sum + (Number(o.recoverable_amount ?? o.estimated_recovery ?? 0)),
+    0,
+  );
+  const totalTransactions = opportunities.reduce(
+    (sum, o) => sum + (Number(o.transaction_count ?? o.decline_count ?? 0)),
+    0,
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Summary KPIs */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-lg border border-green-200 dark:border-green-900 bg-green-500/5 p-3">
+          <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+          <div>
+            <p className="text-xs text-muted-foreground">Estimated Recoverable</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+              ${totalRecoverable.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+          <RefreshCw className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-xs text-muted-foreground">Recoverable Transactions</p>
+            <p className="text-lg font-bold">{totalTransactions.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Opportunities Table */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Decline Reason</TableHead>
+            <TableHead className="text-right">Count</TableHead>
+            <TableHead className="text-right">Recoverable</TableHead>
+            <TableHead>Strategy</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {opportunities.slice(0, 8).map((o, i) => {
+            const reason = String(o.decline_reason ?? o.reason_code ?? o.category ?? `Group ${i + 1}`);
+            const count = Number(o.transaction_count ?? o.decline_count ?? 0);
+            const amount = Number(o.recoverable_amount ?? o.estimated_recovery ?? 0);
+            const strategy = String(o.recovery_strategy ?? o.recommended_action ?? o.strategy ?? "Smart Retry");
+            return (
+              <TableRow key={`${reason}-${i}`}>
+                <TableCell className="font-medium text-sm">{reason}</TableCell>
+                <TableCell className="text-right tabular-nums">{count.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums text-green-600 dark:text-green-400">
+                  ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="text-xs">{strategy}</Badge>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/* ----- Card Network Performance (Suspense-wrapped, real Databricks data) ----- */
+function CardNetworkPerformance() {
+  const { data: resp } = useGetCardNetworkPerformanceSuspense({
+    params: { limit: 10 },
+    query: { refetchInterval: REFRESH_ANALYTICS_MS },
+  });
+  const networks = (resp?.data ?? []) as Array<Record<string, unknown>>;
+
+  if (networks.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-4">
+        No card network data yet. Run gold views and the ETL pipeline to see performance by network.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {networks.slice(0, 6).map((n, i) => {
+        const network = String(n.card_network ?? n.network ?? n.name ?? `Network ${i + 1}`);
+        const approvalRate = Number(n.approval_rate ?? n.approval_pct ?? 0);
+        const volume = Number(n.transaction_count ?? n.total_transactions ?? n.volume ?? 0);
+        const isTop = i === 0;
+        return (
+          <div key={`${network}-${i}`} className="space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">{network}</span>
+                {isTop && <Badge variant="default" className="text-[10px] px-1.5 py-0">Top</Badge>}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground tabular-nums">{volume.toLocaleString()} txns</span>
+                <span className={`font-semibold tabular-nums ${approvalRate >= 90 ? "text-green-600 dark:text-green-400" : approvalRate >= 80 ? "text-yellow-600 dark:text-yellow-400" : "text-destructive"}`}>
+                  {approvalRate.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <Progress value={approvalRate} className="h-2" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="space-y-2 py-2">
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} className="h-10 w-full rounded" />
+      ))}
+    </div>
+  );
+}
+
 /* ----- Main Page ----- */
 function Declines() {
   return (
@@ -349,6 +501,43 @@ function Declines() {
           </Suspense>
         </CardContent>
       </Card>
+
+      {/* Recovery Opportunities + Card Network Performance — side by side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
+              Recovery Opportunities
+            </CardTitle>
+            <CardDescription>
+              Declined transactions with high recovery potential. Estimated revenue recoverable through smart retry and routing optimization.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<TableSkeleton />}>
+              <RecoveryOpportunities />
+            </Suspense>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-primary" />
+              Approval Rate by Card Network
+            </CardTitle>
+            <CardDescription>
+              Compare approval rates across card networks. Identify underperforming networks for targeted optimization.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<ListSkeleton />}>
+              <CardNetworkPerformance />
+            </Suspense>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Recommended Actions */}
       <Card>

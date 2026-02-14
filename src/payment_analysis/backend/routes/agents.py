@@ -27,9 +27,9 @@ from ..dependencies import get_workspace_client, get_workspace_client_optional
 from ..logger import logger
 from .setup import resolve_orchestrator_job_id
 
-# Optional Genie space for /chat fallback: when set, POST /chat uses Databricks Genie Conversation API.
+# Optional Genie space: when set, POST /chat (Genie Assistant panel) uses the Databricks Genie Conversation API.
 GENIE_SPACE_ID_ENV = "GENIE_SPACE_ID"
-# When set, POST /api/agents/orchestrator/chat calls this Model Serving endpoint (AgentBricks/Supervisor) instead of Job 6.
+# When set, POST /api/agents/orchestrator/chat (AI Chatbot) calls this Model Serving endpoint instead of Job 6.
 ORCHESTRATOR_SERVING_ENDPOINT_ENV = "ORCHESTRATOR_SERVING_ENDPOINT"
 
 # Job 6 poll settings (orchestrator chat fallback)
@@ -399,10 +399,12 @@ async def chat(
     ws: WorkspaceClient | None = Depends(get_workspace_client_optional),
 ) -> ChatOut:
     """
-    Getnet AI Assistant fallback: when Orchestrator (Job 6) is not used, this endpoint
-    is called. If GENIE_SPACE_ID is set and the app has Databricks auth, uses the
+    Genie Assistant endpoint (separate from Orchestrator).
+    Used exclusively by the Genie Assistant panel for natural-language SQL analytics.
+    If GENIE_SPACE_ID is set and the app has Databricks auth, uses the
     Databricks Genie Conversation API to answer over payment/approval data; otherwise
     returns a static reply and a link to open Genie in the workspace.
+    NOTE: The AI Chatbot does NOT fall back here — it uses /orchestrator/chat exclusively.
     """
     workspace_url = get_workspace_url()
     genie_url = f"{workspace_url.rstrip('/')}/genie" if workspace_url else None
@@ -555,9 +557,12 @@ async def orchestrator_chat(
     ws: WorkspaceClient = Depends(get_workspace_client),
 ) -> OrchestratorChatOut:
     """
-    Run the orchestrator: when ORCHESTRATOR_SERVING_ENDPOINT is set, calls that AgentBricks/Supervisor
-    Model Serving endpoint; otherwise runs Job 6 (custom Python framework). Returns synthesized
-    recommendation and payment analysis. Requires Databricks token (open app from Compute → Apps).
+    Orchestrator Agent — the **only** backend for the AI Chatbot.
+    Purpose: semantic search, recommendations, and intelligence to accelerate approval rates.
+    When ORCHESTRATOR_SERVING_ENDPOINT is set, calls that Model Serving endpoint (ResponsesAgent / AgentBricks);
+    otherwise runs Job 6 (custom Python framework). Returns synthesized recommendation and payment analysis.
+    Requires Databricks token (open app from Compute → Apps).
+    NOTE: There is no Genie fallback. If the orchestrator is unavailable the chatbot shows an error.
     """
     endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
     if endpoint_name:

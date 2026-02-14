@@ -1,9 +1,21 @@
-import { useMemo, lazy, Suspense } from "react";
+import { useMemo, lazy, Suspense, Component, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetGeography } from "@/lib/api";
 import type { GeographyOut } from "@/lib/api";
 import { Globe } from "lucide-react";
+
+/* --- Error boundary for lazy-loaded world map --- */
+class MapErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { fallback: ReactNode; children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
 
 /** Refresh geography from backend every 15s for real-time map. */
 const REFRESH_GEOGRAPHY_MS = 15_000;
@@ -46,6 +58,32 @@ function approvalRateToColor(rate: number): string {
 const WorldMapLazy = lazy(() =>
   import("react-svg-worldmap").then((m) => ({ default: m.default })),
 );
+
+/** Fallback when the SVG map fails to load — shows a simple list. */
+function CountryListFallback({ rows }: { rows: GeographyOut[] }) {
+  if (!rows.length) return null;
+  return (
+    <div className="w-full space-y-2">
+      <p className="text-xs text-muted-foreground mb-2">Map unavailable — showing data as list</p>
+      {rows
+        .sort((a, b) => (b.transaction_count ?? 0) - (a.transaction_count ?? 0))
+        .map((r) => (
+          <div key={r.country} className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-1.5">
+            <span className="text-sm font-medium w-20">{getCountryName(r.country)}</span>
+            <Progress value={r.approval_rate_pct ?? 0} className="flex-1 h-2" />
+            <Badge variant={
+              (r.approval_rate_pct ?? 0) >= 85 ? "default" : (r.approval_rate_pct ?? 0) >= 75 ? "secondary" : "destructive"
+            } className="text-[10px] tabular-nums min-w-[52px] justify-center">
+              {r.approval_rate_pct?.toFixed(1) ?? "—"}%
+            </Badge>
+            <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">
+              {r.transaction_count?.toLocaleString()} tx
+            </span>
+          </div>
+        ))}
+    </div>
+  );
+}
 
 export function GeographyWorldMap() {
   const { data, isLoading, isError } = useGetGeography({
@@ -135,40 +173,62 @@ export function GeographyWorldMap() {
         </p>
       </CardHeader>
       <CardContent className="flex flex-col items-center">
-        <div className="w-full max-w-[640px] [&_svg]:max-w-full [&_svg]:h-auto">
-          <Suspense
-            fallback={
-              <div className="flex h-[280px] items-center justify-center rounded-lg bg-muted/30">
-                <Skeleton className="h-full w-full max-w-[640px] rounded-lg" />
+        <MapErrorBoundary fallback={<CountryListFallback rows={data?.data ?? []} />}>
+          <div className="w-full max-w-[640px] [&_svg]:max-w-full [&_svg]:h-auto">
+            <Suspense
+              fallback={
+                <div className="flex h-[280px] items-center justify-center rounded-lg bg-muted/30">
+                  <Skeleton className="h-full w-full max-w-[640px] rounded-lg" />
+                </div>
+              }
+            >
+              <WorldMapLazy
+                data={mapData}
+                color="var(--primary)"
+                backgroundColor="transparent"
+                borderColor="var(--border)"
+                title=""
+                valueSuffix="%"
+                size="responsive"
+                richInteraction
+                tooltipTextFunction={({ countryCode, countryValue }) => {
+                  const code = String(countryCode).toUpperCase();
+                  const row = byCode.get(code);
+                  const name = getCountryName(code);
+                  const rate = row?.approval_rate_pct ?? (typeof countryValue === "number" ? countryValue : null);
+                  const tx = row?.transaction_count;
+                  const parts = [name];
+                  if (rate != null) parts.push(`Approval: ${rate.toFixed(1)}%`);
+                  if (tx != null) parts.push(`${tx.toLocaleString()} tx`);
+                  return parts.join(" · ");
+                }}
+                styleFunction={({ countryValue }) => {
+                  const rate = typeof countryValue === "number" ? countryValue : 0;
+                  return { fill: approvalRateToColor(rate) };
+                }}
+              />
+            </Suspense>
+          </div>
+        </MapErrorBoundary>
+        {/* Country data list — always visible below the map */}
+        <div className="mt-4 w-full space-y-2">
+          {(data?.data ?? [])
+            .sort((a, b) => (b.transaction_count ?? 0) - (a.transaction_count ?? 0))
+            .slice(0, 8)
+            .map((r) => (
+              <div key={r.country} className="flex items-center gap-3 rounded-md bg-muted/30 px-3 py-1.5">
+                <span className="text-sm font-medium w-20">{getCountryName(r.country)}</span>
+                <Progress value={r.approval_rate_pct ?? 0} className="flex-1 h-2" />
+                <Badge variant={
+                  (r.approval_rate_pct ?? 0) >= 85 ? "default" : (r.approval_rate_pct ?? 0) >= 75 ? "secondary" : "destructive"
+                } className="text-[10px] tabular-nums min-w-[52px] justify-center">
+                  {r.approval_rate_pct?.toFixed(1) ?? "—"}%
+                </Badge>
+                <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">
+                  {r.transaction_count?.toLocaleString()} tx
+                </span>
               </div>
-            }
-          >
-            <WorldMapLazy
-              data={mapData}
-              color="var(--primary)"
-              backgroundColor="transparent"
-              borderColor="var(--border)"
-              title=""
-              valueSuffix="%"
-              size="responsive"
-              richInteraction
-              tooltipTextFunction={({ countryCode, countryValue }) => {
-                const code = String(countryCode).toUpperCase();
-                const row = byCode.get(code);
-                const name = getCountryName(code);
-                const rate = row?.approval_rate_pct ?? (typeof countryValue === "number" ? countryValue : null);
-                const tx = row?.transaction_count;
-                const parts = [name];
-                if (rate != null) parts.push(`Approval: ${rate.toFixed(1)}%`);
-                if (tx != null) parts.push(`${tx.toLocaleString()} tx`);
-                return parts.join(" · ");
-              }}
-              styleFunction={({ countryValue }) => {
-                const rate = typeof countryValue === "number" ? countryValue : 0;
-                return { fill: approvalRateToColor(rate) };
-              }}
-            />
-          </Suspense>
+            ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">

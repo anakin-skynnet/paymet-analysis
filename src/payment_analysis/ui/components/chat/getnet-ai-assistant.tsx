@@ -5,49 +5,37 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getGenieUrl, openInDatabricks } from "@/config/workspace";
-import { postChat, postOrchestratorChat } from "@/lib/api";
+import { postOrchestratorChat } from "@/lib/api";
 import { Bot, Mic, X } from "lucide-react";
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  genieUrl?: string | null;
   runPageUrl?: string | null;
   agentsUsed?: string[];
 }
 
-const TITLE = "Getnet AI Assistant";
-const PLACEHOLDER = "Ask about approval rates, declines, trends…";
+const TITLE = "Approval Rate Accelerator";
+const PLACEHOLDER = "Ask about recommendations, routing, retries, declines, risk…";
 
 /**
- * Getnet AI Assistant backend flow:
- * 1. Try POST /api/agents/orchestrator/chat (Databricks Job 6 – LangGraph Orchestrator).
- * 2. If that fails, try POST /api/agents/chat: backend uses Databricks Genie Conversation API
- *    when GENIE_SPACE_ID is set and app has auth; otherwise returns static reply + Genie link.
+ * AI Assistant — always uses the Orchestrator Agent (Model Serving / Job 6).
+ * Purpose: semantic search, recommendations, and intelligence to accelerate approval rates.
+ * No Genie fallback — the orchestrator is the single source of intelligence.
  */
 async function sendMessage(message: string): Promise<{
   reply: string;
-  genie_url?: string | null;
   run_page_url?: string | null;
   agents_used?: string[];
 }> {
   const body = { message: message.trim() };
   const opts = { credentials: "include" as RequestCredentials };
-  try {
-    const { data } = await postOrchestratorChat(body, opts);
-    return {
-      reply: data.reply ?? "",
-      run_page_url: data.run_page_url ?? null,
-      agents_used: data.agents_used ?? [],
-    };
-  } catch {
-    const { data } = await postChat(body, opts);
-    return {
-      reply: data.reply ?? "",
-      genie_url: data.genie_url ?? null,
-    };
-  }
+  const { data } = await postOrchestratorChat(body, opts);
+  return {
+    reply: data.reply ?? "",
+    run_page_url: data.run_page_url ?? null,
+    agents_used: data.agents_used ?? [],
+  };
 }
 
 export interface GetnetAIAssistantProps {
@@ -86,18 +74,17 @@ export function GetnetAIAssistant({ open: controlledOpen, onOpenChange }: Getnet
         {
           role: "assistant",
           content: out.reply,
-          genieUrl: out.genie_url ?? undefined,
           runPageUrl: out.run_page_url ?? undefined,
           agentsUsed: out.agents_used,
         },
       ]);
       setTimeout(scrollToBottom, 50);
     } catch (e) {
-      const err = e instanceof Error ? e.message : "Something went wrong.";
+      const err = e instanceof Error ? e.message : "Orchestrator agent unavailable. Ensure Job 6 (Deploy Agents) has been run.";
       setError(err);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Sorry, I couldn't process that. ${err}`, genieUrl: null },
+        { role: "assistant", content: `Sorry, I couldn't reach the orchestrator. ${err}` },
       ]);
     } finally {
       setLoading(false);
@@ -113,10 +100,6 @@ export function GetnetAIAssistant({ open: controlledOpen, onOpenChange }: Getnet
     },
     [submit]
   );
-
-  const openGenie = useCallback(() => {
-    openInDatabricks(getGenieUrl());
-  }, []);
 
   if (!open) {
     return (
@@ -166,7 +149,7 @@ export function GetnetAIAssistant({ open: controlledOpen, onOpenChange }: Getnet
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-sm">
-            Uses the Orchestrator agent (Databricks Job 6) when deployed; otherwise uses Databricks Genie or suggests opening Genie for approval and decline analytics.
+            Powered by the Orchestrator Agent. Ask about decline trends, routing optimizations, retry strategies, risk assessments, and actionable recommendations to accelerate approval rates.
           </p>
         )}
         {messages.map((m, i) => (
@@ -193,31 +176,23 @@ export function GetnetAIAssistant({ open: controlledOpen, onOpenChange }: Getnet
               )}
             >
               <p className="whitespace-pre-wrap">{m.content}</p>
-              {m.role === "assistant" && (m.genieUrl || m.runPageUrl) && (
+              {m.role === "assistant" && m.runPageUrl && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {m.runPageUrl && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-primary underline"
-                      onClick={() => window.open(m.runPageUrl!, "_blank", "noopener,noreferrer")}
-                    >
-                      View run in Databricks
-                    </Button>
-                  )}
-                  {m.genieUrl && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-primary underline"
-                      onClick={openGenie}
-                    >
-                      Open in Genie
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-primary underline"
+                    onClick={() => window.open(m.runPageUrl!, "_blank", "noopener,noreferrer")}
+                  >
+                    View run in Databricks
+                  </Button>
                 </div>
+              )}
+              {m.role === "assistant" && m.agentsUsed && m.agentsUsed.length > 0 && (
+                <p className="mt-1 text-xs opacity-60">
+                  Agents: {m.agentsUsed.join(", ")}
+                </p>
               )}
             </div>
             {m.role === "user" && <span className="h-6 w-6 shrink-0" />}

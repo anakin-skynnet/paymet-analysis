@@ -46,6 +46,7 @@ src/payment_analysis/__dist__/
 # Dev / test artifacts (keep repo clean)
 .coverage
 .pytest_cache/
+.screenshots/
 .mypy_cache/
 .ruff_cache/
 *.log

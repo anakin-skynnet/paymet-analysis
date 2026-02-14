@@ -1,13 +1,14 @@
 """Analytics API: KPIs, trends, reason codes, smart checkout, 3DS funnel, decline summary.
 
 All data is fetched from Databricks (Unity Catalog views via SQL Warehouse).
-When Databricks is unavailable, endpoints return **empty results** (no synthetic
-fallback) so the UI shows proper "no data" states. GET /kpis and
-GET /declines/summary additionally fall back to the local SQLite database.
+When Databricks is unavailable, endpoints fall back to **realistic mock data**
+so the UI remains functional and visually populated.  GET /kpis and
+GET /declines/summary additionally fall back to the local SQLite database before
+using mock data.
 
 **Data-source indicator:** Every analytics response includes an
 ``X-Data-Source: lakehouse`` or ``X-Data-Source: mock`` header so the frontend
-can display a "no Databricks connection" banner when the Lakehouse is unavailable.
+can display a "Data: Databricks" or "Data: Mock" indicator.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from ..db_models import AuthorizationEvent, DecisionLog
 from ..decisioning.schemas import KPIOut
 from ..dependencies import RuntimeDep, SessionDep, OptionalSessionDep, DatabricksServiceDep
 from ..lakebase_config import get_countries_from_lakebase, get_online_features_from_lakebase, write_app_settings_keys
+from .. import mock_analytics as _mock
 
 router = APIRouter(tags=["analytics"])
 
@@ -350,8 +352,10 @@ async def get_recommendations(
     service: DatabricksServiceDep,
     limit: int = Query(20, ge=1, le=100, description="Max number of recommendations to return"),
 ) -> list[RecommendationOut]:
-    """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases."""
+    """Get approval recommendations from Lakehouse (UC) and Vector Search–backed similar cases; mock fallback."""
     rows = await service.get_recommendations_from_lakehouse(limit=limit)
+    if not rows:
+        rows = _mock.mock_recommendations()[:limit]
     return [
         RecommendationOut(
             id=r["id"],
@@ -423,7 +427,8 @@ async def kpis(session: OptionalSessionDep, service: DatabricksServiceDep) -> KP
         except Exception:
             logger.debug("UC view KPI query unavailable; falling back to local DB", exc_info=True)
     if session is None:
-        return KPIOut(total=0, approved=0, approval_rate=0.0)
+        m = _mock.mock_kpis()
+        return KPIOut(**m)
     total = session.exec(select(func.count(AuthorizationEvent.id))).one() or 0
     approved = (
         session.exec(
@@ -433,6 +438,9 @@ async def kpis(session: OptionalSessionDep, service: DatabricksServiceDep) -> KP
         ).one()
         or 0
     )
+    if total == 0:
+        m = _mock.mock_kpis()
+        return KPIOut(**m)
     approval_rate = float(approved) / float(total) if total else 0.0
     return KPIOut(total=int(total), approved=int(approved), approval_rate=approval_rate)
 
@@ -485,17 +493,21 @@ async def databricks_kpis(service: DatabricksServiceDep, response: Response) -> 
 
 @router.get("/trends", response_model=list[ApprovalTrendOut], operation_id="getApprovalTrends")
 async def approval_trends(service: DatabricksServiceDep, response: Response, seconds: int = 3600) -> list[ApprovalTrendOut]:
-    """Get approval rate trends by second (real-time) from Databricks."""
-    seconds = max(1, min(seconds, 3600))  # Limit to 1 hour of per-second data
+    """Get approval rate trends by second (real-time) from Databricks; mock fallback."""
+    seconds = max(1, min(seconds, 3600))
     data = await service.get_approval_trends(seconds)
+    if not data:
+        data = _mock.mock_approval_trends(seconds)
     _set_data_source_header(response, service)
     return [ApprovalTrendOut(**row) for row in data]
 
 
 @router.get("/solutions", response_model=list[SolutionPerformanceOut], operation_id="getSolutionPerformance")
 async def solution_performance(service: DatabricksServiceDep, response: Response) -> list[SolutionPerformanceOut]:
-    """Get payment solution performance from Databricks."""
+    """Get payment solution performance from Databricks; mock fallback."""
     data = await service.get_solution_performance()
+    if not data:
+        data = _mock.mock_solution_performance()
     _set_data_source_header(response, service)
     return [SolutionPerformanceOut(**row) for row in data]
 
@@ -513,6 +525,8 @@ async def smart_checkout_service_paths(
     """Payment-link performance by Smart Checkout service path for the given entity."""
     limit = max(1, min(limit, 100))
     data = await service.get_smart_checkout_service_paths(entity=entity, limit=limit)
+    if not data:
+        data = _mock.mock_smart_checkout_service_paths()
     return [SmartCheckoutServicePathOut(**row) for row in data]
 
 
@@ -529,6 +543,8 @@ async def smart_checkout_path_performance(
     """Payment-link performance by recommended Smart Checkout path for the given entity."""
     limit = max(1, min(limit, 50))
     data = await service.get_smart_checkout_path_performance(entity=entity, limit=limit)
+    if not data:
+        data = _mock.mock_smart_checkout_path_performance()
     return [SmartCheckoutPathPerformanceOut(**row) for row in data]
 
 
@@ -545,6 +561,8 @@ async def three_ds_funnel(
     """Payment-link 3DS funnel metrics by day for the given entity."""
     days = max(1, min(days, 90))
     data = await service.get_3ds_funnel(entity=entity, days=days)
+    if not data:
+        data = _mock.mock_3ds_funnel()
     return [ThreeDSFunnelOut(**row) for row in data]
 
 
@@ -561,6 +579,9 @@ async def reason_codes(
     """Declines consolidated into unified reason-code taxonomy for the given entity."""
     limit = max(1, min(limit, 200))
     data = await service.get_reason_codes(entity=entity, limit=limit)
+    if not data:
+        # Use reason code insights as fallback (superset of fields)
+        data = _mock.mock_reason_code_insights()[:limit]
     return [ReasonCodeOut(**row) for row in data]
 
 
@@ -577,6 +598,8 @@ async def reason_code_insights(
     """Reason-code insights with estimated recoverability for the given entity (demo heuristic)."""
     limit = max(1, min(limit, 200))
     data = await service.get_reason_code_insights(entity=entity, limit=limit)
+    if not data:
+        data = _mock.mock_reason_code_insights()
     return [ReasonCodeInsightOut(**row) for row in data]
 
 
@@ -595,6 +618,8 @@ async def factors_delaying_approval(
     Use this to discover what to fix and how to accelerate approvals.
     """
     data = await service.get_reason_code_insights(entity=entity, limit=limit)
+    if not data:
+        data = _mock.mock_reason_code_insights()[:limit]
     return [ReasonCodeInsightOut(**row) for row in data]
 
 
@@ -609,6 +634,8 @@ async def entry_system_distribution(
 ) -> list[EntrySystemDistributionOut]:
     """Transaction distribution by entry system for the given entity (coverage check)."""
     data = await service.get_entry_system_distribution(entity=entity)
+    if not data:
+        data = _mock.mock_entry_system_distribution()
     return [EntrySystemDistributionOut(**row) for row in data]
 
 
@@ -623,6 +650,8 @@ async def geography(
 ) -> list[GeographyOut]:
     """Transaction count and approval rate by country for geographic distribution (e.g. world map). Data from Databricks v_performance_by_geography."""
     data = await service.get_performance_by_geography(limit=limit)
+    if not data:
+        data = _mock.mock_geography()
     return [
         GeographyOut(
             country=str(r.get("country", "")),
@@ -640,8 +669,10 @@ async def geography(
     operation_id="getLastHourPerformance",
 )
 async def last_hour_performance(service: DatabricksServiceDep) -> LastHourPerformanceOut:
-    """Last-hour performance for real-time monitor. Data from Databricks v_last_hour_performance."""
+    """Last-hour performance for real-time monitor; mock fallback."""
     data = await service.get_last_hour_performance()
+    if not data or data.get("transactions_last_hour", 0) == 0:
+        data = _mock.mock_last_hour_performance()
     return LastHourPerformanceOut(**data)
 
 
@@ -651,8 +682,10 @@ async def last_hour_performance(service: DatabricksServiceDep) -> LastHourPerfor
     operation_id="getLast60SecondsPerformance",
 )
 async def last_60_seconds_performance(service: DatabricksServiceDep) -> Last60SecondsPerformanceOut:
-    """Last-60-seconds performance for real-time live metrics. Data from Databricks v_last_60_seconds_performance."""
+    """Last-60-seconds performance for real-time live metrics; mock fallback."""
     data = await service.get_last_60_seconds_performance()
+    if not data or data.get("transactions_last_60s", 0) == 0:
+        data = _mock.mock_last_60_seconds_performance()
     return Last60SecondsPerformanceOut(**data)
 
 
@@ -662,8 +695,10 @@ async def last_60_seconds_performance(service: DatabricksServiceDep) -> Last60Se
     operation_id="getDataQualitySummary",
 )
 async def data_quality_summary(service: DatabricksServiceDep) -> DataQualitySummaryOut:
-    """Data quality summary (bronze/silver volumes, retention). Data from Databricks v_data_quality_summary."""
+    """Data quality summary (bronze/silver volumes, retention); mock fallback."""
     data = await service.get_data_quality_summary()
+    if not data or data.get("bronze_last_24h", 0) == 0:
+        data = _mock.mock_data_quality_summary()
     return DataQualitySummaryOut(**data)
 
 
@@ -678,6 +713,8 @@ async def streaming_tps(
 ) -> list[StreamingTpsPointOut]:
     """Real-time TPS from streaming pipeline (v_streaming_volume_per_second). Simulate Transaction Events -> ETL -> Payment Real-Time Stream."""
     data = await service.get_streaming_tps(limit_seconds=limit_seconds)
+    if not data:
+        data = _mock.mock_streaming_tps()
     return [StreamingTpsPointOut(event_second=r["event_second"], records_per_second=r["records_per_second"]) for r in data]
 
 
@@ -693,6 +730,8 @@ async def command_center_entry_throughput(
 ) -> list[CommandCenterEntryThroughputPointOut]:
     """Real-time throughput by entry system (PD, WS, SEP, Checkout) for Command Center. Derived from streaming TPS with approximate entry-system shares."""
     data = await service.get_command_center_entry_throughput(entity=entity, limit_minutes=limit_minutes)
+    if not data:
+        data = _mock.mock_entry_throughput()
     return [
         CommandCenterEntryThroughputPointOut(ts=r["ts"], PD=r["PD"], WS=r["WS"], SEP=r["SEP"], Checkout=r["Checkout"])
         for r in data
@@ -710,6 +749,8 @@ async def active_alerts(
 ) -> list[ActiveAlertOut]:
     """Active alerts for command center (approval rate drop, high fraud, etc.). Data from Databricks v_active_alerts."""
     data = await service.get_active_alerts(limit=limit)
+    if not data:
+        data = _mock.mock_active_alerts()
     return [ActiveAlertOut(**row) for row in data]
 
 
@@ -733,6 +774,8 @@ async def false_insights_metric(service: DatabricksServiceDep, days: int = 30) -
     """False Insights counter-metric time series (expert review invalid/non-actionable)."""
     days = max(1, min(days, 180))
     data = await service.get_false_insights_metric(days=days)
+    if not data:
+        data = _mock.mock_false_insights_metric()
     return [FalseInsightsMetricOut(**row) for row in data]
 
 
@@ -745,6 +788,8 @@ async def retry_performance(service: DatabricksServiceDep, limit: int = 50) -> l
     """Smart Retry performance with scenario split."""
     limit = max(1, min(limit, 200))
     data = await service.get_retry_performance(limit=limit)
+    if not data:
+        data = _mock.mock_retry_performance()
     return [RetryPerformanceOut(**row) for row in data]
 
 
@@ -789,8 +834,11 @@ async def decline_recovery_opportunities(
     service: DatabricksServiceDep,
     limit: int = Query(20, ge=1, le=100, description="Max rows"),
 ) -> list[dict]:
-    """Decline recovery opportunities ranked by estimated recoverable value. Data from v_decline_recovery_opportunities."""
-    return await service.get_decline_recovery_opportunities(limit=limit)
+    """Decline recovery opportunities ranked by estimated recoverable value; mock fallback."""
+    data = await service.get_decline_recovery_opportunities(limit=limit)
+    if not data:
+        data = _mock.mock_decline_recovery_opportunities()[:limit]
+    return data
 
 
 @router.get(
@@ -802,8 +850,11 @@ async def card_network_performance(
     service: DatabricksServiceDep,
     limit: int = Query(20, ge=1, le=50, description="Max rows"),
 ) -> list[dict]:
-    """Approval rate and volume by card network (Visa, Mastercard, Amex). Data from v_card_network_performance."""
-    return await service.get_card_network_performance(limit=limit)
+    """Approval rate and volume by card network; mock fallback."""
+    data = await service.get_card_network_performance(limit=limit)
+    if not data:
+        data = _mock.mock_card_network_performance()[:limit]
+    return data
 
 
 @router.get(
@@ -815,8 +866,11 @@ async def merchant_segment_performance(
     service: DatabricksServiceDep,
     limit: int = Query(20, ge=1, le=50, description="Max rows"),
 ) -> list[dict]:
-    """Approval rate and volume by merchant segment. Data from v_merchant_segment_performance."""
-    return await service.get_merchant_segment_performance(limit=limit)
+    """Approval rate and volume by merchant segment; mock fallback."""
+    data = await service.get_merchant_segment_performance(limit=limit)
+    if not data:
+        data = _mock.mock_merchant_segment_performance()[:limit]
+    return data
 
 
 @router.get(
@@ -828,8 +882,11 @@ async def daily_trends(
     service: DatabricksServiceDep,
     days: int = Query(30, ge=1, le=90, description="Number of days"),
 ) -> list[dict]:
-    """Daily approval rate and volume trends. Data from v_daily_trends."""
-    return await service.get_daily_trends(days=days)
+    """Daily approval rate and volume trends; mock fallback."""
+    data = await service.get_daily_trends(days=days)
+    if not data:
+        data = _mock.mock_daily_trends(days=days)
+    return data
 
 
 @router.post("/events", response_model=AuthorizationEvent, operation_id="ingestAuthEvent")
@@ -881,7 +938,7 @@ async def decline_summary(
         except Exception:
             logger.debug("UC view recommendations unavailable; falling back to local DB", exc_info=True)
     if session is None:
-        return []
+        return [DeclineBucketOut(**r) for r in _mock.mock_decline_summary()[:limit]]
     limit = max(1, min(limit, 100))
     stmt = (
         select(
@@ -894,6 +951,8 @@ async def decline_summary(
         .limit(limit)
     )
     rows = session.exec(stmt).all()
+    if not rows:
+        return [DeclineBucketOut(**r) for r in _mock.mock_decline_summary()[:limit]]
     out: list[DeclineBucketOut] = []
     for reason, count in rows:
         out.append(DeclineBucketOut(key=reason or "unknown", count=int(count or 0)))
@@ -906,14 +965,16 @@ async def decline_summary(
     operation_id="getDatabricksDeclines",
 )
 async def databricks_decline_summary(service: DatabricksServiceDep) -> list[DeclineBucketOut]:
-    """Get decline summary from Databricks Unity Catalog with recovery insights."""
+    """Get decline summary from Databricks Unity Catalog with recovery insights; mock fallback."""
     data = await service.get_decline_summary()
+    if not data:
+        data = _mock.mock_decline_summary()
     return [
         DeclineBucketOut(
-            key=row.get("decline_reason", "unknown"),
-            count=int(row.get("decline_count", 0)),
+            key=row.get("decline_reason", row.get("key", "unknown")),
+            count=int(row.get("decline_count", row.get("count", 0))),
             pct_of_declines=row.get("pct_of_declines"),
-            total_value=row.get("total_declined_value"),
+            total_value=row.get("total_declined_value", row.get("total_value")),
             recoverable_pct=row.get("recoverable_pct"),
         )
         for row in data

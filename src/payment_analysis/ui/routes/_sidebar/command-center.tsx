@@ -19,6 +19,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { KPICard } from "@/components/executive";
 import {
   useGetKpis,
@@ -33,6 +42,8 @@ import {
   useGetRetryPerformance,
   useGetEntrySystemDistribution,
   useGetApprovalTrends,
+  useGetMerchantSegmentPerformance,
+  useGetDailyTrends,
   postControlPanel,
   usePostControlPanel,
   type ApprovalTrendOut,
@@ -43,7 +54,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Area, AreaChart, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Line, LineChart } from "recharts";
 import { useEntity } from "@/contexts/entity-context";
 import { useAssistant } from "@/contexts/assistant-context";
 import { PageHeader } from "@/components/apx/page-header";
@@ -64,6 +75,8 @@ import {
   LayoutDashboard,
   ExternalLink,
   ArrowRight,
+  Store,
+  BarChart3,
 } from "lucide-react";
 
 /** Refresh interval for KPI and data quality (5s). */
@@ -77,6 +90,12 @@ const VIBRANT_GREEN = "#22C55E";
 const approvalTrendChartConfig = {
   approval_rate: { label: "Approval Rate %", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
+
+const dailyTrendChartConfig = {
+  approval_rate: { label: "Approval Rate %", color: "hsl(var(--chart-1))" },
+  total: { label: "Total Txns", color: "hsl(var(--chart-3))" },
+} satisfies ChartConfig;
+
 
 export const Route = createFileRoute("/_sidebar/command-center")({
   component: () => (
@@ -290,6 +309,16 @@ function CommandCenter() {
     query: { refetchInterval: REFRESH_MS },
   });
 
+  const merchantSegmentQ = useGetMerchantSegmentPerformance({
+    params: { limit: 10 },
+    query: { refetchInterval: REFRESH_MS },
+  });
+
+  const dailyTrendsQ = useGetDailyTrends({
+    params: { days: 14 },
+    query: { refetchInterval: REFRESH_MS },
+  });
+
   const approvalTrendData = useMemo(() => {
     const raw: ApprovalTrendOut[] = approvalTrendsQ.data?.data ?? [];
     if (!raw.length) return [];
@@ -381,6 +410,28 @@ function CommandCenter() {
       throughputPct: Math.round((r.transaction_count / total) * 100),
     }));
   }, [entryDistQ.data?.data]);
+
+  const merchantSegments = useMemo(() => {
+    const raw = (merchantSegmentQ.data?.data ?? []) as Array<Record<string, unknown>>;
+    if (!raw.length) return [];
+    return raw.slice(0, 6).map((m, i) => ({
+      segment: String(m.merchant_segment ?? m.segment ?? m.name ?? `Segment ${i + 1}`),
+      approval_rate: Number(m.approval_rate ?? m.approval_pct ?? 0),
+      volume: Number(m.transaction_count ?? m.total_transactions ?? m.volume ?? 0),
+      avg_amount: Number(m.avg_transaction_amount ?? m.avg_amount ?? 0),
+    }));
+  }, [merchantSegmentQ.data?.data]);
+
+  const dailyTrendData = useMemo(() => {
+    const raw = (dailyTrendsQ.data?.data ?? []) as Array<Record<string, unknown>>;
+    if (!raw.length) return [];
+    return raw.map((d) => ({
+      date: String(d.event_date ?? d.date ?? ""),
+      approval_rate: Number(d.approval_rate ?? d.approval_rate_pct ?? 0),
+      total: Number(d.total_transactions ?? d.transaction_count ?? d.total ?? 0),
+      approved: Number(d.approved_count ?? d.approved ?? 0),
+    }));
+  }, [dailyTrendsQ.data?.data]);
 
   if (kpisQ.isLoading && kpis == null) return <CommandCenterSkeleton />;
 
@@ -648,6 +699,95 @@ function CommandCenter() {
                     <span className="text-sm font-medium tabular-nums">{row.volume.toLocaleString()} ({row.pct}%)</span>
                   </div>
                 ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Merchant Segment Performance + Daily Trends — Databricks real data */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Merchant Segment Performance */}
+          <Card className="glass-card border border-border/80">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" />
+                Merchant Segment Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {merchantSegments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No merchant segment data. Run ETL pipeline to populate.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Segment</TableHead>
+                      <TableHead className="text-right">Volume</TableHead>
+                      <TableHead className="text-right">Approval</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {merchantSegments.map((m) => (
+                      <TableRow key={m.segment}>
+                        <TableCell className="font-medium text-sm py-1.5">{m.segment}</TableCell>
+                        <TableCell className="text-right tabular-nums text-sm py-1.5">{m.volume.toLocaleString()}</TableCell>
+                        <TableCell className="text-right py-1.5">
+                          <Badge
+                            variant={m.approval_rate >= 90 ? "default" : m.approval_rate >= 80 ? "secondary" : "destructive"}
+                            className="text-xs tabular-nums"
+                          >
+                            {m.approval_rate.toFixed(1)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Daily Trends (14-day) */}
+          <Card className="glass-card border border-border/80">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                Daily Approval Trend (14d)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dailyTrendData.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No daily trend data. Run ETL pipeline to populate.</p>
+              ) : (
+                <ChartContainer config={dailyTrendChartConfig} className="h-[200px] w-full">
+                  <LineChart data={dailyTrendData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(v: string) => {
+                        try {
+                          const d = new Date(v);
+                          return `${d.getMonth() + 1}/${d.getDate()}`;
+                        } catch { return v; }
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      domain={["auto", "auto"]}
+                      tickFormatter={(v: number) => `${v}%`}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="approval_rate"
+                      stroke="hsl(var(--chart-1))"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ChartContainer>
               )}
             </CardContent>
           </Card>

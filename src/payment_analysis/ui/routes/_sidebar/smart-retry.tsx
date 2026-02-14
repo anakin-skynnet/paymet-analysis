@@ -51,15 +51,15 @@ const SCENARIOS = [
 const REFRESH_ANALYTICS_MS = 15_000;
 
 const retryChartConfig = {
-  success_rate_pct: { label: "Success Rate %", color: "hsl(var(--chart-1))" },
-  recovered_value: { label: "Recovered Value", color: "hsl(var(--chart-3))" },
+  success_rate_pct: { label: "Success Rate %", color: "#2563eb" },
+  recovered_value: { label: "Recovered Value", color: "#16a34a" },
 } satisfies ChartConfig;
 
 const SCENARIO_COLORS: Record<string, string> = {
-  PaymentRetry: "hsl(var(--chart-1))",
-  PaymentRecurrence: "hsl(var(--chart-2))",
-  Retry: "hsl(var(--chart-3))",
-  Recurrence: "hsl(var(--chart-4))",
+  PaymentRetry: "#2563eb",
+  PaymentRecurrence: "#16a34a",
+  Retry: "#ea580c",
+  Recurrence: "#8b5cf6",
 };
 
 /* ----- KPI Summary ----- */
@@ -165,7 +165,7 @@ function RetryPerformanceChart() {
     scenario,
     success_rate_pct: agg.total > 0 ? Math.round(agg.successWeighted / agg.total) : 0,
     recovered_value: Math.round(agg.recovered),
-    fill: SCENARIO_COLORS[scenario] ?? "hsl(var(--chart-5))",
+    fill: SCENARIO_COLORS[scenario] ?? "#6366f1",
   }));
 
   return (
@@ -173,15 +173,15 @@ function RetryPerformanceChart() {
       {/* Success Rate by Scenario */}
       <div>
         <p className="text-sm font-medium mb-3">Success Rate by Scenario</p>
-        <ChartContainer config={retryChartConfig} className="h-[220px] w-full">
-          <BarChart data={chartData} margin={{ left: 10, right: 20 }}>
+        <ChartContainer config={retryChartConfig} className="h-[260px] w-full">
+          <BarChart data={chartData} layout="horizontal" barCategoryGap="20%" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
+            <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="success_rate_pct" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="success_rate_pct" fill="#2563eb" radius={[4, 4, 0, 0]} name="Success Rate %">
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+                <Cell key={`cell-sr-${index}`} fill={entry.fill} />
               ))}
             </Bar>
           </BarChart>
@@ -191,13 +191,17 @@ function RetryPerformanceChart() {
       {/* Recovered Value by Scenario */}
       <div>
         <p className="text-sm font-medium mb-3">Recovered Value by Scenario ($)</p>
-        <ChartContainer config={retryChartConfig} className="h-[220px] w-full">
-          <BarChart data={chartData} margin={{ left: 10, right: 20 }}>
+        <ChartContainer config={retryChartConfig} className="h-[260px] w-full">
+          <BarChart data={chartData} layout="horizontal" barCategoryGap="20%" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(Number(v)/1000).toFixed(0)}k`} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="recovered_value" radius={[4, 4, 0, 0]} fill="hsl(var(--chart-3))" />
+            <Bar dataKey="recovered_value" fill="#16a34a" radius={[4, 4, 0, 0]} name="Recovered Value">
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-rv-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </div>

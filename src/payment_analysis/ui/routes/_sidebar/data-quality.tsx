@@ -21,6 +21,7 @@ import {
   useGetLastHourPerformance,
   useGetLast60SecondsPerformance,
   useGetStreamingTps,
+  useGetActiveAlerts,
   type Incident,
 } from "@/lib/api";
 import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
@@ -114,6 +115,8 @@ function DataQualityPage() {
   const lastHourQ = useGetLastHourPerformance({ query: { refetchInterval: REFRESH_MS } });
   const last60sQ = useGetLast60SecondsPerformance({ query: { refetchInterval: REFRESH_MS } });
   const tpsQ = useGetStreamingTps({ params: { limit_seconds: 120 }, query: { refetchInterval: REFRESH_MS } });
+  const alertsQ = useGetActiveAlerts({ params: { limit: 20 }, query: { refetchInterval: REFRESH_MS } });
+  const activeAlerts = alertsQ.data?.data ?? [];
   const create = useMutation({
     mutationFn: () => createIncident({ category, key, severity: "medium", details: {} }),
     onSuccess: () => qc.invalidateQueries({ queryKey: listIncidentsKey() }),
@@ -294,19 +297,47 @@ function DataQualityPage() {
           </CardContent>
         </Card>
 
-        {/* Alerts card (from alerts-data-quality) */}
+        {/* Alerts card — inline list from /api/analytics/active-alerts + links */}
         <Card className="border border-border/80">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[var(--getnet-red)]" />
-              Alerts
+              Active Alerts
+              {activeAlerts.length > 0 && (
+                <Badge variant="destructive" className="ml-auto text-xs">{activeAlerts.length}</Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              View and manage real-time alerts and critical incidents in the monitoring dashboard.
-            </p>
-            <div className="flex flex-wrap gap-2">
+            {alertsQ.isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+              </div>
+            ) : activeAlerts.length === 0 ? (
+              <div className="flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="text-muted-foreground">No active alerts — all clear.</span>
+              </div>
+            ) : (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {activeAlerts.map((a, i) => (
+                  <li key={i} className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <Badge variant={a.severity === "high" ? "destructive" : a.severity === "medium" ? "default" : "secondary"} className="text-[10px]">
+                        {a.severity}
+                      </Badge>
+                      <span className="text-sm font-medium">{a.alert_type}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{a.alert_message}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                      {a.metric_name}: {a.current_value} (threshold: {a.threshold_value})
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 variant="outline"
                 size="sm"

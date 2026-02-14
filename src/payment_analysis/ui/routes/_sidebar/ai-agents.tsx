@@ -123,7 +123,7 @@ function AIAgents() {
             <div>
               <h1 className="text-2xl font-bold">AI Agents</h1>
               <p className="text-muted-foreground text-sm mt-1">
-                Genie (Ask Data) and Orchestrator + specialists. The floating Chat uses the Orchestrator when Job 6 is deployed. Each card opens in Databricks.
+                Orchestrator + specialist agents for approval rate acceleration. The floating AI Chat always uses the Orchestrator. Each card opens in Databricks.
               </p>
             </div>
           </div>

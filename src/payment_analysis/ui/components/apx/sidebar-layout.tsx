@@ -96,7 +96,7 @@ function Breadcrumb() {
   );
 }
 
-/** Two floating chat dialogs: AI Chat (header) → orchestrator; Genie Assistant (bottom right) → Genie/lakehouse. */
+/** Two floating chat dialogs: Approval Rate Accelerator (orchestrator-only); Genie Assistant → lakehouse data. */
 function GlobalChatPanels() {
   const {
     openAIChatbot,
@@ -142,7 +142,7 @@ function HeaderActions() {
             <span className="hidden sm:inline">AI chat</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Orchestrator agents: recommendations, semantic search, payment analysis</TooltipContent>
+        <TooltipContent>Approval Rate Accelerator: recommendations, semantic search, and intelligence from the orchestrator</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
