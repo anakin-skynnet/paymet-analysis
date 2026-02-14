@@ -116,16 +116,42 @@ os.environ.setdefault("CATALOG", "ahs_demos_catalog")
 os.environ.setdefault("SCHEMA", "payment_analysis")
 os.environ.setdefault("LLM_ENDPOINT", "databricks-claude-sonnet-4-5")
 
-# Import the agent
-sys.path.insert(0, str(Path(__file__).resolve().parent)) if "__file__" in dir() else None
-from agent import AGENT  # noqa: E402
+# Import the agent: ensure agents dir is on path (after restart __file__ may be notebook path or unset)
+_agents_dir = None
+if "__file__" in dir():
+    _agents_dir = Path(__file__).resolve().parent
+if _agents_dir and _agents_dir.exists():
+    sys.path.insert(0, str(_agents_dir))
+else:
+    _wr = (os.environ.get("WORKSPACE_ROOT") or "").strip()
+    for _candidate in [
+        Path("./src/payment_analysis/agents"),
+        Path("/Workspace") / _wr / "src/payment_analysis/agents" if _wr else None,
+    ]:
+        if _candidate and _candidate.exists():
+            sys.path.insert(0, str(_candidate.resolve()))
+            break
+
+try:
+    from agent import AGENT  # noqa: E402
+except Exception as e:
+    print(f"ERROR: Failed to import agent: {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    raise
 
 # Test: predict
-result = AGENT.predict({
-    "input": [{"role": "user", "content": "What are the current approval rates and top decline reasons?"}],
-    "custom_inputs": {"session_id": "test-registration"},
-})
-print(result.model_dump(exclude_none=True))
+try:
+    result = AGENT.predict({
+        "input": [{"role": "user", "content": "What are the current approval rates and top decline reasons?"}],
+        "custom_inputs": {"session_id": "test-registration"},
+    })
+    print(result.model_dump(exclude_none=True))
+except Exception as e:
+    print(f"ERROR: Agent predict failed: {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    raise
 
 # COMMAND ----------
 

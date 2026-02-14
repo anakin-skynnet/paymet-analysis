@@ -1,0 +1,38 @@
+[project]
+name = "payment-analysis"
+version = "0.1.0"
+description = "Payment Approval Optimization Platform"
+requires-python = ">=3.11"
+dependencies = [
+    "databricks-sdk==0.86.0",
+    "fastapi==0.128.7",
+    "playwright>=1.58.0",
+    "psycopg[binary,pool]==3.3.2",
+    "pydantic-settings==2.12.0",
+    "sqlmodel==0.0.32",
+    "uvicorn==0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "apx==0.2.6",
+    "ty==0.0.15",
+]
+
+[tool.apx.metadata]
+app-name = "Payment Analysis"
+app-slug = "payment_analysis"
+app-entrypoint = "payment_analysis.backend.app:app"
+api-prefix = "/api"
+metadata-path = "src/payment_analysis/_metadata.py"
+
+[tool.apx.ui]
+root = "src/payment_analysis/ui"
+
+[tool.apx.ui.registries]
+"@animate-ui" = "https://animate-ui.com/r/{name}.json"
+"@ai-elements" = "https://registry.ai-sdk.dev/{name}.json"
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
+extra-index-url = ["https://databricks-solutions.github.io/apx/simple"]
