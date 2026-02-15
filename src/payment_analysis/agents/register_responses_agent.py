@@ -22,6 +22,8 @@
 # Environment dependencies (responses_agent) already include all required packages.
 # No %pip install needed — avoids version conflicts and saves ~30s startup time.
 
+print("=== register_responses_agent notebook starting ===", flush=True)
+
 import json
 import os
 import sys
@@ -125,13 +127,20 @@ print(f"Agent path: {agent_path} (exists={agent_path.exists()})")
 # COMMAND ----------
 
 # Import the agent module
+print(f"Importing agent from {agent_path}...", flush=True)
 try:
     from agent import AGENT  # noqa: E402
-    print("SUCCESS: agent imported and initialized")
+    print("SUCCESS: agent imported and initialized", flush=True)
 except Exception as e:
     print(f"ERROR: Failed to import agent: {e}", flush=True)
     import traceback
     traceback.print_exc()
+    # Write error to notebook exit value so it's visible in the job run
+    try:
+        from databricks.sdk.runtime import dbutils
+        dbutils.notebook.exit(json.dumps({"error": str(e), "traceback": traceback.format_exc()[:2000]}))
+    except Exception:
+        pass
     raise
 
 # COMMAND ----------
@@ -330,36 +339,12 @@ print(f"Registered: {UC_MODEL_NAME} (version {uc_registered_model_info.version})
 
 # COMMAND ----------
 
-from databricks import agents
-
-ENDPOINT_NAME = "payment-response-agent"
-
-try:
-    agents.deploy(
-        UC_MODEL_NAME,
-        uc_registered_model_info.version,
-        endpoint_name=ENDPOINT_NAME,
-        tags={
-            "endpointSource": "payment-analysis",
-            "domain": "payment-analytics",
-            "agent_type": "responses_agent",
-        },
-        deploy_feedback_model=False,
-    )
-    print(f"Deployed: {UC_MODEL_NAME} v{uc_registered_model_info.version} → endpoint={ENDPOINT_NAME}")
-except Exception as deploy_err:
-    # If deploy fails due to duplicate tags (endpoint already exists), retry without tags
-    if "Duplicate key" in str(deploy_err) or "tags" in str(deploy_err).lower():
-        print(f"Deploy with tags failed ({deploy_err}). Retrying without tags...")
-        agents.deploy(
-            UC_MODEL_NAME,
-            uc_registered_model_info.version,
-            endpoint_name=ENDPOINT_NAME,
-            deploy_feedback_model=False,
-        )
-        print(f"Deployed (without tags): {UC_MODEL_NAME} v{uc_registered_model_info.version} → endpoint={ENDPOINT_NAME}")
-    else:
-        raise
+# Note: The Model Serving endpoint is managed by Databricks Asset Bundles
+# (resources/model_serving.yml). After this notebook registers a new model
+# version, update entity_version in model_serving.yml and run bundle deploy.
+# No need for databricks.agents.deploy() — the endpoint config is in Terraform.
+print(f"Model registered: {UC_MODEL_NAME} v{uc_registered_model_info.version}")
+print(f"To deploy: update entity_version in resources/model_serving.yml, then run 'databricks bundle deploy'")
 
 # COMMAND ----------
 

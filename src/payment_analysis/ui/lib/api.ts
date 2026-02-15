@@ -561,7 +561,7 @@ export interface RetryPerformanceOut {
   avg_prior_approvals?: number | null;
   avg_time_since_last_attempt_s?: number | null;
   baseline_approval_pct?: number | null;
-  decline_reason_standard: string;
+  decline_reason_standard?: string | null;
   effectiveness: string;
   incremental_lift_pct?: number | null;
   recovered_value: number;

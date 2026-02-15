@@ -31,7 +31,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 | **Rules engine** (Lakebase/Lakehouse) | Configurable business rules | Operators tune approve/decline/retry without code. |
 | **Vector Search** | Similar-transaction lookup | “Similar cases” for retry and routing. |
 | **7 AI agents** | Natural-language analytics and recommendations | Explains patterns and suggests actions. |
-| **12 dashboards** | KPIs, funnels, reason codes | Visibility into what drives approvals/declines. |
+| **3 unified dashboards** | KPIs, funnels, reason codes, ML optimization | Visibility into what drives approvals/declines. |
 | **FastAPI + React app** | Decision API and control panel | Single place to run jobs, view dashboards, manage rules. |
 
 **High-level flow:** Simulator or real pipelines → Lakeflow → Unity Catalog. Intelligence: ML + rules + Vector Search + AI agents. Application: FastAPI backend + React UI (Setup & Run, dashboards, rules, decisioning).
@@ -53,8 +53,8 @@ The solution is designed and documented around a single business objective: **ac
 | **ML models (4)** | Approval propensity, risk scoring, smart routing, smart retry — trained on `payments_enriched_silver`, registered in Unity Catalog, served via model serving endpoints. | **Approval propensity:** predicts likelihood of approval to avoid declining likely-good transactions. **Risk:** enables risk-based auth (e.g. step-up for high risk) so low-risk flows stay frictionless. **Routing:** picks the solution (standard, 3DS, token, passkey) that maximizes approval rate for the segment. **Retry:** predicts retry success and timing to recover otherwise-lost approvals. |
 | **Decisioning API** | Real-time endpoints: `/api/decision/authentication`, `/retry`, `/routing`; ML prediction endpoints for approval, risk, routing; A/B experiment assignment. | Single decision layer for auth, retry, and routing; combines rules + risk tier + (when enabled) model scores so each transaction gets the right path to maximize approval while controlling risk. |
 | **Vector Search** | Index over transaction summaries; similar-case lookup. | Powers “similar cases” recommendations (e.g. “similar transactions approved 65% with retry after 2h”); feeds recommendations into the Decisioning UI and agents to suggest actions that accelerate approvals. |
-| **7 AI agents** | Orchestrator + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender, etc.; use Lakehouse rules and (optionally) Lakebase. | Answer natural-language questions about approval rates and declines; suggest routing, retry, and rule changes; surface underperforming segments and action plans so teams can improve approval rates and recovery. |
-| **12 dashboards** | Executive, trends, 3DS, declines, routing, retry, financial impact, risk, etc., in Databricks AI/BI. | Give visibility into approval rates, decline reasons, solution performance, and recovery; operators see where to act (e.g. which route or retry strategy lifts approval rate) and track impact. |
+| **7 AI agents** | Orchestrator + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender; use Lakehouse rules, Lakebase data, and Vector Search. Deployed as 6 Model Serving endpoints (serverless, scale-to-zero). | Answer natural-language questions about approval rates and declines; suggest routing, retry, and rule changes; use similar-transaction lookup and incident history to improve recommendations. |
+| **3 unified dashboards** | Data & Quality, ML & Optimization, Executive & Trends in Databricks AI/BI (Lakeview). Embeddable in the app via `/embed/dashboardsv3/` path. | Give visibility into approval rates, decline reasons, solution performance, and recovery; operators see where to act and track impact. |
 | **FastAPI + React app** | Control panel: Setup & Run (jobs, pipelines), Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, Agents, Experiments, Incidents. | One place to run pipelines/jobs, manage rules, view recommendations and KPIs, and open agents/dashboards; ensures teams can operate the whole stack that drives approval rate without leaving the app. |
 | **Genie** | Natural-language “Ask Data” in the workspace, synced with sample questions (approval rate, trends, segments). | Extends visibility: ask “What is the approval rate?” or “Which segment has the lowest approval rate?” in the lakehouse context, supporting the same goal of accelerating approval rates. |
 | **Experiments & incidents** | A/B experiments (e.g. 3DS treatment vs control) and incident/remediation tracking in Lakebase. | Experiments measure impact of policy changes on approval rate; incidents track production issues that might hurt approvals so they can be fixed. |
@@ -69,13 +69,13 @@ Payment transactions can use several services (Antifraud, Vault, 3DS, Data Only,
 
 ## 2. Architecture
 
-- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie. 12 dashboards.
+- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie, Vector Search, Lakebase. 3 unified dashboards. 6 model serving endpoints. All serverless compute.
 - **App:** FastAPI (analytics, decisioning, dashboards, agents, rules, setup) + React (TanStack Router, shadcn/ui). API prefix `/api` for token-based auth.
-- **Stack:** Delta, Unity Catalog, Lakeflow, SQL Warehouse, Lakebase (Postgres for rules/experiments/incidents), MLflow, FastAPI, React, TypeScript, Vite, Bun, Databricks Asset Bundles.
+- **Stack:** Delta, Unity Catalog, Lakeflow, SQL Warehouse, Lakebase (Postgres for rules/experiments/incidents/online features), Vector Search (similar transactions), MLflow, FastAPI, React, TypeScript, Vite, Bun, Databricks Asset Bundles.
 
-**Data flow:** Ingestion → Processing (Bronze → Silver → Gold, &lt;5s) → Intelligence (ML + 7 AI agents) → Analytics (12 dashboards, Genie) → Application (FastAPI + React).
+**Data flow:** Ingestion → Processing (Bronze → Silver → Gold, &lt;5s) → Intelligence (ML + 7 AI agents + Vector Search) → Analytics (3 unified dashboards, Genie) → Application (FastAPI + React).
 
-Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold 12+ views. Lakehouse bootstrap creates `app_config`, rules, recommendations, and related views (see [Deployment](DEPLOYMENT.md)).
+Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold 15+ views. Lakehouse bootstrap creates `app_config`, rules, recommendations, and related views (see [Deployment](DEPLOYMENT.md)). Vector Search index on `transaction_summaries_for_search` for similar-transaction lookup.
 
 ---
 
@@ -100,10 +100,11 @@ Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold
 | Lakebase | Instance + UC catalog (rules, experiments, incidents) |
 | SQL warehouse | Payment Analysis Warehouse |
 | Pipelines | ETL, Real-Time Stream |
-| Jobs | 6 steps (repositories, simulator, ingestion, dashboards, ML, agents) + Genie sync |
-| Dashboards | 12 |
+| Jobs | 7 steps (repositories, simulator, ingestion, dashboards, ML, agents, Genie sync) |
+| Dashboards | 3 unified (Data & Quality, ML & Optimization, Executive & Trends) |
+| Model Serving | 6 endpoints (2 agents + 4 ML models) |
 | App | payment-analysis (FastAPI + React) |
-| Optional | model_serving.yml (after training); Vector Search from `resources/vector_search.yml` |
+| Vector Search | Endpoint + delta-sync index for similar transactions |
 
 ---
 
@@ -272,7 +273,7 @@ Aligns the app with Databricks Apps best practices and confirms **all data and A
 | **Dashboards** | DBSQL dashboards in workspace (embed URLs) | N/A |
 | **Jobs / Pipelines** | Databricks Jobs & Pipelines APIs | N/A |
 
-**Unity Catalog views used by analytics** (via `DatabricksService.execute_query()`): `v_executive_kpis`, `v_approval_trends_hourly` (per-second granularity, column `event_second`), `v_approval_trends_by_second`, `v_solution_performance`, `v_top_decline_reasons`, `v_smart_checkout_*`, `v_3ds_funnel_br`, `v_reason_codes_br`, `v_reason_code_insights_br`, `v_entry_system_distribution_br`, `v_dedup_collision_stats`, `v_false_insights_metric`, `v_retry_performance`, plus country and recommendation tables (see `databricks_service.py`).
+**Unity Catalog views used by analytics** (via `DatabricksService.execute_query()`): `v_executive_kpis`, `v_approval_trends_hourly` (per-second granularity), `v_approval_trends_by_second`, `v_solution_performance`, `v_top_decline_reasons`, `v_smart_checkout_*`, `v_3ds_funnel_br`, `v_reason_codes_br`, `v_reason_code_insights_br`, `v_entry_system_distribution_br`, `v_dedup_collision_stats`, `v_false_insights_metric`, `v_retry_performance`, `v_recommendations_from_lakehouse`, plus country tables. Full list in `databricks_service.py`.
 
 **AI/ML sources:** Model Serving (approval, risk, routing); Genie / Mosaic AI Gateway (linked from UI); agents listed from workspace config.
 

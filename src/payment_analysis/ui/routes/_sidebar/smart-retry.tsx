@@ -240,7 +240,7 @@ function RetryCohorts() {
     <ul className="space-y-3">
       {rows.map((r: RetryPerformanceOut) => (
         <li
-          key={`${r.retry_scenario}-${r.decline_reason_standard}-${r.retry_count}`}
+          key={`${r.retry_scenario}-${r.decline_reason_standard ?? "all"}-${r.retry_count}`}
           className="rounded-lg border border-border/60 p-3 space-y-2"
         >
           <div className="flex flex-wrap items-center gap-2">
@@ -248,7 +248,7 @@ function RetryCohorts() {
               <Repeat className="h-3 w-3 mr-1" />
               {r.retry_scenario}
             </Badge>
-            <span className="font-mono text-sm">{r.decline_reason_standard}</span>
+            <span className="font-mono text-sm">{r.decline_reason_standard ?? "All reasons"}</span>
             <Badge variant="outline">Attempt {r.retry_count}</Badge>
             <Badge className={r.success_rate_pct >= 50 ? "bg-green-600" : ""}>
               {r.success_rate_pct}% success

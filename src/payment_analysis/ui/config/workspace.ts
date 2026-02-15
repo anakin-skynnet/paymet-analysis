@@ -74,9 +74,9 @@ export function getWorkspacePath(path: string): string {
  * Must match backend (DASHBOARD_ID_* env vars in dashboards.py).
  */
 export const LAKEVIEW_DASHBOARD_IDS: Record<string, string> = {
-  data_quality_unified: "01f1090059311b079903b08b73dc03d8",
-  ml_optimization_unified: "01f10900593c19f19eaa6453cb1af0d8",
-  executive_trends_unified: "01f10900592f18cb82d7a57547ac57ca",
+  data_quality_unified: "01f109ebdeeb18e9baad9aeff86d6789",
+  ml_optimization_unified: "01f109ebdee91971a4fc4e6955b7b571",
+  executive_trends_unified: "01f109ebdedd1e188386fc897aed78a5",
 };
 
 /**

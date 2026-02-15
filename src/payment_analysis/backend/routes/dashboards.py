@@ -70,19 +70,30 @@ class DashboardList(BaseModel):
 
 # Lakeview dashboard IDs — set in app env or default to the deployed IDs.
 _DASHBOARD_ID_DATA_QUALITY = os.getenv(
-    "DASHBOARD_ID_DATA_QUALITY", "01f1090059311b079903b08b73dc03d8"
+    "DASHBOARD_ID_DATA_QUALITY", "01f109ebdeeb18e9baad9aeff86d6789"
 )
 _DASHBOARD_ID_ML_OPTIMIZATION = os.getenv(
-    "DASHBOARD_ID_ML_OPTIMIZATION", "01f10900593c19f19eaa6453cb1af0d8"
+    "DASHBOARD_ID_ML_OPTIMIZATION", "01f109ebdee91971a4fc4e6955b7b571"
 )
 _DASHBOARD_ID_EXECUTIVE_TRENDS = os.getenv(
-    "DASHBOARD_ID_EXECUTIVE_TRENDS", "01f10900592f18cb82d7a57547ac57ca"
+    "DASHBOARD_ID_EXECUTIVE_TRENDS", "01f109ebdedd1e188386fc897aed78a5"
 )
 
 
 def _lakeview_url_path(dashboard_id: str) -> str:
-    """Lakeview published dashboard URL path (append ?embed=true for iframe)."""
+    """Lakeview published dashboard URL path (for opening in a new tab)."""
     return f"/dashboardsv3/{dashboard_id}/published"
+
+
+def _lakeview_embed_path(dashboard_id: str) -> str:
+    """Lakeview embed URL path with /embed/ prefix.
+
+    Databricks requires the /embed/ prefix to serve the dashboard with
+    relaxed X-Frame-Options / CSP frame-ancestors headers, allowing the
+    dashboard to be loaded inside an iframe from *.databricksapps.com.
+    See: https://docs.databricks.com/en/dashboards/embed.html
+    """
+    return f"/embed/dashboardsv3/{dashboard_id}/published"
 
 
 DASHBOARDS = [
@@ -260,8 +271,25 @@ async def get_dashboard_url(
     full_url = f"{workspace_host}{url_path}" if workspace_host else None
 
     if embed:
-        sep = "&" if "?" in url_path else "?"
-        embed_path = f"{url_path}{sep}embed=true"
+        # Use /embed/ prefix path — Databricks requires this to relax
+        # X-Frame-Options / CSP frame-ancestors so iframes from external
+        # domains (*.databricksapps.com) are allowed.
+        # Extract dashboard ID from url_path to build the embed variant.
+        dashboard_lakeview_id = ""
+        for d_id_var in [_DASHBOARD_ID_DATA_QUALITY, _DASHBOARD_ID_ML_OPTIMIZATION, _DASHBOARD_ID_EXECUTIVE_TRENDS]:
+            if d_id_var in base_path:
+                dashboard_lakeview_id = d_id_var
+                break
+        if dashboard_lakeview_id:
+            embed_base = _lakeview_embed_path(dashboard_lakeview_id)
+        else:
+            # Fallback: replace /dashboardsv3/ with /embed/dashboardsv3/
+            embed_base = base_path.replace("/dashboardsv3/", "/embed/dashboardsv3/", 1)
+
+        if workspace_id:
+            embed_path = f"{embed_base}?o={workspace_id}"
+        else:
+            embed_path = embed_base
         full_embed_url = f"{workspace_host}{embed_path}" if workspace_host else None
         return {
             "dashboard_id": dashboard_id,
@@ -270,7 +298,7 @@ async def get_dashboard_url(
             "embed_url": embed_path,
             "full_embed_url": full_embed_url,
             "embed": True,
-            "instructions": "Use full_embed_url in an iframe. Requires workspace admin to enable 'Allow embedding dashboards'.",
+            "instructions": "Use full_embed_url in an iframe. Requires workspace admin to enable 'Allow embedding dashboards' in Settings → Security.",
         }
 
     return {

@@ -6,7 +6,7 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, and Vector Search — unified in a single decision layer and control panel.
+**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 6 model serving endpoints (2 agents + 4 ML models), 3 unified AI/BI dashboards, 7 orchestrated jobs.
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -25,7 +25,7 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 | **Keep insights reliable** | Experiments, validation workflow, False Insights metric | You balance speed and accuracy; experts can flag bad or non-actionable insights so the system gets better. |
 | **Focus on the regions that matter (e.g. Brazil)** | Catalog/schema and country filters, geography dashboards | You filter by country or region; Brazil’s share of volume is visible by default so local teams see what’s relevant. |
 | **See performance across all entry channels** | Entry-system distribution analytics, gold views and dashboards | You see how each channel (Checkout, PD, WS, SEP) performs without double-counting or mixing definitions. |
-| **Monitor performance in real time and over time** | 12 dashboards (executive, trends, declines, routing, retry, risk, etc.), real-time views | You have KPIs, trends, and reason codes for both live monitoring and historical analysis. |
+| **Monitor performance in real time and over time** | 3 unified dashboards (Data & Quality, ML & Optimization, Executive & Trends), real-time views | You have KPIs, trends, and reason codes for both live monitoring and historical analysis. |
 | **One place to run and control everything** | FastAPI + React app: Setup & Run, Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, AI agents | You run jobs, manage rules, view dashboards and recommendations, and operate the full stack from a single control panel. |
 | **Ask in plain language and get recommendations** | 7 AI agents (orchestrator + 5 specialists), Genie | You ask questions in natural language and get answers and recommendations on routing, retries, declines, risk, and performance. |
 

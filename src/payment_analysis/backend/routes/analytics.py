@@ -169,7 +169,7 @@ class FalseInsightsMetricOut(BaseModel):
 
 class RetryPerformanceOut(BaseModel):
     retry_scenario: str
-    decline_reason_standard: str
+    decline_reason_standard: Optional[str] = None
     retry_count: int
     retry_attempts: int
     success_rate_pct: float

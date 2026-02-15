@@ -307,7 +307,7 @@ RETURN
 -- Approval Rules (from Lakehouse view backed by Lakebase)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_active_approval_rules(rule_type STRING)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_active_approval_rules(rule_type STRING DEFAULT '')
 RETURNS TABLE(
   name STRING,
   rule_type STRING,
@@ -316,7 +316,7 @@ RETURNS TABLE(
   priority INT
 )
 LANGUAGE SQL
-COMMENT 'Get active approval rules configured by the business team. Use to understand current policies (authentication, retry, routing) before making recommendations. Pass rule_type = "authentication", "retry", or "routing", or NULL for all.'
+COMMENT 'Get active approval rules configured by the business team. Use to understand current policies (authentication, retry, routing) before making recommendations. Pass rule_type = "authentication", "retry", or "routing", or "" for all.'
 RETURN
   SELECT
     name,
@@ -325,7 +325,7 @@ RETURN
     condition_expression,
     priority
   FROM __CATALOG__.__SCHEMA__.v_approval_rules_active
-  WHERE (get_active_approval_rules.rule_type IS NULL OR rule_type = get_active_approval_rules.rule_type)
+  WHERE (get_active_approval_rules.rule_type = '' OR rule_type = get_active_approval_rules.rule_type)
   ORDER BY priority ASC
   LIMIT 50;
 
@@ -333,7 +333,7 @@ RETURN
 -- Incidents & User Feedback (from Lakehouse mirror of Lakebase incidents)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_recent_incidents(status_filter STRING)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_recent_incidents(status_filter STRING DEFAULT '')
 RETURNS TABLE(
   id STRING,
   created_at TIMESTAMP,
@@ -344,7 +344,7 @@ RETURNS TABLE(
   details STRING
 )
 LANGUAGE SQL
-COMMENT 'Get recent incidents reported by users and operations teams. Incidents include MID failures, BIN anomalies, route issues, fraud spikes. Use this to incorporate real-world user feedback into your analysis and recommendations. Pass status = "open", "mitigating", "resolved", or NULL for all.'
+COMMENT 'Get recent incidents reported by users and operations teams. Incidents include MID failures, BIN anomalies, route issues, fraud spikes. Use this to incorporate real-world user feedback into your analysis and recommendations. Pass status_filter = "open", "mitigating", "resolved", or "" for all.'
 RETURN
   SELECT
     id,
@@ -355,7 +355,7 @@ RETURN
     status,
     details
   FROM __CATALOG__.__SCHEMA__.incidents_lakehouse
-  WHERE (get_recent_incidents.status_filter IS NULL OR status = get_recent_incidents.status_filter)
+  WHERE (get_recent_incidents.status_filter = '' OR status = get_recent_incidents.status_filter)
   ORDER BY created_at DESC
   LIMIT 50;
 
@@ -363,7 +363,7 @@ RETURN
 -- Online Features (real-time ML scores from Lakebase/Lakehouse)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_online_features(source_filter STRING)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_online_features(source_filter STRING DEFAULT '')
 RETURNS TABLE(
   id STRING,
   source STRING,
@@ -375,7 +375,7 @@ RETURNS TABLE(
   created_at TIMESTAMP
 )
 LANGUAGE SQL
-COMMENT 'Get real-time online features from ML models and AI agents (last 24 hours). These are the same signals used by the decisioning engine. Pass source = "ml" or "agent", or NULL for all.'
+COMMENT 'Get real-time online features from ML models and AI agents (last 24 hours). These are the same signals used by the decisioning engine. Pass source_filter = "ml" or "agent", or "" for all.'
 RETURN
   SELECT
     id,
@@ -387,7 +387,7 @@ RETURN
     entity_id,
     created_at
   FROM __CATALOG__.__SCHEMA__.v_online_features_latest
-  WHERE (get_online_features.source_filter IS NULL OR source = get_online_features.source_filter)
+  WHERE (get_online_features.source_filter = '' OR source = get_online_features.source_filter)
   ORDER BY created_at DESC
   LIMIT 100;
 
@@ -427,7 +427,7 @@ RETURN
 -- Approval Recommendations (read existing recommendations)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_approval_recommendations(source_type_filter STRING)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_approval_recommendations(source_type_filter STRING DEFAULT '')
 RETURNS TABLE(
   id STRING,
   context_summary STRING,
@@ -437,7 +437,7 @@ RETURNS TABLE(
   created_at TIMESTAMP
 )
 LANGUAGE SQL
-COMMENT 'Get existing approval recommendations from similar-case analysis, vector search, and agent insights. Pass source_type = "vector_search", "agent", "rule", or NULL for all.'
+COMMENT 'Get existing approval recommendations from similar-case analysis, vector search, and agent insights. Pass source_type_filter = "vector_search", "agent", "rule", or "" for all.'
 RETURN
   SELECT
     id,
@@ -447,7 +447,7 @@ RETURN
     source_type,
     created_at
   FROM __CATALOG__.__SCHEMA__.v_recommendations_from_lakehouse
-  WHERE (get_approval_recommendations.source_type_filter IS NULL OR source_type = get_approval_recommendations.source_type_filter)
+  WHERE (get_approval_recommendations.source_type_filter = '' OR source_type = get_approval_recommendations.source_type_filter)
   ORDER BY created_at DESC
   LIMIT 50;
 
@@ -464,7 +464,7 @@ RETURN
 -- Decision Outcomes (recent decisioning results for learning loop)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_decision_outcomes(outcome_filter STRING)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_decision_outcomes(outcome_filter STRING DEFAULT '')
 RETURNS TABLE(
   transaction_id STRING,
   merchant_segment STRING,
@@ -478,7 +478,7 @@ RETURNS TABLE(
   event_timestamp TIMESTAMP
 )
 LANGUAGE SQL
-COMMENT 'Get recent transaction outcomes for learning loop analysis (last 24 hours). Use to evaluate whether current rules and recommendations are working. Pass outcome_filter = "approved" or "declined", or NULL for all.'
+COMMENT 'Get recent transaction outcomes for learning loop analysis (last 24 hours). Use to evaluate whether current rules and recommendations are working. Pass outcome_filter = "approved" or "declined", or "" for all.'
 RETURN
   SELECT
     transaction_id,
@@ -494,7 +494,7 @@ RETURN
   FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
   WHERE event_date >= CURRENT_DATE - 1
     AND (
-      get_decision_outcomes.outcome_filter IS NULL
+      get_decision_outcomes.outcome_filter = ''
       OR (get_decision_outcomes.outcome_filter = 'approved' AND is_approved = true)
       OR (get_decision_outcomes.outcome_filter = 'declined' AND is_approved = false)
     )

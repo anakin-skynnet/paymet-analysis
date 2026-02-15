@@ -50,6 +50,7 @@ src/payment_analysis/__dist__/
 .mypy_cache/
 .ruff_cache/
 *.log
+mlflow.db
 
 # Bundle sync mirror / workspace copy — do not commit; single source of truth at repo root
 files/

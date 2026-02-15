@@ -36,7 +36,6 @@ resources:
               - "unitycatalog-ai[databricks]==0.3.2"
               - "backoff==2.2.1"
               - "mlflow==3.9.0"
-              - "databricks-agents==0.22.1"
       tasks:
         - task_key: run_agent_framework
           description: "Run agent framework (orchestrator + all specialists); output used by app Orchestrator chat"

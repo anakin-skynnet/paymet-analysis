@@ -4,7 +4,7 @@ alwaysApply: true
 
 # Cursor Agent Rules
 
-**Unified agent context:** For full knowledge and context from all conversation prompts (dashboards, real-time views, workspace cleanup, orchestrator UI, commands, key paths), read [.cursor/AGENT_CONTEXT.md](../../.cursor/AGENT_CONTEXT.md). For solution scope, MCP reference, agent framework, and common requests, see [AGENTS.md](../../AGENTS.md). The rules below align with both.
+**Unified agent context:** For solution scope, MCP reference, agent framework, and common requests, see [AGENTS.md](../../AGENTS.md). For technical details, see [docs/REFERENCE.md](../../docs/REFERENCE.md). The rules below align with AGENTS.md.
 
 # Do's and Don'ts
 - **Deploy prompt:** When the user sends a "deploy" or "redeploy" prompt, **always ask** before running: "Are you deploying the app or the rest of the resources?" Then run the matching command: **rest of resources** → `./scripts/bundle.sh deploy [target]` (phase 1: all except the App; then user runs jobs 5 and 6 and later "deploy app"); **app** → `./scripts/bundle.sh deploy app [target]` (phase 2: validate and deploy the App with model serving and all resources uncommented).

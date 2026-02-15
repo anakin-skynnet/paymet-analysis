@@ -28,3 +28,10 @@ env:
   # Use AgentBricks orchestrator for chat (Model Serving). Omit or set empty to use Job 6 (custom Python).
   - name: ORCHESTRATOR_SERVING_ENDPOINT
     value: payment-analysis-orchestrator
+  # Lakeview dashboard IDs (must match deployed bundle dashboards for embed to work)
+  - name: DASHBOARD_ID_DATA_QUALITY
+    value: "01f109ebdeeb18e9baad9aeff86d6789"
+  - name: DASHBOARD_ID_ML_OPTIMIZATION
+    value: "01f109ebdee91971a4fc4e6955b7b571"
+  - name: DASHBOARD_ID_EXECUTIVE_TRENDS
+    value: "01f109ebdedd1e188386fc897aed78a5"

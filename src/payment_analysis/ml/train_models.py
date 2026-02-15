@@ -25,7 +25,8 @@ from sklearn.ensemble import RandomForestClassifier  # type: ignore[import-untyp
 from sklearn.model_selection import train_test_split  # type: ignore[import-untyped]
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score  # type: ignore[import-untyped]
 from sklearn.preprocessing import LabelEncoder  # type: ignore[import-untyped]
-from mlflow.models.signature import infer_signature  # type: ignore[import-untyped]
+from mlflow.models.signature import infer_signature, ModelSignature  # type: ignore[import-untyped]
+from mlflow.types.schema import Schema, ColSpec  # type: ignore[import-untyped]
 import joblib  # type: ignore[import-untyped]
 import warnings
 
@@ -325,7 +326,10 @@ try:
         })
         mlflow.log_metrics(metrics)
         
-        signature = infer_signature(X_train, model.predict(X_train))
+        # Build explicit ColSpec signature to ensure feature names are preserved
+        input_schema = Schema([ColSpec("double", name) for name in features_approval])
+        output_schema = Schema([ColSpec("long", "prediction")])
+        signature = ModelSignature(inputs=input_schema, outputs=output_schema)
         model_name = f"{CATALOG}.{SCHEMA}.approval_propensity_model"
         mlflow.sklearn.log_model(
             sk_model=model,
@@ -335,10 +339,12 @@ try:
         )
         
         print(f"\n✓ Model registered: {model_name}")
+        print(f"  Signature inputs: {[c.name for c in signature.inputs.input_types()]}" if hasattr(signature.inputs, 'input_types') else f"  Signature: {signature}")
         for k, v in metrics.items():
             print(f"  {k}: {v:.4f}")
 except Exception as e:
     print(f"\n✗ Model 1 (Approval Propensity) FAILED: {e}")
+    import traceback; traceback.print_exc()
     training_errors.append(f"Approval Propensity: {e}")
 
 # COMMAND ----------
@@ -390,7 +396,9 @@ try:
         })
         mlflow.log_metrics(metrics)
         
-        signature = infer_signature(X_train, model.predict(X_train))
+        input_schema = Schema([ColSpec("double", name) for name in features_risk])
+        output_schema = Schema([ColSpec("long", "prediction")])
+        signature = ModelSignature(inputs=input_schema, outputs=output_schema)
         model_name = f"{CATALOG}.{SCHEMA}.risk_scoring_model"
         mlflow.sklearn.log_model(
             sk_model=model,
@@ -458,7 +466,10 @@ try:
         joblib.dump(le, "/tmp/label_encoder.pkl")
         mlflow.log_artifact("/tmp/label_encoder.pkl")
         
-        signature = infer_signature(X_train, model.predict(X_train))
+        # Build explicit ColSpec signature — features_routing_all includes dynamic segment_ columns
+        input_schema = Schema([ColSpec("double", name) for name in features_routing_all])
+        output_schema = Schema([ColSpec("long", "prediction")])
+        signature = ModelSignature(inputs=input_schema, outputs=output_schema)
         model_name = f"{CATALOG}.{SCHEMA}.smart_routing_policy"
         mlflow.sklearn.log_model(
             sk_model=model,
@@ -470,8 +481,10 @@ try:
         print(f"\n✓ Model registered: {model_name}")
         print(f"  Accuracy: {accuracy:.4f}")
         print(f"  Classes: {', '.join(le.classes_)}")
+        print(f"  Features ({len(features_routing_all)}): {features_routing_all}")
 except Exception as e:
     print(f"\n✗ Model 3 (Smart Routing) FAILED: {e}")
+    import traceback; traceback.print_exc()
     training_errors.append(f"Smart Routing: {e}")
 
 # COMMAND ----------
@@ -566,7 +579,9 @@ try:
             })
             mlflow.log_metrics(metrics)
             
-            signature = infer_signature(X_train, model.predict(X_train))
+            input_schema = Schema([ColSpec("double", name) for name in features_retry])
+            output_schema = Schema([ColSpec("long", "prediction")])
+            signature = ModelSignature(inputs=input_schema, outputs=output_schema)
             model_name = f"{CATALOG}.{SCHEMA}.smart_retry_policy"
             mlflow.sklearn.log_model(
                 sk_model=model,
@@ -582,6 +597,7 @@ try:
         print("⚠ Not enough declined transactions for training — skipping Model 4")
 except Exception as e:
     print(f"\n✗ Model 4 (Smart Retry) FAILED: {e}")
+    import traceback; traceback.print_exc()
     training_errors.append(f"Smart Retry: {e}")
 
 # COMMAND ----------

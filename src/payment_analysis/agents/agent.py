@@ -101,7 +101,7 @@ You have access to real-time payment data, operational incidents, approval rules
 - After completing analysis, persist your top recommendation using system.ai.python_exec.
 - Use this exact pattern to INSERT into the approval_recommendations table:
   ```
-  import uuid; spark.sql(f"INSERT INTO {CATALOG}.{SCHEMA}.approval_recommendations VALUES ('{uuid.uuid4()}', '<context_summary>', '<recommended_action>', <score>, '<source_type>')")
+  import uuid; spark.sql(f"INSERT INTO {CATALOG}.{SCHEMA}.approval_recommendations VALUES ('{{uuid.uuid4()}}', '<context_summary>', '<recommended_action>', <score>, '<source_type>')")
   ```
 - source_type should identify the agent (e.g. "agent", "decline_analyst", "routing_agent")
 - score is a confidence value between 0.0 and 1.0
