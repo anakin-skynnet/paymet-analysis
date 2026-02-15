@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,11 @@ import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, Shield, CreditCard, Fingerprint, Key, Database } from "lucide-react";
 
 export const Route = createFileRoute("/_sidebar/smart-checkout")({
-  component: () => <SmartCheckout />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={SmartCheckoutErrorFallback}>
+      <SmartCheckout />
+    </ErrorBoundary>
+  ),
 });
 
 const PAYMENT_SERVICES = [
@@ -26,6 +31,22 @@ const PAYMENT_SERVICES = [
   { id: "vault", name: "Vault", note: "Tokenization and secure storage", icon: Database },
   { id: "data_only", name: "Data Only", note: "Approval uplift data not yet available", icon: Database },
 ] as const;
+
+function SmartCheckoutErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 /** Refresh analytics from backend/Databricks every 15s for real-time data. */
 const REFRESH_ANALYTICS_MS = 15_000;
@@ -106,7 +127,7 @@ function SmartCheckout() {
           {PAYMENT_SERVICES.map((s) => {
             const Icon = s.icon;
             return (
-              <Card key={s.id} className="border-border/80">
+              <Card key={s.id} className="glass-card border border-border/80">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Icon className="h-4 w-4 text-primary" />
@@ -141,7 +162,7 @@ function SmartCheckout() {
           ].map(({ label, value, suffix }) => (
             <Card
               key={label}
-              className="cursor-pointer border-border/80 hover:border-primary/40 hover:shadow-md transition-all"
+              className="glass-card border border-border/80 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
               onClick={() => openInDatabricks(getLakeviewDashboardUrl("authentication_security"))}
               role="button"
               tabIndex={0}
@@ -174,7 +195,7 @@ function SmartCheckout() {
         <p className="text-sm text-muted-foreground mb-4">
           Performance by service combination. Antifraud share of declines shown per path.
         </p>
-        <Card className="border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-6">
             {servicePathsQ.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
@@ -224,7 +245,7 @@ function SmartCheckout() {
         <p className="text-sm text-muted-foreground mb-4">
           Approval rates for ML-recommended service paths.
         </p>
-        <Card className="border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-6">
             {pathPerfQ.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Card,
@@ -32,8 +33,28 @@ import {
 import { getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
 
+function AIAgentsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/ai-agents")({
-  component: () => <AIAgents />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={AIAgentsErrorFallback}>
+      <AIAgents />
+    </ErrorBoundary>
+  ),
 });
 
 const agentTypeIcons: Record<
@@ -136,7 +157,7 @@ function AIAgents() {
 
       {/* Ask Data with Genie — click opens Genie in Databricks */}
       <Card
-        className="border-primary/20 bg-primary/5 cursor-pointer hover:shadow-md transition-shadow"
+        className="glass-card border border-border/80 border-primary/20 bg-primary/5 cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => openInDatabricks(getGenieUrl())}
         role="button"
         tabIndex={0}
@@ -182,7 +203,7 @@ function AIAgents() {
 
       {/* Info Card — click opens Genie */}
       <Card
-        className="border-muted cursor-pointer hover:shadow-md transition-shadow"
+        className="glass-card border border-border/80 border-muted cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => openInDatabricks(getGenieUrl())}
         role="button"
         tabIndex={0}
@@ -257,7 +278,7 @@ function AIAgents() {
 
       {/* Error State */}
       {isError && (
-        <Card className="border-destructive/50 bg-destructive/5">
+        <Card className="glass-card border border-border/80 border-destructive/50 bg-destructive/5">
           <CardContent className="py-8 text-center">
             <p className="text-destructive font-medium">
               Failed to load agents. Check that the backend is running.
@@ -270,7 +291,7 @@ function AIAgents() {
       {isLoading && (
         <div className="grid gap-6 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="glass-card border border-border/80">
               <CardHeader>
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-full" />
@@ -294,7 +315,7 @@ function AIAgents() {
             return (
               <Card
                 key={agent.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer group"
+                className="glass-card border border-border/80 hover:shadow-lg transition-shadow cursor-pointer group"
                 onClick={() => handleAgentClick(agent.id)}
               >
                 <CardHeader>
@@ -408,7 +429,7 @@ function AIAgents() {
 
       {/* Empty State */}
       {!isLoading && !isError && agents.length === 0 && (
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardContent className="py-12 text-center">
             <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">

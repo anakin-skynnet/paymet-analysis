@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
 import { Database, Plus, Pencil, Trash2 } from "lucide-react";
 
 import {
@@ -20,8 +21,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
+function RulesErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/rules")({
-  component: () => <Rules />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={RulesErrorFallback}>
+      <Rules />
+    </ErrorBoundary>
+  ),
 });
 
 const RULE_TYPES = [
@@ -91,7 +112,7 @@ function Rules() {
         </p>
       </div>
 
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle>Rules</CardTitle>
           <div className="flex flex-wrap gap-2 items-center">
@@ -198,7 +219,7 @@ function Rules() {
       </Card>
 
       {showForm && (
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle>Add rule to Lakehouse</CardTitle>
           </CardHeader>
@@ -286,7 +307,7 @@ function Rules() {
       )}
 
       {editingId && (
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle>Edit rule</CardTitle>
           </CardHeader>
@@ -375,7 +396,7 @@ function Rules() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <Card className="w-full max-w-sm p-6">
+          <Card className="glass-card border border-border/80 w-full max-w-sm p-6">
             <CardTitle className="text-base mb-2">Delete rule?</CardTitle>
             <p className="text-sm text-muted-foreground mb-4">This action cannot be undone.</p>
             <div className="flex gap-2 justify-end">

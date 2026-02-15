@@ -199,31 +199,24 @@ from mlflow.models.resources import (
 # DatabricksFunction: UC functions used as tools by the agent.
 # See: https://docs.databricks.com/en/generative-ai/agent-framework/agent-authentication-model-serving
 UC_TOOL_NAMES = [
-    # Decline Analyst
-    f"{CATALOG}.{SCHEMA}.get_decline_trends",
-    f"{CATALOG}.{SCHEMA}.get_decline_by_segment",
-    # Smart Routing
-    f"{CATALOG}.{SCHEMA}.get_route_performance",
-    f"{CATALOG}.{SCHEMA}.get_cascade_recommendations",
-    # Smart Retry
-    f"{CATALOG}.{SCHEMA}.get_retry_success_rates",
-    f"{CATALOG}.{SCHEMA}.get_recovery_opportunities",
-    # Risk Assessor
-    f"{CATALOG}.{SCHEMA}.get_high_risk_transactions",
-    f"{CATALOG}.{SCHEMA}.get_risk_distribution",
-    # Performance Recommender
-    f"{CATALOG}.{SCHEMA}.get_kpi_summary",
-    f"{CATALOG}.{SCHEMA}.get_optimization_opportunities",
-    f"{CATALOG}.{SCHEMA}.get_trend_analysis",
-    # Lakebase & Operational Context
+    # 5 consolidated analytics functions (replace 11 individual specialist functions)
+    # Each supports a mode parameter for different analysis types.
+    # Databricks limit: 10 UC functions per agent.
+    f"{CATALOG}.{SCHEMA}.analyze_declines",       # mode: trends | by_segment
+    f"{CATALOG}.{SCHEMA}.analyze_routing",         # mode: performance | cascade
+    f"{CATALOG}.{SCHEMA}.analyze_retry",           # mode: success_rates | opportunities
+    f"{CATALOG}.{SCHEMA}.analyze_risk",            # mode: distribution | transactions
+    f"{CATALOG}.{SCHEMA}.analyze_performance",     # mode: kpi | opportunities | trends
+    # 5 shared operational context functions (kept as individual)
     f"{CATALOG}.{SCHEMA}.get_active_approval_rules",
     f"{CATALOG}.{SCHEMA}.get_recent_incidents",
-    f"{CATALOG}.{SCHEMA}.get_online_features",
-    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
-    # Vector Search (Similar Transactions)
     f"{CATALOG}.{SCHEMA}.search_similar_transactions",
     f"{CATALOG}.{SCHEMA}.get_approval_recommendations",
+    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
     # General-purpose Python exec (for ad-hoc analysis and recommendation write-back)
+    # NOTE: system.ai.python_exec is a system function and may not count toward the
+    # 10 UC function limit. If it does, remove get_decision_outcomes and rely on
+    # analyze_risk(mode='transactions') for outcome analysis.
     "system.ai.python_exec",
 ]
 

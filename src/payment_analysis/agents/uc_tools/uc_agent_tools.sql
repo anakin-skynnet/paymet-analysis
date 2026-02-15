@@ -4,6 +4,11 @@
 -- Run with catalog/schema substituted (e.g. ahs_demos_catalog, payment_analysis).
 -- Creates functions in DATA_CATALOG.DATA_SCHEMA (same schema as data). Used by LangGraph via UCFunctionToolkit.
 -- Requires: gold views and payments_enriched_silver in DATA_CATALOG.DATA_SCHEMA.
+--
+-- NOTE: Individual functions (17 total) are used by specialist LangGraph agents
+-- (6-8 tools each, within Databricks 10-function limit).
+-- Consolidated functions (5 total) are used by the single ResponsesAgent to
+-- stay within the 10 UC-function limit: 5 consolidated + 5 shared = 10.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -500,3 +505,239 @@ RETURN
     )
   ORDER BY event_timestamp DESC
   LIMIT 100;
+
+
+-- =============================================================================
+-- CONSOLIDATED FUNCTIONS for ResponsesAgent (10-function limit)
+-- =============================================================================
+-- These 5 consolidated functions replace the 11 specialist analytics functions
+-- for use by the single ResponsesAgent. Combined with 5 shared functions
+-- (get_active_approval_rules, get_recent_incidents, search_similar_transactions,
+-- get_approval_recommendations, get_decision_outcomes), total = 10 UC functions.
+-- =============================================================================
+
+-- 1. Decline Analysis (consolidates get_decline_trends + get_decline_by_segment)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_declines(mode STRING DEFAULT 'trends', segment STRING DEFAULT '')
+RETURNS TABLE(
+  category STRING,
+  detail STRING,
+  decline_count BIGINT,
+  declined_value DOUBLE,
+  avg_fraud_score DOUBLE,
+  pct_of_declines DOUBLE
+)
+LANGUAGE SQL
+COMMENT 'Consolidated decline analysis. mode="trends" for top decline reasons (default), mode="by_segment" for breakdown by merchant segment. Optional segment filter for by_segment mode.'
+RETURN
+  SELECT * FROM (
+    SELECT
+      'trend' AS category,
+      decline_reason AS detail,
+      decline_count,
+      total_declined_value AS declined_value,
+      avg_fraud_score,
+      pct_of_declines
+    FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons
+    WHERE analyze_declines.mode = 'trends'
+    ORDER BY decline_count DESC
+    LIMIT 10
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      merchant_segment AS category,
+      decline_reason AS detail,
+      COUNT(*) AS decline_count,
+      ROUND(SUM(amount), 2) AS declined_value,
+      ROUND(AVG(fraud_score), 3) AS avg_fraud_score,
+      NULL AS pct_of_declines
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE NOT is_approved
+      AND event_date >= CURRENT_DATE - 30
+      AND analyze_declines.mode = 'by_segment'
+      AND (analyze_declines.segment = '' OR merchant_segment = analyze_declines.segment)
+    GROUP BY merchant_segment, decline_reason
+    ORDER BY decline_count DESC
+    LIMIT 20
+  );
+
+-- 2. Routing Analysis (consolidates get_route_performance + get_cascade_recommendations)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_routing(mode STRING DEFAULT 'performance', merchant_segment STRING DEFAULT '')
+RETURNS TABLE(
+  payment_solution STRING,
+  card_network STRING,
+  volume BIGINT,
+  approval_rate DOUBLE,
+  avg_latency DOUBLE
+)
+LANGUAGE SQL
+COMMENT 'Consolidated routing analysis. mode="performance" for approval rates by route (default), mode="cascade" for cascade recommendations filtered by merchant_segment.'
+RETURN
+  SELECT * FROM (
+    SELECT
+      payment_solution, card_network,
+      COUNT(*) AS volume,
+      ROUND(AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) * 100, 2) AS approval_rate,
+      ROUND(AVG(processing_time_ms), 2) AS avg_latency
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE event_date >= CURRENT_DATE - 7 AND analyze_routing.mode = 'performance'
+    GROUP BY payment_solution, card_network
+    ORDER BY volume DESC
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      payment_solution, '' AS card_network,
+      COUNT(*) AS volume,
+      ROUND(AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) * 100, 2) AS approval_rate,
+      ROUND(AVG(processing_time_ms), 2) AS avg_latency
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE merchant_segment = analyze_routing.merchant_segment
+      AND event_date >= CURRENT_DATE - 30
+      AND analyze_routing.mode = 'cascade'
+    GROUP BY payment_solution
+    ORDER BY approval_rate DESC
+    LIMIT 3
+  );
+
+-- 3. Retry Analysis (consolidates get_retry_success_rates + get_recovery_opportunities)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_retry(mode STRING DEFAULT 'success_rates', min_amount DOUBLE DEFAULT 100)
+RETURNS TABLE(
+  decline_reason STRING,
+  metric_int INT,
+  count_or_attempts BIGINT,
+  rate_or_value DOUBLE,
+  avg_score DOUBLE,
+  extra STRING
+)
+LANGUAGE SQL
+COMMENT 'Consolidated retry analysis. mode="success_rates" for retry success by decline reason (default), mode="opportunities" for high-value recovery opportunities above min_amount.'
+RETURN
+  SELECT * FROM (
+    SELECT
+      decline_reason,
+      retry_count AS metric_int,
+      COUNT(*) AS count_or_attempts,
+      ROUND(AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) * 100, 2) AS rate_or_value,
+      ROUND(AVG(amount), 2) AS avg_score,
+      NULL AS extra
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE is_retry = true AND event_date >= CURRENT_DATE - 30 AND analyze_retry.mode = 'success_rates'
+    GROUP BY decline_reason, retry_count
+    ORDER BY decline_reason, retry_count
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      decline_reason,
+      0 AS metric_int,
+      COUNT(*) AS count_or_attempts,
+      ROUND(SUM(amount), 2) AS rate_or_value,
+      ROUND(AVG(fraud_score), 3) AS avg_score,
+      CASE WHEN AVG(fraud_score) < 0.3 THEN 'HIGH' WHEN AVG(fraud_score) < 0.5 THEN 'MEDIUM' ELSE 'LOW' END AS extra
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE NOT is_approved AND amount >= analyze_retry.min_amount
+      AND fraud_score < 0.5 AND retry_count < 3 AND event_date >= CURRENT_DATE - 7
+      AND analyze_retry.mode = 'opportunities'
+    GROUP BY decline_reason
+    HAVING COUNT(*) > 10
+    ORDER BY rate_or_value DESC
+  );
+
+-- 4. Risk Analysis (consolidates get_high_risk_transactions + get_risk_distribution)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_risk(mode STRING DEFAULT 'distribution', threshold DOUBLE DEFAULT 0.7)
+RETURNS TABLE(
+  identifier STRING,
+  segment STRING,
+  amount_or_count DOUBLE,
+  fraud_score DOUBLE,
+  approval_rate_or_aml DOUBLE,
+  extra STRING
+)
+LANGUAGE SQL
+COMMENT 'Consolidated risk analysis. mode="distribution" for risk tier breakdown (default), mode="transactions" for high-risk transactions above fraud threshold.'
+RETURN
+  SELECT * FROM (
+    SELECT
+      risk_tier AS identifier,
+      '' AS segment,
+      CAST(COUNT(*) AS DOUBLE) AS amount_or_count,
+      ROUND(AVG(fraud_score), 3) AS fraud_score,
+      ROUND(AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) * 100, 2) AS approval_rate_or_aml,
+      CAST(ROUND(SUM(amount), 2) AS STRING) AS extra
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE event_date >= CURRENT_DATE - 7 AND analyze_risk.mode = 'distribution'
+    GROUP BY risk_tier
+    ORDER BY fraud_score DESC
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      transaction_id AS identifier,
+      merchant_segment AS segment,
+      amount AS amount_or_count,
+      fraud_score,
+      aml_risk_score AS approval_rate_or_aml,
+      CASE WHEN is_approved THEN 'approved' ELSE COALESCE(decline_reason, 'declined') END AS extra
+    FROM __CATALOG__.__SCHEMA__.payments_enriched_silver
+    WHERE fraud_score > analyze_risk.threshold AND event_date >= CURRENT_DATE - 1
+      AND analyze_risk.mode = 'transactions'
+    ORDER BY fraud_score DESC
+    LIMIT 50
+  );
+
+-- 5. Performance Summary (consolidates get_kpi_summary + get_optimization_opportunities + get_trend_analysis)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_performance(mode STRING DEFAULT 'kpi')
+RETURNS TABLE(
+  label STRING,
+  metric_1 DOUBLE,
+  metric_2 DOUBLE,
+  metric_3 DOUBLE,
+  priority STRING
+)
+LANGUAGE SQL
+COMMENT 'Consolidated performance analysis. mode="kpi" for executive KPI summary (default), mode="opportunities" for optimization opportunities, mode="trends" for daily trends.'
+RETURN
+  SELECT * FROM (
+    SELECT
+      'Executive KPIs' AS label,
+      CAST(total_transactions AS DOUBLE) AS metric_1,
+      approval_rate_pct AS metric_2,
+      total_transaction_value AS metric_3,
+      '' AS priority
+    FROM __CATALOG__.__SCHEMA__.v_executive_kpis
+    WHERE analyze_performance.mode = 'kpi'
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      CONCAT(optimization_area, ': ', payment_solution) AS label,
+      approval_rate_pct AS metric_1,
+      CAST(transaction_count AS DOUBLE) AS metric_2,
+      0.0 AS metric_3,
+      priority
+    FROM (
+      SELECT 'Routing' AS optimization_area, payment_solution, approval_rate_pct, transaction_count,
+        CASE WHEN approval_rate_pct < 80 THEN 'HIGH' WHEN approval_rate_pct < 85 THEN 'MEDIUM' ELSE 'LOW' END AS priority
+      FROM __CATALOG__.__SCHEMA__.v_solution_performance WHERE approval_rate_pct < 90
+      UNION ALL
+      SELECT 'Geography', country, approval_rate_pct, transaction_count,
+        CASE WHEN approval_rate_pct < 80 THEN 'HIGH' WHEN approval_rate_pct < 85 THEN 'MEDIUM' ELSE 'LOW' END
+      FROM __CATALOG__.__SCHEMA__.v_performance_by_geography WHERE approval_rate_pct < 85 AND transaction_count > 100
+    )
+    WHERE analyze_performance.mode = 'opportunities'
+    ORDER BY CASE priority WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, metric_1
+  )
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+      CAST(event_date AS STRING) AS label,
+      CAST(transactions AS DOUBLE) AS metric_1,
+      approval_rate AS metric_2,
+      total_value AS metric_3,
+      '' AS priority
+    FROM __CATALOG__.__SCHEMA__.v_daily_trends
+    WHERE analyze_performance.mode = 'trends'
+    ORDER BY event_date DESC
+    LIMIT 30
+  );

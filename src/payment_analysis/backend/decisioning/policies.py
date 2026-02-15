@@ -20,21 +20,23 @@ def _audit_id() -> str:
     return uuid4().hex
 
 
-def _risk_tier(ctx: DecisionContext) -> RiskTier:
-    """
-    Very small baseline heuristic.
-    Replace with Feature Store + Model Serving score in a real implementation.
-    """
+def _risk_tier(ctx: DecisionContext, *, params: Optional[Any] = None) -> RiskTier:
+    """Risk tier from score with data-driven thresholds (from DecisionConfig via Lakebase)."""
 
     score = ctx.risk_score
+    # Use Lakebase thresholds when available; fall back to sensible defaults.
+    high_threshold = getattr(params, "risk_threshold_high", None) or 0.75
+    med_threshold = getattr(params, "risk_threshold_medium", None) or 0.35
+    trust_floor = getattr(params, "device_trust_low_risk", None) or 0.90
+
     if score is None:
         # Prefer device trust if present; otherwise assume medium.
-        if ctx.device_trust_score is not None and ctx.device_trust_score >= 0.9:
+        if ctx.device_trust_score is not None and ctx.device_trust_score >= trust_floor:
             return RiskTier.low
         return RiskTier.medium
-    if score >= 0.8:
+    if score >= high_threshold:
         return RiskTier.high
-    if score >= 0.4:
+    if score >= med_threshold:
         return RiskTier.medium
     return RiskTier.low
 
@@ -45,7 +47,7 @@ def decide_authentication(
     *,
     params: Optional[Any] = None,
 ) -> AuthDecisionOut:
-    tier = _risk_tier(ctx)
+    tier = _risk_tier(ctx, params=params)
     is_treatment = variant == "treatment" or variant == "B"
 
     if ctx.supports_passkey and tier == RiskTier.low:
@@ -113,7 +115,10 @@ def decide_retry(
     decline_codes: Optional[Any] = None,
 ) -> RetryDecisionOut:
     is_treatment = variant == "treatment" or variant == "B"
-    max_attempts = 4 if is_treatment else 3
+    # Use Lakebase-driven max_attempts via params when available
+    max_attempts_ctrl = getattr(params, "retry_max_attempts_control", None) or 3
+    max_attempts_treat = getattr(params, "retry_max_attempts_treatment", None) or 4
+    max_attempts = max_attempts_treat if is_treatment else max_attempts_ctrl
 
     if ctx.attempt_number >= max_attempts:
         return RetryDecisionOut(
@@ -126,9 +131,22 @@ def decide_retry(
     code = (ctx.previous_decline_code or "").strip().lower()
     reason = (ctx.previous_decline_reason or "").strip().lower()
 
-    if ctx.is_recurring and (code in _SOFT_DECLINE_CODES or "timeout" in reason):
-        # Treatment: shorter backoff for recurring
-        backoff = 5 * 60 if is_treatment else 15 * 60
+    # Use Lakebase decline codes when provided; fall back to hardcoded set
+    soft_codes = set(_SOFT_DECLINE_CODES)
+    if decline_codes and isinstance(decline_codes, dict):
+        soft_codes = set(decline_codes.keys()) | soft_codes
+
+    # Get backoff from Lakebase decline code config when available
+    def _db_backoff(c: str, default: int) -> int:
+        if decline_codes and isinstance(decline_codes, dict) and c in decline_codes:
+            return getattr(decline_codes[c], "default_backoff_seconds", default)
+        return default
+
+    if ctx.is_recurring and (code in soft_codes or "timeout" in reason):
+        # Treatment: shorter backoff for recurring (from Lakebase params)
+        ctrl_backoff = getattr(params, "retry_backoff_recurring_control", None) or 900
+        treat_backoff = getattr(params, "retry_backoff_recurring_treatment", None) or 300
+        backoff = treat_backoff if is_treatment else ctrl_backoff
         return RetryDecisionOut(
             audit_id=_audit_id(),
             should_retry=True,
@@ -138,10 +156,11 @@ def decide_retry(
         )
 
     if code in {"91", "96"}:
+        transient_backoff = _db_backoff(code, getattr(params, "retry_backoff_transient", None) or 60)
         return RetryDecisionOut(
             audit_id=_audit_id(),
             should_retry=True,
-            retry_after_seconds=60,
+            retry_after_seconds=transient_backoff,
             max_attempts=max_attempts,
             reason="Transient issuer/system decline; quick retry may recover.",
         )
@@ -196,33 +215,55 @@ def decide_routing(
     params: Optional[Any] = None,
     route_scores: Optional[Any] = None,
 ) -> RoutingDecisionOut:
-    """
-    Minimal routing scaffold. A/B: treatment prefers secondary first (different route order).
-    """
+    """Data-driven routing with Lakebase RoutePerformance scores and A/B support."""
     is_treatment = variant == "treatment" or variant == "B"
+    domestic = getattr(params, "routing_domestic_country", None) or "BR"
 
-    # Control: primary first; treatment: secondary first (measure approval lift by route).
-    if is_treatment:
+    # Use Lakebase route performance data when available
+    if route_scores and isinstance(route_scores, list) and len(route_scores) >= 2:
         candidates = [
-            RouteCandidate("psp_secondary", 0.62),
-            RouteCandidate("psp_primary", 0.58),
-            RouteCandidate("psp_tertiary", 0.5),
+            RouteCandidate(getattr(rs, "route_name", str(rs)), getattr(rs, "approval_rate_pct", 50.0) / 100.0)
+            for rs in route_scores
         ]
-        reason_suffix = " [A/B treatment] Secondary-first routing."
+        reason_suffix = "Data-driven routing from RoutePerformance metrics."
+        if is_treatment and len(candidates) >= 2:
+            # Treatment: swap top two routes to measure lift
+            candidates[0], candidates[1] = candidates[1], candidates[0]
+            reason_suffix += " [A/B treatment] Route order reversed."
     else:
-        candidates = [
-            RouteCandidate("psp_primary", 0.6),
-            RouteCandidate("psp_secondary", 0.55),
-            RouteCandidate("psp_tertiary", 0.5),
-        ]
-        # Small preference: if issuer country is set and not domestic, prefer secondary.
-        if ctx.issuer_country and ctx.issuer_country.upper() not in {"US"}:
+        # Fallback: hardcoded heuristic
+        if is_treatment:
             candidates = [
                 RouteCandidate("psp_secondary", 0.62),
                 RouteCandidate("psp_primary", 0.58),
                 RouteCandidate("psp_tertiary", 0.5),
             ]
-        reason_suffix = "Baseline routing heuristic; cascade after initial attempt."
+            reason_suffix = " [A/B treatment] Secondary-first routing."
+        else:
+            candidates = [
+                RouteCandidate("psp_primary", 0.6),
+                RouteCandidate("psp_secondary", 0.55),
+                RouteCandidate("psp_tertiary", 0.5),
+            ]
+            # Small preference: if issuer country is set and not domestic, prefer secondary.
+            if ctx.issuer_country and ctx.issuer_country.upper() != domestic:
+                candidates = [
+                    RouteCandidate("psp_secondary", 0.62),
+                    RouteCandidate("psp_primary", 0.58),
+                    RouteCandidate("psp_tertiary", 0.5),
+                ]
+            reason_suffix = "Baseline routing heuristic; cascade after initial attempt."
+
+    # ML routing override: prefer ML-recommended route when confidence is high
+    ml_route = ctx.metadata.get("ml_recommended_route")
+    ml_conf = ctx.metadata.get("ml_route_confidence", 0.0)
+    if ml_route and float(ml_conf) >= 0.7:
+        # Move ML-recommended route to front
+        ml_candidates = [c for c in candidates if c.name == ml_route]
+        other_candidates = [c for c in candidates if c.name != ml_route]
+        if ml_candidates:
+            candidates = ml_candidates + other_candidates
+            reason_suffix = f"ML-optimised routing (confidence {float(ml_conf):.0%}). " + reason_suffix
 
     sorted_candidates = sorted(candidates, key=lambda c: c.score, reverse=True)
     primary = sorted_candidates[0].name

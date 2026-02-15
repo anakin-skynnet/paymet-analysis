@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import {
   type DecisionContext,
@@ -22,8 +23,28 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLink, Code2, Brain, Database, Sparkles, ArrowRight, Target, AlertCircle, TrendingUp, Shield, Waypoints, RotateCcw } from "lucide-react";
 import { openNotebookInDatabricks } from "@/lib/notebooks";
 
+function DecisioningErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/decisioning")({
-  component: () => <Decisioning />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={DecisioningErrorFallback}>
+      <Decisioning />
+    </ErrorBoundary>
+  ),
 });
 
 function Decisioning() {
@@ -118,7 +139,7 @@ function Decisioning() {
         </div>
       </header>
 
-      <Card className="business-value-card content-section border-l-4 border-l-primary border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 shadow-md">
+      <Card className="glass-card border border-border/80 business-value-card content-section border-l-4 border-l-primary border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
             <Target className="w-5 h-5 text-primary shrink-0" />
@@ -148,7 +169,7 @@ function Decisioning() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle>Context</CardTitle>
         </CardHeader>
@@ -237,7 +258,7 @@ function Decisioning() {
         <DecisionCard title="Routing" result={routing.data?.data} notebookId="agent_framework" />
       </div>
 
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="w-5 h-5" />
@@ -289,7 +310,7 @@ function Decisioning() {
         </CardContent>
       </Card>
 
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="glass-card border border-border/80 border-primary/20 bg-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-primary" />
@@ -351,7 +372,7 @@ function PredictionCard<T>({
 }) {
   const isMock = result && typeof result === "object" && "_source" in result && (result as Record<string, unknown>)._source === "mock";
   return (
-    <Card className={isMock ? "border-amber-500/40" : undefined}>
+    <Card className={isMock ? "glass-card border border-border/80 border-amber-500/40" : "glass-card border border-border/80"}>
       <CardHeader className="py-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           {icon}
@@ -389,7 +410,7 @@ function DecisionCard({
   const handleCardClick = () => notebookId && openNotebookInDatabricks(notebookId);
   return (
     <Card
-      className={notebookId ? "cursor-pointer hover:shadow-md transition-shadow" : undefined}
+      className={`glass-card border border-border/80 ${notebookId ? "cursor-pointer hover:shadow-md transition-shadow" : ""}`}
       onClick={notebookId ? handleCardClick : undefined}
       role={notebookId ? "button" : undefined}
       tabIndex={notebookId ? 0 : undefined}

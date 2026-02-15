@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -18,8 +19,28 @@ import { ExternalLink, Code2, FlaskConical } from "lucide-react";
 import { getMLflowUrl, openInDatabricks } from "@/config/workspace";
 import { openNotebookInDatabricks } from "@/lib/notebooks";
 
+function ExperimentsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/experiments")({
-  component: () => <Experiments />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={ExperimentsErrorFallback}>
+      <Experiments />
+    </ErrorBoundary>
+  ),
 });
 
 function Experiments() {
@@ -75,7 +96,7 @@ function Experiments() {
         </p>
       </div>
 
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle>Create experiment</CardTitle>
         </CardHeader>
@@ -120,7 +141,7 @@ function ExperimentRow({
   const openInWorkspace = () => openInDatabricks(getMLflowUrl());
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="glass-card border border-border/80 cursor-pointer hover:shadow-md transition-shadow"
       onClick={openInWorkspace}
       role="button"
       tabIndex={0}

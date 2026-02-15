@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 from ..db_models import DecisionLog, Experiment, ExperimentAssignment
 from ..services.databricks_service import MockDataGenerator
+from ..decisioning.engine import DecisionEngine
 from ..decisioning.policies import (
     decide_authentication,
     decide_retry,
@@ -31,7 +32,7 @@ from ..decisioning.schemas import (
     RetryDecisionOut,
     RoutingDecisionOut,
 )
-from ..dependencies import SessionDep, DatabricksServiceDep
+from ..dependencies import SessionDep, OptionalSessionDep, DatabricksServiceDep, RuntimeDep
 
 router = APIRouter(tags=["decisioning"])
 
@@ -121,63 +122,97 @@ class RetryPredictionOut(BaseModel):
     model_version: str
 
 
+async def _engine_decide(
+    decision_type: str,
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    runtime: RuntimeDep,
+) -> AuthDecisionOut | RetryDecisionOut | RoutingDecisionOut:
+    """Route a decision through DecisionEngine (ML + rules + Lakebase config) with graceful fallback.
+
+    When the engine is available (Lakebase + Databricks Service configured), decisions
+    benefit from:
+    - Tunable thresholds from ``DecisionConfig`` (Lakebase)
+    - Retryable decline codes from ``RetryableDeclineCode`` (Lakebase)
+    - Route performance scores from ``RoutePerformance`` (Lakebase)
+    - ML model enrichment (risk, approval, retry, routing)
+    - Rule evaluation from ``approval_rules`` (Lakebase)
+    - Online features written for the learning loop
+
+    When Lakebase is not configured (e.g. local dev), falls back to pure-policy heuristics.
+    """
+    subject_key = ctx.subject_key or ctx.merchant_id
+    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
+    variant = variant if variant is not None else "control"
+
+    # Try data-driven engine (Lakebase + ML + rules)
+    try:
+        engine = DecisionEngine(session=session, service=service, runtime=runtime)
+        if decision_type == "authentication":
+            decision = await engine.decide_authentication(ctx, variant=variant)
+        elif decision_type == "retry":
+            decision = await engine.decide_retry(ctx, variant=variant)
+        elif decision_type == "routing":
+            decision = await engine.decide_routing(ctx, variant=variant)
+        else:
+            raise ValueError(f"Unknown decision type: {decision_type}")
+    except Exception as exc:
+        # Graceful fallback to pure-policy heuristics (no ML, no rules, no Lakebase)
+        logger.debug("DecisionEngine unavailable (%s), falling back to policies: %s", decision_type, exc)
+        if decision_type == "authentication":
+            decision = decide_authentication(ctx, variant=variant)
+        elif decision_type == "retry":
+            decision = decide_retry(ctx, variant=variant)
+        else:
+            decision = decide_routing(ctx, variant=variant)
+
+    response = _with_ab(decision, ctx.experiment_id, variant)
+    session.add(
+        DecisionLog(
+            audit_id=decision.audit_id,
+            decision_type=decision_type,
+            request=serialize_context(ctx),
+            response=response,
+        )
+    )
+    session.commit()
+    return decision
+
+
 @router.post(
     "/authentication", response_model=AuthDecisionOut, operation_id="decideAuthentication"
 )
-def authentication(ctx: DecisionContext, session: SessionDep) -> AuthDecisionOut:
-    subject_key = ctx.subject_key or ctx.merchant_id
-    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
-    variant = variant if variant is not None else "control"
-    decision = decide_authentication(ctx, variant=variant)
-    response = _with_ab(decision, ctx.experiment_id, variant)
-    session.add(
-        DecisionLog(
-            audit_id=decision.audit_id,
-            decision_type="authentication",
-            request=serialize_context(ctx),
-            response=response,
-        )
-    )
-    session.commit()
-    return AuthDecisionOut(**response)
+async def authentication(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    runtime: RuntimeDep,
+) -> AuthDecisionOut:
+    result = await _engine_decide("authentication", ctx, session, service, runtime)
+    return result  # type: ignore[return-value]
 
 
 @router.post("/retry", response_model=RetryDecisionOut, operation_id="decideRetry")
-def retry(ctx: DecisionContext, session: SessionDep) -> RetryDecisionOut:
-    subject_key = ctx.subject_key or ctx.merchant_id
-    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
-    variant = variant if variant is not None else "control"
-    decision = decide_retry(ctx, variant=variant)
-    response = _with_ab(decision, ctx.experiment_id, variant)
-    session.add(
-        DecisionLog(
-            audit_id=decision.audit_id,
-            decision_type="retry",
-            request=serialize_context(ctx),
-            response=response,
-        )
-    )
-    session.commit()
-    return RetryDecisionOut(**response)
+async def retry(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    runtime: RuntimeDep,
+) -> RetryDecisionOut:
+    result = await _engine_decide("retry", ctx, session, service, runtime)
+    return result  # type: ignore[return-value]
 
 
 @router.post("/routing", response_model=RoutingDecisionOut, operation_id="decideRouting")
-def routing(ctx: DecisionContext, session: SessionDep) -> RoutingDecisionOut:
-    subject_key = ctx.subject_key or ctx.merchant_id
-    variant = _get_or_assign_variant(session, ctx.experiment_id, subject_key)
-    variant = variant if variant is not None else "control"
-    decision = decide_routing(ctx, variant=variant)
-    response = _with_ab(decision, ctx.experiment_id, variant)
-    session.add(
-        DecisionLog(
-            audit_id=decision.audit_id,
-            decision_type="routing",
-            request=serialize_context(ctx),
-            response=response,
-        )
-    )
-    session.commit()
-    return RoutingDecisionOut(**response)
+async def routing(
+    ctx: DecisionContext,
+    session: SessionDep,
+    service: DatabricksServiceDep,
+    runtime: RuntimeDep,
+) -> RoutingDecisionOut:
+    result = await _engine_decide("routing", ctx, session, service, runtime)
+    return result  # type: ignore[return-value]
 
 
 # ML Model Serving Endpoints

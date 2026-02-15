@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,28 @@ import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/a
 import { getWorkspaceUrl, openInDatabricks } from "@/config/workspace";
 import { cn } from "@/lib/utils";
 
+function NotebooksErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/notebooks")({
-  component: Component,
+  component: () => (
+    <ErrorBoundary FallbackComponent={NotebooksErrorFallback}>
+      <Component />
+    </ErrorBoundary>
+  ),
 });
 
 // Types come from auto-generated api.ts (NotebookInfo, NotebookList)
@@ -103,7 +124,7 @@ export function Component() {
 
       {/* Error State */}
       {isError && (
-        <Card className="border-destructive/50 bg-destructive/5">
+        <Card className="glass-card border border-border/80 border-destructive/50 bg-destructive/5">
           <CardContent className="py-8 text-center">
             <p className="text-destructive font-medium">Failed to load notebooks. Check that the backend is running.</p>
           </CardContent>
@@ -114,7 +135,7 @@ export function Component() {
       {loading ? (
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="glass-card border border-border/80">
               <CardHeader>
                 <Skeleton className="h-6 w-3/4 mb-2" />
                 <Skeleton className="h-4 w-full" />
@@ -135,7 +156,7 @@ export function Component() {
               <Card
                 key={notebook.id}
                 className={cn(
-                  "cursor-pointer hover:shadow-lg transition-all group border-l-4",
+                  "glass-card border border-border/80 cursor-pointer hover:shadow-lg transition-all group border-l-4",
                   categoryBorderLeftClasses[notebook.category] ?? categoryBorderLeftClasses.analytics,
                 )}
                 onClick={() => handleNotebookClick(notebook.id)}
@@ -203,7 +224,7 @@ export function Component() {
 
       {/* Empty State */}
       {!loading && notebooks.length === 0 && (
-        <Card className="p-12 text-center">
+        <Card className="glass-card border border-border/80 p-12 text-center">
           <Code2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-xl font-semibold mb-2">No Notebooks Found</h3>
           <p className="text-muted-foreground">
@@ -226,7 +247,7 @@ export function Component() {
       {/* Category Descriptions — each card opens related backend in Databricks */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card
-          className="border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-md transition-shadow"
+          className="glass-card border border-border/80 border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => handleNotebookClick("agent_framework")}
           role="button"
           tabIndex={0}
@@ -244,7 +265,7 @@ export function Component() {
         </Card>
 
         <Card
-          className="border-blue-200 dark:border-blue-800 cursor-pointer hover:shadow-md transition-shadow"
+          className="glass-card border border-border/80 border-blue-200 dark:border-blue-800 cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => handleNotebookClick("train_models")}
           role="button"
           tabIndex={0}
@@ -262,7 +283,7 @@ export function Component() {
         </Card>
 
         <Card
-          className="border-yellow-200 dark:border-yellow-800 cursor-pointer hover:shadow-md transition-shadow"
+          className="glass-card border border-border/80 border-yellow-200 dark:border-yellow-800 cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}
@@ -280,7 +301,7 @@ export function Component() {
         </Card>
 
         <Card
-          className="border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition-shadow"
+          className="glass-card border border-border/80 border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}
@@ -298,7 +319,7 @@ export function Component() {
         </Card>
 
         <Card
-          className="border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-md transition-shadow"
+          className="glass-card border border-border/80 border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => openInDatabricks(getWorkspaceUrl())}
           role="button"
           tabIndex={0}

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,8 +42,28 @@ import {
   type RunPipelineOut,
 } from "@/lib/api";
 
+function SetupErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/setup")({
-  component: () => <SetupRun />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={SetupErrorFallback}>
+      <SetupRun />
+    </ErrorBoundary>
+  ),
 });
 
 function SetupRun() {
@@ -252,7 +273,7 @@ function SetupRun() {
 
       {/* Presenter control panel — one-click open Jobs & Pipelines in Databricks */}
       {defaults && (
-        <Card className="border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
+        <Card className="glass-card border border-border/80 border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Gauge className="h-4 w-4 text-primary" />
@@ -310,7 +331,7 @@ function SetupRun() {
 
       {/* Connection status: why Run may be disabled (token, host, job IDs) */}
       {defaults && (
-        <Card className={host && defaults.token_received && Object.values(defaults.jobs || {}).some((id) => id && id !== "0") ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}>
+        <Card className={host && defaults.token_received && Object.values(defaults.jobs || {}).some((id) => id && id !== "0") ? "glass-card border border-border/80 border-green-500/30 bg-green-500/5" : "glass-card border border-border/80 border-amber-500/30 bg-amber-500/5"}>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
               <span className="flex items-center gap-2">
@@ -381,7 +402,7 @@ function SetupRun() {
       )}
 
       {/* Connect to Databricks — token (OAuth or PAT) required to run jobs from UI */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="glass-card border border-border/80 border-primary/20 bg-primary/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Settings2 className="h-4 w-4" />
@@ -415,7 +436,7 @@ function SetupRun() {
       </Card>
 
       {/* Databricks resources overview */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="text-base">Databricks resources & approval-rate impact</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -488,7 +509,7 @@ function SetupRun() {
       </Card>
 
       {/* Parameters — catalog/schema are persisted in app_config; Save updates the table and app-wide config */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
@@ -561,7 +582,7 @@ function SetupRun() {
       )}
 
       {/* Data & config — Lakebase/Lakehouse data fetched from backend for control panel UX */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
@@ -768,7 +789,7 @@ function SetupRun() {
         ].map(({ step, title, desc, jobKey, icon: Icon }) => (
           <Card
             key={step}
-            className="card-interactive cursor-pointer"
+            className="glass-card border border-border/80 card-interactive cursor-pointer"
             onClick={() => openJobPage(jobKey)}
             role="button"
             tabIndex={0}
@@ -815,7 +836,7 @@ function SetupRun() {
         ].map(({ title, desc, pipelineKey, icon: Icon }) => (
           <Card
             key={pipelineKey}
-            className="card-interactive cursor-pointer"
+            className="glass-card border border-border/80 card-interactive cursor-pointer"
             onClick={() => openPipelinePage(pipelineKey)}
             role="button"
             tabIndex={0}
@@ -849,7 +870,7 @@ function SetupRun() {
         {/* Optional: stream processor job (same step 3 bundle; separate run if needed) */}
         {defaults && isJobConfigured("continuous_stream_processor") && (
           <Card
-            className="card-interactive cursor-pointer"
+            className="glass-card border border-border/80 card-interactive cursor-pointer"
             onClick={() => openJobPage("continuous_stream_processor")}
             role="button"
             tabIndex={0}
@@ -884,7 +905,7 @@ function SetupRun() {
       </div>
 
       {/* Quick links: Jobs, Pipelines, Warehouse, Genie, etc. */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="text-base">Quick links — open in Databricks</CardTitle>
           <p className="text-sm text-muted-foreground">

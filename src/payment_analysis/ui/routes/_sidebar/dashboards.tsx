@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +15,31 @@ import { DashboardTable } from "@/components/dashboards";
 import { friendlyReason } from "@/lib/reasoning";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
+function DashboardsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/dashboards")({
   validateSearch: (s: Record<string, unknown>): { embed?: string } => ({
     embed: typeof s.embed === "string" ? s.embed : undefined,
   }),
-  component: Component,
+  component: () => (
+    <ErrorBoundary FallbackComponent={DashboardsErrorFallback}>
+      <Component />
+    </ErrorBoundary>
+  ),
 });
 
 // Use DashboardInfo from api.ts; keep a local alias for the click handler
@@ -353,7 +374,7 @@ export function Component() {
                   return (
                     <Card
                       key={dashboard.id}
-                      className="card-interactive cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
+                      className="glass-card border border-border/80 card-interactive cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
                       onClick={() => handleDashboardClick(dashboard)}
                     >
                       <CardHeader>
@@ -427,7 +448,7 @@ export function Component() {
                 return (
                   <Card
                     key={dashboard.id}
-                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
+                    className="glass-card border border-border/80 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] group"
                     onClick={() => handleDashboardClick(dashboard)}
                   >
                     <CardHeader>
@@ -497,7 +518,7 @@ export function Component() {
 
       {/* Empty State */}
       {!loading && dashboards.length === 0 && (
-        <Card className="p-12 text-center">
+        <Card className="glass-card border border-border/80 p-12 text-center">
           <BarChart3 className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-xl font-semibold mb-2">No Dashboards Found</h3>
           <p className="text-muted-foreground">

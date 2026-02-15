@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,28 @@ import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, CheckCircle2, AlertTriangle, Target } from "lucide-react";
 
+function ReasonCodesErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <div className="p-6">
+      <Card className="glass-card border border-border/80 border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+          <Button variant="outline" size="sm" onClick={resetErrorBoundary}>Try again</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/reason-codes")({
-  component: () => <ReasonCodes />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={ReasonCodesErrorFallback}>
+      <ReasonCodes />
+    </ErrorBoundary>
+  ),
 });
 
 const INTELLIGENCE_OUTCOMES = [
@@ -80,7 +101,7 @@ function ReasonCodes() {
         <p className="text-sm text-muted-foreground mb-4">
           Brazil, monthly view. Data from Databricks Lakehouse. Checkout, PD, WS, and SEP return the final response to the merchant; consolidation must avoid double-counting.
         </p>
-        <Card className="border-border/80 mb-4">
+        <Card className="glass-card border border-border/80 mb-4">
           <CardHeader>
             <CardTitle className="text-base">Entry system coverage (live from Databricks)</CardTitle>
           </CardHeader>
@@ -136,7 +157,7 @@ function ReasonCodes() {
         <p className="text-sm text-muted-foreground mb-4">
           Percentage of insights marked as invalid or non‑actionable by domain specialists after review. Keeps speed vs. accuracy balanced and embeds expert validation in the learning loop.
         </p>
-        <Card className="border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -175,7 +196,7 @@ function ReasonCodes() {
         <p className="text-sm text-muted-foreground mb-4">
           Top standardized decline reasons with suggested remediation and estimated recoverable value.
         </p>
-        <Card className="border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-6 space-y-4">
             {q.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
@@ -220,7 +241,7 @@ function ReasonCodes() {
         <p className="text-sm text-muted-foreground mb-4">
           Mark an insight as valid, invalid, or non‑actionable. This updates the False Insights counter‑metric and improves future recommendations.
         </p>
-        <Card className="border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
