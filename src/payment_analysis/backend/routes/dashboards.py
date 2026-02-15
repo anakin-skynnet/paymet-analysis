@@ -70,13 +70,13 @@ class DashboardList(BaseModel):
 
 # Lakeview dashboard IDs — set in app env or default to the deployed IDs.
 _DASHBOARD_ID_DATA_QUALITY = os.getenv(
-    "DASHBOARD_ID_DATA_QUALITY", "01f109ebdeeb18e9baad9aeff86d6789"
+    "DASHBOARD_ID_DATA_QUALITY", "01f10a04d1c91e0e80c678988302c684"
 )
 _DASHBOARD_ID_ML_OPTIMIZATION = os.getenv(
-    "DASHBOARD_ID_ML_OPTIMIZATION", "01f109ebdee91971a4fc4e6955b7b571"
+    "DASHBOARD_ID_ML_OPTIMIZATION", "01f10a04d1d610d58ccf632bbacebdb3"
 )
 _DASHBOARD_ID_EXECUTIVE_TRENDS = os.getenv(
-    "DASHBOARD_ID_EXECUTIVE_TRENDS", "01f109ebdedd1e188386fc897aed78a5"
+    "DASHBOARD_ID_EXECUTIVE_TRENDS", "01f10a04d1c112afb2581fad5a5c0894"
 )
 
 
