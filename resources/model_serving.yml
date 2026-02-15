@@ -49,42 +49,44 @@ resources:
     #       routes: [{ served_model_name: "response_agent-${var.response_agent_model_version}", traffic_percentage: 100 }]
 
     # LangGraph Orchestrator (multi-agent system wrapping all specialists).
-    payment_analysis_orchestrator_endpoint:
-      name: "payment-analysis-orchestrator"
-      config:
-        served_entities:
-          - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "${var.orchestrator_model_version}"
-            workload_size: "Small"
-            scale_to_zero_enabled: true
-            workload_type: "CPU"
-            environment_vars:
-              ENABLE_MLFLOW_TRACING: "true"
-              CATALOG: "${var.catalog}"
-              SCHEMA: "${var.schema}"
-              LLM_ENDPOINT: "${var.llm_endpoint_orchestrator}"
-              LLM_ENDPOINT_ORCHESTRATOR: "${var.llm_endpoint_orchestrator}"
-              LLM_ENDPOINT_SPECIALIST: "${var.llm_endpoint_specialist}"
-        traffic_config:
-          routes: [{ served_model_name: "orchestrator-${var.orchestrator_model_version}", traffic_percentage: 100 }]
+    # Agent endpoints are managed by Job 6 (agentbricks_register.py) which handles
+    # container dependencies correctly. Uncomment only if Job 6 has run successfully.
+    # payment_analysis_orchestrator_endpoint:
+    #   name: "payment-analysis-orchestrator"
+    #   config:
+    #     served_entities:
+    #       - entity_name: "${var.catalog}.agents.orchestrator"
+    #         entity_version: "${var.orchestrator_model_version}"
+    #         workload_size: "Small"
+    #         scale_to_zero_enabled: true
+    #         workload_type: "CPU"
+    #         environment_vars:
+    #           ENABLE_MLFLOW_TRACING: "true"
+    #           CATALOG: "${var.catalog}"
+    #           SCHEMA: "${var.schema}"
+    #           LLM_ENDPOINT: "${var.llm_endpoint_orchestrator}"
+    #           LLM_ENDPOINT_ORCHESTRATOR: "${var.llm_endpoint_orchestrator}"
+    #           LLM_ENDPOINT_SPECIALIST: "${var.llm_endpoint_specialist}"
+    #     traffic_config:
+    #       routes: [{ served_model_name: "orchestrator-${var.orchestrator_model_version}", traffic_percentage: 100 }]
 
     # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
-    decline_analyst_endpoint:
-      name: "decline-analyst"
-      config:
-        served_entities:
-          - entity_name: "${var.catalog}.agents.decline_analyst"
-            entity_version: "${var.decline_analyst_model_version}"
-            workload_size: "Small"
-            scale_to_zero_enabled: true
-            workload_type: "CPU"
-            environment_vars:
-              ENABLE_MLFLOW_TRACING: "true"
-              CATALOG: "${var.catalog}"
-              SCHEMA: "${var.schema}"
-              LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
-        traffic_config:
-          routes: [{ served_model_name: "decline_analyst-${var.decline_analyst_model_version}", traffic_percentage: 100 }]
+    # decline_analyst_endpoint:
+    #   name: "decline-analyst"
+    #   config:
+    #     served_entities:
+    #       - entity_name: "${var.catalog}.agents.decline_analyst"
+    #         entity_version: "${var.decline_analyst_model_version}"
+    #         workload_size: "Small"
+    #         scale_to_zero_enabled: true
+    #         workload_type: "CPU"
+    #         environment_vars:
+    #           ENABLE_MLFLOW_TRACING: "true"
+    #           CATALOG: "${var.catalog}"
+    #           SCHEMA: "${var.schema}"
+    #           LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
+    #     traffic_config:
+    #       routes: [{ served_model_name: "decline_analyst-${var.decline_analyst_model_version}", traffic_percentage: 100 }]
 
     # Predicts transaction approval probability
     approval_propensity_endpoint:
