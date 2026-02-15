@@ -3,6 +3,7 @@ import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { useCurrentUserSuspense } from "@/lib/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorBoundary } from "react-error-boundary";
 import selector from "@/lib/selector";
 
 function SidebarUserFooterSkeleton() {
@@ -12,6 +13,23 @@ function SidebarUserFooterSkeleton() {
       <div className="grid flex-1 text-left text-sm leading-tight gap-1">
         <Skeleton className="h-4 w-24 rounded" />
         <Skeleton className="h-3 w-46 rounded" />
+      </div>
+    </SidebarMenuButton>
+  );
+}
+
+/** Shown when current-user API fails (e.g. no Databricks token locally). */
+function SidebarUserFooterFallback() {
+  return (
+    <SidebarMenuButton size="lg" className="opacity-70">
+      <Avatar className="h-8 w-8 rounded-lg">
+        <AvatarFallback className="rounded-lg text-xs">PA</AvatarFallback>
+      </Avatar>
+      <div className="grid flex-1 text-left text-sm leading-tight">
+        <span className="truncate font-medium">Payment Analysis</span>
+        <span className="text-muted-foreground truncate text-xs">
+          Sign in via Databricks Apps
+        </span>
       </div>
     </SidebarMenuButton>
   );
@@ -47,8 +65,10 @@ function SidebarUserFooterContent() {
 
 export default function SidebarUserFooter() {
   return (
-    <Suspense fallback={<SidebarUserFooterSkeleton />}>
-      <SidebarUserFooterContent />
-    </Suspense>
+    <ErrorBoundary fallback={<SidebarUserFooterFallback />}>
+      <Suspense fallback={<SidebarUserFooterSkeleton />}>
+        <SidebarUserFooterContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

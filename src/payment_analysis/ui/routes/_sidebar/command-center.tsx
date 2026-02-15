@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import {
   Card,
   CardContent,
@@ -79,10 +80,10 @@ import {
   BarChart3,
 } from "lucide-react";
 
-/** Refresh interval for KPI and data quality (5s). */
-const REFRESH_MS = 5000;
-/** Real-time chart widgets: 0.5s for short interval and dynamically adjusting axis. */
-const REFRESH_CHART_MS = 500;
+/** Refresh interval for KPIs and data-quality metrics (30s — fast enough for executive dashboard). */
+const REFRESH_MS = 30_000;
+/** Real-time chart widgets: 10s for streaming throughput + alerts. */
+const REFRESH_CHART_MS = 10_000;
 const SANTANDER_RED = "#EC0000";
 const NEON_CYAN = "#00E5FF";
 const VIBRANT_GREEN = "#22C55E";
@@ -101,25 +102,61 @@ export const Route = createFileRoute("/_sidebar/command-center")({
   component: CommandCenterPage,
 });
 
+function CommandCenterErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <Activity className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-semibold">Failed to load Command Center</h2>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CommandCenterPage() {
   return (
-    <Suspense fallback={<CommandCenterSkeleton />}>
-      <CommandCenter />
-    </Suspense>
+    <ErrorBoundary FallbackComponent={CommandCenterErrorFallback}>
+      <Suspense fallback={<CommandCenterSkeleton />}>
+        <CommandCenter />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
 function CommandCenterSkeleton() {
   return (
-    <div className="space-y-6 p-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Skeleton className="h-28 rounded-xl bg-card" />
-        <Skeleton className="h-28 rounded-xl bg-card" />
-        <Skeleton className="h-28 rounded-xl bg-card" />
+    <div className="space-y-6 p-4 md:p-6 animate-in fade-in duration-300">
+      {/* Page header skeleton */}
+      <div className="flex gap-3">
+        <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-72" />
+        </div>
       </div>
+      {/* Reports & AI bar */}
+      <Skeleton className="h-24 w-full rounded-xl" />
+      {/* KPI cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Skeleton className="h-32 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+      {/* Trend chart */}
+      <Skeleton className="h-64 w-full rounded-xl" />
+      {/* Two-column grid */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Skeleton className="h-72 rounded-xl bg-card" />
-        <Skeleton className="h-72 rounded-xl bg-card" />
+        <div className="space-y-4">
+          <Skeleton className="h-60 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-36 rounded-xl" />
+        </div>
       </div>
     </div>
   );
@@ -544,51 +581,54 @@ function CommandCenter() {
         <GeographyWorldMap />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <Card className="glass-card overflow-hidden border border-border/80">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="h-4 w-4 text-neon-cyan" />
-                Entry Systems Throughput
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <EntrySystemsChart points={entryPoints} />
-              {entryPoints.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-4 text-[10px]">
-                  <span className="text-getnet-red">● PD</span>
-                  <span className="text-neon-cyan">● WS</span>
-                  <span className="text-vibrant-green">● SEP</span>
-                  <span className="text-muted-foreground">● Checkout</span>
+          {/* Left column: charts and decline reasons */}
+          <div className="space-y-4">
+            <Card className="glass-card overflow-hidden border border-border/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-neon-cyan" />
+                  Entry Systems Throughput
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <EntrySystemsChart points={entryPoints} />
+                {entryPoints.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-4 text-[10px]">
+                    <span className="text-getnet-red">● PD</span>
+                    <span className="text-neon-cyan">● WS</span>
+                    <span className="text-vibrant-green">● SEP</span>
+                    <span className="text-muted-foreground">● Checkout</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="glass-card border border-border/80">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Top 5 Decline Reasons</CardTitle>
+                  <Button variant="ghost" size="sm" asChild className="text-xs h-7 text-muted-foreground">
+                    <Link to="/declines">View all <ArrowRight className="h-3 w-3 ml-1" /></Link>
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        <Card className="glass-card border border-border/80">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Top 5 Decline Reasons</CardTitle>
-              <Button variant="ghost" size="sm" asChild className="text-xs h-7 text-muted-foreground">
-                <Link to="/declines">View all <ArrowRight className="h-3 w-3 ml-1" /></Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-              {reasonCodeSummary.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No decline reason data</p>
-              ) : (
-                <div className="space-y-2">
-                  {reasonCodeSummary.map((r) => (
-                    <div key={r.category} className="flex items-center justify-between rounded-md bg-muted/30 px-2 py-1.5 text-sm">
-                      <span className="font-medium text-foreground">{r.category}</span>
-                      <span className="tabular-nums text-muted-foreground">{r.count.toLocaleString()} ({r.pct}%)</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                {reasonCodeSummary.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No decline reason data</p>
+                ) : (
+                  <div className="space-y-2">
+                    {reasonCodeSummary.map((r) => (
+                      <div key={r.category} className="flex items-center justify-between rounded-md bg-muted/30 px-2 py-1.5 text-sm">
+                        <span className="font-medium text-foreground">{r.category}</span>
+                        <span className="tabular-nums text-muted-foreground">{r.count.toLocaleString()} ({r.pct}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Right column: Friction Funnel + Alerts */}
+          {/* Right column: Friction Funnel + Alerts + Data Quality */}
           <div className="space-y-4">
             <Card className="glass-card border border-border/80">
               <CardHeader className="pb-2">

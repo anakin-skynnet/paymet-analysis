@@ -198,23 +198,25 @@ export function Component() {
               return (
                 <Card
                   key={dashboard.id}
-                  className="card-interactive cursor-pointer hover:shadow-lg transition-all hover:border-primary/30 group"
+                  className="glass-card card-interactive cursor-pointer border border-border/80 hover:shadow-lg transition-all hover:border-primary/30 group"
                   onClick={() => handleDashboardClick(dashboard)}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
-                      <IconComponent className="w-8 h-8 text-primary mb-2 group-hover:scale-110 transition-transform" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                        <IconComponent className="w-5 h-5" />
+                      </div>
                       <Badge className={getCategoryColor(dashboard.category)}>
                         {dashboard.category}
                       </Badge>
                     </div>
-                    <CardTitle className="text-lg">{dashboard.name}</CardTitle>
+                    <CardTitle className="text-lg mt-2">{dashboard.name}</CardTitle>
                     <CardDescription className="line-clamp-2">
                       {dashboard.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-wrap gap-1 mb-2">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {(dashboard.tags ?? []).slice(0, 3).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
@@ -222,7 +224,7 @@ export function Component() {
                       ))}
                     </div>
                     {notebookIds.length > 0 && (
-                      <div className="mb-2 p-2 bg-muted/50 rounded-md">
+                      <div className="mb-3 p-2 bg-muted/40 rounded-lg border border-border/60">
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                           <Code2 className="w-3 h-3" />
                           <span>Source:</span>
@@ -314,14 +316,25 @@ export function Component() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card key={i} className="glass-card border border-border/80">
               <CardHeader>
-                <Skeleton className="h-6 w-3/4 mb-2" />
+                <div className="flex items-start justify-between mb-2">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-5 w-3/4 mb-2" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-2/3" />
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-8 w-full" />
+                <div className="flex gap-1 mb-3">
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 flex-1 rounded-md" />
+                  <Skeleton className="h-8 flex-1 rounded-md" />
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -506,7 +519,7 @@ export function Component() {
 
       {/* ML & decision reasoning — click opens Genie in Databricks */}
       <Card
-        className="cursor-pointer hover:shadow-md transition-shadow"
+        className="glass-card border border-border/80 cursor-pointer card-interactive hover:shadow-md transition-all"
         onClick={() => { const u = getGenieUrl(); if (u) window.open(u, "_blank", "noopener,noreferrer"); }}
         role="button"
         tabIndex={0}
@@ -556,7 +569,7 @@ export function Component() {
       </Card>
 
       {/* Info Card */}
-      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+      <Card className="glass-card border border-blue-200/60 dark:border-blue-800/60">
         <CardHeader>
           <CardTitle className="text-sm">About These Dashboards</CardTitle>
         </CardHeader>

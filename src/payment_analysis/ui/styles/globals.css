@@ -323,6 +323,12 @@
   .text-vibrant-green {
     color: var(--vibrant-green);
   }
+  .bg-getnet-red {
+    background-color: var(--getnet-red);
+  }
+  .bg-vibrant-green {
+    background-color: var(--vibrant-green);
+  }
   /* KPI card accent (parent sets --kpi-accent) */
   .kpi-accent-icon,
   .kpi-accent-value {

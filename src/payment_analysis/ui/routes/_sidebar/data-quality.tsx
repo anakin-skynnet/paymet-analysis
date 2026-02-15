@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +37,26 @@ import {
   Activity,
 } from "lucide-react";
 
+function DataQualityErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <Activity className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-semibold">Failed to load Monitoring & Quality</h2>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/data-quality")({
   component: () => (
-    <Suspense fallback={<DataQualitySkeleton />}>
-      <DataQualityPage />
-    </Suspense>
+    <ErrorBoundary FallbackComponent={DataQualityErrorFallback}>
+      <Suspense fallback={<DataQualitySkeleton />}>
+        <DataQualityPage />
+      </Suspense>
+    </ErrorBoundary>
   ),
 });
 

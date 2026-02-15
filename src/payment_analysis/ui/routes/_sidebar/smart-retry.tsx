@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import {
   useGetRetryPerformanceSuspense,
@@ -29,8 +30,25 @@ import {
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
 
+function SmartRetryErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <RefreshCw className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-semibold">Failed to load Smart Retry</h2>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/smart-retry")({
-  component: () => <SmartRetry />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={SmartRetryErrorFallback}>
+      <SmartRetry />
+    </ErrorBoundary>
+  ),
 });
 
 const SCENARIOS = [

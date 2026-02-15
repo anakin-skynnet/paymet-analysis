@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import {
   useDeclineSummarySuspense,
@@ -38,6 +39,7 @@ import {
   ArrowRight,
   AlertCircle,
   BarChart3,
+  BadgeX,
   Lightbulb,
   DollarSign,
   CreditCard,
@@ -48,8 +50,25 @@ import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
 import { openNotebookInDatabricks } from "@/lib/notebooks";
 import { useEntity } from "@/contexts/entity-context";
 
+function DeclinesErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <BadgeX className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-semibold">Failed to load Declines</h2>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/declines")({
-  component: () => <Declines />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={DeclinesErrorFallback}>
+      <Declines />
+    </ErrorBoundary>
+  ),
 });
 
 const openDashboard = () => {
@@ -90,23 +109,23 @@ function DeclineKPIs() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Total Transactions</p>
-          <p className="text-2xl font-bold">{total.toLocaleString()}</p>
+          <p className="text-sm font-medium text-muted-foreground">Total Transactions</p>
+          <p className="text-3xl font-bold tabular-nums kpi-number mt-1">{total.toLocaleString()}</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="glass-card border-2 border-destructive/30 bg-destructive/5">
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Declined</p>
-          <p className="text-2xl font-bold text-destructive">{declined.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">{declineRate}% decline rate</p>
+          <p className="text-sm font-medium text-muted-foreground">Declined</p>
+          <p className="text-3xl font-bold tabular-nums kpi-number text-destructive mt-1">{declined.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{declineRate}% decline rate</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="glass-card border-2 border-green-500/30 bg-green-500/5">
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Approval Rate</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{approvalRate}%</p>
+          <p className="text-sm font-medium text-muted-foreground">Approval Rate</p>
+          <p className="text-3xl font-bold tabular-nums kpi-number text-green-600 dark:text-green-400 mt-1">{approvalRate}%</p>
         </CardContent>
       </Card>
     </div>
@@ -117,10 +136,10 @@ function KPISkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       {[1, 2, 3].map((i) => (
-        <Card key={i}>
-          <CardContent className="pt-6 space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-20" />
+        <Card key={i} className="glass-card border border-border/80">
+          <CardContent className="pt-6 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-9 w-24" />
           </CardContent>
         </Card>
       ))}
@@ -192,7 +211,7 @@ function ChartSkeleton() {
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="flex items-center gap-3">
           <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-5 flex-1" style={{ maxWidth: `${90 - i * 12}%` }} />
+          <Skeleton className={`h-5 flex-1 ${i === 1 ? "max-w-[78%]" : i === 2 ? "max-w-[66%]" : i === 3 ? "max-w-[54%]" : i === 4 ? "max-w-[42%]" : "max-w-[30%]"}`} />
         </div>
       ))}
     </div>
@@ -467,7 +486,7 @@ function Declines() {
       </Suspense>
 
       {/* Decline Buckets Chart */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
@@ -485,7 +504,7 @@ function Declines() {
       </Card>
 
       {/* Factors Delaying Approval */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-orange-500" />
@@ -504,7 +523,7 @@ function Declines() {
 
       {/* Recovery Opportunities + Card Network Performance — side by side */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -521,7 +540,7 @@ function Declines() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-primary" />
@@ -540,7 +559,7 @@ function Declines() {
       </div>
 
       {/* Recommended Actions */}
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="w-4 h-4 text-primary" />

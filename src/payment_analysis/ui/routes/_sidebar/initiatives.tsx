@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import type { CSSProperties } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useGetKpisSuspense,
@@ -27,11 +29,25 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+function InitiativesErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <p className="text-lg font-semibold">Failed to load Initiatives</p>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/initiatives")({
   component: () => (
-    <Suspense fallback={<InitiativesSkeleton />}>
-      <Initiatives />
-    </Suspense>
+    <ErrorBoundary FallbackComponent={InitiativesErrorFallback}>
+      <Suspense fallback={<InitiativesSkeleton />}>
+        <Initiatives />
+      </Suspense>
+    </ErrorBoundary>
   ),
 });
 

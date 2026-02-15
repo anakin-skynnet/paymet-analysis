@@ -232,15 +232,15 @@ export function GeographyWorldMap() {
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-sm" style={{ background: "oklch(0.65 0.2 27)" }} aria-hidden />
+            <span className="h-2.5 w-4 rounded-sm bg-getnet-red" aria-hidden />
             Low (&lt;55%)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-sm" style={{ background: "oklch(0.75 0.15 55)" }} aria-hidden />
+            <span className="h-2.5 w-4 rounded-sm bg-amber-500" aria-hidden />
             Medium
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-sm" style={{ background: "var(--vibrant-green)" }} aria-hidden />
+            <span className="h-2.5 w-4 rounded-sm bg-vibrant-green" aria-hidden />
             High (85%+)
           </span>
         </div>
