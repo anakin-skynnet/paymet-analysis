@@ -23,6 +23,7 @@ from .routes.decision_admin import router as decision_admin_router
 from .routes.experiments import router as experiments_router
 from .routes.incidents import router as incidents_router
 from .routes.notebooks import router as notebooks_router
+from .routes.notifications import router as notifications_router
 from .routes.rules import router as rules_router
 from .routes.setup import router as setup_router
 from .routes.v1 import router as v1_router
@@ -44,6 +45,7 @@ api.include_router(decision_admin_router, prefix="/decision/admin")
 api.include_router(experiments_router, prefix="/experiments")
 api.include_router(incidents_router, prefix="/incidents")
 api.include_router(notebooks_router, prefix="/notebooks")
+api.include_router(notifications_router, prefix="/notifications")
 api.include_router(rules_router, prefix="/rules")
 api.include_router(setup_router)
 api.include_router(v1_router, prefix="/v1")

@@ -170,8 +170,18 @@ class DatabricksService:
     
     @classmethod
     def create(cls, config: DatabricksConfig | None = None) -> "DatabricksService":
-        """Factory method to create service instance."""
-        return cls(config=config or DatabricksConfig.from_environment())
+        """Factory method to create service instance.
+
+        Always returns a DatabricksService (never None). If config resolution
+        fails, logs the error and returns a service with default config that
+        will report ``is_available = False`` on first use.
+        """
+        try:
+            resolved = config or DatabricksConfig.from_environment()
+        except Exception as exc:
+            logger.warning("Failed to resolve Databricks config, service will be unavailable: %s", exc)
+            resolved = DatabricksConfig()
+        return cls(config=resolved)
     
     @property
     def client(self) -> "WorkspaceClient | None":

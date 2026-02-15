@@ -41,9 +41,11 @@ async def _sync_incident_to_lakehouse(incident: Incident) -> None:
         svc = DatabricksService.create()
         full_schema = svc.config.full_schema_name
 
-        # Escape all user-supplied strings to prevent SQL injection
+        # Escape all user-supplied strings to prevent SQL injection.
+        # Handles: backslash, single quote, null byte (rejected).
         def _esc(val: str) -> str:
-            return (val or "").replace("\\", "\\\\").replace("'", "''")
+            s = (val or "").replace("\x00", "")  # strip null bytes
+            return s.replace("\\", "\\\\").replace("'", "''")
 
         details_str = json.dumps(incident.details) if incident.details else "{}"
 

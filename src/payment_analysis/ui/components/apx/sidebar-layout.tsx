@@ -30,6 +30,7 @@ import { AIChatbot, GenieAssistant } from "@/components/chat";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, Sparkles } from "lucide-react";
+import { NotificationBell } from "@/components/apx/notification-bell";
 
 const PATH_LABELS: Record<string, string> = {
   /* Overview */
@@ -207,6 +208,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           </div>
           <div className="flex items-center gap-2 shrink-0" role="group" aria-label="Top bar filters and profile">
             <HeaderActions />
+            <NotificationBell />
             <CountrySelect className="hidden sm:flex" />
             <DateRangePresetSelect value={dateRange} onChange={setDateRange} className="hidden md:flex" />
             <MockDataToggle />

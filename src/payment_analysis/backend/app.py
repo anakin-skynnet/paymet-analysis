@@ -20,6 +20,7 @@ from .config import AppConfig
 from .lakebase_config import load_app_config_and_settings
 from .logger import logger
 from .router import api
+from .routes.notifications import install_log_handler
 from .runtime import Runtime
 from .services.databricks_service import DatabricksConfig, DatabricksService
 from .utils import add_not_found_handler
@@ -89,6 +90,9 @@ def _resolve_ui_dist() -> Path | None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Install notification log handler so WARNING+ messages are captured for the bell
+    install_log_handler()
+
     # Initialize config and runtime, store in app.state for dependency injection
     config = AppConfig()
     logger.info(

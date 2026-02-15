@@ -424,6 +424,10 @@ export interface MLPredictionInput {
   uses_3ds?: boolean;
 }
 
+export interface MarkReadOut {
+  marked: number;
+}
+
 export interface ModelMetricOut {
   name: string;
   value: string;
@@ -477,6 +481,21 @@ export interface NotebookUrlOut {
   notebook_id: string;
   url: string;
   workspace_path: string;
+}
+
+export interface NotificationListOut {
+  notifications: NotificationOut[];
+  total_count: number;
+  unread_count: number;
+}
+
+export interface NotificationOut {
+  id: string;
+  level: string;
+  message: string;
+  read: boolean;
+  source: string;
+  timestamp: number;
 }
 
 export interface OnlineFeatureOut {
@@ -983,6 +1002,15 @@ export interface GetNotebookParams {
 
 export interface GetNotebookUrlParams {
   notebook_id: string;
+}
+
+export interface ListNotificationsParams {
+  unread_only?: boolean;
+  limit?: number;
+}
+
+export interface MarkNotificationReadParams {
+  notification_id: string;
 }
 
 export interface ListApprovalRulesParams {
@@ -2811,6 +2839,64 @@ export function useGetNotebookUrl<TData = { data: NotebookUrlOut }>(options: { p
 
 export function useGetNotebookUrlSuspense<TData = { data: NotebookUrlOut }>(options: { params: GetNotebookUrlParams; query?: Omit<UseSuspenseQueryOptions<{ data: NotebookUrlOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
   return useSuspenseQuery({ queryKey: getNotebookUrlKey(options.params), queryFn: () => getNotebookUrl(options.params), ...options?.query });
+}
+
+export const listNotifications = async (params?: ListNotificationsParams, options?: RequestInit): Promise<{ data: NotificationListOut }> => {
+  const searchParams = new URLSearchParams();
+  if (params?.unread_only != null) searchParams.set("unread_only", String(params?.unread_only));
+  if (params?.limit != null) searchParams.set("limit", String(params?.limit));
+  const queryString = searchParams.toString();
+  const url = queryString ? `/api/notifications?${queryString}` : `/api/notifications`;
+  const res = await fetch(url, { ...options, method: "GET" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export const listNotificationsKey = (params?: ListNotificationsParams) => {
+  return ["/api/notifications", params] as const;
+};
+
+export function useListNotifications<TData = { data: NotificationListOut }>(options?: { params?: ListNotificationsParams; query?: Omit<UseQueryOptions<{ data: NotificationListOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useQuery({ queryKey: listNotificationsKey(options?.params), queryFn: () => listNotifications(options?.params), ...options?.query });
+}
+
+export function useListNotificationsSuspense<TData = { data: NotificationListOut }>(options?: { params?: ListNotificationsParams; query?: Omit<UseSuspenseQueryOptions<{ data: NotificationListOut }, ApiError, TData>, "queryKey" | "queryFn"> }) {
+  return useSuspenseQuery({ queryKey: listNotificationsKey(options?.params), queryFn: () => listNotifications(options?.params), ...options?.query });
+}
+
+export const markAllNotificationsRead = async (options?: RequestInit): Promise<{ data: MarkReadOut }> => {
+  const res = await fetch("/api/notifications/read-all", { ...options, method: "POST" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useMarkAllNotificationsRead(options?: { mutation?: UseMutationOptions<{ data: MarkReadOut }, ApiError, void> }) {
+  return useMutation({ mutationFn: () => markAllNotificationsRead(), ...options?.mutation });
+}
+
+export const markNotificationRead = async (params: MarkNotificationReadParams, options?: RequestInit): Promise<{ data: MarkReadOut }> => {
+  const res = await fetch(`/api/notifications/${params.notification_id}/read`, { ...options, method: "POST" });
+  if (!res.ok) {
+    const body = await res.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(body); } catch { parsed = body; }
+    throw new ApiError(res.status, res.statusText, parsed);
+  }
+  return { data: await res.json() };
+};
+
+export function useMarkNotificationRead(options?: { mutation?: UseMutationOptions<{ data: MarkReadOut }, ApiError, { params: MarkNotificationReadParams }> }) {
+  return useMutation({ mutationFn: (vars) => markNotificationRead(vars.params), ...options?.mutation });
 }
 
 export const listApprovalRules = async (params?: ListApprovalRulesParams, options?: RequestInit): Promise<{ data: ApprovalRuleOut[] }> => {
