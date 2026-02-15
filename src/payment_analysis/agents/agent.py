@@ -108,7 +108,7 @@ You have access to real-time payment data, operational incidents, approval rules
   score = 0.85                         # float between 0.0 and 1.0
   source = "<source_type>"             # e.g. "agent", "decline_analyst", "routing_agent"
   spark.sql(
-      "INSERT INTO {catalog}.{schema}.approval_recommendations VALUES (?, ?, ?, ?, ?)".format(catalog="{CATALOG}", schema="{SCHEMA}"),
+      "INSERT INTO {CATALOG}.{SCHEMA}.approval_recommendations VALUES (?, ?, ?, ?, ?)",
       args=[rec_id, context, action, score, source]
   )
   ```

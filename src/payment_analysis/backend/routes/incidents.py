@@ -88,9 +88,14 @@ async def _sync_incident_to_lakehouse(incident: Incident) -> None:
             logger.warning("Databricks client not initialized — skipping Lakehouse sync for incident %s", incident.id)
             return
 
+        warehouse_id = svc._get_warehouse_id()
+        if not warehouse_id:
+            logger.warning("No SQL Warehouse available — skipping Lakehouse sync for incident %s", incident.id)
+            return
+
         result = client.statement_execution.execute_statement(
             statement=query,
-            warehouse_id=svc.config.warehouse_id,
+            warehouse_id=warehouse_id,
             parameters=params,
         )
         if result.status and result.status.state == StatementState.SUCCEEDED:

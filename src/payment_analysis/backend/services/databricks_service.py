@@ -273,7 +273,7 @@ class DatabricksService:
 
         Uses ``StatementParameterListItem`` for safe value binding.
         """
-        from databricks.sdk.service.sql import StatementParameterListItem
+        from databricks.sdk.service.sql import StatementParameterListItem, StatementState
 
         client = self.client
         if client is None or not self.is_available:
@@ -294,10 +294,14 @@ class DatabricksService:
             parameters=stmt_params,
             wait_timeout="30s",
         )
-        from databricks.sdk.service.sql import StatementState
 
         if not response.status or response.status.state != StatementState.SUCCEEDED:
             return []
+        return self._parse_statement_result(response)
+
+    @staticmethod
+    def _parse_statement_result(response: Any) -> list[dict[str, Any]]:
+        """Extract row dicts from a StatementResponse (shared by query helpers)."""
         if not response.manifest or not response.manifest.schema or not response.result:
             return []
         columns_info = response.manifest.schema.columns
@@ -325,23 +329,11 @@ class DatabricksService:
             wait_timeout="30s",
         )
         
-        # Validate response
         if not response.status or response.status.state != StatementState.SUCCEEDED:
             error = response.status.error if response.status else "Unknown error"
             raise RuntimeError(f"Query failed: {error}")
         
-        # Extract results with null safety
-        if not response.manifest or not response.manifest.schema or not response.result:
-            return []
-        
-        columns_info = response.manifest.schema.columns
-        if not columns_info:
-            return []
-        
-        columns = [col.name for col in columns_info]
-        rows = response.result.data_array or []
-        
-        return [dict(zip(columns, row)) for row in rows]
+        return self._parse_statement_result(response)
 
     async def execute_non_query_parameterized(
         self,
@@ -904,10 +896,6 @@ class DatabricksService:
             logger.debug("get_recommendations_from_lakehouse failed: %s", e)
             return []
 
-    def _escape_sql_string(self, s: str) -> str:
-        """Escape single quotes for SQL string literals."""
-        return (s or "").replace("'", "''")
-
     async def read_app_config(self) -> tuple[str, str] | None:
         """
         Read effective catalog and schema from app_config table.
@@ -1091,33 +1079,27 @@ class DatabricksService:
         """Fetch online features from Lakehouse (ML and AI processes) for UI (parameterized)."""
         limit = max(1, min(limit, 500))
         table = self.config.full_schema_name + ".online_features"
+        cols = "id, source, feature_set, feature_name, feature_value, feature_value_str, entity_id, created_at"
+        params: dict[str, str | int | float | bool] = {}
+        source_filter = ""
         if source and source.lower() in ("ml", "agent"):
-            query = f"""
-                SELECT id, source, feature_set, feature_name, feature_value, feature_value_str, entity_id, created_at
-                FROM {table}
-                WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS
-                  AND source = :source
-                ORDER BY created_at DESC
-                LIMIT {limit}
-            """
-            try:
-                return await self._execute_query_parameterized(query, {"source": source.lower()}) or []
-            except Exception as e:
-                logger.debug("get_online_features failed: %s", e)
-                return []
-        else:
-            query = f"""
-                SELECT id, source, feature_set, feature_name, feature_value, feature_value_str, entity_id, created_at
-                FROM {table}
-                WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS
-                ORDER BY created_at DESC
-                LIMIT {limit}
-            """
-            try:
-                return await self.execute_query(query) or []
-            except Exception as e:
-                logger.debug("get_online_features failed: %s", e)
-                return []
+            source_filter = "AND source = :source"
+            params["source"] = source.lower()
+        query = f"""
+            SELECT {cols}
+            FROM {table}
+            WHERE created_at >= current_timestamp() - INTERVAL 24 HOURS
+              {source_filter}
+            ORDER BY created_at DESC
+            LIMIT {limit}
+        """
+        try:
+            if params:
+                return await self._execute_query_parameterized(query, params) or []
+            return await self.execute_query(query) or []
+        except Exception as e:
+            logger.debug("get_online_features failed: %s", e)
+            return []
 
     async def get_ml_models(self, entity: str = DEFAULT_ENTITY) -> list[dict[str, Any]]:
         """Return ML model metadata enriched with live metrics from Unity Catalog model registry.

@@ -327,23 +327,16 @@ class BaseAgent:
             allowed = ("authentication", "retry", "routing")
             if rule_type and rule_type not in allowed:
                 rule_type = None
-            if rule_type:
-                query = f"""
-                    SELECT name, rule_type, action_summary, condition_expression, priority
-                    FROM {self.catalog}.{self.schema}.v_approval_rules_active
-                    WHERE rule_type = :rule_type
-                    ORDER BY priority ASC
-                    LIMIT 50
-                """
-                return self._execute_sql_parameterized(query, {"rule_type": rule_type})
-            else:
-                query = f"""
-                    SELECT name, rule_type, action_summary, condition_expression, priority
-                    FROM {self.catalog}.{self.schema}.v_approval_rules_active
-                    ORDER BY priority ASC
-                    LIMIT 50
-                """
-                return self._execute_sql(query)
+            where = "WHERE rule_type = :rule_type" if rule_type else ""
+            params = {"rule_type": rule_type} if rule_type else {}
+            query = f"""
+                SELECT name, rule_type, action_summary, condition_expression, priority
+                FROM {self.catalog}.{self.schema}.v_approval_rules_active
+                {where}
+                ORDER BY priority ASC
+                LIMIT 50
+            """
+            return self._execute_sql_parameterized(query, params)
         except Exception as e:
             logger.warning("Could not load Lakehouse approval rules: %s", e)
             return []
