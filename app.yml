@@ -4,6 +4,12 @@
 # Environment variables: defined below in env (not in Compute → Apps → Edit UI). Redeploy bundle to apply changes.
 # User auth: open from Compute → Apps → payment-analysis so the platform forwards your token (x-forwarded-access-token).
 # Lakebase: LAKEBASE_* below; DATABRICKS_WAREHOUSE_ID from sql-warehouse binding; DATABRICKS_CLIENT_ID/SECRET injected by platform.
+#
+# WORKSPACE PORTABILITY: Dashboard and Genie IDs below are workspace-specific.
+# On a new workspace, either:
+#   (a) Leave dashboard IDs empty — the backend auto-discovers them from the workspace API, OR
+#   (b) After running Job 4 (Deploy Dashboards), update the IDs below and redeploy.
+# The Genie space ID must be set after creating the space in the target workspace.
 command:
   - uvicorn
   - payment_analysis.backend.app:app
@@ -23,15 +29,17 @@ env:
     value: primary
   # Genie space ID for natural language data queries (Genie Assistant floating dialog).
   # When set, POST /api/agents/chat uses Databricks Genie Conversation API.
+  # Set this after creating the Genie space in the target workspace, or leave empty to disable Genie.
   - name: GENIE_SPACE_ID
-    value: "01f10700a35c1756a892406b5bab0b67"
+    value: ""
   # Use AgentBricks orchestrator for chat (Model Serving). Omit or set empty to use Job 6 (custom Python).
   - name: ORCHESTRATOR_SERVING_ENDPOINT
     value: payment-analysis-orchestrator
-  # Lakeview dashboard IDs (must match deployed bundle dashboards for embed to work)
+  # Lakeview dashboard IDs — leave empty for auto-discovery from workspace API.
+  # If auto-discovery is too slow or unreliable, set explicitly after Job 4 deploys dashboards.
   - name: DASHBOARD_ID_DATA_QUALITY
-    value: "01f10a04d1c91e0e80c678988302c684"
+    value: ""
   - name: DASHBOARD_ID_ML_OPTIMIZATION
-    value: "01f10a04d1d610d58ccf632bbacebdb3"
+    value: ""
   - name: DASHBOARD_ID_EXECUTIVE_TRENDS
-    value: "01f10a04d1c112afb2581fad5a5c0894"
+    value: ""

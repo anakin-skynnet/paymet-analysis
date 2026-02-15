@@ -4,7 +4,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-BASE = "https://payment-analysis-984752964297111.11.azure.databricksapps.com"
+import os
+BASE = os.environ.get("APP_BASE_URL", "https://payment-analysis-984752964297111.11.azure.databricksapps.com")
 OUT = Path(__file__).resolve().parent.parent / ".screenshots"
 PAGES = [
     ("1-home", "/", "Home"),

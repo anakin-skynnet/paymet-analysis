@@ -1,34 +1,40 @@
 # =============================================================================
-# Model Serving Endpoints & Mosaic AI Gateway
+# Model Serving Endpoints — REFERENCE / OPTIONAL
 # =============================================================================
-# Six endpoints: orchestrator (supervisor agent), decline_analyst (LangGraph agent),
-# plus 4 ML models (approval propensity, risk scoring, smart routing, smart retry).
+# This file is OPTIONAL and included primarily for documentation and for
+# managing AI Gateway configurations via DAB.
 #
-# LangGraph agents are registered as MLflow ResponsesAgent (catalog.agents, Job 6 task 2).
-# ML models are registered to catalog.schema (Job 5).
+# ** Endpoints are now created/updated PROGRAMMATICALLY by Jobs 5 and 6: **
+#   - Job 5 (train_models.py): creates/updates 4 ML model endpoints
+#   - Job 6 (agentbricks_register.py / register_responses_agent.py):
+#     creates/updates agent endpoints (orchestrator, decline-analyst)
+#
+# This means the solution is portable to ANY workspace: run Jobs 1-7 and
+# all endpoints are created automatically with the correct model versions.
+# No hardcoded entity_version needed.
+#
+# If you ALSO want DAB to manage endpoint config (e.g. AI Gateway, workload size),
+# you can include this file in databricks.yml. Set the entity_version variables
+# AFTER running Jobs 5 & 6 so they match the registered model versions.
 #
 # Tiered LLM strategy:
 #   Orchestrator → llm_endpoint_orchestrator (Claude Opus 4.6, strongest reasoning)
 #   Specialists  → llm_endpoint_specialist   (Claude Sonnet 4.5, balanced speed/quality)
 #   Simple tasks → llm_endpoint_simple        (Llama 3.3 70B, fast/cheap)
 #
-# Agent endpoints use ResponsesAgent (MLflow 3.x) with lazy LangGraph initialization and
-# explicit pip_requirements + environment_vars (CATALOG, SCHEMA, LLM_ENDPOINT).
+# Agent endpoints use ResponsesAgent (MLflow 3.x) with lazy LangGraph initialization.
 # See: https://mlflow.org/docs/latest/genai/flavors/responses-agent-intro/
-#      https://learn.microsoft.com/en-us/azure/databricks/generative-ai/agent-framework/author-agent
 # =============================================================================
 
 resources:
   model_serving_endpoints:
     # Supervisor / Orchestrator (ResponsesAgent wrapping LangGraph multi-agent).
-    # Uses the strongest reasoning model (Opus) for multi-step routing and synthesis.
-    # App env ORCHESTRATOR_SERVING_ENDPOINT points to this endpoint name.
     payment_analysis_orchestrator_endpoint:
       name: "payment-analysis-orchestrator"
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.orchestrator"
-            entity_version: "24"
+            entity_version: "${var.orchestrator_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -36,22 +42,19 @@ resources:
               ENABLE_MLFLOW_TRACING: "true"
               CATALOG: "${var.catalog}"
               SCHEMA: "${var.schema}"
-              # Tiered: orchestrator-level for router + synthesizer
               LLM_ENDPOINT: "${var.llm_endpoint_orchestrator}"
               LLM_ENDPOINT_ORCHESTRATOR: "${var.llm_endpoint_orchestrator}"
-              # Specialist-level for delegated agent calls
               LLM_ENDPOINT_SPECIALIST: "${var.llm_endpoint_specialist}"
         traffic_config:
-          routes: [{ served_model_name: "orchestrator-24", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "orchestrator-${var.orchestrator_model_version}", traffic_percentage: 100 }]
 
     # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
-    # Uses balanced specialist model (Sonnet) for tool-calling and analysis.
     decline_analyst_endpoint:
       name: "decline-analyst"
       config:
         served_entities:
           - entity_name: "${var.catalog}.agents.decline_analyst"
-            entity_version: "30"
+            entity_version: "${var.decline_analyst_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
@@ -61,7 +64,7 @@ resources:
               SCHEMA: "${var.schema}"
               LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
         traffic_config:
-          routes: [{ served_model_name: "decline_analyst-30", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "decline_analyst-${var.decline_analyst_model_version}", traffic_percentage: 100 }]
 
     # Predicts transaction approval probability
     approval_propensity_endpoint:
@@ -69,13 +72,13 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.approval_propensity_model"
-            entity_version: "22"
+            entity_version: "${var.ml_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes: [{ served_model_name: "approval_propensity_model-22", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "approval_propensity_model-${var.ml_model_version}", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         usage_tracking_config: { enabled: true }
@@ -86,13 +89,13 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.risk_scoring_model"
-            entity_version: "22"
+            entity_version: "${var.ml_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
             environment_vars: { ENABLE_MLFLOW_TRACING: "true" }
         traffic_config:
-          routes: [{ served_model_name: "risk_scoring_model-22", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "risk_scoring_model-${var.ml_model_version}", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 100 }]
         usage_tracking_config: { enabled: true }
@@ -103,12 +106,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_routing_policy"
-            entity_version: "22"
+            entity_version: "${var.ml_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
         traffic_config:
-          routes: [{ served_model_name: "smart_routing_policy-22", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "smart_routing_policy-${var.ml_model_version}", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
         usage_tracking_config: { enabled: true }
@@ -119,12 +122,12 @@ resources:
       config:
         served_entities:
           - entity_name: "${var.catalog}.${var.schema}.smart_retry_policy"
-            entity_version: "22"
+            entity_version: "${var.ml_model_version}"
             workload_size: "Small"
             scale_to_zero_enabled: true
             workload_type: "CPU"
         traffic_config:
-          routes: [{ served_model_name: "smart_retry_policy-22", traffic_percentage: 100 }]
+          routes: [{ served_model_name: "smart_retry_policy-${var.ml_model_version}", traffic_percentage: 100 }]
       ai_gateway:
         rate_limits: [{ key: "user", renewal_period: "minute", calls: 200 }]
         usage_tracking_config: { enabled: true }

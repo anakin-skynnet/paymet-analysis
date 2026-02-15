@@ -71,13 +71,42 @@ export function getWorkspacePath(path: string): string {
 
 /**
  * Lakeview dashboard IDs for the three unified dashboards.
- * Must match backend (DASHBOARD_ID_* env vars in dashboards.py).
+ *
+ * On first load, these are empty. Call `loadDashboardIds()` at app startup
+ * to fetch the actual IDs from the backend (GET /api/dashboards). The backend
+ * resolves IDs from env vars or auto-discovers them from the workspace API,
+ * making the frontend portable across workspaces (no hardcoded IDs).
  */
 export const LAKEVIEW_DASHBOARD_IDS: Record<string, string> = {
-  data_quality_unified: "01f10a04d1c91e0e80c678988302c684",
-  ml_optimization_unified: "01f10a04d1d610d58ccf632bbacebdb3",
-  executive_trends_unified: "01f10a04d1c112afb2581fad5a5c0894",
+  data_quality_unified: "",
+  ml_optimization_unified: "",
+  executive_trends_unified: "",
 };
+
+/**
+ * Fetch dashboard IDs from the backend and populate LAKEVIEW_DASHBOARD_IDS.
+ * Call once at app startup (e.g. in __root.tsx or main.tsx).
+ * The backend returns dashboards with `url_path` containing the Lakeview ID.
+ */
+export async function loadDashboardIds(): Promise<void> {
+  try {
+    const resp = await fetch("/api/dashboards");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const dashboards: Array<{ id: string; url_path: string | null }> = data.dashboards || [];
+    for (const d of dashboards) {
+      if (d.url_path && d.id in LAKEVIEW_DASHBOARD_IDS) {
+        // Extract Lakeview ID from url_path: /dashboardsv3/<id>/published
+        const match = d.url_path.match(/\/dashboardsv3\/([^/]+)\//);
+        if (match) {
+          LAKEVIEW_DASHBOARD_IDS[d.id] = match[1];
+        }
+      }
+    }
+  } catch {
+    // Silently fail — dashboard links will be empty until IDs are available
+  }
+}
 
 /**
  * Map legacy individual dashboard names to their unified Lakeview dashboard.

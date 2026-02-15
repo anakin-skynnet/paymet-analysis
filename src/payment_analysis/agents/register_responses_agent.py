@@ -339,12 +339,72 @@ print(f"Registered: {UC_MODEL_NAME} (version {uc_registered_model_info.version})
 
 # COMMAND ----------
 
-# Note: The Model Serving endpoint is managed by Databricks Asset Bundles
-# (resources/model_serving.yml). After this notebook registers a new model
-# version, update entity_version in model_serving.yml and run bundle deploy.
-# No need for databricks.agents.deploy() — the endpoint config is in Terraform.
-print(f"Model registered: {UC_MODEL_NAME} v{uc_registered_model_info.version}")
-print(f"To deploy: update entity_version in resources/model_serving.yml, then run 'databricks bundle deploy'")
+# Deploy / update Model Serving endpoint (idempotent: create if new, update if exists).
+# This replaces the need for hardcoded entity_version in model_serving.yml and makes
+# the solution portable to any workspace.
+
+def _ensure_serving_endpoint(
+    endpoint_name, entity_name, entity_version,
+    workload_type="CPU", workload_size="Small",
+    scale_to_zero=True, environment_vars=None,
+):
+    """Create or update a Model Serving endpoint (idempotent)."""
+    from databricks.sdk import WorkspaceClient
+    from databricks.sdk.service.serving import (
+        EndpointCoreConfigInput, ServedEntityInput, TrafficConfig, Route,
+    )
+    w = WorkspaceClient()
+    served_entity = ServedEntityInput(
+        entity_name=entity_name,
+        entity_version=str(entity_version),
+        workload_size=workload_size,
+        scale_to_zero_enabled=scale_to_zero,
+        workload_type=workload_type,
+        environment_vars=environment_vars or {},
+    )
+    model_short = entity_name.split(".")[-1]
+    served_model_name = f"{model_short}-{entity_version}"
+    traffic = TrafficConfig(
+        routes=[Route(served_model_name=served_model_name, traffic_percentage=100)]
+    )
+    try:
+        existing = w.serving_endpoints.get(endpoint_name)
+        print(f"  Endpoint '{endpoint_name}' exists, updating to v{entity_version}...")
+        w.serving_endpoints.update_config(
+            name=endpoint_name, served_entities=[served_entity], traffic_config=traffic,
+        )
+        print(f"  ✓ Update initiated")
+    except Exception as get_err:
+        err_str = str(get_err)
+        if "RESOURCE_DOES_NOT_EXIST" in err_str or "does not exist" in err_str.lower():
+            print(f"  Endpoint '{endpoint_name}' not found, creating...")
+            w.serving_endpoints.create(
+                name=endpoint_name,
+                config=EndpointCoreConfigInput(
+                    served_entities=[served_entity], traffic_config=traffic,
+                ),
+            )
+            print(f"  ✓ Create initiated")
+        else:
+            raise
+
+ENDPOINT_NAME = "payment-analysis-orchestrator"
+print(f"\nDeploying endpoint '{ENDPOINT_NAME}' with {UC_MODEL_NAME} v{uc_registered_model_info.version}...")
+try:
+    _ensure_serving_endpoint(
+        endpoint_name=ENDPOINT_NAME,
+        entity_name=UC_MODEL_NAME,
+        entity_version=uc_registered_model_info.version,
+        environment_vars={
+            "ENABLE_MLFLOW_TRACING": "true",
+            "CATALOG": CATALOG,
+            "SCHEMA": SCHEMA,
+            "LLM_ENDPOINT": LLM_ENDPOINT,
+        },
+    )
+except Exception as ep_err:
+    print(f"⚠ Endpoint deployment failed (non-fatal): {ep_err}")
+    # Don't raise — model is registered; endpoint can be created manually or via bundle
 
 # COMMAND ----------
 

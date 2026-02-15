@@ -28,14 +28,18 @@ workspace:
   root_path: /Workspace/Users/${workspace.current_user.userName}/${var.workspace_folder}
   file_path: ${workspace.root_path}
 
-# Resource modules. Order: UC → Lakebase → pipelines → warehouse → jobs → agents → simulator → Genie → dashboards → serving → app.
+# Resource modules. Order: UC → Lakebase → pipelines → warehouse → jobs → agents → simulator → Genie → dashboards → app.
 # Lakebase is required for UI CRUD (rules, experiments, incidents) and ML features.
-# model_serving.yml — uncomment after Step 5 (Train ML Models) and decline_analyst registered so 5 endpoints exist in UC.
 # Vector Search: create manually from resources/vector_search.yml.
 # Execution order for jobs (Setup & Run): see docs/DEPLOYMENT.md and Setup & Run in the app.
 #
 # Dashboards: resources/dashboards.yml is included so deploy updates existing dashboards in place
 # (same display_name + parent_path). Run prepare before deploy so .build/dashboards/*.lvdash.json exist.
+#
+# Model Serving: Endpoints are now created/updated PROGRAMMATICALLY by Jobs 5 & 6 (idempotent).
+# model_serving.yml is EXCLUDED by default for portability. After Jobs run, you can optionally
+# include it by uncommenting the line below and setting the entity_version variables to manage
+# endpoint configuration (AI Gateway, workload size) via DAB.
 include:
   - resources/unity_catalog.yml
   - resources/lakebase.yml
@@ -46,7 +50,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  - resources/model_serving.yml
+  # - resources/model_serving.yml   # Optional: uncomment after Jobs 5 & 6 create endpoints; set entity_version vars
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------
@@ -88,10 +92,12 @@ variables:
   workspace_folder:
     description: Workspace folder name for bundle files (notebooks, dashboards, app). Must match repo/deploy path (e.g. payment-analysis).
     default: payment-analysis
-  # Genie space ID for app resource binding. Default empty; do not add genie-space to app resources in resources/fastapi_app.yml unless this is set (empty space_id causes deploy to fail).
+  # Genie space ID for app resource binding. Must be set per workspace after creating the
+  # Genie space (Genie UI → space UUID). Empty causes genie-space app resource to fail at deploy —
+  # either set this variable or comment out the genie-space resource in fastapi_app.yml.
   genie_space_id:
-    description: "Genie space ID (e.g. UUID of 'Payment Analytics' from Genie UI). Set for genie-space app resource (empty may cause deploy to fail)."
-    default: "01f10700a35c1756a892406b5bab0b67"
+    description: "Genie space ID (e.g. UUID of 'Payment Analytics' from Genie UI). Required for genie-space app resource."
+    default: ""
   # Tiered LLM strategy: Orchestrator (strongest reasoning) → Specialist (balanced) → Simple (fast/cheap).
   # See: Foundation Model API endpoints in the workspace (databricks serving-endpoints list).
   llm_endpoint:
@@ -109,6 +115,18 @@ variables:
   pipelines_development:
     description: "If true, pipelines use development mode (stops after processing). Set false for continuous real-time processing."
     default: false
+  # Model version variables — only needed if model_serving.yml is included in the bundle.
+  # Set these to the latest model versions AFTER running Jobs 5 & 6.
+  # On a fresh workspace, Jobs create/update endpoints automatically (no need to set these).
+  orchestrator_model_version:
+    description: "UC model version for orchestrator agent (set after Job 6 runs)"
+    default: "1"
+  decline_analyst_model_version:
+    description: "UC model version for decline_analyst agent (set after Job 6 runs)"
+    default: "1"
+  ml_model_version:
+    description: "UC model version for ML models (approval, risk, routing, retry) (set after Job 5 runs)"
+    default: "1"
 
 # -----------------------------------------------------------------------------
 # Sync: paths uploaded to workspace for job/pipeline execution and app

@@ -633,3 +633,145 @@ if training_errors:
     raise RuntimeError(f"Training completed with {len(training_errors)} error(s). See logs above.")
 
 print("✓ All models trained and ready for serving")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Deploy / Update Model Serving Endpoints
+# MAGIC
+# MAGIC Idempotent: creates each endpoint if it doesn't exist, or updates it
+# MAGIC with the latest model version. This makes the solution portable to any
+# MAGIC workspace without hardcoded entity_version values.
+
+# COMMAND ----------
+
+def _ensure_serving_endpoint(
+    endpoint_name: str,
+    entity_name: str,
+    entity_version: str,
+    workload_type: str = "CPU",
+    workload_size: str = "Small",
+    scale_to_zero: bool = True,
+    environment_vars: dict | None = None,
+    ai_gateway_rate_limit: int | None = None,
+):
+    """Create or update a Model Serving endpoint (idempotent).
+
+    If the endpoint exists, update it to serve the new model version.
+    If it doesn't exist, create it from scratch.
+    """
+    from databricks.sdk import WorkspaceClient
+    from databricks.sdk.service.serving import (
+        EndpointCoreConfigInput,
+        ServedEntityInput,
+        TrafficConfig,
+        Route,
+    )
+
+    w = WorkspaceClient()
+
+    served_entity = ServedEntityInput(
+        entity_name=entity_name,
+        entity_version=str(entity_version),
+        workload_size=workload_size,
+        scale_to_zero_enabled=scale_to_zero,
+        workload_type=workload_type,
+        environment_vars=environment_vars or {},
+    )
+
+    model_short = entity_name.split(".")[-1]
+    served_model_name = f"{model_short}-{entity_version}"
+    traffic = TrafficConfig(
+        routes=[Route(served_model_name=served_model_name, traffic_percentage=100)]
+    )
+
+    try:
+        existing = w.serving_endpoints.get(endpoint_name)
+        print(f"  Endpoint '{endpoint_name}' exists (ready={existing.state.ready}), updating to v{entity_version}...")
+        w.serving_endpoints.update_config(
+            name=endpoint_name,
+            served_entities=[served_entity],
+            traffic_config=traffic,
+        )
+        print(f"  ✓ Update initiated for '{endpoint_name}'")
+    except Exception as get_err:
+        err_str = str(get_err)
+        if "RESOURCE_DOES_NOT_EXIST" in err_str or "does not exist" in err_str.lower():
+            print(f"  Endpoint '{endpoint_name}' not found, creating with {entity_name} v{entity_version}...")
+            w.serving_endpoints.create(
+                name=endpoint_name,
+                config=EndpointCoreConfigInput(
+                    served_entities=[served_entity],
+                    traffic_config=traffic,
+                ),
+            )
+            print(f"  ✓ Create initiated for '{endpoint_name}'")
+        else:
+            print(f"  ✗ Failed to access endpoint '{endpoint_name}': {get_err}")
+            raise
+
+    # Configure AI Gateway rate limits if requested
+    if ai_gateway_rate_limit:
+        try:
+            from databricks.sdk.service.serving import (
+                AiGatewayRateLimit,
+                AiGatewayRateLimitRenewalPeriod,
+                AiGatewayRateLimitKey,
+                AiGatewayUsageTrackingConfig,
+            )
+            w.serving_endpoints.put_ai_gateway(
+                name=endpoint_name,
+                rate_limits=[AiGatewayRateLimit(
+                    calls=ai_gateway_rate_limit,
+                    renewal_period=AiGatewayRateLimitRenewalPeriod.MINUTE,
+                    key=AiGatewayRateLimitKey.USER,
+                )],
+                usage_tracking_config=AiGatewayUsageTrackingConfig(enabled=True),
+            )
+        except Exception as gw_err:
+            print(f"  ⚠ AI Gateway config skipped: {gw_err}")
+
+
+# Get latest model versions and deploy endpoints
+print("\n" + "=" * 80)
+print("DEPLOYING MODEL SERVING ENDPOINTS")
+print("=" * 80)
+
+ML_ENDPOINTS = {
+    "approval-propensity": (f"{CATALOG}.{SCHEMA}.approval_propensity_model", 100),
+    "risk-scoring": (f"{CATALOG}.{SCHEMA}.risk_scoring_model", 100),
+    "smart-routing": (f"{CATALOG}.{SCHEMA}.smart_routing_policy", 200),
+    "smart-retry": (f"{CATALOG}.{SCHEMA}.smart_retry_policy", 200),
+}
+
+serving_errors: list[str] = []
+
+for ep_name, (model_name, rate_limit) in ML_ENDPOINTS.items():
+    try:
+        # Get latest model version from UC
+        import mlflow
+        client = mlflow.MlflowClient()
+        versions = client.search_model_versions(f"name='{model_name}'", order_by=["version_number DESC"], max_results=1)
+        if not versions:
+            print(f"  ⚠ No versions found for {model_name}, skipping endpoint '{ep_name}'")
+            continue
+
+        latest_version = versions[0].version
+        print(f"\n{ep_name}: {model_name} v{latest_version}")
+        _ensure_serving_endpoint(
+            endpoint_name=ep_name,
+            entity_name=model_name,
+            entity_version=latest_version,
+            environment_vars={"ENABLE_MLFLOW_TRACING": "true"},
+            ai_gateway_rate_limit=rate_limit,
+        )
+    except Exception as e:
+        print(f"  ✗ Endpoint '{ep_name}' FAILED: {e}")
+        serving_errors.append(f"{ep_name}: {e}")
+
+if serving_errors:
+    print(f"\n⚠ {len(serving_errors)} endpoint(s) failed:")
+    for err in serving_errors:
+        print(f"  ✗ {err}")
+else:
+    print("\n✓ All 4 ML serving endpoints deployed/updated")

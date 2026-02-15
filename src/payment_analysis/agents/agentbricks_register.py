@@ -446,6 +446,149 @@ def register_agents():
 
 # COMMAND ----------
 
+def _ensure_serving_endpoint(
+    endpoint_name: str,
+    entity_name: str,
+    entity_version: str,
+    workload_type: str = "CPU",
+    workload_size: str = "Small",
+    scale_to_zero: bool = True,
+    environment_vars: dict | None = None,
+):
+    """Create or update a Model Serving endpoint (idempotent).
+
+    If the endpoint exists, update it to serve the new model version.
+    If it doesn't exist, create it from scratch.
+    """
+    from databricks.sdk import WorkspaceClient
+    from databricks.sdk.service.serving import (
+        EndpointCoreConfigInput,
+        ServedEntityInput,
+        TrafficConfig,
+        Route,
+    )
+
+    w = WorkspaceClient()
+    served_entity = ServedEntityInput(
+        entity_name=entity_name,
+        entity_version=str(entity_version),
+        workload_size=workload_size,
+        scale_to_zero_enabled=scale_to_zero,
+        workload_type=workload_type,
+        environment_vars=environment_vars or {},
+    )
+
+    model_short = entity_name.split(".")[-1]
+    served_model_name = f"{model_short}-{entity_version}"
+    traffic = TrafficConfig(
+        routes=[Route(served_model_name=served_model_name, traffic_percentage=100)]
+    )
+
+    try:
+        existing = w.serving_endpoints.get(endpoint_name)
+        print(f"  Endpoint '{endpoint_name}' exists (ready={existing.state.ready}), "
+              f"updating to {entity_name} v{entity_version}...")
+        w.serving_endpoints.update_config(
+            name=endpoint_name,
+            served_entities=[served_entity],
+            traffic_config=traffic,
+        )
+        print(f"  ✓ Update initiated for '{endpoint_name}'")
+    except Exception as get_err:
+        err_str = str(get_err)
+        if "RESOURCE_DOES_NOT_EXIST" in err_str or "does not exist" in err_str.lower():
+            print(f"  Endpoint '{endpoint_name}' not found, creating with "
+                  f"{entity_name} v{entity_version}...")
+            w.serving_endpoints.create(
+                name=endpoint_name,
+                config=EndpointCoreConfigInput(
+                    served_entities=[served_entity],
+                    traffic_config=traffic,
+                ),
+            )
+            print(f"  ✓ Create initiated for '{endpoint_name}'")
+        else:
+            raise
+
+
+def deploy_agent_endpoints(registered: list[str]):
+    """Deploy or update Model Serving endpoints for registered agents.
+
+    Maps registered UC model names to their serving endpoint names and
+    creates/updates each endpoint idempotently. This removes the need
+    for hardcoded entity_version values in model_serving.yml.
+    """
+    import mlflow
+
+    config = _get_config()
+    catalog = config["catalog"]
+    schema = config["schema"]
+    llm_orchestrator = config["llm_endpoint_orchestrator"]
+    llm_specialist = config["llm_endpoint_specialist"]
+
+    # Map UC model name suffix → (endpoint_name, env_vars)
+    AGENT_ENDPOINTS: dict[str, tuple[str, dict[str, str]]] = {
+        "orchestrator": (
+            "payment-analysis-orchestrator",
+            {
+                "ENABLE_MLFLOW_TRACING": "true",
+                "CATALOG": catalog,
+                "SCHEMA": schema,
+                "LLM_ENDPOINT": llm_orchestrator,
+                "LLM_ENDPOINT_ORCHESTRATOR": llm_orchestrator,
+                "LLM_ENDPOINT_SPECIALIST": llm_specialist,
+            },
+        ),
+        "decline_analyst": (
+            "decline-analyst",
+            {
+                "ENABLE_MLFLOW_TRACING": "true",
+                "CATALOG": catalog,
+                "SCHEMA": schema,
+                "LLM_ENDPOINT": llm_specialist,
+            },
+        ),
+    }
+
+    client = mlflow.MlflowClient()
+    errors: list[str] = []
+
+    for model_name in registered:
+        suffix = model_name.split(".")[-1]  # e.g. "orchestrator", "decline_analyst"
+        if suffix not in AGENT_ENDPOINTS:
+            continue  # skip specialist models not mapped to endpoints
+
+        ep_name, env_vars = AGENT_ENDPOINTS[suffix]
+        try:
+            # Get latest version for this model
+            versions = client.search_model_versions(
+                f"name='{model_name}'", order_by=["version_number DESC"], max_results=1,
+            )
+            if not versions:
+                print(f"  ⚠ No versions for {model_name}, skipping endpoint '{ep_name}'")
+                continue
+            latest_version = versions[0].version
+            print(f"\n{ep_name}: {model_name} v{latest_version}")
+            _ensure_serving_endpoint(
+                endpoint_name=ep_name,
+                entity_name=model_name,
+                entity_version=latest_version,
+                environment_vars=env_vars,
+            )
+        except Exception as e:
+            print(f"  ✗ Endpoint '{ep_name}' FAILED: {e}")
+            errors.append(f"{ep_name}: {e}")
+
+    if errors:
+        print(f"\n⚠ {len(errors)} agent endpoint(s) failed:")
+        for err in errors:
+            print(f"  ✗ {err}")
+    else:
+        print("\n✓ All agent serving endpoints deployed/updated")
+
+
+# COMMAND ----------
+
 if __name__ == "__main__":
     registered = register_agents()
     print("\n" + "=" * 60)
@@ -453,6 +596,16 @@ if __name__ == "__main__":
     print("=" * 60)
     for name in registered:
         print(f"  - {name}")
+
+    # Deploy/update serving endpoints for orchestrator and decline_analyst
+    print("\n" + "=" * 60)
+    print("Deploying agent serving endpoints")
+    print("=" * 60)
+    try:
+        deploy_agent_endpoints(registered)
+    except Exception as ep_err:
+        print(f"⚠ Endpoint deployment failed (non-fatal): {ep_err}")
+
     dbutils = _get_dbutils()
     if dbutils:
         dbutils.notebook.exit(json.dumps({"registered_models": registered}))

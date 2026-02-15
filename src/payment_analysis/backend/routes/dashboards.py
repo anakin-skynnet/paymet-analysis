@@ -68,16 +68,98 @@ class DashboardList(BaseModel):
 # Dashboard IDs: set via env (DASHBOARD_ID_*) or discovered at startup.
 # =============================================================================
 
-# Lakeview dashboard IDs — set in app env or default to the deployed IDs.
-_DASHBOARD_ID_DATA_QUALITY = os.getenv(
-    "DASHBOARD_ID_DATA_QUALITY", "01f10a04d1c91e0e80c678988302c684"
-)
-_DASHBOARD_ID_ML_OPTIMIZATION = os.getenv(
-    "DASHBOARD_ID_ML_OPTIMIZATION", "01f10a04d1d610d58ccf632bbacebdb3"
-)
-_DASHBOARD_ID_EXECUTIVE_TRENDS = os.getenv(
-    "DASHBOARD_ID_EXECUTIVE_TRENDS", "01f10a04d1c112afb2581fad5a5c0894"
-)
+# ---------------------------------------------------------------------------
+# Dashboard ID resolution — portable across workspaces.
+#
+# Priority:
+#   1. Environment variables (DASHBOARD_ID_*) set in app.yml
+#   2. Auto-discovery from Databricks workspace API (w.lakeview.list())
+#   3. Empty string (dashboard links disabled)
+#
+# Auto-discovery searches for dashboards whose display_name matches the
+# bundle naming convention: "[<env>] Data & Quality", "[<env>] ML & Optimization",
+# "[<env>] Executive & Trends".
+# ---------------------------------------------------------------------------
+import logging as _logging
+import threading as _threading
+
+_log = _logging.getLogger(__name__)
+
+# Cache for discovered dashboard IDs (populated once, thread-safe)
+_dashboard_id_cache: dict[str, str] = {}
+_discovery_lock = _threading.Lock()
+_discovery_done = False
+
+
+def _discover_dashboard_ids() -> dict[str, str]:
+    """Query Databricks workspace to find dashboard IDs by display_name pattern."""
+    global _discovery_done
+    if _discovery_done:
+        return _dashboard_id_cache
+
+    with _discovery_lock:
+        if _discovery_done:
+            return _dashboard_id_cache
+
+        try:
+            from databricks.sdk import WorkspaceClient
+            w = WorkspaceClient()
+
+            # Name patterns to look for (without environment prefix)
+            name_patterns: dict[str, str] = {
+                "data_quality": "Data & Quality",
+                "ml_optimization": "ML & Optimization",
+                "executive_trends": "Executive & Trends",
+            }
+
+            for dash in w.lakeview.list():
+                display_name = dash.display_name or ""
+                for key, pattern in name_patterns.items():
+                    if pattern in display_name and key not in _dashboard_id_cache:
+                        _dashboard_id_cache[key] = dash.dashboard_id or ""
+                        _log.info("Discovered dashboard '%s' (id=%s) for key '%s'",
+                                  display_name, dash.dashboard_id, key)
+
+                # Stop early if all found
+                if len(_dashboard_id_cache) >= len(name_patterns):
+                    break
+
+            missing = [k for k in name_patterns if k not in _dashboard_id_cache]
+            if missing:
+                _log.warning("Could not discover dashboards for: %s. "
+                             "Set DASHBOARD_ID_* env vars or run Job 4 to deploy dashboards.", missing)
+        except Exception as exc:
+            _log.warning("Dashboard auto-discovery failed (will use env vars): %s", exc)
+        finally:
+            _discovery_done = True
+
+    return _dashboard_id_cache
+
+
+def _get_dashboard_id(env_var: str, cache_key: str) -> str:
+    """Resolve a dashboard ID: env var → auto-discovery → empty string."""
+    env_val = os.getenv(env_var, "").strip()
+    if env_val:
+        return env_val
+    discovered = _discover_dashboard_ids()
+    return discovered.get(cache_key, "")
+
+
+_DASHBOARD_ID_DATA_QUALITY = ""  # resolved lazily
+_DASHBOARD_ID_ML_OPTIMIZATION = ""
+_DASHBOARD_ID_EXECUTIVE_TRENDS = ""
+
+
+def _resolve_dashboard_ids():
+    """Resolve all dashboard IDs (called once at DASHBOARDS list creation time)."""
+    global _DASHBOARD_ID_DATA_QUALITY, _DASHBOARD_ID_ML_OPTIMIZATION, _DASHBOARD_ID_EXECUTIVE_TRENDS
+    _DASHBOARD_ID_DATA_QUALITY = _get_dashboard_id("DASHBOARD_ID_DATA_QUALITY", "data_quality")
+    _DASHBOARD_ID_ML_OPTIMIZATION = _get_dashboard_id("DASHBOARD_ID_ML_OPTIMIZATION", "ml_optimization")
+    _DASHBOARD_ID_EXECUTIVE_TRENDS = _get_dashboard_id("DASHBOARD_ID_EXECUTIVE_TRENDS", "executive_trends")
+
+
+# Resolve on module load — will use env vars if set, otherwise auto-discover
+_resolve_dashboard_ids()
 
 
 def _lakeview_url_path(dashboard_id: str) -> str:
