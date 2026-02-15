@@ -98,12 +98,16 @@ const dailyTrendChartConfig = {
 
 
 export const Route = createFileRoute("/_sidebar/command-center")({
-  component: () => (
+  component: CommandCenterPage,
+});
+
+function CommandCenterPage() {
+  return (
     <Suspense fallback={<CommandCenterSkeleton />}>
       <CommandCenter />
     </Suspense>
-  ),
-});
+  );
+}
 
 function CommandCenterSkeleton() {
   return (
@@ -416,7 +420,7 @@ function CommandCenter() {
     if (!raw.length) return [];
     return raw.slice(0, 6).map((m, i) => ({
       segment: String(m.merchant_segment ?? m.segment ?? m.name ?? `Segment ${i + 1}`),
-      approval_rate: Number(m.approval_rate ?? m.approval_pct ?? 0),
+      approval_rate: Number(m.approval_rate_pct ?? m.approval_rate ?? m.approval_pct ?? 0),
       volume: Number(m.transaction_count ?? m.total_transactions ?? m.volume ?? 0),
       avg_amount: Number(m.avg_transaction_amount ?? m.avg_amount ?? 0),
     }));
@@ -428,7 +432,7 @@ function CommandCenter() {
     return raw.map((d) => ({
       date: String(d.event_date ?? d.date ?? ""),
       approval_rate: Number(d.approval_rate ?? d.approval_rate_pct ?? 0),
-      total: Number(d.total_transactions ?? d.transaction_count ?? d.total ?? 0),
+      total: Number(d.transactions ?? d.total_transactions ?? d.transaction_count ?? d.total ?? 0),
       approved: Number(d.approved_count ?? d.approved ?? 0),
     }));
   }, [dailyTrendsQ.data?.data]);
@@ -438,8 +442,7 @@ function CommandCenter() {
   const fromDatabricks = healthData?.data?.analytics_source === "Unity Catalog";
 
   return (
-    <div className="flex min-h-full flex-col bg-background">
-      <main className="flex-1 space-y-6 p-4 md:p-6" role="main">
+    <div className="space-y-6 p-4 md:p-6" role="main">
         <PageHeader
           variant="executive"
           icon={<LayoutDashboard className="w-9 h-9" />}
@@ -891,7 +894,6 @@ function CommandCenter() {
             </span>
           )}
         </footer>
-      </main>
     </div>
   );
 }

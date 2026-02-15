@@ -12,7 +12,7 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 **Goal:** Accelerate approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Stack:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents (Genie, Model Serving, Mosaic AI Gateway, Custom), rules engine, Vector Search. Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app.
+**Stack:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents (Genie, Model Serving, Mosaic AI Gateway, Custom), rules engine, Vector Search, Lakebase (Postgres). Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app. 4 ML model serving endpoints (always deployed) + 3 agent endpoints (managed by Job 6). 17 UC functions as agent tools. Dual-write sync for approval rules between Lakebase and Lakehouse via BackgroundTasks.
 
 **Use cases:** Smart Retry, Smart Checkout (3DS, Brazil), Reason codes & declines, Risk & fraud, Routing optimization, Decisioning (real-time auth/retry/routing).
 
@@ -105,7 +105,7 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 **In-app (UI):** **AI agents** page lists agents from `GET /api/agents/agents`. Types: Genie, Model Serving, Custom LLM, AI Gateway. Open in Databricks via `GET /api/agents/agents/{id}/url`. Genie chat is in Databricks (one-click from app).
 
-**Agent framework (notebook/jobs):** `src/payment_analysis/agents/agent_framework.py` — Orchestrator + specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Jobs: `resources/agents.yml` (step 6). Orchestrator and specialists use Lakehouse Rules (`v_approval_rules_active`) to accelerate approvals. Run from **Setup & Run** (step 6).
+**Agent framework (notebook/jobs):** `src/payment_analysis/agents/agent_framework.py` — Orchestrator + specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Jobs: `resources/agents.yml` (step 6). Orchestrator and specialists use Lakehouse Rules (`v_approval_rules_active`), incidents (`incidents_lakehouse`), and Vector Search (`similar_transactions_index`) to accelerate approvals. 17 UC functions in `uc_agent_tools.sql`. Run from **Setup & Run** (step 6).
 
 **Registry (backend):** `src/payment_analysis/backend/routes/agents.py` — `AGENTS` list (Genie, Model Serving, AI Gateway, Custom) with metadata, example queries, workspace URLs. Catalog/schema from `app_config` when available.
 
@@ -139,8 +139,11 @@ When the user asks to:
 | Doc | Purpose |
 |-----|---------|
 | `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
+| `docs/INDEX.md` | Document map and quick reference |
 | `docs/GUIDE.md` | Business overview, architecture, project structure, control panel & UI, best practices alignment |
 | `docs/DEPLOYMENT.md` | Deploy steps, env vars, version alignment, troubleshooting |
+| `docs/REFERENCE.md` | Databricks alignment, agent architecture, model serving, 17 UC functions, Vector Search |
+| `docs/SCHEMA_TABLES_VIEWS.md` | Tables and views reference (required vs optional, where used, why empty) |
 | `.cursor/rules/project.mdc` | Cursor rule set (aligns with this file) |
 
 **External references (best practices):** [Apps Cookbook](https://apps-cookbook.dev/docs/intro) (FastAPI, healthcheck, tables), [apx](https://github.com/databricks-solutions/apx) (toolkit, build, OpenAPI), [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) (Databricks SDK, MCP, skills).

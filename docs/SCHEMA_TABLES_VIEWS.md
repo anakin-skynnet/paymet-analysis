@@ -96,6 +96,7 @@ Created by **Job 1 (Create Data Repositories)**, task `lakehouse_bootstrap`. Bas
 | **v_approval_rules_active** | Yes | agent_framework.py | approval_rules empty or no active rules. |
 | **countries** | Yes | Backend /api/countries, UI filter | Job 1 seeds default countries when empty. |
 | **online_features** | Yes | v_online_features_latest | Empty until ML/agent jobs write features. |
+| **incidents_lakehouse** | Yes | uc_agent_tools.sql (get_recent_incidents), backend incidents.py | Empty until incidents are created via the app or agents. |
 | **v_online_features_latest** | Optional | lakehouse_bootstrap.sql only; no backend query found | online_features empty until ML/agent write. |
 
 ---
@@ -139,9 +140,9 @@ Created by **Job 1 (Create Data Repositories)**, task `lakehouse_bootstrap`. Bas
 | **Lakeflow pipeline (Real-Time)** | readStream from payments_stream_input → payments_stream_bronze → payments_stream_silver → 10s windowed metrics → payments_stream_alerts. | payments_stream_bronze, payments_stream_silver, payments_stream_metrics_10s, payments_stream_alerts. |
 | **Job 1 – lakehouse_bootstrap.sql** | `INSERT INTO ... WHERE (SELECT COUNT(*) FROM ...) = 0` (seed when empty). | app_config, approval_rules, countries. |
 | **Job 2 – transaction_simulator** | `df.write.mode("append").saveAsTable(target_table)` into `payments_stream_input`. | payments_stream_input (and CDF feeds bronze pipelines). |
-| **Job 1 – vector_search create_index** | MERGE from payments_enriched_silver into transaction_summaries_for_search. | transaction_summaries_for_search. |
+| **Job 1 – vector_search create_index** | MERGE from payments_enriched_silver into transaction_summaries_for_search (populated with 50k+ rows). Delta-sync index `similar_transactions_index` created and synced for embedding. | transaction_summaries_for_search → similar_transactions_index (Vector Search). |
 | **Job 3 – run_gold_views.py** | Executes `gold_views.sql`; only creates VIEWs (no table insertion). | All gold views in gold_views.sql (data comes from underlying tables). |
-| **Backend (FastAPI)** | `DatabricksService` runs INSERT/MERGE via SQL Warehouse. | app_config (MERGE from Setup Save), approval_rules (create/update rule), **insight_feedback_silver** (INSERT when user submits feedback). |
+| **Backend (FastAPI)** | `DatabricksService` runs INSERT/MERGE via SQL Warehouse. | app_config (MERGE from Setup Save), approval_rules (create/update/delete rule — **dual-write:** Lakebase and Lakehouse are synced via BackgroundTasks so both the UI and agents see the same rules), **insight_feedback_silver** (INSERT when user submits feedback). |
 
 ---
 
@@ -151,7 +152,7 @@ These **tables** exist in the schema but have **no code path in this repo** that
 
 | Object | Created by | Insertion process in repo? | Notes |
 |--------|------------|----------------------------|--------|
-| **approval_recommendations** | lakehouse_bootstrap.sql | **No** | Table created and empty. Doc (vector_search/create_index.py) says "AI agents or a scheduled job can ... write them to approval_recommendations". No such job or agent exists in the repo. Decisioning UI shows "No recommendations yet" until something writes here. |
+| **approval_recommendations** | lakehouse_bootstrap.sql | **No direct insertion** | Table created and empty by default. AI agents or a scheduled job can write recommendations here. The dual-write sync for approval rules (via BackgroundTasks in `rules.py`) does not write to this table; it syncs `approval_rules` between Lakebase and Lakehouse. Decisioning UI shows "No recommendations yet" until something writes here. |
 | **online_features** (Lakehouse) | lakehouse_bootstrap.sql | **No** | Table created and empty. Described as "ML/AI feature output for the app"; no notebook or backend inserts into this Lakehouse table. (Lakebase `online_features` is separate; app can read from Lakebase or Lakehouse.) |
 | **payments_stream_input** | transaction_simulator (CREATE TABLE IF NOT EXISTS) | **Yes** | Populated by **transaction_simulator** when run as a job; no data if that job never runs. |
 

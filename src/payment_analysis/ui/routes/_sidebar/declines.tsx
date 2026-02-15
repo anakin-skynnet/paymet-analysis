@@ -307,7 +307,7 @@ function RecoveryOpportunities() {
   }
 
   const totalRecoverable = opportunities.reduce(
-    (sum, o) => sum + (Number(o.recoverable_amount ?? o.estimated_recovery ?? 0)),
+    (sum, o) => sum + (Number(o.potential_recovery_value ?? o.recoverable_amount ?? o.estimated_recovery ?? 0)),
     0,
   );
   const totalTransactions = opportunities.reduce(
@@ -351,7 +351,7 @@ function RecoveryOpportunities() {
           {opportunities.slice(0, 8).map((o, i) => {
             const reason = String(o.decline_reason ?? o.reason_code ?? o.category ?? `Group ${i + 1}`);
             const count = Number(o.transaction_count ?? o.decline_count ?? 0);
-            const amount = Number(o.recoverable_amount ?? o.estimated_recovery ?? 0);
+            const amount = Number(o.potential_recovery_value ?? o.recoverable_amount ?? o.estimated_recovery ?? 0);
             const strategy = String(o.recovery_strategy ?? o.recommended_action ?? o.strategy ?? "Smart Retry");
             return (
               <TableRow key={`${reason}-${i}`}>
@@ -392,7 +392,7 @@ function CardNetworkPerformance() {
     <div className="space-y-3">
       {networks.slice(0, 6).map((n, i) => {
         const network = String(n.card_network ?? n.network ?? n.name ?? `Network ${i + 1}`);
-        const approvalRate = Number(n.approval_rate ?? n.approval_pct ?? 0);
+        const approvalRate = Number(n.approval_rate_pct ?? n.approval_rate ?? n.approval_pct ?? 0);
         const volume = Number(n.transaction_count ?? n.total_transactions ?? n.volume ?? 0);
         const isTop = i === 0;
         return (

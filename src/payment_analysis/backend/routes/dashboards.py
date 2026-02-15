@@ -91,8 +91,14 @@ _discovery_lock = _threading.Lock()
 _discovery_done = False
 
 
-def _discover_dashboard_ids() -> dict[str, str]:
-    """Query Databricks workspace to find dashboard IDs by display_name pattern."""
+def _discover_dashboard_ids(ws: Any | None = None) -> dict[str, str]:
+    """Query Databricks workspace to find dashboard IDs by display_name pattern.
+
+    ``ws`` is an optional pre-authenticated WorkspaceClient.  When *None* the
+    function tries to build one from the environment (DATABRICKS_HOST / TOKEN).
+    Discovery is skipped entirely when no credentials are available so the
+    module import never blocks on interactive auth flows.
+    """
     global _discovery_done
     if _discovery_done:
         return _dashboard_id_cache
@@ -102,8 +108,22 @@ def _discover_dashboard_ids() -> dict[str, str]:
             return _dashboard_id_cache
 
         try:
-            from databricks.sdk import WorkspaceClient
-            w = WorkspaceClient()
+            if ws is None:
+                # Only attempt auto-discovery when explicit credentials exist;
+                # the default WorkspaceClient() constructor may try interactive
+                # auth (databricks-cli profile) which blocks indefinitely.
+                import os as _os
+                _host = _os.environ.get("DATABRICKS_HOST", "").strip()
+                _token = _os.environ.get("DATABRICKS_TOKEN", "").strip()
+                _client_id = _os.environ.get("DATABRICKS_CLIENT_ID", "").strip()
+                if not _host or not (_token or _client_id):
+                    _log.info("Dashboard auto-discovery skipped: no explicit Databricks credentials in environment.")
+                    _discovery_done = True
+                    return _dashboard_id_cache
+                from databricks.sdk import WorkspaceClient
+                w = WorkspaceClient()
+            else:
+                w = ws
 
             # Name patterns to look for (without environment prefix)
             name_patterns: dict[str, str] = {
@@ -136,30 +156,32 @@ def _discover_dashboard_ids() -> dict[str, str]:
     return _dashboard_id_cache
 
 
+def _get_dashboard_id_from_env(env_var: str) -> str:
+    """Return dashboard ID from environment variable, or empty string."""
+    return os.getenv(env_var, "").strip()
+
+
 def _get_dashboard_id(env_var: str, cache_key: str) -> str:
-    """Resolve a dashboard ID: env var → auto-discovery → empty string."""
-    env_val = os.getenv(env_var, "").strip()
+    """Resolve a dashboard ID: env var → auto-discovery cache → empty string."""
+    env_val = _get_dashboard_id_from_env(env_var)
     if env_val:
         return env_val
-    discovered = _discover_dashboard_ids()
-    return discovered.get(cache_key, "")
+    return _dashboard_id_cache.get(cache_key, "")
 
 
-_DASHBOARD_ID_DATA_QUALITY = ""  # resolved lazily
-_DASHBOARD_ID_ML_OPTIMIZATION = ""
-_DASHBOARD_ID_EXECUTIVE_TRENDS = ""
+# Dashboard IDs: initially set from env vars only (no network at import time).
+# Workspace API auto-discovery runs once on the first request (see list_dashboards).
+_DASHBOARD_ID_DATA_QUALITY = _get_dashboard_id_from_env("DASHBOARD_ID_DATA_QUALITY")
+_DASHBOARD_ID_ML_OPTIMIZATION = _get_dashboard_id_from_env("DASHBOARD_ID_ML_OPTIMIZATION")
+_DASHBOARD_ID_EXECUTIVE_TRENDS = _get_dashboard_id_from_env("DASHBOARD_ID_EXECUTIVE_TRENDS")
 
 
-def _resolve_dashboard_ids():
-    """Resolve all dashboard IDs (called once at DASHBOARDS list creation time)."""
+def _refresh_dashboard_ids_from_cache() -> None:
+    """Re-read IDs after auto-discovery populates _dashboard_id_cache."""
     global _DASHBOARD_ID_DATA_QUALITY, _DASHBOARD_ID_ML_OPTIMIZATION, _DASHBOARD_ID_EXECUTIVE_TRENDS
     _DASHBOARD_ID_DATA_QUALITY = _get_dashboard_id("DASHBOARD_ID_DATA_QUALITY", "data_quality")
     _DASHBOARD_ID_ML_OPTIMIZATION = _get_dashboard_id("DASHBOARD_ID_ML_OPTIMIZATION", "ml_optimization")
     _DASHBOARD_ID_EXECUTIVE_TRENDS = _get_dashboard_id("DASHBOARD_ID_EXECUTIVE_TRENDS", "executive_trends")
-
-
-# Resolve on module load — will use env vars if set, otherwise auto-discover
-_resolve_dashboard_ids()
 
 
 def _lakeview_url_path(dashboard_id: str) -> str:
@@ -178,14 +200,30 @@ def _lakeview_embed_path(dashboard_id: str) -> str:
     return f"/embed/dashboardsv3/{dashboard_id}/published"
 
 
-DASHBOARDS = [
+# Mapping from dashboard id → (env var, discovery cache key)
+_DASHBOARD_ID_MAP: dict[str, tuple[str, str]] = {
+    "data_quality_unified": ("DASHBOARD_ID_DATA_QUALITY", "data_quality"),
+    "ml_optimization_unified": ("DASHBOARD_ID_ML_OPTIMIZATION", "ml_optimization"),
+    "executive_trends_unified": ("DASHBOARD_ID_EXECUTIVE_TRENDS", "executive_trends"),
+}
+
+
+def _current_lakeview_id(dashboard_id: str) -> str:
+    """Return the current Lakeview dashboard ID (env var → discovery cache → empty)."""
+    env_var, cache_key = _DASHBOARD_ID_MAP.get(dashboard_id, ("", ""))
+    if env_var:
+        return _get_dashboard_id(env_var, cache_key)
+    return ""
+
+
+# Static dashboard metadata (url_path set dynamically via _get_dashboards())
+_DASHBOARDS_STATIC: list[DashboardInfo] = [
     DashboardInfo(
         id="data_quality_unified",
         name="Data & Quality",
         description="Stream ingestion volume, data quality, real-time monitoring, active alerts, and global coverage by country. Single dashboard for data health and operational monitoring.",
         category=DashboardCategory.TECHNICAL,
         tags=["streaming", "ingestion", "data-quality", "realtime", "alerts", "countries", "geography"],
-        url_path=_lakeview_url_path(_DASHBOARD_ID_DATA_QUALITY),
     ),
     DashboardInfo(
         id="ml_optimization_unified",
@@ -193,7 +231,6 @@ DASHBOARDS = [
         description="Smart routing, decline analysis & recovery, fraud/risk, 3DS authentication, and financial impact. Predictions, smart retry impact, smart checkout behavior.",
         category=DashboardCategory.ANALYTICS,
         tags=["routing", "decline", "recovery", "fraud", "risk", "3ds", "smart-checkout", "smart-retry", "roi"],
-        url_path=_lakeview_url_path(_DASHBOARD_ID_ML_OPTIMIZATION),
     ),
     DashboardInfo(
         id="executive_trends_unified",
@@ -201,9 +238,29 @@ DASHBOARDS = [
         description="KPIs, approval rates, daily trends, merchant performance, and technical performance. For business users to analyze and understand approval rates.",
         category=DashboardCategory.EXECUTIVE,
         tags=["kpi", "approval-rate", "trends", "merchant", "performance", "executive"],
-        url_path=_lakeview_url_path(_DASHBOARD_ID_EXECUTIVE_TRENDS),
     ),
 ]
+
+
+def _get_dashboards() -> list[DashboardInfo]:
+    """Build the dashboards list with current Lakeview IDs (resolved at request time)."""
+    result: list[DashboardInfo] = []
+    for d in _DASHBOARDS_STATIC:
+        lakeview_id = _current_lakeview_id(d.id)
+        result.append(DashboardInfo(
+            id=d.id,
+            name=d.name,
+            description=d.description,
+            category=d.category,
+            tags=d.tags,
+            url_path=_lakeview_url_path(lakeview_id) if lakeview_id else None,
+        ))
+    return result
+
+
+# Backward-compatible alias; callers that import DASHBOARDS get the static list
+# but endpoints should use _get_dashboards() for live IDs.
+DASHBOARDS = _get_dashboards()
 
 
 # =============================================================================
@@ -219,8 +276,15 @@ async def list_dashboards(
     List all available AI/BI dashboards.
     
     Returns metadata for all dashboards with optional filtering by category or tag.
+    On the first call, triggers background auto-discovery of dashboard IDs from the
+    workspace API (non-blocking — returns immediately with whatever IDs are available).
     """
-    filtered_dashboards = DASHBOARDS
+    # Trigger auto-discovery in background on first request (non-blocking)
+    if not _discovery_done:
+        _threading.Thread(target=_discover_dashboard_ids, daemon=True).start()
+
+    dashboards = _get_dashboards()
+    filtered_dashboards = dashboards
     
     # Apply category filter
     if category:
@@ -232,7 +296,7 @@ async def list_dashboards(
     
     # Calculate category counts
     category_counts = {}
-    for dashboard in DASHBOARDS:
+    for dashboard in dashboards:
         cat = dashboard.category.value
         category_counts[cat] = category_counts.get(cat, 0) + 1
     
@@ -251,10 +315,11 @@ async def list_categories() -> dict[str, Any]:
     Returns:
         Dictionary mapping categories to dashboard counts
     """
+    dashboards = _get_dashboards()
     category_info = {}
     
     for category in DashboardCategory:
-        dashboards_in_category = [d for d in DASHBOARDS if d.category == category]
+        dashboards_in_category = [d for d in dashboards if d.category == category]
         category_info[category.value] = {
             "name": category.value.replace("_", " ").title(),
             "count": len(dashboards_in_category),
@@ -263,7 +328,7 @@ async def list_categories() -> dict[str, Any]:
     
     return {
         "categories": category_info,
-        "total_dashboards": len(DASHBOARDS),
+        "total_dashboards": len(dashboards),
     }
 
 
@@ -275,9 +340,10 @@ async def list_tags() -> dict[str, Any]:
     Returns:
         Dictionary of tags and how many dashboards have each tag
     """
-    tag_counts = {}
+    dashboards = _get_dashboards()
+    tag_counts: dict[str, int] = {}
     
-    for dashboard in DASHBOARDS:
+    for dashboard in dashboards:
         for tag in dashboard.tags:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
     
@@ -304,7 +370,8 @@ async def get_dashboard(dashboard_id: str) -> DashboardInfo:
     Raises:
         HTTPException: If dashboard not found
     """
-    for dashboard in DASHBOARDS:
+    dashboards = _get_dashboards()
+    for dashboard in dashboards:
         if dashboard.id == dashboard_id:
             return dashboard
     

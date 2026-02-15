@@ -82,7 +82,7 @@ The app is configured in the bundle with the following so it can be deployed and
 | **Lakebase** | Job 1 + app env `LAKEBASE_*` | Postgres for app_config, approval_rules, online_features; app connects via env vars. |
 | **Dashboards** | `resources/dashboards.yml` | Three unified dashboards (Data & Quality, ML & Optimization, Executive & Trends). |
 
-**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports). Model serving endpoint bindings are **commented out** by default; uncomment after endpoints exist (two-phase deploy or manual). See [REFERENCE.md](REFERENCE.md) for model serving and UC functions. **Genie** is commented out (set `--var genie_space_id=<uuid>` to uncomment). For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all 11 agent tools, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
+**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports). 4 ML model serving endpoint bindings (`approval-propensity`, `risk-scoring`, `smart-routing`, `smart-retry`) are included by default. 3 agent serving endpoint bindings (`payment-analysis-orchestrator`, `payment-response-agent`, `decline-analyst`) are commented out — they are managed programmatically by Job 6. See [REFERENCE.md](REFERENCE.md) for model serving and UC functions. **Genie** is commented out (set `--var genie_space_id=<uuid>` to uncomment). For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all 17 agent tools, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
 
 **App environment:** Defaults and app-specific vars (e.g. **LAKEBASE_***, **ORCHESTRATOR_SERVING_ENDPOINT**) are defined in **`app.yml`** at project root; redeploy the bundle to apply changes. You can **override** in **Compute → Apps → payment-analysis → Edit → Environment** (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). If you use **user authorization (OBO)**, open the app from **Compute → Apps** so the user token is forwarded (see **User token (OBO)** in the table section below); the bundle configures user API scopes in `fastapi_app.yml`.
 
@@ -120,7 +120,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 
 **Bundle root:** Directory containing `databricks.yml`. **App source:** `source_code_path` in `resources/fastapi_app.yml` is `${workspace.root_path}` (e.g. `.../payment-analysis`). Sync uploads to the same root path; the app runs from there so `src/payment_analysis/__dist__` is found for the web UI.
 
-**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `fastapi_app`. **Commented by default:** `model_serving` (uncomment after Step 5; use two-phase deploy if app bindings are enabled); serving endpoint blocks in `fastapi_app.yml` (uncomment when endpoints exist). **Dashboard overwrite:** `bundle.sh deploy` cleans existing BI dashboards in the workspace (except `dbdemos*`) before deploy to avoid duplicates.
+**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `fastapi_app`. **Model serving:** 4 ML endpoints are always included in `model_serving.yml`. 3 agent endpoints in `model_serving.yml` are commented out (managed by Job 6). App bindings in `fastapi_app.yml`: 4 ML serving endpoints are bound; 3 agent serving endpoints are commented out. **Dashboard overwrite:** `bundle.sh deploy` cleans existing BI dashboards in the workspace (except `dbdemos*`) before deploy to avoid duplicates.
 
 **Paths:**  
 - Workspace root: `/Workspace/Users/${user}/${var.workspace_folder}` (default folder: `payment-analysis`).  
@@ -129,7 +129,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 - Dashboards: `file_path` in `resources/dashboards.yml` is `../.build/dashboards/*.lvdash.json` (relative to `resources/`).  
 - Sync (uploaded to workspace): `.build`, `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`.
 
-**App bindings:** sql-warehouse (`payment_analysis_warehouse`), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
+**App bindings:** sql-warehouse, volume-reports, 4 ML serving endpoints (approval-propensity, risk-scoring, smart-routing, smart-retry), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
@@ -252,7 +252,7 @@ Effective catalog/schema for the app come from Lakehouse `app_config`; set via *
 
 ## Resources in the workspace
 
-By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Optional:** Uncomment `resources/model_serving.yml` after Step 5 (Train ML models); create Vector Search manually from `resources/vector_search.yml` if not in bundle.
+By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Model Serving:** 4 ML endpoints included by default in `resources/model_serving.yml`; 3 agent endpoints are commented out (managed by Job 6). **Vector Search:** endpoint `payment-similar-transactions-dev` and delta-sync index `similar_transactions_index` created by Job 1.
 
 ## Where to find resources
 

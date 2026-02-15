@@ -33,6 +33,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 | **7 AI agents** | Natural-language analytics and recommendations | Explains patterns and suggests actions. |
 | **3 unified dashboards** | KPIs, funnels, reason codes, ML optimization | Visibility into what drives approvals/declines. |
 | **FastAPI + React app** | Decision API and control panel | Single place to run jobs, view dashboards, manage rules. |
+| **Dual-write sync** | Approval rules synced between Lakebase and Lakehouse | Rules changes in the UI propagate to agents (and vice versa) via BackgroundTasks. |
 
 **High-level flow:** Simulator or real pipelines → Lakeflow → Unity Catalog. Intelligence: ML + rules + Vector Search + AI agents. Application: FastAPI backend + React UI (Setup & Run, dashboards, rules, decisioning).
 
@@ -49,11 +50,11 @@ The solution is designed and documented around a single business objective: **ac
 | **Medallion (Bronze → Silver → Gold)** | Lakeflow pipelines and gold views: `payments_raw_bronze`, `payments_enriched_silver`, 12+ gold views (KPIs, trends, reason codes, retry performance). | Provides clean, timely data so ML models, rules, and dashboards see accurate approval/decline/retry patterns; without it, decisions and insights would be wrong or stale. |
 | **Unity Catalog & Lakehouse** | Catalog/schema, volumes, `app_config`, gold views, and (optionally) rules/recommendations in Delta tables. | Single source of truth for catalog/schema and config; gold views feed dashboards and agents; rules and recommendations drive approve/decline/retry behavior. |
 | **Lakebase (Postgres)** | Managed Postgres for `app_config`, `approval_rules`, `app_settings`, `online_features`, experiments, incidents. | Stores business rules and config that ML and agents read; experiments support A/B tests (e.g. 3DS strategy); operators tune rules without code to approve more good transactions and block more fraud. |
-| **Rules engine (approval rules)** | Configurable rules (conditions + actions) from Lakebase or Lakehouse; exposed via `/api/rules`. | Lets operators define when to approve, decline, or retry; ML and agents use these rules so every decision is consistent with policy and optimized for approval rate vs risk. |
+| **Rules engine (approval rules)** | Configurable rules (conditions + actions) from Lakebase or Lakehouse; exposed via `/api/rules`. **Dual-write:** changes sync between Lakebase and Lakehouse via BackgroundTasks so both the UI and agents see the same rules. | Lets operators define when to approve, decline, or retry; ML and agents use these rules so every decision is consistent with policy and optimized for approval rate vs risk. |
 | **ML models (4)** | Approval propensity, risk scoring, smart routing, smart retry — trained on `payments_enriched_silver`, registered in Unity Catalog, served via model serving endpoints. | **Approval propensity:** predicts likelihood of approval to avoid declining likely-good transactions. **Risk:** enables risk-based auth (e.g. step-up for high risk) so low-risk flows stay frictionless. **Routing:** picks the solution (standard, 3DS, token, passkey) that maximizes approval rate for the segment. **Retry:** predicts retry success and timing to recover otherwise-lost approvals. |
 | **Decisioning API** | Real-time endpoints: `/api/decision/authentication`, `/retry`, `/routing`; ML prediction endpoints for approval, risk, routing; A/B experiment assignment. | Single decision layer for auth, retry, and routing; combines rules + risk tier + (when enabled) model scores so each transaction gets the right path to maximize approval while controlling risk. |
-| **Vector Search** | Index over transaction summaries; similar-case lookup. | Powers “similar cases” recommendations (e.g. “similar transactions approved 65% with retry after 2h”); feeds recommendations into the Decisioning UI and agents to suggest actions that accelerate approvals. |
-| **7 AI agents** | Orchestrator + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender; use Lakehouse rules, Lakebase data, and Vector Search. Deployed as 7 Model Serving endpoints (serverless, scale-to-zero). | Answer natural-language questions about approval rates and declines; suggest routing, retry, and rule changes; use similar-transaction lookup and incident history to improve recommendations. |
+| **Vector Search** | Delta-sync index `similar_transactions_index` on `transaction_summaries_for_search`; similar-case lookup via `VECTOR_SEARCH()` TVF. | Powers “similar cases” recommendations (e.g. “similar transactions approved 65% with retry after 2h”); feeds recommendations into the Decisioning UI and agents to suggest actions that accelerate approvals. |
+| **7 AI agents** | Orchestrator + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender; use Lakehouse rules, Lakebase data, and Vector Search. 4 ML endpoints always deployed; 3 agent endpoints managed by Job 6 (serverless, scale-to-zero). | Answer natural-language questions about approval rates and declines; suggest routing, retry, and rule changes; use similar-transaction lookup and incident history to improve recommendations. |
 | **3 unified dashboards** | Data & Quality, ML & Optimization, Executive & Trends in Databricks AI/BI (Lakeview). Embeddable in the app via `/embed/dashboardsv3/` path. | Give visibility into approval rates, decline reasons, solution performance, and recovery; operators see where to act and track impact. |
 | **FastAPI + React app** | Control panel: Setup & Run (jobs, pipelines), Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, Agents, Experiments, Incidents. | One place to run pipelines/jobs, manage rules, view recommendations and KPIs, and open agents/dashboards; ensures teams can operate the whole stack that drives approval rate without leaving the app. |
 | **Genie** | Natural-language “Ask Data” in the workspace, synced with sample questions (approval rate, trends, segments). | Extends visibility: ask “What is the approval rate?” or “Which segment has the lowest approval rate?” in the lakehouse context, supporting the same goal of accelerating approval rates. |
@@ -69,13 +70,13 @@ Payment transactions can use several services (Antifraud, Vault, 3DS, Data Only,
 
 ## 2. Architecture
 
-- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie, Vector Search, Lakebase. 3 unified dashboards. 7 model serving endpoints. All serverless compute.
+- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie, Vector Search, Lakebase. 3 unified dashboards. 4 ML + 3 agent model serving endpoints. All serverless compute.
 - **App:** FastAPI (analytics, decisioning, dashboards, agents, rules, setup) + React (TanStack Router, shadcn/ui). API prefix `/api` for token-based auth.
 - **Stack:** Delta, Unity Catalog, Lakeflow, SQL Warehouse, Lakebase (Postgres for rules/experiments/incidents/online features), Vector Search (similar transactions), MLflow, FastAPI, React, TypeScript, Vite, Bun, Databricks Asset Bundles.
 
 **Data flow:** Ingestion → Processing (Bronze → Silver → Gold, &lt;5s) → Intelligence (ML + 7 AI agents + Vector Search) → Analytics (3 unified dashboards, Genie) → Application (FastAPI + React).
 
-Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold 15+ views. Lakehouse bootstrap creates `app_config`, rules, recommendations, and related views (see [Deployment](DEPLOYMENT.md)). Vector Search index on `transaction_summaries_for_search` for similar-transaction lookup.
+Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold 15+ views. Lakehouse bootstrap creates `app_config`, rules, recommendations, and related views (see [Deployment](DEPLOYMENT.md)). Vector Search delta-sync index `similar_transactions_index` on `transaction_summaries_for_search` for similar-transaction lookup (populated from silver via MERGE, synced to embedding model `databricks-bge-large-en`).
 
 ---
 
@@ -102,7 +103,7 @@ Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold
 | Pipelines | ETL, Real-Time Stream |
 | Jobs | 7 steps (repositories, simulator, ingestion, dashboards, ML, agents, Genie sync) |
 | Dashboards | 3 unified (Data & Quality, ML & Optimization, Executive & Trends) |
-| Model Serving | 7 endpoints (3 agents + 4 ML models) |
+| Model Serving | 4 ML endpoints (always deployed) + 3 agent endpoints (managed by Job 6) |
 | App | payment-analysis (FastAPI + React) |
 | Vector Search | Endpoint + delta-sync index for similar transactions |
 
@@ -123,7 +124,7 @@ Execution order in **Setup & Run:** foundation (Lakehouse, Vector Search, gold v
 | Genie Space Sync | Optional | Run Genie sync |
 | Orchestrator + 5 agents | Step 6 | Run / Open |
 | Publish Dashboards | Step 4 | Run job (embed credentials) |
-| 12 Dashboards | Dashboards page | Card opens in workspace |
+| 3 Dashboards | Dashboards page | Card opens in workspace |
 | Rules, Experiments, Incidents | Rules, Experiments, Incidents | CRUD via API |
 
 Job/pipeline IDs: `GET /api/setup/defaults`; env overrides: [Deployment](DEPLOYMENT.md).

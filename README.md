@@ -6,7 +6,7 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 7 model serving endpoints (3 agents + 4 ML models), 3 unified AI/BI dashboards, 7 orchestrated jobs.
+**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6), 3 unified AI/BI dashboards, 7 orchestrated jobs, 13 resources bound to the app.
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -43,13 +43,18 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 
 Deployment is **two-phase**: first deploy all resources except the App, then deploy the App after its dependencies exist.
 
-1. **Phase 1 — deploy resources:** `./scripts/bundle.sh deploy dev` — builds the UI, cleans existing BI dashboards (avoids duplicates), prepares dashboards, deploys jobs/pipelines/dashboards/UC (everything **except** the App and model serving), and publishes dashboards. Output: *"all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt `deploy app`"*.
+1. **Phase 1 — deploy resources:** `./scripts/bundle.sh deploy dev` — builds the UI, cleans existing BI dashboards (avoids duplicates), prepares dashboards, deploys jobs/pipelines/dashboards/UC/model serving (everything **except** the App). 4 ML model serving endpoints are included; 3 agent endpoints are managed by Job 6.
 2. **Run jobs 5 and 6:** In the app **Setup & Run**, run **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** so ML models and agent registrations exist in UC.
-3. **Phase 2 — deploy app:** `./scripts/bundle.sh deploy app dev` — validates app dependencies, uncomments `model_serving.yml` and serving endpoint bindings in `fastapi_app.yml`, then deploys the App with all resources assigned and uncommented. Output: *"App deployed with all dependencies and resources assigned and uncommented."*
+3. **Phase 2 — deploy app:** `./scripts/bundle.sh deploy app dev` — validates app dependencies, then deploys the App with all 13 resources bound (1 SQL warehouse, 1 UC volume, 4 ML serving endpoints, 7 jobs).
 4. **Setup & Run (in order):** Jobs **1** → **2** → (ETL pipeline) → **3** → **4** → **5** → **6** → **7** (Create Data Repositories, Simulate Events, Initialize Ingestion, Deploy Dashboards, Train Models, Deploy Agents, Genie Sync).
 5. **App environment:** Defined in **`app.yml`** at project root (e.g. `LAKEBASE_PROJECT_ID`, `LAKEBASE_BRANCH_ID`, `LAKEBASE_ENDPOINT_ID`, `ORCHESTRATOR_SERVING_ENDPOINT`). Override in **Workspace → Apps → payment-analysis → Edit → Environment** (e.g. `DATABRICKS_WAREHOUSE_ID`, `DATABRICKS_HOST`, `DATABRICKS_TOKEN`). Redeploy to apply `app.yml` changes.
 
 **Automated two-phase:** `./scripts/deploy_with_dependencies.sh dev` runs phase 1, executes jobs 5 and 6 automatically, then runs phase 2.
+
+**Key data integration notes:**
+- **Dual-write sync:** Approval rules are synced between Lakebase (used by UI) and Lakehouse (used by agents) via FastAPI BackgroundTasks. Changes in either direction propagate automatically.
+- **Vector Search:** The `similar_transactions_index` is populated from `payments_enriched_silver` via MERGE into `transaction_summaries_for_search`, then synced to the embedding model `databricks-bge-large-en`.
+- **17 UC functions** serve as agent tools for analytics, rules, incidents, recommendations, and similar-transaction lookup.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 
