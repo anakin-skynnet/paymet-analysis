@@ -30,22 +30,23 @@ resources:
   model_serving_endpoints:
     # ResponsesAgent (agent.py — single-agent, OpenAI Responses API).
     # Separate endpoint from the LangGraph orchestrator.
-    response_agent_endpoint:
-      name: "payment-response-agent"
-      config:
-        served_entities:
-          - entity_name: "${var.catalog}.agents.response_agent"
-            entity_version: "${var.response_agent_model_version}"
-            workload_size: "Small"
-            scale_to_zero_enabled: true
-            workload_type: "CPU"
-            environment_vars:
-              ENABLE_MLFLOW_TRACING: "true"
-              CATALOG: "${var.catalog}"
-              SCHEMA: "${var.schema}"
-              LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
-        traffic_config:
-          routes: [{ served_model_name: "response_agent-${var.response_agent_model_version}", traffic_percentage: 100 }]
+    # Uncomment after Job 6 registers the response_agent model in UC:
+    # response_agent_endpoint:
+    #   name: "payment-response-agent"
+    #   config:
+    #     served_entities:
+    #       - entity_name: "${var.catalog}.agents.response_agent"
+    #         entity_version: "${var.response_agent_model_version}"
+    #         workload_size: "Small"
+    #         scale_to_zero_enabled: true
+    #         workload_type: "CPU"
+    #         environment_vars:
+    #           ENABLE_MLFLOW_TRACING: "true"
+    #           CATALOG: "${var.catalog}"
+    #           SCHEMA: "${var.schema}"
+    #           LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
+    #     traffic_config:
+    #       routes: [{ served_model_name: "response_agent-${var.response_agent_model_version}", traffic_percentage: 100 }]
 
     # LangGraph Orchestrator (multi-agent system wrapping all specialists).
     payment_analysis_orchestrator_endpoint:

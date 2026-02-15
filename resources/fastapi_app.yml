@@ -58,8 +58,9 @@ resources:
         # Orchestrator chat falls back to Job 6 if the serving endpoint is unavailable.
         - name: serving-orchestrator
           serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
-        - name: serving-response-agent
-          serving_endpoint: { name: "payment-response-agent", permission: CAN_QUERY }
+        # Uncomment after Job 6 registers response_agent model and creates the endpoint:
+        # - name: serving-response-agent
+        #   serving_endpoint: { name: "payment-response-agent", permission: CAN_QUERY }
         - name: serving-decline-analyst
           serving_endpoint: { name: "decline-analyst", permission: CAN_QUERY }
         - name: serving-approval-prop

@@ -50,7 +50,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  # - resources/model_serving.yml   # Optional: uncomment after Jobs 5 & 6 create endpoints; set entity_version vars
+  - resources/model_serving.yml
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------
@@ -120,16 +120,16 @@ variables:
   # On a fresh workspace, Jobs create/update endpoints automatically (no need to set these).
   orchestrator_model_version:
     description: "UC model version for orchestrator agent (set after Job 6 runs)"
-    default: "1"
+    default: "26"
   response_agent_model_version:
     description: "UC model version for response_agent (set after Job 6 runs)"
     default: "1"
   decline_analyst_model_version:
     description: "UC model version for decline_analyst agent (set after Job 6 runs)"
-    default: "1"
+    default: "32"
   ml_model_version:
     description: "UC model version for ML models (approval, risk, routing, retry) (set after Job 5 runs)"
-    default: "1"
+    default: "22"
 
 # -----------------------------------------------------------------------------
 # Sync: paths uploaded to workspace for job/pipeline execution and app
@@ -170,7 +170,7 @@ sync:
 # Build artifact for app deployment (served at /)
 artifacts:
   default:
-    build: uv run apx build
+    build: uv run apx bun run vite build
 
 # -----------------------------------------------------------------------------
 # Targets: dev (development) and prod (production)
