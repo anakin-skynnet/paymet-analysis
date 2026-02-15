@@ -590,7 +590,7 @@ export function Component() {
       </Card>
 
       {/* Info Card */}
-      <Card className="glass-card border border-blue-200/60 dark:border-blue-800/60">
+      <Card className="glass-card border border-primary/20">
         <CardHeader>
           <CardTitle className="text-sm">About These Dashboards</CardTitle>
         </CardHeader>

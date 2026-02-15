@@ -98,13 +98,13 @@ function RetryKPIs() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-4">
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">Total Transactions</p>
           <p className="text-2xl font-bold">{(kpis?.total ?? 0).toLocaleString()}</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-1">
             <Repeat className="w-4 h-4 text-primary" />
@@ -113,7 +113,7 @@ function RetryKPIs() {
           <p className="text-2xl font-bold">{totalRetries.toLocaleString()}</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -122,7 +122,7 @@ function RetryKPIs() {
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{avgSuccessRate}%</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-1">
             <DollarSign className="w-4 h-4 text-emerald-500" />
@@ -141,7 +141,7 @@ function KPISkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-4">
       {[1, 2, 3, 4].map((i) => (
-        <Card key={i}>
+        <Card key={i} className="glass-card border border-border/80">
           <CardContent className="pt-6 space-y-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-8 w-20" />
@@ -336,7 +336,7 @@ function SmartRetry() {
           {SCENARIOS.map((s) => {
             const Icon = s.icon;
             return (
-              <Card key={s.id} className="border-border/80">
+              <Card key={s.id} className="glass-card border border-border/80">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Icon className="h-4 w-4 text-primary" />
@@ -354,7 +354,7 @@ function SmartRetry() {
 
       {/* Performance Charts */}
       <section>
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
@@ -374,7 +374,7 @@ function SmartRetry() {
 
       {/* Top retry cohorts */}
       <section>
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />

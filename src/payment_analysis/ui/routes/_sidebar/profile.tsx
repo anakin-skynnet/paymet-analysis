@@ -53,7 +53,7 @@ function ProfileContent() {
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <Card className="border-primary/20">
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <Avatar className="h-24 w-24">
@@ -101,7 +101,7 @@ function ProfileContent() {
       {/* User Details Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Personal Information */}
-        <Card className="border-primary/20">
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -148,7 +148,7 @@ function ProfileContent() {
         </Card>
 
         {/* Contact Information */}
-        <Card className="border-primary/20">
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
@@ -186,7 +186,7 @@ function ProfileContent() {
 
         {/* Roles */}
         {user.roles && user.roles.length > 0 && (
-          <Card className="border-primary/20">
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
@@ -210,7 +210,7 @@ function ProfileContent() {
 
         {/* Groups */}
         {user.groups && user.groups.length > 0 && (
-          <Card className="border-primary/20">
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -234,7 +234,7 @@ function ProfileContent() {
 
         {/* Entitlements */}
         {user.entitlements && user.entitlements.length > 0 && (
-          <Card className="border-primary/20">
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
@@ -264,7 +264,7 @@ function ProfileSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header Card Skeleton */}
-      <Card className="border-primary/20">
+      <Card className="glass-card border border-border/80">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <Skeleton className="h-24 w-24 rounded-full" />
@@ -280,7 +280,7 @@ function ProfileSkeleton() {
       {/* Cards Skeleton */}
       <div className="grid gap-6 md:grid-cols-2">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="border-primary/20">
+          <Card key={i} className="glass-card border border-border/80">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
@@ -303,7 +303,7 @@ function Profile() {
         <ErrorBoundary
           onReset={reset}
           fallbackRender={({ resetErrorBoundary }) => (
-            <Card className="border-destructive/50">
+            <Card className="glass-card border border-destructive/30">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="h-5 w-5" />

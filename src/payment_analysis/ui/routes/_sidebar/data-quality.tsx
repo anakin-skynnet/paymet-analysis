@@ -87,7 +87,7 @@ function IncidentRow({ inc }: { inc: Incident }) {
   };
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="glass-card border border-border/80 cursor-pointer card-interactive"
       onClick={openInWorkspace}
       role="button"
       tabIndex={0}
@@ -174,7 +174,7 @@ function DataQualityPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Card className="border border-[var(--neon-cyan)]/20 bg-[var(--neon-cyan)]/5 cursor-help">
+              <Card className="glass-card border border-[var(--neon-cyan)]/20 cursor-help">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Activity className="h-4 w-4 text-[var(--neon-cyan)]" />
@@ -191,7 +191,7 @@ function DataQualityPage() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Card className="cursor-help border border-[var(--neon-cyan)]/20 bg-[var(--neon-cyan)]/5">
+              <Card className="glass-card border border-[var(--neon-cyan)]/20 cursor-help">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Activity className="h-4 w-4 text-[var(--neon-cyan)]" />
@@ -210,7 +210,7 @@ function DataQualityPage() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Card className="cursor-help">
+              <Card className="glass-card border border-border/80 cursor-help">
                 <CardContent className="pt-4">
                   <div className="text-sm text-muted-foreground">Last hour volume</div>
                   <p className="mt-1 text-2xl font-bold tabular-nums">
@@ -226,7 +226,7 @@ function DataQualityPage() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Card className="cursor-help">
+              <Card className="glass-card border border-border/80 cursor-help">
                 <CardContent className="pt-4">
                   <div className="text-sm text-muted-foreground">Incidents</div>
                   <p className="mt-1 text-2xl font-bold tabular-nums">{items.length}</p>
@@ -241,7 +241,7 @@ function DataQualityPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Alerts & Data Quality Health (from alerts-data-quality) */}
-        <Card className="border-2 border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan)]/5">
+        <Card className="glass-card border-2 border-[var(--neon-cyan)]/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Gauge className="h-4 w-4 text-[var(--neon-cyan)]" />
@@ -314,7 +314,7 @@ function DataQualityPage() {
         </Card>
 
         {/* Alerts card — inline list from /api/analytics/active-alerts + links */}
-        <Card className="border border-border/80">
+        <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[var(--getnet-red)]" />
@@ -380,7 +380,7 @@ function DataQualityPage() {
       {/* Create incident (from incidents) */}
       <section aria-labelledby="create-incident-heading">
         <h2 id="create-incident-heading" className="text-lg font-semibold mb-3">Create incident</h2>
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-6 grid gap-2 md:grid-cols-3">
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Category (e.g. mid_failure)" />
             <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. MID=demo)" />

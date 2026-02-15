@@ -12,8 +12,25 @@ import { useEntity } from "@/contexts/entity-context";
 import { openNotebookInDatabricks, openFolderInDatabricks } from "@/lib/notebooks";
 import { ErrorBoundary } from "react-error-boundary";
 
+function ModelsPageErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
+  return (
+    <Card className="glass-card border border-destructive/30 max-w-lg mx-auto mt-12">
+      <CardContent className="py-8 text-center space-y-4">
+        <Brain className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-semibold">Failed to load ML Models</h2>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
+        <Button onClick={resetErrorBoundary}>Try again</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_sidebar/models")({
-  component: () => <Models />,
+  component: () => (
+    <ErrorBoundary FallbackComponent={ModelsPageErrorFallback}>
+      <Models />
+    </ErrorBoundary>
+  ),
 });
 
 const openMLflow = () => openInDatabricks(getMLflowUrl());
@@ -43,7 +60,7 @@ function ModelsGridSkeleton() {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {[1, 2, 3, 4].map((i) => (
-        <Card key={i}>
+        <Card key={i} className="glass-card border border-border/80">
           <CardHeader>
             <Skeleton className="h-5 w-3/4" />
             <Skeleton className="h-4 w-full mt-2" />
@@ -61,7 +78,7 @@ function ModelsGridSkeleton() {
 
 function ModelsErrorFallback({ error }: { error: unknown }) {
   return (
-    <Card className="border-destructive/50 bg-destructive/5">
+    <Card className="glass-card border border-destructive/30">
       <CardContent className="py-6 flex items-center gap-2">
         <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
         <p className="text-sm text-destructive">
@@ -75,7 +92,7 @@ function ModelsErrorFallback({ error }: { error: unknown }) {
 function ModelCard({ model }: { model: ModelOut }) {
   return (
     <Card
-      className="cursor-pointer hover:shadow-lg transition-shadow"
+      className="glass-card border border-border/80 cursor-pointer card-interactive"
       onClick={() => openModelInRegistry(model.catalog_path)}
       role="button"
       tabIndex={0}
@@ -164,7 +181,7 @@ function ModelsGrid() {
 
   if (modelList.length === 0) {
     return (
-      <Card>
+      <Card className="glass-card border border-border/80">
         <CardContent className="py-12 text-center">
           <Brain className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">No models registered yet. Run Setup & Run step 7 to train and register models.</p>
@@ -218,7 +235,7 @@ function Models() {
       </div>
 
       {/* Info Card */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="glass-card border border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <Brain className="w-5 h-5 text-primary mt-0.5" />
@@ -243,7 +260,7 @@ function Models() {
 
       {/* Combined business impact — click opens Financial Impact dashboard */}
       <Card
-        className="cursor-pointer hover:shadow-md transition-shadow"
+        className="glass-card border border-border/80 cursor-pointer card-interactive"
         onClick={() => openInDatabricks(getLakeviewDashboardUrl("financial_impact"))}
         role="button"
         tabIndex={0}
@@ -271,7 +288,7 @@ function Models() {
 
       {/* Model Training Pipeline — click opens MLflow in Databricks */}
       <Card
-        className="cursor-pointer hover:shadow-md transition-shadow"
+        className="glass-card border border-border/80 cursor-pointer card-interactive"
         onClick={() => openInDatabricks(getMLflowUrl())}
         role="button"
         tabIndex={0}

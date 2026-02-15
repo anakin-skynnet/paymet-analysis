@@ -127,7 +127,7 @@ function Initiatives() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left column */}
         <div className="space-y-6">
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Payment Services Context</CardTitle>
             </CardHeader>
@@ -147,7 +147,7 @@ function Initiatives() {
 
           <GeographyWorldMap />
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Data Foundation</CardTitle>
             </CardHeader>
@@ -180,7 +180,7 @@ function Initiatives() {
 
         {/* Right column */}
         <div className="space-y-6">
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Smart Checkout — Brazil Focus</CardTitle>
             </CardHeader>
@@ -198,7 +198,7 @@ function Initiatives() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Breakdown by Service</CardTitle>
             </CardHeader>
@@ -225,7 +225,7 @@ function Initiatives() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">2025 3DS Test</CardTitle>
             </CardHeader>
@@ -250,7 +250,7 @@ function Initiatives() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Reason Codes — Brazil Scope</CardTitle>
               <p className="text-xs text-muted-foreground">4 Entry Systems</p>
@@ -275,7 +275,7 @@ function Initiatives() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Counter Metrics — Insight Quality Control</CardTitle>
               <p className="text-xs text-muted-foreground">Expected Outcomes</p>
@@ -289,7 +289,7 @@ function Initiatives() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border border-border/80">
             <CardHeader>
               <CardTitle className="text-base">Smart Retry — Initial Context</CardTitle>
             </CardHeader>

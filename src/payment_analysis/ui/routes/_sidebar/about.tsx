@@ -243,7 +243,7 @@ function About() {
           {CHALLENGE.points.map((point) => {
             const Icon = point.icon;
             return (
-              <Card key={point.title} className="border-destructive/20 bg-destructive/[0.03]">
+              <Card key={point.title} className="glass-card border border-destructive/20">
                 <CardContent className="flex gap-3 pt-5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
                     <Icon className="h-4 w-4" />
@@ -275,7 +275,7 @@ function About() {
           {SOLUTION_OVERVIEW.layers.map((layer, i) => {
             const Icon = layer.icon;
             return (
-              <Card key={layer.label} className="overflow-hidden">
+              <Card key={layer.label} className="glass-card border border-border/80 overflow-hidden">
                 <CardContent className="flex gap-4 pt-5">
                   <div className="flex flex-col items-center gap-1 pt-0.5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
@@ -325,7 +325,7 @@ function About() {
           {CAPABILITIES.map((cap) => {
             const Icon = cap.icon;
             return (
-              <Card key={cap.title} className="group hover:shadow-md transition-shadow flex flex-col">
+              <Card key={cap.title} className="glass-card border border-border/80 group card-interactive flex flex-col">
                 <CardHeader className="pb-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2 group-hover:scale-110 transition-transform">
                     <Icon className="h-4 w-4" />
@@ -364,7 +364,7 @@ function About() {
           {OUTCOMES.map((outcome) => {
             const Icon = outcome.icon;
             return (
-              <Card key={outcome.metric} className="border-green-200/50 dark:border-green-900/30 bg-green-50/30 dark:bg-green-950/10">
+              <Card key={outcome.metric} className="glass-card border border-green-200/50 dark:border-green-900/30">
                 <CardContent className="flex gap-3 pt-5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                     <Icon className="h-4 w-4" />
@@ -396,7 +396,7 @@ function About() {
             Each business need is addressed by a specific part of the platform.
           </p>
         </div>
-        <Card>
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-5">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
@@ -480,7 +480,7 @@ function About() {
       {/* Technology Summary */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold tracking-tight">Technology at a Glance</h2>
-        <Card className="bg-muted/20">
+        <Card className="glass-card border border-border/80">
           <CardContent className="pt-5">
             <div className="grid gap-3 sm:grid-cols-2">
               {TECH_SUMMARY.map((item) => (

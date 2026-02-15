@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, Code2, FlaskConical } from "lucide-react";
 import { getMLflowUrl, openInDatabricks } from "@/config/workspace";
 import { openNotebookInDatabricks } from "@/lib/notebooks";
@@ -109,10 +110,28 @@ function Experiments() {
       </Card>
 
       <div className="space-y-3">
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No experiments yet. Create one above.
-          </p>
+        {q.isLoading ? (
+          <>
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="glass-card border border-border/80">
+                <CardHeader className="py-4 space-y-2">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </CardHeader>
+                <CardContent className="flex gap-2">
+                  <Skeleton className="h-9 w-16" />
+                  <Skeleton className="h-9 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : items.length === 0 ? (
+          <Card className="glass-card border border-border/80">
+            <CardContent className="py-8 text-center">
+              <FlaskConical className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground">No experiments yet. Create one above.</p>
+            </CardContent>
+          </Card>
         ) : (
           items.map((exp) => (
             <ExperimentRow
