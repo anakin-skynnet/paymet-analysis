@@ -524,14 +524,16 @@ async def metrics(
     the query filters by issuer_country for entity-level KPIs. Falls back to global
     KPIs when filtering is not possible.
     """
-    if country_filter and country_filter != DEFAULT_ENTITY and service.is_available:
+    # Validate country_filter: must be 2-3 alpha characters (ISO country code) to prevent injection
+    safe_country = country_filter.strip().upper() if country_filter else ""
+    if safe_country and safe_country != DEFAULT_ENTITY and safe_country.isalpha() and len(safe_country) <= 3 and service.is_available:
         try:
             data = await service.execute_query(
                 f"SELECT COUNT(*) AS total_transactions, "
                 f"SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) AS approved_count, "
                 f"AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) AS approval_rate "
                 f"FROM {service.config.full_schema_name}.silver_transactions "
-                f"WHERE issuer_country = '{country_filter}'"
+                f"WHERE issuer_country = '{safe_country}'"
             )
             if data and data[0].get("total_transactions", 0):
                 row = data[0]
@@ -834,9 +836,9 @@ async def last_hour_performance(request: Request, service: DatabricksServiceDep)
     if _is_mock_request(request):
         return LastHourPerformanceOut(**_mock.mock_last_hour_performance())
     data = await service.get_last_hour_performance()
-    if not data or data.get("transactions_last_hour", 0) == 0:
+    if (not data or data.get("transactions_last_hour", 0) == 0) and _should_use_mock_fallback(request, service):
         data = _mock.mock_last_hour_performance()
-    return LastHourPerformanceOut(**data)
+    return LastHourPerformanceOut(**(data or _mock.mock_last_hour_performance()))
 
 
 @router.get(
@@ -849,9 +851,9 @@ async def last_60_seconds_performance(request: Request, service: DatabricksServi
     if _is_mock_request(request):
         return Last60SecondsPerformanceOut(**_mock.mock_last_60_seconds_performance())
     data = await service.get_last_60_seconds_performance()
-    if not data or data.get("transactions_last_60s", 0) == 0:
+    if (not data or data.get("transactions_last_60s", 0) == 0) and _should_use_mock_fallback(request, service):
         data = _mock.mock_last_60_seconds_performance()
-    return Last60SecondsPerformanceOut(**data)
+    return Last60SecondsPerformanceOut(**(data or _mock.mock_last_60_seconds_performance()))
 
 
 @router.get(
@@ -864,9 +866,9 @@ async def data_quality_summary(request: Request, service: DatabricksServiceDep) 
     if _is_mock_request(request):
         return DataQualitySummaryOut(**_mock.mock_data_quality_summary())
     data = await service.get_data_quality_summary()
-    if not data or data.get("bronze_last_24h", 0) == 0:
+    if (not data or data.get("bronze_last_24h", 0) == 0) and _should_use_mock_fallback(request, service):
         data = _mock.mock_data_quality_summary()
-    return DataQualitySummaryOut(**data)
+    return DataQualitySummaryOut(**(data or _mock.mock_data_quality_summary()))
 
 
 @router.get(
