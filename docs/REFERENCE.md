@@ -42,7 +42,7 @@ The solution uses three agent patterns, each optimized for a different use case:
 
 | Tool category | Implementation | Data source |
 |---------------|---------------|-------------|
-| **UC SQL functions** (17 tools) | Created by Job 3 from `uc_agent_tools.sql` | Unity Catalog gold views |
+| **UC SQL functions** (17 individual + 5 consolidated) | Created by Job 3 from `uc_agent_tools.sql` | Unity Catalog gold views |
 | **Vector Search** | `VECTOR_SEARCH()` TVF in `search_similar_transactions` UC function | `similar_transactions_index` |
 | **Lakebase queries** | `get_active_approval_rules`, `get_recent_incidents`, `get_decision_outcomes` | Lakebase Postgres via UC functions |
 | **Python exec** | `system.ai.python_exec` for write-back (recommendations) | Spark SQL |
@@ -69,9 +69,9 @@ The solution uses three agent patterns, each optimized for a different use case:
 
 **ML model signatures:** All 4 ML models use explicit `ModelSignature` with `ColSpec` for named input features, ensuring correct feature handling during serving.
 
-### UC functions (17 agent tools)
+### UC functions (17 individual + 5 consolidated agent tools)
 
-Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`:
+Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`. Specialist agents use 6–8 individual functions each. The **ResponsesAgent** uses 5 consolidated + 5 shared operational functions (10 total) to fit within the Databricks 10-function limit.
 
 | Function | Purpose | Data source |
 |----------|---------|-------------|
@@ -93,11 +93,21 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`:
 | `get_cascade_recommendations` | Cascade routing recommendations by merchant segment | Gold views |
 | `get_online_features` | ML/AI feature output for real-time inference | online_features (Lakebase/Lakehouse) |
 
+**Consolidated functions** (used by ResponsesAgent; each replaces 2–3 individual functions):
+
+| Function | Purpose | Replaces |
+|----------|---------|----------|
+| `analyze_declines(mode, segment)` | Decline trends and segment breakdown | `get_decline_trends` + `get_decline_by_segment` |
+| `analyze_routing(mode, merchant_segment)` | Route performance and cascade recommendations | `get_route_performance` + `get_cascade_recommendations` |
+| `analyze_retry(mode, min_amount)` | Retry success rates and recovery opportunities | `get_retry_success_rates` + `get_recovery_opportunities` |
+| `analyze_risk(mode, threshold)` | High-risk transactions and risk distribution | `get_high_risk_transactions` + `get_risk_distribution` |
+| `analyze_performance(mode)` | KPI summary, optimization opportunities, trend analysis | `get_kpi_summary` + `get_optimization_opportunities` + `get_trend_analysis` |
+
 ---
 
 ## 4. Approval optimization summary
 
-**Artifacts:** 4 ML models (approval propensity, risk, routing, retry) + 3 agent models (orchestrator, decline analyst, response agent); 17 UC functions; 3 unified dashboards.
+**Artifacts:** 4 ML models (approval propensity, risk, routing, retry) + 3 agent models (orchestrator, decline analyst, response agent); 17 individual + 5 consolidated UC functions; 3 unified dashboards. Decision routes use `DecisionEngine` for ML enrichment, Lakebase config, and rule evaluation (online features auto-populated).
 
 **How each component accelerates approval rates:**
 
@@ -111,6 +121,7 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`:
 | **Decline analyst agent** | Identifies decline patterns and recovery opportunities |
 | **Vector Search** | "Similar cases" for retry and routing recommendations |
 | **Rules engine** | Configurable business rules; operators tune without code |
+| **DecisionEngine** | Wires ML enrichment + Lakebase config (tunable thresholds, decline codes, route scores) + rule evaluation into decision routes; auto-populates online features; graceful fallback to pure-policy |
 | **Dual-write sync** | Approval rules synced between Lakebase (UI) and Lakehouse (agents) via BackgroundTasks, ensuring consistency |
 
 ---

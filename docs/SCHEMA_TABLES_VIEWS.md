@@ -153,7 +153,7 @@ These **tables** exist in the schema but have **no code path in this repo** that
 | Object | Created by | Insertion process in repo? | Notes |
 |--------|------------|----------------------------|--------|
 | **approval_recommendations** | lakehouse_bootstrap.sql | **No direct insertion** | Table created and empty by default. AI agents or a scheduled job can write recommendations here. The dual-write sync for approval rules (via BackgroundTasks in `rules.py`) does not write to this table; it syncs `approval_rules` between Lakebase and Lakehouse. Decisioning UI shows "No recommendations yet" until something writes here. |
-| **online_features** (Lakehouse) | lakehouse_bootstrap.sql | **No** | Table created and empty. Described as "ML/AI feature output for the app"; no notebook or backend inserts into this Lakehouse table. (Lakebase `online_features` is separate; app can read from Lakebase or Lakehouse.) |
+| **online_features** (Lakehouse) | lakehouse_bootstrap.sql | **Yes** (DecisionEngine) | Table created by bootstrap. The `DecisionEngine` (used by `/api/decision/*` routes) auto-populates online features in Lakebase during ML enrichment; those features are also readable from the Lakehouse table. (Lakebase `online_features` is the primary write target.) |
 | **payments_stream_input** | transaction_simulator (CREATE TABLE IF NOT EXISTS) | **Yes** | Populated by **transaction_simulator** when run as a job; no data if that job never runs. |
 
 **Views** are not inserted into; they reflect underlying tables. The following **views** will therefore be empty if their base table has no insertion (or no rows):

@@ -6,7 +6,7 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6), 3 unified AI/BI dashboards, 7 orchestrated jobs, 13 resources bound to the app.
+**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6), 3 unified AI/BI dashboards, 7 orchestrated jobs, 13 resources bound to the app. Decision routes use `DecisionEngine` for ML enrichment, Lakebase-driven thresholds, and rule evaluation with graceful fallback.
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -54,7 +54,9 @@ Deployment is **two-phase**: first deploy all resources except the App, then dep
 **Key data integration notes:**
 - **Dual-write sync:** Approval rules are synced between Lakebase (used by UI) and Lakehouse (used by agents) via FastAPI BackgroundTasks. Changes in either direction propagate automatically.
 - **Vector Search:** The `similar_transactions_index` is populated from `payments_enriched_silver` via MERGE into `transaction_summaries_for_search`, then synced to the embedding model `databricks-bge-large-en`.
-- **17 UC functions** serve as agent tools for analytics, rules, incidents, recommendations, and similar-transaction lookup.
+- **17 individual + 5 consolidated UC functions** serve as agent tools for analytics, rules, incidents, recommendations, and similar-transaction lookup. Specialist agents use individual functions (6–8 each); the ResponsesAgent uses 10 consolidated + shared functions to fit within the Databricks 10-function limit.
+- **DecisionEngine:** Decision routes (`/authentication`, `/retry`, `/routing`) use `DecisionEngine` with ML enrichment, Lakebase config (tunable thresholds, decline codes, route performance), and rule evaluation. Online features are auto-populated during decisions. Falls back to pure-policy heuristics when Lakebase/ML is unavailable.
+- **Error resilience:** All UI routes have `ErrorBoundary` wrappers and consistent `glass-card` styling for a unified visual language.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 
