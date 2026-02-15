@@ -61,7 +61,7 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | 3 | **3. Initialize Ingestion** | **Setup & Run** → Run job 3 (create gold views → **create UC agent tools** → sync vector search; requires pipeline so `payments_enriched_silver` exists) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
 | 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
-| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Orchestrator**, any specialist agent, or **Test Agent Framework** (same job: all 7 tasks) |
+| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Deploy Agents** (same job: 3 tasks — `run_agent_framework`, `register_responses_agent`, `register_agentbricks`) |
 | 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
 | — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
 | — | Dashboards & app | 3 unified dashboards + app deployed by bundle |
@@ -456,7 +456,9 @@ All job notebook and SQL paths are relative to the workspace `root_path` (where 
 | `transaction_stream_simulator` | `transaction_stream_simulator` | `src/payment_analysis/streaming/transaction_simulator` | `transaction_simulator.py` |
 | `train_models` | `train_models` | `src/payment_analysis/ml/train_models` | `train_models.py` |
 | job_7 task `sync_genie_config` | `genie_sync` | `src/payment_analysis/genie/sync_genie_space` | `sync_genie_space.py` (genie_spaces.yml) |
-| job_6 task `run_agent_framework` | `run_agent_framework`, `register_responses_agent`, `register_agentbricks` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| job_6 task `run_agent_framework` | `run_agent_framework` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
+| job_6 task `register_responses_agent` | `register_responses_agent` | `src/payment_analysis/agents/register_responses_agent` | `register_responses_agent.py` |
+| job_6 task `register_agentbricks` | `register_agentbricks` | `src/payment_analysis/agents/agentbricks_register` | `agentbricks_register.py` |
 | `publish_dashboards_job` | `publish_dashboards` | `src/payment_analysis/transform/publish_dashboards` | `publish_dashboards.py` |
 | `continuous_stream_processor` | `continuous_stream_processor` | `src/payment_analysis/streaming/continuous_processor` | `continuous_processor.py` |
 | `prepare_dashboards_job` | (not in Setup UI) | `src/payment_analysis/transform/prepare_dashboards` | `prepare_dashboards.py` |

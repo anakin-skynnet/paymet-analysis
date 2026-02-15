@@ -19,7 +19,7 @@ The solution is Databricks-native and aligned with current product naming (Lakef
 | **Lakebase** | OK | Autoscaling Postgres; Job 1 creates project/branch/endpoint; app env: LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID. Used for rules, experiments, incidents, online features, app config. |
 | **Vector Search** | OK | Delta-sync index (`similar_transactions_index`) on `transaction_summaries_for_search`; embedding model `databricks-bge-large-en`. Agents use `VECTOR_SEARCH()` SQL function for similar-transaction lookup. |
 | **Genie** | OK | Job 7 syncs space; optional app binding. |
-| **Model Serving** | OK | 6 endpoints in `model_serving.yml`; app binds after endpoints exist (two-phase deploy). Scale-to-zero enabled. |
+| **Model Serving** | OK | 7 endpoints in `model_serving.yml` (3 agents + 4 ML models); app binds after endpoints exist (two-phase deploy). Scale-to-zero enabled. |
 | **Dashboards** | OK | 3 unified Lakeview dashboards; prepare → `.build/dashboards/`; Job 4 or bundle.sh publishes with embed credentials. Embed uses `/embed/dashboardsv3/` path prefix. |
 
 **User token (OBO):** When the app is opened from **Compute → Apps**, Databricks forwards the user token in **X-Forwarded-Access-Token**. The backend reads it in `dependencies.py` via `_get_obo_token(request)` and uses it for `get_workspace_client` / `get_databricks_service`. For other frameworks: FastAPI `request.headers.get("X-Forwarded-Access-Token")`; Flask/Gradio/Streamlit/Shiny use the same header name.
@@ -53,12 +53,13 @@ The solution uses three agent patterns, each optimized for a different use case:
 
 ---
 
-## 3. Model serving endpoints (6)
+## 3. Model serving endpoints (7)
 
 | Endpoint name | Entity (UC) | Purpose | Workload |
 |---------------|-------------|---------|----------|
 | **payment-analysis-orchestrator** | `{catalog}.agents.orchestrator` | Multi-agent orchestrator (LangGraph); routes to specialists | Small, CPU, scale-to-zero |
 | **decline-analyst** | `{catalog}.agents.decline_analyst` | Decline analysis specialist (LangGraph) | Small, CPU, scale-to-zero |
+| **payment-response-agent** | `{catalog}.agents.response_agent` | ResponsesAgent (single-agent, OpenAI Responses API) | Small, CPU, scale-to-zero |
 | **approval-propensity** | `{catalog}.{schema}.approval_propensity_model` | Approval probability prediction | Small, CPU, scale-to-zero |
 | **risk-scoring** | `{catalog}.{schema}.risk_scoring_model` | Fraud risk scoring | Small, CPU, scale-to-zero |
 | **smart-routing** | `{catalog}.{schema}.smart_routing_policy` | Optimal route selection (standard, 3DS, token, passkey) | Small, CPU, scale-to-zero |
@@ -91,7 +92,7 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`:
 
 ## 4. Approval optimization summary
 
-**Artifacts:** 4 ML models (approval propensity, risk, routing, retry) + 2 agent models (orchestrator, decline analyst); 12 UC functions; 3 unified dashboards.
+**Artifacts:** 4 ML models (approval propensity, risk, routing, retry) + 3 agent models (orchestrator, decline analyst, response agent); 12 UC functions; 3 unified dashboards.
 
 **How each component accelerates approval rates:**
 

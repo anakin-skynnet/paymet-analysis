@@ -9,7 +9,7 @@ Central entry point for all documentation.
 | Item | Summary |
 |------|---------|
 | **Goal** | Accelerate payment approval rates; reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. |
-| **Stack** | Databricks (Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie), Lakebase (Postgres), Vector Search, FastAPI + React app, 7 AI agents, 3 unified dashboards, 6 model serving endpoints. All serverless compute. |
+| **Stack** | Databricks (Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie), Lakebase (Postgres), Vector Search, FastAPI + React app, 7 AI agents, 3 unified dashboards, 7 model serving endpoints. All serverless compute. |
 | **Schema** | Always `payment_analysis` (same in dev and prod). DAB schema prefixing disabled. |
 | **Deploy** | Two-phase: `./scripts/bundle.sh deploy dev` (phase 1: all except App) → run jobs 5 & 6 → `./scripts/bundle.sh deploy app dev` (phase 2: App). Or automated: `./scripts/deploy_with_dependencies.sh dev`. |
 | **App env** | Defaults in `app.yml` at project root; override in Compute → Apps → Edit → Environment. |

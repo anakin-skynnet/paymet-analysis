@@ -359,7 +359,7 @@ async def get_dashboard_url(
         # Extract dashboard ID from url_path to build the embed variant.
         dashboard_lakeview_id = ""
         for d_id_var in [_DASHBOARD_ID_DATA_QUALITY, _DASHBOARD_ID_ML_OPTIMIZATION, _DASHBOARD_ID_EXECUTIVE_TRENDS]:
-            if d_id_var in base_path:
+            if d_id_var and d_id_var in base_path:
                 dashboard_lakeview_id = d_id_var
                 break
         if dashboard_lakeview_id:

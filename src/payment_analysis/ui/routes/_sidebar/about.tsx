@@ -34,7 +34,7 @@ const HERO = {
     "A unified, AI-powered platform that accelerates payment approval rates, recovers lost revenue from false declines, and optimizes routing and retry strategies across all channels.",
   kpis: [
     { label: "AI Agents", value: "7", detail: "Orchestrator + 5 specialists" },
-    { label: "ML Models", value: "6", detail: "Real-time serving endpoints" },
+    { label: "ML Models", value: "7", detail: "Real-time serving endpoints" },
     { label: "Dashboards", value: "3", detail: "Unified AI/BI analytics" },
     { label: "Compute", value: "100%", detail: "Serverless infrastructure" },
   ],
@@ -196,7 +196,7 @@ const TECH_SUMMARY = [
   { label: "Database", value: "Lakebase (Postgres) for rules, experiments, incidents, features" },
   { label: "Application", value: "FastAPI + React (deployed as Databricks App)" },
   { label: "Dashboards", value: "3 unified AI/BI Lakeview dashboards (embeddable)" },
-  { label: "Model Serving", value: "6 serverless endpoints (2 agents + 4 ML models)" },
+  { label: "Model Serving", value: "7 serverless endpoints (3 agents + 4 ML models)" },
   { label: "Infrastructure", value: "100% serverless compute (jobs, pipelines, SQL, serving)" },
   { label: "Deployment", value: "Databricks Asset Bundles (Infrastructure as Code)" },
 ];

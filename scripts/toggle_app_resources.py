@@ -20,10 +20,11 @@ MODEL_SERVING_YML = REPO_ROOT / "resources" / "model_serving.yml"
 
 
 def _serving_block_lines() -> list[tuple[str, str]]:
-    """Pairs of (commented, uncommented) line patterns for the 6 serving endpoint blocks."""
+    """Pairs of (commented, uncommented) line patterns for the 7 serving endpoint blocks."""
     # (resource name, endpoint name in YAML)
     names = [
         ("serving-orchestrator", "payment-analysis-orchestrator"),
+        ("serving-response-agent", "payment-response-agent"),
         ("serving-decline-analyst", "decline-analyst"),
         ("serving-approval-prop", "approval-propensity"),
         ("serving-risk-scoring", "risk-scoring"),
@@ -38,7 +39,7 @@ def _serving_block_lines() -> list[tuple[str, str]]:
 
 
 def enable_serving_endpoints() -> bool:
-    """Uncomment the 6 model serving endpoint blocks in resources/fastapi_app.yml."""
+    """Uncomment the 7 model serving endpoint blocks in resources/fastapi_app.yml."""
     text = FASTAPI_APP_YML.read_text()
     for commented, uncommented in _serving_block_lines():
         if commented in text:
@@ -48,7 +49,7 @@ def enable_serving_endpoints() -> bool:
 
 
 def disable_serving_endpoints() -> bool:
-    """Comment the 6 model serving endpoint blocks in resources/fastapi_app.yml."""
+    """Comment the 7 model serving endpoint blocks in resources/fastapi_app.yml."""
     text = FASTAPI_APP_YML.read_text()
     for commented, uncommented in _serving_block_lines():
         if uncommented in text:

@@ -5,7 +5,7 @@
 #
 # Full configuration: User authorization scopes (below) + App resources listed. Set --var genie_space_id=<uuid> for Genie when deploying.
 #
-# SERVING ENDPOINTS: All 6 endpoints are included below (4 ML models + 2 agents).
+# SERVING ENDPOINTS: All 7 endpoints are included below (4 ML models + 3 agents).
 #   If a deploy fails with "Endpoint with name '...' does not exist", run Job 5 (ML models) and
 #   Job 6 (agents) first so the endpoints exist, then redeploy.
 #   Option B (manual): Add endpoints in Workspace → Apps → payment-analysis → Configure → App resources.
@@ -53,7 +53,7 @@ resources:
         #     name: "Payment Analytics"
         #     space_id: ${var.genie_space_id}
         #     permission: CAN_EDIT
-        # Model serving — all 6 endpoints (4 ML models + 2 ResponsesAgent LangGraph agents).
+        # Model serving — all 7 endpoints (4 ML models + 3 agents: 2 LangGraph + 1 ResponsesAgent).
         # Agent endpoints use ResponsesAgent (MLflow 3.x); see model_serving.yml.
         # Orchestrator chat falls back to Job 6 if the serving endpoint is unavailable.
         - name: serving-orchestrator

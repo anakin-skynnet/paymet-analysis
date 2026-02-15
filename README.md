@@ -6,7 +6,7 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 6 model serving endpoints (2 agents + 4 ML models), 3 unified AI/BI dashboards, 7 orchestrated jobs.
+**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 7 model serving endpoints (3 agents + 4 ML models), 3 unified AI/BI dashboards, 7 orchestrated jobs.
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
