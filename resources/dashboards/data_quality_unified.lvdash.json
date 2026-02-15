@@ -87,7 +87,7 @@
                 "columns": [
                   {
                     "fieldName": "bronze_last_24h",
-                    "displayName": "bronze_last_24h",
+                    "displayName": "Bronze Last 24H",
                     "booleanValues": [
                       "false",
                       "true"
@@ -104,7 +104,7 @@
                     "displayAs": "string",
                     "visible": true,
                     "order": 0,
-                    "title": "bronze_last_24h",
+                    "title": "Bronze Last 24H",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -115,7 +115,7 @@
                   },
                   {
                     "fieldName": "silver_last_24h",
-                    "displayName": "silver_last_24h",
+                    "displayName": "Silver Last 24H",
                     "booleanValues": [
                       "false",
                       "true"
@@ -132,7 +132,7 @@
                     "displayAs": "string",
                     "visible": true,
                     "order": 1,
-                    "title": "silver_last_24h",
+                    "title": "Silver Last 24H",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -143,7 +143,7 @@
                   },
                   {
                     "fieldName": "retention_pct_24h",
-                    "displayName": "retention_pct_24h",
+                    "displayName": "Retention Pct 24H",
                     "booleanValues": [
                       "false",
                       "true"
@@ -160,7 +160,7 @@
                     "displayAs": "string",
                     "visible": true,
                     "order": 2,
-                    "title": "retention_pct_24h",
+                    "title": "Retention Pct 24H",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -171,7 +171,7 @@
                   },
                   {
                     "fieldName": "latest_bronze_ingestion",
-                    "displayName": "latest_bronze_ingestion",
+                    "displayName": "Latest Bronze Ingestion",
                     "booleanValues": [
                       "false",
                       "true"
@@ -188,7 +188,7 @@
                     "displayAs": "string",
                     "visible": true,
                     "order": 3,
-                    "title": "latest_bronze_ingestion",
+                    "title": "Latest Bronze Ingestion",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -199,7 +199,7 @@
                   },
                   {
                     "fieldName": "latest_silver_event",
-                    "displayName": "latest_silver_event",
+                    "displayName": "Latest Silver Event",
                     "booleanValues": [
                       "false",
                       "true"
@@ -216,7 +216,7 @@
                     "displayAs": "string",
                     "visible": true,
                     "order": 4,
-                    "title": "latest_silver_event",
+                    "title": "Latest Silver Event",
                     "allowSearch": true,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -283,8 +283,8 @@
                   {
                     "name": "bronze_last_24h",
                     "fieldName": "bronze_last_24h",
-                    "displayName": "bronze_last_24h",
-                    "title": "bronze_last_24h",
+                    "displayName": "Bronze Last 24H",
+                    "title": "Bronze Last 24H",
                     "order": 0,
                     "visible": true,
                     "type": "string",
@@ -311,8 +311,8 @@
                   {
                     "name": "silver_last_24h",
                     "fieldName": "silver_last_24h",
-                    "displayName": "silver_last_24h",
-                    "title": "silver_last_24h",
+                    "displayName": "Silver Last 24H",
+                    "title": "Silver Last 24H",
                     "order": 1,
                     "visible": true,
                     "type": "string",
@@ -339,8 +339,8 @@
                   {
                     "name": "retention_pct_24h",
                     "fieldName": "retention_pct_24h",
-                    "displayName": "retention_pct_24h",
-                    "title": "retention_pct_24h",
+                    "displayName": "Retention Pct 24H",
+                    "title": "Retention Pct 24H",
                     "order": 2,
                     "visible": true,
                     "type": "string",
@@ -367,8 +367,8 @@
                   {
                     "name": "latest_bronze_ingestion",
                     "fieldName": "latest_bronze_ingestion",
-                    "displayName": "latest_bronze_ingestion",
-                    "title": "latest_bronze_ingestion",
+                    "displayName": "Latest Bronze Ingestion",
+                    "title": "Latest Bronze Ingestion",
                     "order": 3,
                     "visible": true,
                     "type": "string",
@@ -395,8 +395,8 @@
                   {
                     "name": "latest_silver_event",
                     "fieldName": "latest_silver_event",
-                    "displayName": "latest_silver_event",
-                    "title": "latest_silver_event",
+                    "displayName": "Latest Silver Event",
+                    "title": "Latest Silver Event",
                     "order": 4,
                     "visible": true,
                     "type": "string",
@@ -467,15 +467,18 @@
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Hour",
+                  "displayName": "Event Second",
                   "axis": {
-                    "title": "Hour"
+                    "title": "Event Second"
                   }
                 },
                 "y": {
                   "fieldName": "sum(records_per_second)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
                   "displayName": "Records Per Second",
                   "axis": {
@@ -536,7 +539,10 @@
                 "y": {
                   "fieldName": "sum(bronze_record_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
                   "displayName": "Bronze Record Count",
                   "axis": {
@@ -597,7 +603,10 @@
                 "y": {
                   "fieldName": "sum(silver_record_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
                   "displayName": "Silver Record Count",
                   "axis": {
@@ -639,12 +648,8 @@
                       "expression": "`event_second`"
                     },
                     {
-                      "name": "transaction_count",
-                      "expression": "`transaction_count`"
-                    },
-                    {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -653,32 +658,35 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "event_second",
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Time (per second)",
+                  "displayName": "Event Second",
                   "axis": {
-                    "title": "Time"
+                    "title": "Event Second"
                   }
                 },
                 "y": {
-                  "fieldName": "transaction_count",
+                  "fieldName": "sum(transaction_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
-                  "displayName": "Transactions",
+                  "displayName": "Transaction Count",
                   "axis": {
-                    "title": "Transaction count per second"
+                    "title": "Transaction Count"
                   }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Real-Time Volume by Second",
+                "title": "Performance by Second (Real-Time)",
                 "showDescription": false
               }
             }
@@ -704,8 +712,8 @@
                       "expression": "`event_second`"
                     },
                     {
-                      "name": "approval_rate_pct",
-                      "expression": "`approval_rate_pct`"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -714,32 +722,35 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "line",
+              "widgetType": "area",
               "encodings": {
                 "x": {
                   "fieldName": "event_second",
                   "scale": {
                     "type": "temporal"
                   },
-                  "displayName": "Time (per second)",
+                  "displayName": "Event Second",
                   "axis": {
-                    "title": "Time"
+                    "title": "Event Second"
                   }
                 },
                 "y": {
-                  "fieldName": "approval_rate_pct",
+                  "fieldName": "sum(transaction_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
-                  "displayName": "Approval Rate %",
+                  "displayName": "Transaction Count",
                   "axis": {
-                    "title": "Approval rate per second"
+                    "title": "Transaction Count"
                   }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Real-Time Approval Rate by Second",
+                "title": "Performance by Second (Real-Time)",
                 "showDescription": false
               }
             }
@@ -767,26 +778,6 @@
                     {
                       "name": "approval_rate_pct",
                       "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "total_value",
-                      "expression": "`total_value`"
-                    },
-                    {
-                      "name": "active_segments",
-                      "expression": "`active_segments`"
-                    },
-                    {
-                      "name": "high_risk_transactions",
-                      "expression": "`high_risk_transactions`"
-                    },
-                    {
-                      "name": "declines_last_hour",
-                      "expression": "`declines_last_hour`"
                     }
                   ],
                   "disaggregated": true
@@ -794,39 +785,34 @@
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "scatter",
               "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "transactions_last_hour",
-                    "displayName": "Transactions (last hour)"
+                "x": {
+                  "fieldName": "transactions_last_hour",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "Approval rate %"
-                  },
-                  {
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "Avg fraud score"
-                  },
-                  {
-                    "fieldName": "total_value",
-                    "displayName": "Total value"
-                  },
-                  {
-                    "fieldName": "active_segments",
-                    "displayName": "Active segments"
-                  },
-                  {
-                    "fieldName": "high_risk_transactions",
-                    "displayName": "High risk txns"
-                  },
-                  {
-                    "fieldName": "declines_last_hour",
-                    "displayName": "Declines (last hour)"
+                  "displayName": "Transactions Last Hour",
+                  "axis": {
+                    "title": "Transactions Last Hour"
                   }
-                ]
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Approval Rate Pct",
+                  "axis": {
+                    "title": "Approval Rate Pct"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Last Hour Summary KPIs",
+                "showDescription": false
               }
             },
             "frame": {
@@ -881,7 +867,10 @@
                 "y": {
                   "fieldName": "sum(current_value)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
                   "displayName": "Current Value",
                   "axis": {
