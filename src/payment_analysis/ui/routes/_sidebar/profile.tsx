@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
-import { useCurrentUserSuspense } from "@/lib/api";
+import { useCurrentUserSuspense, type User as ApiUser } from "@/lib/api";
 import selector from "@/lib/selector";
 import {
   Card,
@@ -31,7 +31,9 @@ export const Route = createFileRoute("/_sidebar/profile")({
 });
 
 function ProfileContent() {
-  const { data: user } = useCurrentUserSuspense(selector());
+  const { data: user } = useCurrentUserSuspense({
+    query: { ...selector<ApiUser>().query, retry: 1, staleTime: 5 * 60_000 },
+  });
 
   const getInitials = () => {
     if (user.name?.given_name && user.name?.family_name) {

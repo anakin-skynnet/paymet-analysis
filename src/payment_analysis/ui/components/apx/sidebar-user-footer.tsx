@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from "react";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
-import { useCurrentUserSuspense } from "@/lib/api";
+import { useCurrentUserSuspense, type User } from "@/lib/api";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "react-error-boundary";
@@ -36,7 +36,9 @@ function SidebarUserFooterFallback() {
 }
 
 function SidebarUserFooterContent() {
-  const { data: user } = useCurrentUserSuspense(selector());
+  const { data: user } = useCurrentUserSuspense({
+    query: { ...selector<User>().query, retry: false, staleTime: 5 * 60_000 },
+  });
 
   const firstLetters = useMemo(() => {
     const userName = user.user_name ?? "";

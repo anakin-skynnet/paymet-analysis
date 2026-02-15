@@ -115,12 +115,12 @@ function ReasonCodes() {
               <p className="text-sm text-muted-foreground">No data yet. Run gold views and streaming to populate.</p>
             ) : (
               entryRows.map((r) => (
-                <div key={r.entry_system} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <Badge variant="secondary">{r.entry_system}</Badge>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">Approval {r.approval_rate_pct}%</span>
-                    <Badge variant="outline">{r.transaction_count} tx</Badge>
-                  </div>
+                <div key={r.entry_system} className="flex flex-wrap items-center gap-2 py-2 border-b border-border/50 last:border-0">
+                  <Badge variant="secondary" className="shrink-0">{r.entry_system}</Badge>
+                  <span className="ml-auto text-sm text-muted-foreground whitespace-nowrap tabular-nums">
+                    {r.approval_rate_pct}% approval
+                  </span>
+                  <Badge variant="outline" className="whitespace-nowrap shrink-0">{r.transaction_count.toLocaleString()} tx</Badge>
                 </div>
               ))
             )}
