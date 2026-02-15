@@ -56,7 +56,10 @@ async def health_database(request: Request) -> HealthDatabaseOut:
             pass
     lakebase_mode = ""
     if instance_exists:
-        lakebase_mode = "autoscaling" if rt._use_lakebase_autoscaling() else ""
+        if rt._use_lakebase_autoscaling():
+            lakebase_mode = "autoscaling"
+        elif rt._use_lakebase_direct_connection():
+            lakebase_mode = "direct"
     return HealthDatabaseOut(
         database_instance_exists=instance_exists,
         connection_healthy=connection_healthy,

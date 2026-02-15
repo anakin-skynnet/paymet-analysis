@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -23,7 +24,11 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_sidebar/about")({
-  component: About,
+  component: () => (
+    <ErrorBoundary fallback={<div className="p-8 text-center text-muted-foreground">Something went wrong. Please refresh.</div>}>
+      <About />
+    </ErrorBoundary>
+  ),
 });
 
 /* ---------- Data ---------- */

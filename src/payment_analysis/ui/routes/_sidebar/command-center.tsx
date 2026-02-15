@@ -84,9 +84,9 @@ import {
 const REFRESH_MS = 30_000;
 /** Real-time chart widgets: 10s for streaming throughput + alerts. */
 const REFRESH_CHART_MS = 10_000;
-const SANTANDER_RED = "#EC0000";
-const NEON_CYAN = "#00E5FF";
-const VIBRANT_GREEN = "#22C55E";
+const SANTANDER_RED = "var(--getnet-red)";
+const NEON_CYAN = "var(--neon-cyan)";
+const VIBRANT_GREEN = "var(--vibrant-green)";
 
 const approvalTrendChartConfig = {
   approval_rate: { label: "Approval Rate %", color: "var(--color-chart-1)" },

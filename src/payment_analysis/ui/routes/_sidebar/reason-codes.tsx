@@ -13,6 +13,7 @@ import {
   useSubmitInsightFeedback,
 } from "@/lib/api";
 import { getLakeviewDashboardUrl, openInDatabricks } from "@/config/workspace";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEntity } from "@/contexts/entity-context";
 import { ExternalLink, CheckCircle2, AlertTriangle, Target } from "lucide-react";
 
@@ -107,7 +108,7 @@ function ReasonCodes() {
           </CardHeader>
           <CardContent className="space-y-2">
             {entryQ.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
             ) : entryQ.isError ? (
               <p className="text-sm text-destructive">Failed to load entry system distribution.</p>
             ) : entryRows.length === 0 ? (
@@ -166,7 +167,7 @@ function ReasonCodes() {
           </CardHeader>
           <CardContent className="space-y-2">
             {falseQ.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="space-y-3"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-6 w-1/2" /></div>
             ) : falseQ.isError ? (
               <p className="text-sm text-destructive">Failed to load metric.</p>
             ) : falseRows.length === 0 ? (
@@ -199,7 +200,7 @@ function ReasonCodes() {
         <Card className="glass-card border border-border/80">
           <CardContent className="pt-6 space-y-4">
             {q.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="space-y-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
             ) : q.isError ? (
               <p className="text-sm text-destructive">Failed to load reason codes.</p>
             ) : rows.length === 0 ? (

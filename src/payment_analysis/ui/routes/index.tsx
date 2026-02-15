@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ErrorBoundary } from "react-error-boundary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/apx/navbar";
@@ -23,7 +24,11 @@ import { useGetAuthStatus } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/")({
-  component: () => <Index />,
+  component: () => (
+    <ErrorBoundary fallback={<div className="flex items-center justify-center min-h-screen bg-background text-foreground"><p>Something went wrong. Please refresh.</p></div>}>
+      <Index />
+    </ErrorBoundary>
+  ),
 });
 
 const initiatives = [

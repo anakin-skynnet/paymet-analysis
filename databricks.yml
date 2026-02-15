@@ -36,10 +36,10 @@ workspace:
 # Dashboards: resources/dashboards.yml is included so deploy updates existing dashboards in place
 # (same display_name + parent_path). Run prepare before deploy so .build/dashboards/*.lvdash.json exist.
 #
-# Model Serving: Endpoints are now created/updated PROGRAMMATICALLY by Jobs 5 & 6 (idempotent).
-# model_serving.yml is EXCLUDED by default for portability. After Jobs run, you can optionally
-# include it by uncommenting the line below and setting the entity_version variables to manage
-# endpoint configuration (AI Gateway, workload size) via DAB.
+# Model Serving: Endpoints are created/updated PROGRAMMATICALLY by Jobs 5 & 6 (idempotent).
+# model_serving.yml is INCLUDED below so DAB can manage AI Gateway config and workload sizing.
+# If endpoints don't exist yet, run Jobs 5 & 6 first (or comment out model_serving.yml for initial deploy).
+# scripts/bundle.sh handles this automatically (excludes on phase 1, includes on phase 2).
 include:
   - resources/unity_catalog.yml
   - resources/lakebase.yml

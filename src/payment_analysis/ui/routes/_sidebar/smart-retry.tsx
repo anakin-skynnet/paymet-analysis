@@ -69,15 +69,15 @@ const SCENARIOS = [
 const REFRESH_ANALYTICS_MS = 15_000;
 
 const retryChartConfig = {
-  success_rate_pct: { label: "Success Rate %", color: "#2563eb" },
-  recovered_value: { label: "Recovered Value", color: "#16a34a" },
+  success_rate_pct: { label: "Success Rate %", color: "var(--chart-2)" },
+  recovered_value: { label: "Recovered Value", color: "var(--vibrant-green)" },
 } satisfies ChartConfig;
 
 const SCENARIO_COLORS: Record<string, string> = {
-  PaymentRetry: "#2563eb",
-  PaymentRecurrence: "#16a34a",
-  Retry: "#ea580c",
-  Recurrence: "#8b5cf6",
+  PaymentRetry: "var(--chart-2)",
+  PaymentRecurrence: "var(--vibrant-green)",
+  Retry: "var(--chart-4)",
+  Recurrence: "var(--chart-5)",
 };
 
 /* ----- KPI Summary ----- */
@@ -183,7 +183,7 @@ function RetryPerformanceChart() {
     scenario,
     success_rate_pct: agg.total > 0 ? Math.round(agg.successWeighted / agg.total) : 0,
     recovered_value: Math.round(agg.recovered),
-    fill: SCENARIO_COLORS[scenario] ?? "#6366f1",
+    fill: SCENARIO_COLORS[scenario] ?? "var(--chart-3)",
   }));
 
   return (
@@ -197,7 +197,7 @@ function RetryPerformanceChart() {
             <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="success_rate_pct" fill="#2563eb" radius={[4, 4, 0, 0]} name="Success Rate %">
+            <Bar dataKey="success_rate_pct" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name="Success Rate %">
               {chartData.map((entry, index) => (
                 <Cell key={`cell-sr-${index}`} fill={entry.fill} />
               ))}
@@ -215,7 +215,7 @@ function RetryPerformanceChart() {
             <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(Number(v)/1000).toFixed(0)}k`} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="recovered_value" fill="#16a34a" radius={[4, 4, 0, 0]} name="Recovered Value">
+            <Bar dataKey="recovered_value" fill="var(--vibrant-green)" radius={[4, 4, 0, 0]} name="Recovered Value">
               {chartData.map((entry, index) => (
                 <Cell key={`cell-rv-${index}`} fill={entry.fill} />
               ))}

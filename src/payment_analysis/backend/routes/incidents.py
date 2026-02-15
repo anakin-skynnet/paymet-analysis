@@ -97,6 +97,7 @@ async def _sync_incident_to_lakehouse(incident: Incident) -> None:
             statement=query,
             warehouse_id=warehouse_id,
             parameters=params,
+            wait_timeout="30s",
         )
         if result.status and result.status.state == StatementState.SUCCEEDED:
             logger.debug("Synced incident %s to Lakehouse mirror", incident.id)
