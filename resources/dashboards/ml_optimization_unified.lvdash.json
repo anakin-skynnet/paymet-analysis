@@ -3,72 +3,52 @@
     {
       "name": "m0_ds_routing",
       "displayName": "Solution Performance",
-      "queryLines": [
-        "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
-      ]
+      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
     },
     {
       "name": "m0_ds_card_network",
       "displayName": "Card Network Performance",
-      "queryLines": [
-        "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
-      ]
+      "query": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
     },
     {
       "name": "m1_ds_top_decline",
       "displayName": "Top Decline Reasons",
-      "queryLines": [
-        "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
-      ]
+      "query": "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
     },
     {
       "name": "m1_ds_recovery",
       "displayName": "Decline Recovery Opportunities",
-      "queryLines": [
-        "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
-      ]
+      "query": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
     },
     {
       "name": "m2_ds_fraud_kpis",
       "displayName": "Fraud & Risk KPIs",
-      "queryLines": [
-        "SELECT total_transactions, approved_count, declined_count, avg_fraud_score, avg_aml_risk_score, total_transaction_value FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
-      ]
+      "query": "SELECT total_transactions, approved_count, declined_count, avg_fraud_score, avg_aml_risk_score, total_transaction_value FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
     },
     {
       "name": "m2_ds_decline_risk",
       "displayName": "Declines by Fraud Score",
-      "queryLines": [
-        "SELECT decline_reason, decline_count, avg_fraud_score, total_declined_value, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
-      ]
+      "query": "SELECT decline_reason, decline_count, avg_fraud_score, total_declined_value, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
     },
     {
       "name": "m3_ds_auth_kpis",
       "displayName": "3DS Usage",
-      "queryLines": [
-        "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
-      ]
+      "query": "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
     },
     {
       "name": "m3_ds_merchant_auth",
       "displayName": "Auth by Segment",
-      "queryLines": [
-        "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
-      ]
+      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
     },
     {
       "name": "m4_ds_financial",
       "displayName": "Transaction Value",
-      "queryLines": [
-        "SELECT total_transaction_value, approved_value, declined_value, avg_transaction_amount, total_transactions, approved_count, declined_count FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
-      ]
+      "query": "SELECT total_transaction_value, approved_value, declined_value, avg_transaction_amount, total_transactions, approved_count, declined_count FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
     },
     {
       "name": "m4_ds_decline_value",
       "displayName": "Declined Value by Reason",
-      "queryLines": [
-        "SELECT decline_reason, total_declined_value, decline_count, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY total_declined_value DESC"
-      ]
+      "query": "SELECT decline_reason, total_declined_value, decline_count, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY total_declined_value DESC"
     }
   ],
   "pages": [
@@ -112,15 +92,7 @@
                 "color": {
                   "fieldName": "payment_solution",
                   "scale": {
-                    "type": "categorical",
-                    "range": [
-                      "#EC0000",
-                      "#00E5FF",
-                      "#22C55E",
-                      "#6366F1",
-                      "#F59E0B",
-                      "#8B5CF6"
-                    ]
+                    "type": "categorical"
                   },
                   "displayName": "Payment Solution",
                   "legend": {
@@ -179,15 +151,7 @@
                 "color": {
                   "fieldName": "card_network",
                   "scale": {
-                    "type": "categorical",
-                    "range": [
-                      "#EC0000",
-                      "#00E5FF",
-                      "#22C55E",
-                      "#6366F1",
-                      "#F59E0B",
-                      "#8B5CF6"
-                    ]
+                    "type": "categorical"
                   },
                   "displayName": "Card Network",
                   "legend": {
@@ -210,8 +174,7 @@
             "height": 4
           }
         }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS"
+      ]
     },
     {
       "name": "page_decline",
@@ -259,10 +222,7 @@
                 "y": {
                   "fieldName": "sum(decline_count)",
                   "scale": {
-                    "type": "quantitative",
-                    "range": [
-                      "#EC0000"
-                    ]
+                    "type": "quantitative"
                   },
                   "displayName": "Decline Count",
                   "axis": {
@@ -356,8 +316,7 @@
             "height": 4
           }
         }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS"
+      ]
     },
     {
       "name": "page_fraud",
@@ -409,8 +368,8 @@
                   {
                     "name": "total_transactions",
                     "fieldName": "total_transactions",
-                    "displayName": "Total Transactions",
-                    "title": "Total Transactions",
+                    "displayName": "total_transactions",
+                    "title": "total_transactions",
                     "order": 0,
                     "visible": true,
                     "type": "string",
@@ -437,8 +396,8 @@
                   {
                     "name": "approved_count",
                     "fieldName": "approved_count",
-                    "displayName": "Approved Count",
-                    "title": "Approved Count",
+                    "displayName": "approved_count",
+                    "title": "approved_count",
                     "order": 1,
                     "visible": true,
                     "type": "string",
@@ -465,8 +424,8 @@
                   {
                     "name": "declined_count",
                     "fieldName": "declined_count",
-                    "displayName": "Declined Count",
-                    "title": "Declined Count",
+                    "displayName": "declined_count",
+                    "title": "declined_count",
                     "order": 2,
                     "visible": true,
                     "type": "string",
@@ -493,8 +452,8 @@
                   {
                     "name": "avg_fraud_score",
                     "fieldName": "avg_fraud_score",
-                    "displayName": "Avg Fraud Score",
-                    "title": "Avg Fraud Score",
+                    "displayName": "avg_fraud_score",
+                    "title": "avg_fraud_score",
                     "order": 3,
                     "visible": true,
                     "type": "string",
@@ -521,8 +480,8 @@
                   {
                     "name": "avg_aml_risk_score",
                     "fieldName": "avg_aml_risk_score",
-                    "displayName": "Avg Aml Risk Score",
-                    "title": "Avg Aml Risk Score",
+                    "displayName": "avg_aml_risk_score",
+                    "title": "avg_aml_risk_score",
                     "order": 4,
                     "visible": true,
                     "type": "string",
@@ -549,8 +508,8 @@
                   {
                     "name": "total_transaction_value",
                     "fieldName": "total_transaction_value",
-                    "displayName": "Total Transaction Value",
-                    "title": "Total Transaction Value",
+                    "displayName": "total_transaction_value",
+                    "title": "total_transaction_value",
                     "order": 5,
                     "visible": true,
                     "type": "string",
@@ -632,10 +591,7 @@
                 "y": {
                   "fieldName": "sum(decline_count)",
                   "scale": {
-                    "type": "quantitative",
-                    "range": [
-                      "#EC0000"
-                    ]
+                    "type": "quantitative"
                   },
                   "displayName": "Decline Count",
                   "axis": {
@@ -657,8 +613,7 @@
             "height": 4
           }
         }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS"
+      ]
     },
     {
       "name": "page_auth",
@@ -702,8 +657,8 @@
                   {
                     "name": "total_transactions",
                     "fieldName": "total_transactions",
-                    "displayName": "Total Transactions",
-                    "title": "Total Transactions",
+                    "displayName": "total_transactions",
+                    "title": "total_transactions",
                     "order": 0,
                     "visible": true,
                     "type": "string",
@@ -730,8 +685,8 @@
                   {
                     "name": "auth_3ds_usage_pct",
                     "fieldName": "auth_3ds_usage_pct",
-                    "displayName": "Auth 3Ds Usage Pct",
-                    "title": "Auth 3Ds Usage Pct",
+                    "displayName": "auth_3ds_usage_pct",
+                    "title": "auth_3ds_usage_pct",
                     "order": 1,
                     "visible": true,
                     "type": "string",
@@ -758,8 +713,8 @@
                   {
                     "name": "approval_rate_pct",
                     "fieldName": "approval_rate_pct",
-                    "displayName": "Approval Rate Pct",
-                    "title": "Approval Rate Pct",
+                    "displayName": "approval_rate_pct",
+                    "title": "approval_rate_pct",
                     "order": 2,
                     "visible": true,
                     "type": "string",
@@ -786,8 +741,8 @@
                   {
                     "name": "avg_fraud_score",
                     "fieldName": "avg_fraud_score",
-                    "displayName": "Avg Fraud Score",
-                    "title": "Avg Fraud Score",
+                    "displayName": "avg_fraud_score",
+                    "title": "avg_fraud_score",
                     "order": 3,
                     "visible": true,
                     "type": "string",
@@ -863,15 +818,7 @@
                 "color": {
                   "fieldName": "merchant_segment",
                   "scale": {
-                    "type": "categorical",
-                    "range": [
-                      "#EC0000",
-                      "#00E5FF",
-                      "#22C55E",
-                      "#6366F1",
-                      "#F59E0B",
-                      "#8B5CF6"
-                    ]
+                    "type": "categorical"
                   },
                   "displayName": "Merchant Segment",
                   "legend": {
@@ -894,8 +841,7 @@
             "height": 4
           }
         }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS"
+      ]
     },
     {
       "name": "page_financial",
@@ -951,8 +897,8 @@
                   {
                     "name": "total_transaction_value",
                     "fieldName": "total_transaction_value",
-                    "displayName": "Total Transaction Value",
-                    "title": "Total Transaction Value",
+                    "displayName": "total_transaction_value",
+                    "title": "total_transaction_value",
                     "order": 0,
                     "visible": true,
                     "type": "string",
@@ -979,8 +925,8 @@
                   {
                     "name": "approved_value",
                     "fieldName": "approved_value",
-                    "displayName": "Approved Value",
-                    "title": "Approved Value",
+                    "displayName": "approved_value",
+                    "title": "approved_value",
                     "order": 1,
                     "visible": true,
                     "type": "string",
@@ -1007,8 +953,8 @@
                   {
                     "name": "declined_value",
                     "fieldName": "declined_value",
-                    "displayName": "Declined Value",
-                    "title": "Declined Value",
+                    "displayName": "declined_value",
+                    "title": "declined_value",
                     "order": 2,
                     "visible": true,
                     "type": "string",
@@ -1035,8 +981,8 @@
                   {
                     "name": "avg_transaction_amount",
                     "fieldName": "avg_transaction_amount",
-                    "displayName": "Avg Transaction Amount",
-                    "title": "Avg Transaction Amount",
+                    "displayName": "avg_transaction_amount",
+                    "title": "avg_transaction_amount",
                     "order": 3,
                     "visible": true,
                     "type": "string",
@@ -1063,8 +1009,8 @@
                   {
                     "name": "total_transactions",
                     "fieldName": "total_transactions",
-                    "displayName": "Total Transactions",
-                    "title": "Total Transactions",
+                    "displayName": "total_transactions",
+                    "title": "total_transactions",
                     "order": 4,
                     "visible": true,
                     "type": "string",
@@ -1091,8 +1037,8 @@
                   {
                     "name": "approved_count",
                     "fieldName": "approved_count",
-                    "displayName": "Approved Count",
-                    "title": "Approved Count",
+                    "displayName": "approved_count",
+                    "title": "approved_count",
                     "order": 5,
                     "visible": true,
                     "type": "string",
@@ -1119,8 +1065,8 @@
                   {
                     "name": "declined_count",
                     "fieldName": "declined_count",
-                    "displayName": "Declined Count",
-                    "title": "Declined Count",
+                    "displayName": "declined_count",
+                    "title": "declined_count",
                     "order": 6,
                     "visible": true,
                     "type": "string",
@@ -1202,10 +1148,7 @@
                 "y": {
                   "fieldName": "sum(total_declined_value)",
                   "scale": {
-                    "type": "quantitative",
-                    "range": [
-                      "#EC0000"
-                    ]
+                    "type": "quantitative"
                   },
                   "displayName": "Total Declined Value",
                   "axis": {
@@ -1227,8 +1170,7 @@
             "height": 4
           }
         }
-      ],
-      "pageType": "PAGE_TYPE_CANVAS"
+      ]
     }
   ]
 }

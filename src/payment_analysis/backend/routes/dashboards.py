@@ -578,12 +578,16 @@ async def get_dashboard_data(
     for ds in datasets_raw:
         name = ds.get("name", "")
         display_name = ds.get("displayName", name)
-        query_lines = ds.get("queryLines", [])
-        if not query_lines:
+        # Support both Lakeview formats: "query" (string) and "queryLines" (array)
+        raw_query = ds.get("query") or ""
+        if not raw_query:
+            query_lines = ds.get("queryLines", [])
+            raw_query = query_lines[0] if query_lines else ""
+        if not raw_query:
             results.append(DatasetResult(name=name, display_name=display_name, error="No query defined"))
             continue
 
-        sql = query_lines[0].replace(_CATALOG_PLACEHOLDER, catalog_schema)
+        sql = raw_query.replace(_CATALOG_PLACEHOLDER, catalog_schema)
         try:
             rows = await svc._execute_query_internal(sql)
             columns = list(rows[0].keys()) if rows else []
