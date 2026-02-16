@@ -4,6 +4,7 @@
  */
 import { getNotebookUrl, getNotebookFolderUrl } from "@/lib/api";
 import { openInDatabricks } from "@/config/workspace";
+import { toast } from "sonner";
 
 /** Open a notebook in Databricks by ID. Uses GET /api/notebooks/notebooks/{id}/url. */
 export async function openNotebookInDatabricks(notebookId: string): Promise<void> {
@@ -13,8 +14,8 @@ export async function openNotebookInDatabricks(notebookId: string): Promise<void
       { credentials: "include" }
     );
     if (data?.url) openInDatabricks(data.url);
-  } catch (error) {
-    console.error("Failed to open notebook:", error);
+  } catch {
+    toast.error("Failed to open notebook", { description: `Could not resolve URL for "${notebookId}".` });
   }
 }
 
@@ -26,7 +27,7 @@ export async function openFolderInDatabricks(folderId: string): Promise<void> {
       { credentials: "include" }
     );
     if (data?.url) openInDatabricks(data.url);
-  } catch (error) {
-    console.error("Failed to open folder:", error);
+  } catch {
+    toast.error("Failed to open folder", { description: `Could not resolve URL for folder "${folderId}".` });
   }
 }

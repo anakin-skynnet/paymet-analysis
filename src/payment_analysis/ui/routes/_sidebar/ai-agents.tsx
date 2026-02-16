@@ -32,6 +32,7 @@ import {
 } from "@/lib/api";
 import { getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { useEntity } from "@/contexts/entity-context";
+import { toast } from "sonner";
 
 function AIAgentsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   return (
@@ -124,8 +125,8 @@ function AIAgents() {
     try {
       const { data } = await getAgentUrl({ agent_id: agentId });
       openInDatabricks(data?.url);
-    } catch (error) {
-      console.error("Failed to open agent:", error);
+    } catch {
+      toast.error("Failed to open agent", { description: `Could not resolve URL for agent "${agentId}".` });
     }
   };
 
@@ -133,8 +134,8 @@ function AIAgents() {
     try {
       const { data } = await getNotebookFolderUrl({ folder_id: "agents" });
       openInDatabricks(data?.url);
-    } catch (error) {
-      console.error("Failed to open agents folder:", error);
+    } catch {
+      toast.error("Failed to open agents folder", { description: "Could not resolve the agents folder URL." });
     }
   };
 

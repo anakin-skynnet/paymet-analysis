@@ -9,6 +9,7 @@ import { Code2, Bot, Brain, Zap, Database, BarChart3, ExternalLink, PlayCircle }
 import { useListNotebooks, getNotebookUrl, type NotebookCategory } from "@/lib/api";
 import { getWorkspaceUrl, openInDatabricks } from "@/config/workspace";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 function NotebooksErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   return (
@@ -77,8 +78,8 @@ export function Component() {
       if (data?.url) {
         openInDatabricks(data.url);
       }
-    } catch (error) {
-      console.error("Failed to open notebook:", error);
+    } catch {
+      toast.error("Failed to open notebook", { description: `Could not resolve URL for "${notebookId}".` });
     }
   };
 

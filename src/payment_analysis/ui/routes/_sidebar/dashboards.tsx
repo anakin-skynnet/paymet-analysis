@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/layout";
 import { DashboardTable, DashboardRenderer } from "@/components/dashboards";
 import { friendlyReason } from "@/lib/reasoning";
 import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
+import { toast } from "sonner";
 
 function DashboardsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   return (
@@ -113,8 +114,8 @@ export function Component() {
     try {
       const { data } = await getNotebookUrl({ notebook_id: notebookId });
       openInDatabricks(data?.url);
-    } catch (error) {
-      console.error("Failed to open notebook:", error);
+    } catch {
+      toast.error("Failed to open notebook", { description: `Could not resolve URL for "${notebookId}".` });
     }
   };
 
@@ -168,12 +169,11 @@ export function Component() {
             <EmbeddedDashboard
               title={embedDashboard?.name || "Dashboard"}
               src={String(embedSrc)}
-              dashboardId={embedId!}
-              onOpenExternal={() => embedDashboard && handleDashboardClick(embedDashboard)}
+              dashboardId={embedId ?? ""}
             />
           ) : (
             <DashboardRenderer
-              dashboardId={embedId!}
+              dashboardId={embedId ?? ""}
               dashboardName={embedDashboard?.name}
             />
           )}
@@ -623,7 +623,6 @@ function EmbeddedDashboard({
   title: string;
   src: string;
   dashboardId: string;
-  onOpenExternal?: () => void;
 }) {
   const [status, setStatus] = React.useState<"loading" | "embedded" | "fallback">("loading");
   const iframeRef = React.useRef<HTMLIFrameElement>(null);

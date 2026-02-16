@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { openInDatabricks } from "@/config/workspace";
 import { postOrchestratorChat } from "@/lib/api";
-import { Bot, RotateCcw, X } from "lucide-react";
+import { Bot, RotateCcw, X, Lightbulb } from "lucide-react";
 
 export interface AIChatbotMessage {
   id: string;
@@ -203,9 +203,31 @@ export function AIChatbot({
         className="flex max-h-[320px] min-h-[200px] flex-1 flex-col gap-3 overflow-y-auto p-4"
       >
         {messages.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            Powered by the Orchestrator Agent (Claude Opus). Ask about decline trends, routing optimizations, retry strategies, risk assessments, and actionable recommendations.
-          </p>
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Powered by the Orchestrator Agent. Ask about decline trends, routing, retries, risk, and actionable recommendations.
+            </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Lightbulb className="h-3 w-3" /> Try asking
+              </p>
+              {[
+                "How can we improve approval rates this week?",
+                "What are the top decline reasons and fixes?",
+                "Which merchants need routing optimization?",
+                "Recommend retry strategies for soft declines",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="block w-full text-left text-xs rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-muted-foreground hover:bg-primary/10 hover:text-foreground hover:border-primary/30 transition-colors"
+                  onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
+                >
+                  &ldquo;{prompt}&rdquo;
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {messages.map((m) => (
           <div
