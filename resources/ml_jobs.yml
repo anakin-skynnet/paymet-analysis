@@ -227,3 +227,28 @@ resources:
         project: payment-analysis
         component: ml-training
         step: "5"
+
+    # -------------------------------------------------------------------------
+    # Validate All Resources — end-to-end validation of every deployed resource
+    # Runs on serverless compute. Tests: UC, tables, views, endpoints, pipelines,
+    # warehouse, dashboards, Genie, Lakebase, functions, jobs, app, data flow.
+    # -------------------------------------------------------------------------
+    "job_validate_all":
+      name: "[${var.environment}] Validate All Resources"
+      description: "End-to-end validation of all deployed resources: Unity Catalog, tables/views, model serving endpoints, DLT pipelines, SQL warehouse, dashboards, Genie space, Lakebase, UC functions, jobs, app health, and data flow. Run after full deployment to verify everything is connected."
+      tasks:
+        - task_key: validate_all
+          description: "Run all validation tests"
+          notebook_task:
+            notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_validate_all
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              environment: ${var.environment}
+          timeout_seconds: 1800
+          max_retries: 0
+      tags:
+        environment: ${var.environment}
+        project: payment-analysis
+        component: validation
+        step: validate
