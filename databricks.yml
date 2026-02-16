@@ -97,7 +97,7 @@ variables:
   # either set this variable or comment out the genie-space resource in fastapi_app.yml.
   genie_space_id:
     description: "Genie space ID (e.g. UUID of 'Payment Analytics' from Genie UI). Required for genie-space app resource."
-    default: ""
+    default: "01f10b167280118797c3786716abd9ca"
   # Tiered LLM strategy: Orchestrator (strongest reasoning) → Specialist (balanced) → Simple (fast/cheap).
   # See: Foundation Model API endpoints in the workspace (databricks serving-endpoints list).
   llm_endpoint:

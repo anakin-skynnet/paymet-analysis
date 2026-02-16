@@ -3,47 +3,65 @@
     {
       "name": "m0_ds_exec_kpis",
       "displayName": "Executive KPIs",
-      "query": "SELECT total_transactions, approved_count, declined_count, approval_rate_pct, avg_fraud_score, total_transaction_value, approved_value, declined_value, avg_transaction_amount, auth_3ds_usage_pct, period_start, period_end FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      "queryLines": [
+        "SELECT total_transactions, approved_count, declined_count, approval_rate_pct, avg_fraud_score, total_transaction_value, approved_value, declined_value, avg_transaction_amount, auth_3ds_usage_pct, period_start, period_end FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
     },
     {
       "name": "m0_ds_approval_trends",
       "displayName": "Approval Trends (Real-Time)",
-      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m0_ds_solution_perf",
       "displayName": "Solution Performance",
-      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m0_ds_geography",
       "displayName": "Performance by Geography",
-      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC LIMIT 50"
+      "queryLines": [
+        "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC LIMIT 50"
+      ]
     },
     {
       "name": "m1_ds_daily",
       "displayName": "Daily Trends",
-      "query": "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM __CATALOG__.__SCHEMA__.v_daily_trends ORDER BY event_date DESC LIMIT 90"
+      "queryLines": [
+        "SELECT event_date, transactions, approval_rate, avg_fraud_score, total_value, dod_volume_change FROM __CATALOG__.__SCHEMA__.v_daily_trends ORDER BY event_date DESC LIMIT 90"
+      ]
     },
     {
       "name": "m1_ds_by_second",
       "displayName": "Real-Time Approval Trends (by second)",
-      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m2_ds_merchant_segment",
       "displayName": "Merchant Segment Performance",
-      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT merchant_segment, transaction_count, approval_rate_pct, unique_merchants, avg_transaction_amount, total_value, avg_fraud_score, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m3_ds_latency",
       "displayName": "Latency by Solution",
-      "query": "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m3_ds_network_latency",
       "displayName": "Latency by Card Network",
-      "query": "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      ]
     }
   ],
   "pages": [
@@ -653,7 +671,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_trends",
@@ -784,7 +803,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_merchant",
@@ -857,7 +877,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_perf",
@@ -991,7 +1012,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }

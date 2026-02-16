@@ -3,52 +3,72 @@
     {
       "name": "m0_ds_routing",
       "displayName": "Solution Performance",
-      "query": "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT payment_solution, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, avg_amount, total_value, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m0_ds_card_network",
       "displayName": "Card Network Performance",
-      "query": "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT card_network, transaction_count, approval_rate_pct, avg_amount, avg_fraud_score, avg_latency_ms FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m1_ds_top_decline",
       "displayName": "Top Decline Reasons",
-      "query": "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+      "queryLines": [
+        "SELECT decline_reason, decline_count, pct_of_declines, avg_fraud_score, avg_amount, total_declined_value, affected_merchants, low_risk_declines, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+      ]
     },
     {
       "name": "m1_ds_recovery",
       "displayName": "Decline Recovery Opportunities",
-      "query": "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
+      "queryLines": [
+        "SELECT decline_reason, merchant_segment, card_network, decline_count, potential_recovery_value, avg_fraud_score, avg_device_trust, recovery_likelihood, recommended_action FROM __CATALOG__.__SCHEMA__.v_decline_recovery_opportunities ORDER BY potential_recovery_value DESC LIMIT 100"
+      ]
     },
     {
       "name": "m2_ds_fraud_kpis",
       "displayName": "Fraud & Risk KPIs",
-      "query": "SELECT total_transactions, approved_count, declined_count, avg_fraud_score, avg_aml_risk_score, total_transaction_value FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      "queryLines": [
+        "SELECT total_transactions, approved_count, declined_count, avg_fraud_score, avg_aml_risk_score, total_transaction_value FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
     },
     {
       "name": "m2_ds_decline_risk",
       "displayName": "Declines by Fraud Score",
-      "query": "SELECT decline_reason, decline_count, avg_fraud_score, total_declined_value, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+      "queryLines": [
+        "SELECT decline_reason, decline_count, avg_fraud_score, total_declined_value, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY decline_count DESC"
+      ]
     },
     {
       "name": "m3_ds_auth_kpis",
       "displayName": "3DS Usage",
-      "query": "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      "queryLines": [
+        "SELECT total_transactions, auth_3ds_usage_pct, approval_rate_pct, avg_fraud_score FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
     },
     {
       "name": "m3_ds_merchant_auth",
       "displayName": "Auth by Segment",
-      "query": "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT merchant_segment, transaction_count, approval_rate_pct, auth_3ds_usage_pct FROM __CATALOG__.__SCHEMA__.v_merchant_segment_performance ORDER BY transaction_count DESC"
+      ]
     },
     {
       "name": "m4_ds_financial",
       "displayName": "Transaction Value",
-      "query": "SELECT total_transaction_value, approved_value, declined_value, avg_transaction_amount, total_transactions, approved_count, declined_count FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      "queryLines": [
+        "SELECT total_transaction_value, approved_value, declined_value, avg_transaction_amount, total_transactions, approved_count, declined_count FROM __CATALOG__.__SCHEMA__.v_executive_kpis LIMIT 1"
+      ]
     },
     {
       "name": "m4_ds_decline_value",
       "displayName": "Declined Value by Reason",
-      "query": "SELECT decline_reason, total_declined_value, decline_count, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY total_declined_value DESC"
+      "queryLines": [
+        "SELECT decline_reason, total_declined_value, decline_count, recoverable_pct FROM __CATALOG__.__SCHEMA__.v_top_decline_reasons ORDER BY total_declined_value DESC"
+      ]
     }
   ],
   "pages": [
@@ -190,7 +210,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_decline",
@@ -335,7 +356,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_fraud",
@@ -643,7 +665,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_auth",
@@ -876,7 +899,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_financial",
@@ -1208,7 +1232,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }

@@ -31,10 +31,14 @@ env:
   # When set, POST /api/agents/chat uses Databricks Genie Conversation API.
   # Set this after creating the Genie space in the target workspace, or leave empty to disable Genie.
   - name: GENIE_SPACE_ID
-    value: ""
+    value: "01f10b167280118797c3786716abd9ca"
   # Use AgentBricks orchestrator for chat (Model Serving). Omit or set empty to use Job 6 (custom Python).
+  # Set to 'payment-analysis-orchestrator' after the serving endpoint is deployed (Job 6 + model_serving.yml).
   - name: ORCHESTRATOR_SERVING_ENDPOINT
-    value: payment-analysis-orchestrator
+    value: ""
+  # Job 6 ID — set explicitly so orchestrator chat doesn't need to list all workspace jobs.
+  - name: DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT
+    value: "322421284086051"
   # Lakeview dashboard IDs — leave empty for auto-discovery from workspace API.
   # If auto-discovery is too slow or unreliable, set explicitly after Job 4 deploys dashboards.
   - name: DASHBOARD_ID_DATA_QUALITY

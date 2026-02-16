@@ -3,42 +3,58 @@
     {
       "name": "m0_ds_quality_summary",
       "displayName": "Data Quality Summary",
-      "query": "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+      "queryLines": [
+        "SELECT bronze_last_24h, silver_last_24h, retention_pct_24h, latest_bronze_ingestion, latest_silver_event FROM __CATALOG__.__SCHEMA__.v_data_quality_summary"
+      ]
     },
     {
       "name": "m0_ds_bronze_by_second",
       "displayName": "Bronze Ingestion by Second",
-      "query": "SELECT event_second, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_by_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, bronze_record_count FROM __CATALOG__.__SCHEMA__.v_streaming_ingestion_by_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m0_ds_silver_by_second",
       "displayName": "Silver Processed by Second",
-      "query": "SELECT event_second, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_by_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, silver_record_count FROM __CATALOG__.__SCHEMA__.v_silver_processed_by_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m0_ds_volume_per_second",
       "displayName": "Incoming volume per second",
-      "query": "SELECT event_second, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, records_per_second FROM __CATALOG__.__SCHEMA__.v_streaming_volume_per_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m1_ds_performance_by_second",
       "displayName": "Performance by Second (Real-Time)",
-      "query": "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      "queryLines": [
+        "SELECT event_second, transaction_count, approved_count, approval_rate_pct, avg_fraud_score, total_value FROM __CATALOG__.__SCHEMA__.v_approval_trends_by_second ORDER BY event_second DESC"
+      ]
     },
     {
       "name": "m1_ds_last_hour",
       "displayName": "Last Hour Summary KPIs",
-      "query": "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+      "queryLines": [
+        "SELECT transactions_last_hour, approval_rate_pct, avg_fraud_score, total_value, active_segments, high_risk_transactions, declines_last_hour FROM __CATALOG__.__SCHEMA__.v_last_hour_performance"
+      ]
     },
     {
       "name": "m1_ds_alerts",
       "displayName": "Active Alerts",
-      "query": "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+      "queryLines": [
+        "SELECT alert_type, severity, metric_name, current_value, threshold_value, alert_message, first_detected FROM __CATALOG__.__SCHEMA__.v_active_alerts"
+      ]
     },
     {
       "name": "m2_ds_by_country",
       "displayName": "Performance by Country",
-      "query": "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC"
+      "queryLines": [
+        "SELECT country, transaction_count, approval_rate_pct, avg_fraud_score, total_transaction_value, unique_merchants FROM __CATALOG__.__SCHEMA__.v_performance_by_geography ORDER BY transaction_count DESC"
+      ]
     }
   ],
   "pages": [
@@ -433,7 +449,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_realtime",
@@ -814,11 +831,6 @@
                 "title": "Last Hour Summary KPIs",
                 "showDescription": false
               }
-            },
-            "frame": {
-              "showTitle": true,
-              "title": "Last Hour Summary",
-              "showDescription": false
             }
           },
           "position": {
@@ -1087,7 +1099,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_global",
@@ -1145,7 +1158,8 @@
             "height": 4
           }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ]
 }
