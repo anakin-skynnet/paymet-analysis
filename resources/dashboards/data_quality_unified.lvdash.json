@@ -82,31 +82,31 @@
           "widget": {
             "name": "ctr_retention",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_quality_summary", "fields": [{"name": "retention_pct_24h", "expression": "`retention_pct_24h`"}], "disaggregated": true}}],
-            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "retention_pct_24h", "displayName": "Retention Rate %"}}, "frame": {"showTitle": true, "title": "Retention Rate %", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "counter", "encodings": {"value": {"fieldName": "retention_pct_24h", "displayName": "Retention Rate %"}}, "frame": {"showTitle": true, "title": "Data Retention Rate %", "showDescription": false}}
           },
           "position": {"x": 8, "y": 0, "width": 4, "height": 2}
         },
         {
           "widget": {
-            "name": "line_volume_per_second",
+            "name": "area_volume",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_volume_per_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(records_per_second)", "expression": "SUM(`records_per_second`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(records_per_second)", "scale": {"type": "quantitative"}, "displayName": "Records Per Second", "axis": {"title": "Records Per Second"}}}, "frame": {"showTitle": true, "title": "Incoming Volume per Second", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(records_per_second)", "scale": {"type": "quantitative"}, "displayName": "Records/Second", "axis": {"title": "Records per Second"}}}, "frame": {"showTitle": true, "title": "Incoming Volume per Second", "showDescription": false}}
           },
           "position": {"x": 0, "y": 2, "width": 12, "height": 4}
         },
         {
           "widget": {
-            "name": "bbd77b111db2",
+            "name": "area_bronze",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_bronze_by_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(bronze_record_count)", "expression": "SUM(`bronze_record_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(bronze_record_count)", "scale": {"type": "quantitative"}, "displayName": "Bronze Record Count", "axis": {"title": "Bronze Record Count"}}}, "frame": {"showTitle": true, "title": "Bronze Ingestion by Second", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(bronze_record_count)", "scale": {"type": "quantitative"}, "displayName": "Bronze Records", "axis": {"title": "Bronze Record Count"}}}, "frame": {"showTitle": true, "title": "Bronze Ingestion by Second", "showDescription": false}}
           },
           "position": {"x": 0, "y": 6, "width": 6, "height": 4}
         },
         {
           "widget": {
-            "name": "18916a35d710",
+            "name": "area_silver",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_silver_by_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(silver_record_count)", "expression": "SUM(`silver_record_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(silver_record_count)", "scale": {"type": "quantitative"}, "displayName": "Silver Record Count", "axis": {"title": "Silver Record Count"}}}, "frame": {"showTitle": true, "title": "Silver Processed by Second", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(silver_record_count)", "scale": {"type": "quantitative"}, "displayName": "Silver Records", "axis": {"title": "Silver Record Count"}}}, "frame": {"showTitle": true, "title": "Silver Processed by Second", "showDescription": false}}
           },
           "position": {"x": 6, "y": 6, "width": 6, "height": 4}
         }
@@ -151,15 +151,15 @@
         },
         {
           "widget": {
-            "name": "rt_ts_volume",
+            "name": "line_rt_volume",
             "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_performance_by_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "transaction_count", "expression": "`transaction_count`"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "transaction_count", "scale": {"type": "quantitative"}, "displayName": "Transactions", "axis": {"title": "Transactions per Second"}}}, "frame": {"showTitle": true, "title": "Real-Time Volume by Second", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "transaction_count", "scale": {"type": "quantitative"}, "displayName": "Transactions/sec", "axis": {"title": "Transactions per Second"}}}, "frame": {"showTitle": true, "title": "Real-Time Volume by Second", "showDescription": false}}
           },
           "position": {"x": 0, "y": 2, "width": 6, "height": 4}
         },
         {
           "widget": {
-            "name": "rt_ts_approval",
+            "name": "line_rt_approval",
             "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_performance_by_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "approval_rate_pct", "expression": "`approval_rate_pct`"}], "disaggregated": false}}],
             "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "approval_rate_pct", "scale": {"type": "quantitative"}, "displayName": "Approval Rate %", "axis": {"title": "Approval Rate %"}}}, "frame": {"showTitle": true, "title": "Real-Time Approval Rate by Second", "showDescription": false}}
           },
@@ -167,26 +167,26 @@
         },
         {
           "widget": {
-            "name": "rt_alerts",
-            "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_alerts", "fields": [{"name": "alert_type", "expression": "`alert_type`"}, {"name": "severity", "expression": "`severity`"}, {"name": "metric_name", "expression": "`metric_name`"}, {"name": "current_value", "expression": "`current_value`"}, {"name": "threshold_value", "expression": "`threshold_value`"}, {"name": "alert_message", "expression": "`alert_message`"}, {"name": "first_detected", "expression": "`first_detected`"}], "disaggregated": true}}],
-            "spec": {"version": 1, "widgetType": "table", "encodings": {"columns": [{"fieldName": "severity", "displayName": "Severity"}, {"fieldName": "alert_type", "displayName": "Type"}, {"fieldName": "metric_name", "displayName": "Metric"}, {"fieldName": "current_value", "displayName": "Current"}, {"fieldName": "threshold_value", "displayName": "Threshold"}, {"fieldName": "alert_message", "displayName": "Message"}, {"fieldName": "first_detected", "displayName": "Detected"}]}, "frame": {"showTitle": true, "title": "Active Alerts", "showDescription": false}}
+            "name": "tbl_alerts",
+            "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_alerts", "fields": [{"name": "severity", "expression": "`severity`"}, {"name": "alert_type", "expression": "`alert_type`"}, {"name": "metric_name", "expression": "`metric_name`"}, {"name": "current_value", "expression": "`current_value`"}, {"name": "threshold_value", "expression": "`threshold_value`"}, {"name": "alert_message", "expression": "`alert_message`"}, {"name": "first_detected", "expression": "`first_detected`"}], "disaggregated": true}}],
+            "spec": {"version": 1, "widgetType": "table", "encodings": {"columns": [{"fieldName": "severity", "displayName": "Severity"}, {"fieldName": "alert_type", "displayName": "Type"}, {"fieldName": "metric_name", "displayName": "Metric"}, {"fieldName": "current_value", "displayName": "Current Value"}, {"fieldName": "threshold_value", "displayName": "Threshold"}, {"fieldName": "alert_message", "displayName": "Message"}, {"fieldName": "first_detected", "displayName": "Detected At"}]}, "frame": {"showTitle": true, "title": "Active Alerts (sorted by severity)", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 6, "width": 12, "height": 4}
+          "position": {"x": 0, "y": 6, "width": 12, "height": 5}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
     },
     {
       "name": "page_global",
-      "displayName": "Global Coverage - World Map by Country",
+      "displayName": "Global Coverage - World Map",
       "layout": [
         {
           "widget": {
-            "name": "ae43b765254c",
+            "name": "map_world",
             "queries": [{"name": "main_query", "query": {"datasetName": "m2_ds_by_country", "fields": [{"name": "country", "expression": "`country`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "choropleth", "encodings": {"color": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count"}, "region": {"fieldName": "country", "displayName": "Country"}}, "frame": {"showTitle": true, "title": "Performance by Country", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "choropleth", "encodings": {"color": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count"}, "region": {"fieldName": "country", "displayName": "Country"}}, "frame": {"showTitle": true, "title": "Transaction Volume by Country", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 0, "width": 12, "height": 6}
+          "position": {"x": 0, "y": 0, "width": 12, "height": 8}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"

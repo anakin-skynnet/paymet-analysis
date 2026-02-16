@@ -53,14 +53,14 @@
       "name": "m3_ds_latency",
       "displayName": "Latency by Solution",
       "queryLines": [
-        "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY transaction_count DESC"
+        "SELECT payment_solution, avg_latency_ms, transaction_count, approval_rate_pct FROM __CATALOG__.__SCHEMA__.v_solution_performance ORDER BY avg_latency_ms DESC"
       ]
     },
     {
       "name": "m3_ds_network_latency",
       "displayName": "Latency by Card Network",
       "queryLines": [
-        "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY transaction_count DESC"
+        "SELECT card_network, avg_latency_ms, transaction_count FROM __CATALOG__.__SCHEMA__.v_card_network_performance ORDER BY avg_latency_ms DESC"
       ]
     }
   ],
@@ -135,27 +135,27 @@
         },
         {
           "widget": {
-            "name": "83705662489f",
-            "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_approval_trends", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
+            "name": "line_realtime_trends",
+            "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_approval_trends", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}, {"name": "sum(approval_rate_pct)", "expression": "SUM(`approval_rate_pct`)"}], "disaggregated": false}}],
             "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}}, "frame": {"showTitle": true, "title": "Real-Time Approval Trends", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 4, "width": 12, "height": 4}
+          "position": {"x": 0, "y": 4, "width": 12, "height": 5}
         },
         {
           "widget": {
-            "name": "68d646173dd7",
+            "name": "bar_solution_perf",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_solution_perf", "fields": [{"name": "payment_solution", "expression": "`payment_solution`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "payment_solution", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Payment Solution", "axis": {"title": "Payment Solution"}}, "y": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}}, "frame": {"showTitle": true, "title": "Solution Performance", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}, "y": {"fieldName": "payment_solution", "scale": {"type": "categorical", "sort": {"by": "x-reversed"}}, "displayName": "Payment Solution", "axis": {"title": "Payment Solution"}}}, "frame": {"showTitle": true, "title": "Solution Performance (by Volume)", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 8, "width": 6, "height": 4}
+          "position": {"x": 0, "y": 9, "width": 6, "height": 5}
         },
         {
           "widget": {
-            "name": "bd0a015c5986",
+            "name": "map_geography",
             "queries": [{"name": "main_query", "query": {"datasetName": "m0_ds_geography", "fields": [{"name": "country", "expression": "`country`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
             "spec": {"version": 3, "widgetType": "choropleth", "encodings": {"color": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count"}, "region": {"fieldName": "country", "displayName": "Country"}}, "frame": {"showTitle": true, "title": "Performance by Geography", "showDescription": false}}
           },
-          "position": {"x": 6, "y": 8, "width": 6, "height": 4}
+          "position": {"x": 6, "y": 9, "width": 6, "height": 5}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
@@ -168,7 +168,7 @@
           "widget": {
             "name": "daily_volume_line",
             "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_daily", "fields": [{"name": "event_date", "expression": "`event_date`"}, {"name": "transactions", "expression": "`transactions`"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_date", "scale": {"type": "temporal"}, "displayName": "Date", "axis": {"title": "Date"}}, "y": {"fieldName": "transactions", "scale": {"type": "quantitative"}, "displayName": "Transactions", "axis": {"title": "Daily Transactions"}}}, "frame": {"showTitle": true, "title": "Daily Transaction Volume", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_date", "scale": {"type": "temporal"}, "displayName": "Date", "axis": {"title": "Date"}}, "y": {"fieldName": "transactions", "scale": {"type": "quantitative"}, "displayName": "Daily Transactions", "axis": {"title": "Daily Transactions"}}}, "frame": {"showTitle": true, "title": "Daily Transaction Volume (90 days)", "showDescription": false}}
           },
           "position": {"x": 0, "y": 0, "width": 12, "height": 4}
         },
@@ -190,9 +190,9 @@
         },
         {
           "widget": {
-            "name": "7576bc174e36",
+            "name": "realtime_by_second",
             "queries": [{"name": "main_query", "query": {"datasetName": "m1_ds_by_second", "fields": [{"name": "event_second", "expression": "`event_second`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "line", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}}, "frame": {"showTitle": true, "title": "Real-Time Volume by Second", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "area", "encodings": {"x": {"fieldName": "event_second", "scale": {"type": "temporal"}, "displayName": "Time", "axis": {"title": "Time"}}, "y": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transactions/sec", "axis": {"title": "Transactions per Second"}}}, "frame": {"showTitle": true, "title": "Real-Time Volume by Second", "showDescription": false}}
           },
           "position": {"x": 0, "y": 8, "width": 12, "height": 4}
         }
@@ -207,17 +207,17 @@
           "widget": {
             "name": "merchant_bar_txn",
             "queries": [{"name": "main_query", "query": {"datasetName": "m2_ds_merchant_segment", "fields": [{"name": "merchant_segment", "expression": "`merchant_segment`"}, {"name": "sum(transaction_count)", "expression": "SUM(`transaction_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "merchant_segment", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Merchant Segment", "axis": {"title": "Merchant Segment"}}, "y": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}}, "frame": {"showTitle": true, "title": "Transaction Volume by Merchant Segment", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(transaction_count)", "scale": {"type": "quantitative"}, "displayName": "Transaction Count", "axis": {"title": "Transaction Count"}}, "y": {"fieldName": "merchant_segment", "scale": {"type": "categorical", "sort": {"by": "x-reversed"}}, "displayName": "Merchant Segment", "axis": {"title": "Merchant Segment"}}}, "frame": {"showTitle": true, "title": "Volume by Merchant Segment", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 0, "width": 6, "height": 4}
+          "position": {"x": 0, "y": 0, "width": 6, "height": 5}
         },
         {
           "widget": {
             "name": "merchant_bar_approval",
             "queries": [{"name": "main_query", "query": {"datasetName": "m2_ds_merchant_segment", "fields": [{"name": "merchant_segment", "expression": "`merchant_segment`"}, {"name": "sum(approval_rate_pct)", "expression": "SUM(`approval_rate_pct`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "merchant_segment", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Merchant Segment", "axis": {"title": "Merchant Segment"}}, "y": {"fieldName": "sum(approval_rate_pct)", "scale": {"type": "quantitative"}, "displayName": "Approval Rate %", "axis": {"title": "Approval Rate %"}}}, "frame": {"showTitle": true, "title": "Approval Rate by Merchant Segment", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(approval_rate_pct)", "scale": {"type": "quantitative"}, "displayName": "Approval Rate %", "axis": {"title": "Approval Rate %"}}, "y": {"fieldName": "merchant_segment", "scale": {"type": "categorical", "sort": {"by": "x-reversed"}}, "displayName": "Merchant Segment", "axis": {"title": "Merchant Segment"}}}, "frame": {"showTitle": true, "title": "Approval Rate by Merchant Segment", "showDescription": false}}
           },
-          "position": {"x": 6, "y": 0, "width": 6, "height": 4}
+          "position": {"x": 6, "y": 0, "width": 6, "height": 5}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
@@ -230,17 +230,17 @@
           "widget": {
             "name": "latency_solution_bar",
             "queries": [{"name": "main_query", "query": {"datasetName": "m3_ds_latency", "fields": [{"name": "payment_solution", "expression": "`payment_solution`"}, {"name": "sum(avg_latency_ms)", "expression": "SUM(`avg_latency_ms`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "payment_solution", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Payment Solution", "axis": {"title": "Payment Solution"}}, "y": {"fieldName": "sum(avg_latency_ms)", "scale": {"type": "quantitative"}, "displayName": "Avg Latency (ms)", "axis": {"title": "Avg Latency (ms)"}}}, "frame": {"showTitle": true, "title": "Latency by Payment Solution", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(avg_latency_ms)", "scale": {"type": "quantitative"}, "displayName": "Avg Latency (ms)", "axis": {"title": "Avg Latency (ms)"}}, "y": {"fieldName": "payment_solution", "scale": {"type": "categorical", "sort": {"by": "x-reversed"}}, "displayName": "Payment Solution", "axis": {"title": "Payment Solution"}}}, "frame": {"showTitle": true, "title": "Latency by Payment Solution", "showDescription": false}}
           },
-          "position": {"x": 0, "y": 0, "width": 6, "height": 4}
+          "position": {"x": 0, "y": 0, "width": 6, "height": 5}
         },
         {
           "widget": {
             "name": "latency_network_bar",
             "queries": [{"name": "main_query", "query": {"datasetName": "m3_ds_network_latency", "fields": [{"name": "card_network", "expression": "`card_network`"}, {"name": "sum(avg_latency_ms)", "expression": "SUM(`avg_latency_ms`)"}], "disaggregated": false}}],
-            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "card_network", "scale": {"type": "categorical", "sort": {"by": "y-reversed"}}, "displayName": "Card Network", "axis": {"title": "Card Network"}}, "y": {"fieldName": "sum(avg_latency_ms)", "scale": {"type": "quantitative"}, "displayName": "Avg Latency (ms)", "axis": {"title": "Avg Latency (ms)"}}}, "frame": {"showTitle": true, "title": "Latency by Card Network", "showDescription": false}}
+            "spec": {"version": 3, "widgetType": "bar", "encodings": {"x": {"fieldName": "sum(avg_latency_ms)", "scale": {"type": "quantitative"}, "displayName": "Avg Latency (ms)", "axis": {"title": "Avg Latency (ms)"}}, "y": {"fieldName": "card_network", "scale": {"type": "categorical", "sort": {"by": "x-reversed"}}, "displayName": "Card Network", "axis": {"title": "Card Network"}}}, "frame": {"showTitle": true, "title": "Latency by Card Network", "showDescription": false}}
           },
-          "position": {"x": 6, "y": 0, "width": 6, "height": 4}
+          "position": {"x": 6, "y": 0, "width": 6, "height": 5}
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS"
