@@ -36,7 +36,7 @@ env:
   # When set, POST /api/agents/chat uses Databricks Genie Conversation API.
   # Set this after creating the Genie space in the target workspace, or leave empty to disable Genie.
   - name: GENIE_SPACE_ID
-    value: "01f10b167280118797c3786716abd9ca"
+    value: "01f10b8aa7e2159c899656502a1a0cc6"
   # ResponsesAgent endpoint on Model Serving (with UC tools).
   # Primary path for AI Chat (Path 1). Falls through to AI Gateway Opus 4.6 (Path 2) if failing.
   # This is the PaymentAnalysisAgent built in this solution with 10 UC tools + python_exec.
