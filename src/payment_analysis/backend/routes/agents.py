@@ -42,6 +42,16 @@ AI_GATEWAY_GENIE_ENDPOINT_DEFAULT = "databricks-claude-sonnet-4-5"
 ORCHESTRATOR_JOB_POLL_TIMEOUT_S = 120
 ORCHESTRATOR_JOB_POLL_INTERVAL_S = 4
 
+# Shared brevity instruction appended to every user message so ALL agent paths
+# (ResponsesAgent, AI Gateway, Job 6) produce concise, dialog-friendly answers.
+_BREVITY_INSTRUCTION = (
+    "\n\n[IMPORTANT: You are replying inside a small floating chat dialog. "
+    "Keep your answer SHORT — 2-4 sentences or 3-5 bullet points max. "
+    "Use plain language, no tables, no code blocks, no markdown headers. "
+    "Cite numbers inline (e.g. 'approval rate is 87.3%'). "
+    "End with one brief next-step suggestion when relevant.]"
+)
+
 # System prompt for the AI Gateway orchestrator (payment analysis domain expert)
 _ORCHESTRATOR_SYSTEM_PROMPT = """You are the Payment Approval Rate Accelerator — an AI assistant for Getnet Global Payments.
 
@@ -538,14 +548,14 @@ def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_m
 
     The endpoint serves a ``PaymentAnalysisAgent`` (MLflow ResponsesAgent pyfunc)
     that expects ``dataframe_records=[{"input": [{"role": "user", "content": ...}]}]``.
-    The reply is post-processed by ``_compact_reply`` in the caller to keep it suitable
-    for the floating chat panel.
+    ``_BREVITY_INSTRUCTION`` is appended to the user message so the agent's own
+    LLM produces concise, floating-dialog-friendly output natively.
     Uses the SDK's ``serving_endpoints.query`` which handles auth automatically.
     Returns ``(reply, agents_used)``.
     """
     response = ws.serving_endpoints.query(
         name=endpoint_name,
-        dataframe_records=[{"input": [{"role": "user", "content": user_message}]}],
+        dataframe_records=[{"input": [{"role": "user", "content": user_message + _BREVITY_INSTRUCTION}]}],
     )
 
     reply = ""
@@ -596,37 +606,6 @@ def _parse_orchestrator_response(response: Any) -> tuple[str, list[str]]:
     elif isinstance(pred, str):
         reply = pred.strip()
     return reply, agents_used
-
-
-def _compact_reply(text: str, max_chars: int = 1200) -> str:
-    """Post-process an LLM reply for the floating chat dialog.
-
-    Strips heavy markdown (headers, horizontal rules) and truncates overly
-    long answers so they fit comfortably in the small UI panel.
-    """
-    import re
-
-    text = text.strip()
-    # Convert markdown headers to plain bold-ish text
-    text = re.sub(r"^#{1,4}\s+", "", text, flags=re.MULTILINE)
-    # Remove horizontal rules
-    text = re.sub(r"^-{3,}$", "", text, flags=re.MULTILINE)
-    # Collapse 3+ consecutive blank lines into 2
-    text = re.sub(r"\n{3,}", "\n\n", text)
-
-    if len(text) <= max_chars:
-        return text.strip()
-
-    # Truncate at the last paragraph/sentence boundary before max_chars
-    truncated = text[:max_chars]
-    last_para = truncated.rfind("\n\n")
-    if last_para > max_chars // 3:
-        truncated = truncated[:last_para]
-    else:
-        last_dot = truncated.rfind(". ")
-        if last_dot > max_chars // 3:
-            truncated = truncated[: last_dot + 1]
-    return truncated.strip()
 
 
 def _ai_gateway_endpoint() -> str:
@@ -697,7 +676,7 @@ async def orchestrator_chat(
         try:
             reply, agents_used = _query_orchestrator_endpoint(ws, endpoint_name, user_message)
             if reply:
-                return OrchestratorChatOut(reply=_compact_reply(reply), run_page_url=None, agents_used=agents_used)
+                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
         except Exception as e:
             logger.warning(
                 "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
@@ -709,7 +688,7 @@ async def orchestrator_chat(
     try:
         reply, agents_used = _query_ai_gateway_direct(ws, user_message)
         if reply:
-            return OrchestratorChatOut(reply=_compact_reply(reply), run_page_url=None, agents_used=agents_used)
+            return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
     except Exception as e:
         logger.warning("AI Gateway fallback failed, trying Job 6: %s", e)
 
