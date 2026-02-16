@@ -108,6 +108,10 @@ def _discover_dashboard_ids(ws: Any | None = None) -> dict[str, str]:
     Discovery is skipped entirely when no credentials are available so the
     module import never blocks on interactive auth flows.
 
+    If the provided ``ws`` (user OBO token) lacks the ``dashboards`` OAuth scope,
+    the function automatically retries with the app's service principal credentials
+    (DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET) which do not require scopes.
+
     Retries up to ``_DISCOVERY_MAX_RETRIES`` times when no dashboards are found
     (dashboards may not be deployed yet on first attempts after bundle deploy).
     """
@@ -121,55 +125,74 @@ def _discover_dashboard_ids(ws: Any | None = None) -> dict[str, str]:
 
         _discovery_attempt_count += 1
         try:
-            if ws is None:
-                import os as _os
-                _host = _os.environ.get("DATABRICKS_HOST", "").strip()
-                _token = _os.environ.get("DATABRICKS_TOKEN", "").strip()
-                _client_id = _os.environ.get("DATABRICKS_CLIENT_ID", "").strip()
-                if not _host or not (_token or _client_id):
-                    _log.info("Dashboard auto-discovery skipped: no explicit Databricks credentials in environment.")
-                    _discovery_done = True
-                    return _dashboard_id_cache
-                from databricks.sdk import WorkspaceClient
-                w = WorkspaceClient()
-            else:
-                w = ws
-
-            for dash in w.lakeview.list():
-                display_name = dash.display_name or ""
-                for key, patterns in _DASHBOARD_NAME_PATTERNS.items():
-                    if key in _dashboard_id_cache:
-                        continue
-                    for pattern in patterns:
-                        if pattern.lower() in display_name.lower():
-                            _dashboard_id_cache[key] = dash.dashboard_id or ""
-                            _log.info("Discovered dashboard '%s' (id=%s) for key '%s'",
-                                      display_name, dash.dashboard_id, key)
-                            break
-
-                if len(_dashboard_id_cache) >= len(_DASHBOARD_NAME_PATTERNS):
-                    break
-
-            missing = [k for k in _DASHBOARD_NAME_PATTERNS if k not in _dashboard_id_cache]
-            if missing:
-                if _discovery_attempt_count < _DISCOVERY_MAX_RETRIES:
-                    _log.info("Dashboard discovery attempt %d: missing %s. Will retry on next request.",
-                              _discovery_attempt_count, missing)
-                    return _dashboard_id_cache
-                _log.warning("Could not discover dashboards for: %s after %d attempts. "
-                             "Set DASHBOARD_ID_* env vars or run Job 4 to deploy dashboards.",
-                             missing, _discovery_attempt_count)
+            _do_lakeview_discovery(ws)
         except Exception as exc:
-            if _discovery_attempt_count < _DISCOVERY_MAX_RETRIES:
-                _log.info("Dashboard discovery attempt %d failed (%s). Will retry.", _discovery_attempt_count, exc)
-                return _dashboard_id_cache
-            _log.warning("Dashboard auto-discovery failed after %d attempts (will use env vars): %s",
-                         _discovery_attempt_count, exc)
+            # If user OBO token lacks the dashboards scope, fall back to app SP
+            exc_str = str(exc)
+            if ws is not None and ("required scopes" in exc_str or "scope" in exc_str.lower()):
+                _log.info("User token lacks dashboards scope — retrying discovery with app service principal.")
+                try:
+                    _do_lakeview_discovery(None)
+                except Exception as sp_exc:
+                    if _discovery_attempt_count < _DISCOVERY_MAX_RETRIES:
+                        _log.info("Dashboard discovery attempt %d failed with SP (%s). Will retry.",
+                                  _discovery_attempt_count, sp_exc)
+                        return _dashboard_id_cache
+                    _log.warning("Dashboard auto-discovery failed after %d attempts (will use env vars): %s",
+                                 _discovery_attempt_count, sp_exc)
+            else:
+                if _discovery_attempt_count < _DISCOVERY_MAX_RETRIES:
+                    _log.info("Dashboard discovery attempt %d failed (%s). Will retry.",
+                              _discovery_attempt_count, exc)
+                    return _dashboard_id_cache
+                _log.warning("Dashboard auto-discovery failed after %d attempts (will use env vars): %s",
+                             _discovery_attempt_count, exc)
         finally:
             if len(_dashboard_id_cache) >= len(_DASHBOARD_NAME_PATTERNS) or _discovery_attempt_count >= _DISCOVERY_MAX_RETRIES:
                 _discovery_done = True
 
     return _dashboard_id_cache
+
+
+def _do_lakeview_discovery(ws: Any | None) -> None:
+    """Run the actual lakeview.list() call and populate _dashboard_id_cache."""
+    if ws is None:
+        import os as _os
+        _host = _os.environ.get("DATABRICKS_HOST", "").strip()
+        _token = _os.environ.get("DATABRICKS_TOKEN", "").strip()
+        _client_id = _os.environ.get("DATABRICKS_CLIENT_ID", "").strip()
+        if not _host or not (_token or _client_id):
+            _log.info("Dashboard auto-discovery skipped: no explicit Databricks credentials in environment.")
+            return
+        from databricks.sdk import WorkspaceClient
+        w = WorkspaceClient()
+    else:
+        w = ws
+
+    for dash in w.lakeview.list():
+        display_name = dash.display_name or ""
+        for key, patterns in _DASHBOARD_NAME_PATTERNS.items():
+            if key in _dashboard_id_cache:
+                continue
+            for pattern in patterns:
+                if pattern.lower() in display_name.lower():
+                    _dashboard_id_cache[key] = dash.dashboard_id or ""
+                    _log.info("Discovered dashboard '%s' (id=%s) for key '%s'",
+                              display_name, dash.dashboard_id, key)
+                    break
+
+        if len(_dashboard_id_cache) >= len(_DASHBOARD_NAME_PATTERNS):
+            break
+
+    missing = [k for k in _DASHBOARD_NAME_PATTERNS if k not in _dashboard_id_cache]
+    if missing:
+        if _discovery_attempt_count < _DISCOVERY_MAX_RETRIES:
+            _log.info("Dashboard discovery attempt %d: missing %s. Will retry on next request.",
+                      _discovery_attempt_count, missing)
+        else:
+            _log.warning("Could not discover dashboards for: %s after %d attempts. "
+                         "Set DASHBOARD_ID_* env vars or run Job 4 to deploy dashboards.",
+                         missing, _discovery_attempt_count)
 
 
 def _get_dashboard_id_from_env(env_var: str) -> str:
@@ -295,10 +318,11 @@ async def list_dashboards(
     
     Returns metadata for all dashboards with optional filtering by category or tag.
     On the first call, runs auto-discovery of dashboard IDs from the workspace API
-    using the request's workspace client for proper authentication.
+    using the app's service principal (Lakeview API is not available via user OBO
+    tokens — the 'dashboards' scope is not a valid user_api_scope for Apps).
     """
     if not _discovery_done:
-        _discover_dashboard_ids(ws=ws)
+        _discover_dashboard_ids(ws=None)
 
     dashboards = _get_dashboards()
     filtered_dashboards = dashboards
