@@ -717,7 +717,9 @@ async def reason_codes(
         data = await service.get_reason_codes(entity=entity, limit=limit)
         if not data and _should_use_mock_fallback(request, service):
             data = _mock.mock_reason_code_insights()[:limit]
-    # Fill defaults for fields required by ReasonCodeOut but absent in insight mock data
+    # Fill defaults for fields required by ReasonCodeOut but absent in insight mock data.
+    # SQL results return all values as strings; use conditional expressions (not
+    # dict.get defaults) to avoid eager evaluation of arithmetic on string types.
     return [
         ReasonCodeOut(
             entry_system=row["entry_system"],
@@ -728,8 +730,8 @@ async def reason_codes(
             decline_count=row["decline_count"],
             pct_of_declines=row.get("pct_of_declines"),
             total_declined_value=row["total_declined_value"],
-            avg_amount=row.get("avg_amount", row["total_declined_value"] / max(row["decline_count"], 1)),
-            affected_merchants=row.get("affected_merchants", max(1, row["decline_count"] // 10)),
+            avg_amount=row["avg_amount"] if "avg_amount" in row and row["avg_amount"] is not None else float(row["total_declined_value"]) / max(int(row["decline_count"]), 1),
+            affected_merchants=row["affected_merchants"] if "affected_merchants" in row and row["affected_merchants"] is not None else max(1, int(row["decline_count"]) // 10),
         )
         for row in data
     ]
