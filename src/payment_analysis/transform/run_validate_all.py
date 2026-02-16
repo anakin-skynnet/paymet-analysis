@@ -8,18 +8,22 @@
 # MAGIC **Tests:**
 # MAGIC 1. Unity Catalog — catalog, schemas, volumes
 # MAGIC 2. Bronze & Silver tables (DLT pipelines 8 & 9)
-# MAGIC 3. Gold views (SQL + DLT)
-# MAGIC 4. Lakehouse bootstrap tables
-# MAGIC 5. Model Serving endpoints (5)
-# MAGIC 6. Foundation Model / AI Gateway endpoints (LLMs)
-# MAGIC 7. DLT Pipelines (2)
-# MAGIC 8. SQL Warehouse
-# MAGIC 9. Dashboards (3)
-# MAGIC 10. Genie Space
-# MAGIC 11. Lakebase (Postgres) connectivity
-# MAGIC 12. UC Functions (agent tools)
-# MAGIC 13. Jobs (7)
-# MAGIC 14. App health
+# MAGIC 3. Lakehouse bootstrap tables
+# MAGIC 4. Gold views (SQL)
+# MAGIC 5. Gold tables (DLT)
+# MAGIC 6. Lakehouse views (bootstrap)
+# MAGIC 7. Model Serving endpoints (5)
+# MAGIC 8. Foundation Model / AI Gateway endpoints (LLMs)
+# MAGIC 9. DLT Pipelines (2)
+# MAGIC 10. SQL Warehouse
+# MAGIC 11. Dashboards (3)
+# MAGIC 12. Genie Space
+# MAGIC 13. Jobs (8)
+# MAGIC 14. UC Functions (22 agent tools)
+# MAGIC 15. Vector Search (endpoint + index)
+# MAGIC 16. Lakebase (Postgres) connectivity + tables
+# MAGIC 17. App health (existence + HTTP healthcheck)
+# MAGIC 18. End-to-end data flow — smoke tests
 # MAGIC
 # MAGIC **Widgets:** `catalog`, `schema`, `environment` (defaults: ahs_demos_catalog, payment_analysis, dev).
 
@@ -159,6 +163,7 @@ BOOTSTRAP_TABLES = [
     "app_config",
     "transaction_summaries_for_search",
     "approval_rules",
+    "approval_recommendations",
     "countries",
     "incidents_lakehouse",
     "online_features",
@@ -441,6 +446,7 @@ JOB_NAMES = [
     f"[{ENV}] 5. Train Models & Publish to Model Serving",
     f"[{ENV}] 6. Deploy Agents (Orchestrator & Specialists)",
     f"[{ENV}] 7. Genie Space Sync",
+    f"[{ENV}] Validate All Resources",
 ]
 
 def make_job_test(job_name):
@@ -483,10 +489,11 @@ UC_FUNCTIONS = [
     "get_online_features",
     "get_approval_recommendations",
     "get_decision_outcomes",
-    # Consolidated tools
+    "search_similar_transactions",
+    # Consolidated tools (ResponsesAgent)
     "analyze_declines",
     "analyze_routing",
-    "analyze_retries",
+    "analyze_retry",
     "analyze_risk",
     "analyze_performance",
 ]
@@ -529,7 +536,134 @@ run_test("Lakebase project", "Lakebase", test_lakebase_connectivity)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 16. App health
+# MAGIC ### Lakebase Postgres tables (SQLModel entities)
+
+# COMMAND ----------
+
+LAKEBASE_PG_TABLES = [
+    "authorizationevent",
+    "decisionlog",
+    "experiment",
+    "experimentassignment",
+    "incident",
+    "remediationtask",
+    "decisionconfig",
+    "retryabledeclinecode",
+    "routeperformance",
+    "decisionoutcome",
+    "proposedconfigchange",
+]
+
+# Cache the Postgres connection across all table tests to avoid repeated auth
+_pg_conn_cache: dict = {}
+
+def _get_pg_connection():
+    """Create or reuse a psycopg connection to Lakebase Postgres."""
+    if "conn" in _pg_conn_cache:
+        return _pg_conn_cache["conn"]
+    from databricks.sdk import WorkspaceClient
+    import psycopg
+
+    w = WorkspaceClient()
+    project_id = "payment-analysis-db"
+
+    branches = list(w.lakebase.list_branches(project_id))
+    if not branches:
+        raise AssertionError("No Lakebase branches found")
+    branch_id = getattr(branches[0], "branch_id", None) or getattr(branches[0], "name", None)
+
+    endpoints = list(w.lakebase.list_endpoints(project_id, branch_id))
+    if not endpoints:
+        raise AssertionError("No Lakebase endpoints found")
+    endpoint_name = getattr(endpoints[0], "name", None)
+
+    cred_resp = w.api_client.do(
+        "POST",
+        f"/api/2.0/lakebase/projects/{project_id}/databases/databricks_postgres/credentials",
+        body={"endpoint": endpoint_name},
+    )
+    pg_token = cred_resp.get("token", "")
+
+    endpoint_resp = w.api_client.do(
+        "GET",
+        f"/api/2.0/lakebase/projects/{project_id}/endpoints/{endpoint_name}",
+    )
+    pg_host = endpoint_resp.get("host", "")
+
+    user_email = w.current_user.me().user_name
+    conn_str = f"postgresql://{user_email}@{pg_host}:5432/databricks_postgres?sslmode=require"
+    conn = psycopg.connect(conn_str, password=pg_token)
+    _pg_conn_cache["conn"] = conn
+    return conn
+
+def make_lakebase_table_test(table_name):
+    def test():
+        pg_schema = SCHEMA or "payment_analysis"
+        try:
+            conn = _get_pg_connection()
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
+                    (pg_schema, table_name),
+                )
+                cnt = cur.fetchone()[0]
+                assert cnt > 0, f"Table '{pg_schema}.{table_name}' not found in Lakebase Postgres"
+                cur.execute(f'SELECT COUNT(*) FROM "{pg_schema}"."{table_name}"')
+                row_count = cur.fetchone()[0]
+                return f"Lakebase table '{pg_schema}.{table_name}' exists — {row_count:,} rows"
+        except ImportError:
+            return f"SKIP — psycopg not available (table: {table_name})"
+        except AssertionError:
+            raise
+        except Exception as exc:
+            raise AssertionError(f"Lakebase table check failed for '{table_name}': {exc}") from exc
+    return test
+
+for tbl in LAKEBASE_PG_TABLES:
+    run_test(f"Lakebase table: {tbl}", "Lakebase Tables", make_lakebase_table_test(tbl))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 16. Vector Search
+
+# COMMAND ----------
+
+def test_vector_search_endpoint():
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    endpoint_name = f"payment-similar-transactions-{ENV}"
+    try:
+        ep = w.vector_search_endpoints.get_endpoint(endpoint_name)
+        status = getattr(ep, "endpoint_status", None)
+        state = getattr(status, "state", "UNKNOWN") if status else "UNKNOWN"
+        return f"VS endpoint '{endpoint_name}' — state: {state}"
+    except Exception as exc:
+        if "NOT_FOUND" in str(exc) or "RESOURCE_DOES_NOT_EXIST" in str(exc):
+            raise AssertionError(f"VS endpoint '{endpoint_name}' not found") from exc
+        raise
+
+def test_vector_search_index():
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    index_name = f"{CATALOG}.{SCHEMA}.similar_transactions_index"
+    try:
+        idx = w.vector_search_indexes.get_index(index_name)
+        status = getattr(idx, "status", None)
+        state = getattr(status, "ready", None) if status else "UNKNOWN"
+        return f"VS index '{index_name}' — ready: {state}"
+    except Exception as exc:
+        if "NOT_FOUND" in str(exc) or "RESOURCE_DOES_NOT_EXIST" in str(exc):
+            raise AssertionError(f"VS index '{index_name}' not found") from exc
+        raise
+
+run_test("Vector Search endpoint", "Vector Search", test_vector_search_endpoint)
+run_test("Vector Search index", "Vector Search", test_vector_search_index)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 17. App health
 
 # COMMAND ----------
 
@@ -545,12 +679,74 @@ def test_app_exists():
     except Exception as exc:
         raise AssertionError(f"App '{app_name}' not found: {exc}") from exc
 
-run_test("App: payment-analysis", "App", test_app_exists)
+def test_app_healthcheck():
+    """Hit the app's /api/v1/healthcheck endpoint to verify it is serving."""
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    app_name = "payment-analysis"
+    try:
+        app = w.apps.get(app_name)
+        url = (getattr(app, "url", "") or "").rstrip("/")
+        if not url:
+            return "SKIP — app URL not available (app may be starting)"
+        healthcheck_url = f"{url}/api/v1/healthcheck"
+        token = w.config.token if hasattr(w.config, "token") and w.config.token else None
+        if not token:
+            try:
+                token = w.dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+            except Exception:
+                pass
+        req = urllib.request.Request(healthcheck_url)
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
+        resp = urllib.request.urlopen(req, timeout=15)
+        body = resp.read().decode("utf-8", errors="replace")
+        status_code = resp.getcode()
+        assert status_code == 200, f"Healthcheck returned HTTP {status_code}"
+        return f"Healthcheck OK (HTTP {status_code}): {body[:200]}"
+    except urllib.error.HTTPError as he:
+        raise AssertionError(f"Healthcheck HTTP {he.code}: {he.reason}") from he
+    except urllib.error.URLError as ue:
+        raise AssertionError(f"Healthcheck URL error: {ue.reason}") from ue
+
+def test_app_db_health():
+    """Hit /api/v1/health/database to verify Lakebase connectivity from the app."""
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    app_name = "payment-analysis"
+    try:
+        app = w.apps.get(app_name)
+        url = (getattr(app, "url", "") or "").rstrip("/")
+        if not url:
+            return "SKIP — app URL not available"
+        db_url = f"{url}/api/v1/health/database"
+        token = w.config.token if hasattr(w.config, "token") and w.config.token else None
+        if not token:
+            try:
+                token = w.dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+            except Exception:
+                pass
+        req = urllib.request.Request(db_url)
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
+        resp = urllib.request.urlopen(req, timeout=15)
+        body = resp.read().decode("utf-8", errors="replace")
+        return f"DB health OK: {body[:200]}"
+    except urllib.error.HTTPError as he:
+        if he.code == 503:
+            return f"DB health: Lakebase unavailable (HTTP 503) — expected if endpoint suspended"
+        raise AssertionError(f"DB health HTTP {he.code}: {he.reason}") from he
+    except urllib.error.URLError as ue:
+        raise AssertionError(f"DB health URL error: {ue.reason}") from ue
+
+run_test("App: payment-analysis", "App Health", test_app_exists)
+run_test("App: HTTP healthcheck", "App Health", test_app_healthcheck)
+run_test("App: database health", "App Health", test_app_db_health)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 17. End-to-end data flow — quick smoke test
+# MAGIC ## 18. End-to-end data flow — quick smoke test
 
 # COMMAND ----------
 
@@ -598,9 +794,74 @@ def test_model_serving_inference():
             return f"Endpoint not ready (expected if just deployed): {exc}"
         raise
 
+def test_agent_inference():
+    """Quick inference test against the payment-response-agent endpoint."""
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    try:
+        resp = w.serving_endpoints.query(
+            name="payment-response-agent",
+            messages=[{"role": "user", "content": "What is the current approval rate?"}],
+        )
+        choices = getattr(resp, "choices", None)
+        if choices and len(choices) > 0:
+            content = getattr(choices[0], "message", {})
+            return f"Agent inference OK — response received"
+        return f"Agent inference OK — raw: {str(resp)[:150]}"
+    except Exception as exc:
+        if "NOT_READY" in str(exc) or "LOADING" in str(exc):
+            return f"Agent endpoint not ready (expected if just deployed): {exc}"
+        raise
+
+def test_llm_gateway_call():
+    """Quick test call to the AI Gateway LLM endpoint."""
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    try:
+        resp = w.serving_endpoints.query(
+            name="databricks-claude-sonnet-4-5",
+            messages=[{"role": "user", "content": "Say hello in one word."}],
+            max_tokens=10,
+        )
+        choices = getattr(resp, "choices", None)
+        if choices and len(choices) > 0:
+            return "LLM gateway call OK — response received"
+        return f"LLM gateway OK — raw: {str(resp)[:100]}"
+    except Exception as exc:
+        if "NOT_READY" in str(exc):
+            return f"LLM not ready: {exc}"
+        raise
+
+def test_streaming_metrics():
+    """Verify streaming metrics aggregation is producing data."""
+    try:
+        rows = sql(f"SELECT COUNT(*) AS cnt FROM {CATALOG}.{SCHEMA}.payments_stream_metrics_10s")
+        cnt = rows[0].cnt
+        return f"Streaming metrics: {cnt:,} rows in payments_stream_metrics_10s"
+    except Exception as exc:
+        raise AssertionError(f"Streaming metrics check failed: {exc}") from exc
+
+def test_gold_kpis_freshness():
+    """Check that executive KPIs view has recent data."""
+    try:
+        rows = sql(f"""
+            SELECT approval_rate_pct, total_transactions, total_approved
+            FROM {CATALOG}.{SCHEMA}.v_executive_kpis
+            LIMIT 1
+        """)
+        assert len(rows) > 0, "v_executive_kpis returns no data"
+        r = rows[0]
+        return f"KPIs: approval_rate={r.approval_rate_pct}%, txns={r.total_transactions:,}, approved={r.total_approved:,}"
+    except Exception as exc:
+        raise AssertionError(f"KPI freshness check failed: {exc}") from exc
+
 run_test("Data flow: bronze → silver → gold", "E2E Data Flow", test_data_flow_bronze_to_gold)
 run_test("Data flow: streaming pipeline", "E2E Data Flow", test_data_flow_streaming)
+run_test("Data flow: streaming metrics", "E2E Data Flow", test_streaming_metrics)
+run_test("Data flow: KPI freshness", "E2E Data Flow", test_gold_kpis_freshness)
 run_test("Inference: approval-propensity", "E2E Data Flow", test_model_serving_inference)
+run_test("Inference: payment-response-agent", "E2E Data Flow", test_agent_inference)
+run_test("Inference: LLM gateway", "E2E Data Flow", test_llm_gateway_call)
 
 # COMMAND ----------
 

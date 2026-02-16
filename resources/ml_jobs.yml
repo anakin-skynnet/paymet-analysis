@@ -235,10 +235,18 @@ resources:
     # -------------------------------------------------------------------------
     "job_validate_all":
       name: "[${var.environment}] Validate All Resources"
-      description: "End-to-end validation of all deployed resources: Unity Catalog, tables/views, model serving endpoints, DLT pipelines, SQL warehouse, dashboards, Genie space, Lakebase, UC functions, jobs, app health, and data flow. Run after full deployment to verify everything is connected."
+      description: "End-to-end validation of all deployed resources: Unity Catalog, tables/views, model serving endpoints, DLT pipelines, SQL warehouse, dashboards, Genie space, Vector Search, Lakebase connectivity + tables, UC functions, jobs, app health (HTTP), and data flow smoke tests. Run after full deployment to verify everything is connected."
+      environments:
+        - environment_key: lakebase_sdk
+          spec:
+            environment_version: "4"
+            dependencies:
+              - "databricks-sdk==0.88.0"
+              - "psycopg[binary]==3.3.2"
       tasks:
         - task_key: validate_all
-          description: "Run all validation tests"
+          description: "Run all validation tests (~100+ checks across 18 categories)"
+          environment_key: lakebase_sdk
           notebook_task:
             notebook_path: ${workspace.root_path}/src/payment_analysis/transform/run_validate_all
             base_parameters:
