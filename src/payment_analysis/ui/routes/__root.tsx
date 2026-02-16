@@ -5,6 +5,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { Suspense } from "react";
 import { Toaster } from "sonner";
 
 function RootErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
@@ -48,7 +49,13 @@ export const Route = createRootRouteWithContext<{
             <TanStackRouterDevtools position="bottom-right" />
           </>
         )}
-        <Outlet />
+        <Suspense fallback={
+          <div className="flex min-h-screen items-center justify-center bg-background">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
       </ErrorBoundary>
       <Toaster richColors />
     </ThemeProvider>

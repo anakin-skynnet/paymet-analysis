@@ -25,7 +25,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/")({
   component: () => (
-    <ErrorBoundary fallback={<div className="flex items-center justify-center min-h-screen bg-background text-foreground"><p>Something went wrong. Please refresh.</p></div>}>
+    <ErrorBoundary fallbackRender={({ resetErrorBoundary }) => (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground gap-4 p-6">
+        <p className="text-muted-foreground">Something went wrong loading the dashboard.</p>
+        <Button onClick={resetErrorBoundary} variant="outline">Try again</Button>
+      </div>
+    )}>
       <Index />
     </ErrorBoundary>
   ),
@@ -53,10 +58,10 @@ const initiatives = [
 ];
 
 function Index() {
-  const { data } = useGetAuthStatus();
+  const { data, isLoading: authLoading } = useGetAuthStatus();
   const workspaceUrl = getWorkspaceUrl();
   const authenticated = data?.data?.authenticated ?? null;
-  const showSignIn = authenticated === false && workspaceUrl;
+  const showSignIn = !authLoading && authenticated === false && workspaceUrl;
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background">

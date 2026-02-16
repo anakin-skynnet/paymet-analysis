@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getGenieUrl, openInDatabricks } from "@/config/workspace";
 import { postChat } from "@/lib/api";
-import { Sparkles, X } from "lucide-react";
+import { RotateCcw, Sparkles, X } from "lucide-react";
 
 export interface GenieAssistantMessage {
+  id: string;
   role: "user" | "assistant";
   content: string;
   genieUrl?: string | null;
@@ -17,6 +18,11 @@ export interface GenieAssistantMessage {
 
 const TITLE = "Genie Assistant";
 const PLACEHOLDER = "Ask about your data: approval rates, declines, trends…";
+const STORAGE_KEY = "pa-genie-messages";
+
+function msgId() {
+  return `genie-${crypto.randomUUID()}`;
+}
 
 /** Uses backend POST /api/agents/chat (Databricks Genie – lakehouse data and insights). */
 async function sendToGenie(message: string) {
@@ -28,6 +34,21 @@ async function sendToGenie(message: string) {
     reply: data.reply ?? "",
     genie_url: data.genie_url ?? null,
   };
+}
+
+function loadMessages(): GenieAssistantMessage[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: GenieAssistantMessage[]) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-50)));
+  } catch { /* quota exceeded — ignore */ }
 }
 
 export interface GenieAssistantProps {
@@ -46,40 +67,51 @@ export function GenieAssistant({
   const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? onOpenChange! : setInternalOpen;
-  const [messages, setMessages] = useState<GenieAssistantMessage[]>([]);
+  const [messages, setMessages] = useState<GenieAssistantMessage[]>(loadMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const panelId = useId();
+
+  // Persist messages to sessionStorage
+  useEffect(() => { saveMessages(messages); }, [messages]);
+
+  // Focus input when panel opens
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
   }, []);
 
   const submit = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
-    setError(null);
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    setMessages((prev) => [...prev, { id: msgId(), role: "user", content: text }]);
     setLoading(true);
+    scrollToBottom();
     try {
       const out = await sendToGenie(text);
       setMessages((prev) => [
         ...prev,
         {
+          id: msgId(),
           role: "assistant",
           content: out.reply,
           genieUrl: out.genie_url ?? undefined,
         },
       ]);
-      setTimeout(scrollToBottom, 50);
+      scrollToBottom();
     } catch (e) {
       const err = e instanceof Error ? e.message : "Genie unavailable.";
-      setError(err);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Sorry, I couldn't process that. ${err}`, genieUrl: null },
+        { id: msgId(), role: "assistant", content: `Sorry, I couldn't process that. ${err}`, genieUrl: null },
       ]);
     } finally {
       setLoading(false);
@@ -92,12 +124,28 @@ export function GenieAssistant({
         e.preventDefault();
         submit();
       }
+      if (e.key === "Escape") setOpen(false);
     },
-    [submit]
+    [submit, setOpen]
   );
 
-  const openGenieInWorkspace = useCallback(() => {
-    openInDatabricks(getGenieUrl());
+  // Global Escape to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, setOpen]);
+
+  const openGenieInWorkspace = useCallback((url?: string | null) => {
+    openInDatabricks(url || getGenieUrl());
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    sessionStorage.removeItem(STORAGE_KEY);
   }, []);
 
   if (!open) return null;
@@ -111,6 +159,8 @@ export function GenieAssistant({
       )}
       role="dialog"
       aria-label={TITLE}
+      aria-modal="true"
+      id={panelId}
     >
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Avatar className="h-8 w-8">
@@ -119,6 +169,19 @@ export function GenieAssistant({
           </AvatarFallback>
         </Avatar>
         <span className="flex-1 font-semibold text-sm">{TITLE}</span>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+            onClick={clearHistory}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -140,9 +203,9 @@ export function GenieAssistant({
             declines, trends, and dashboards.
           </p>
         )}
-        {messages.map((m, i) => (
+        {messages.map((m) => (
           <div
-            key={i}
+            key={m.id}
             className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}
           >
             {m.role === "assistant" && (
@@ -167,7 +230,7 @@ export function GenieAssistant({
                   variant="link"
                   size="sm"
                   className="mt-2 h-auto p-0 text-primary underline"
-                  onClick={openGenieInWorkspace}
+                  onClick={() => openGenieInWorkspace(m.genieUrl)}
                 >
                   Open in Genie
                 </Button>
@@ -177,25 +240,26 @@ export function GenieAssistant({
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start gap-2">
+          <div className="flex justify-start gap-2" aria-live="polite">
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                 <Sparkles className="h-3 w-3" />
               </AvatarFallback>
             </Avatar>
-            <div className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-              Thinking…
+            <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <span className="inline-flex gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:300ms]" />
+              </span>
+              Querying…
             </div>
           </div>
-        )}
-        {error && (
-          <p className="text-destructive text-sm" role="alert">
-            {error}
-          </p>
         )}
       </div>
       <div className="flex gap-2 border-t border-border p-3">
         <Input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

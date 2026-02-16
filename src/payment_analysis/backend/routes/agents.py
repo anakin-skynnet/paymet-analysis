@@ -31,10 +31,35 @@ from .setup import resolve_orchestrator_job_id
 GENIE_SPACE_ID_ENV = "GENIE_SPACE_ID"
 # When set, POST /api/agents/orchestrator/chat (AI Chatbot) calls this Model Serving endpoint instead of Job 6.
 ORCHESTRATOR_SERVING_ENDPOINT_ENV = "ORCHESTRATOR_SERVING_ENDPOINT"
+# Foundation model endpoint for direct AI Gateway chat (fast fallback when serving endpoint is slow/missing).
+AI_GATEWAY_ENDPOINT_ENV = "LLM_ENDPOINT"
+AI_GATEWAY_ENDPOINT_DEFAULT = "databricks-claude-opus-4-6"
+# Genie / data analyst fallback uses a fast, balanced model (not the heavy orchestrator tier).
+AI_GATEWAY_GENIE_ENDPOINT_ENV = "LLM_ENDPOINT_GENIE"
+AI_GATEWAY_GENIE_ENDPOINT_DEFAULT = "databricks-claude-sonnet-4-5"
 
 # Job 6 poll settings (orchestrator chat fallback)
 ORCHESTRATOR_JOB_POLL_TIMEOUT_S = 120
 ORCHESTRATOR_JOB_POLL_INTERVAL_S = 4
+
+# System prompt for the AI Gateway orchestrator (payment analysis domain expert)
+_ORCHESTRATOR_SYSTEM_PROMPT = """You are the Payment Approval Rate Accelerator — an AI expert in payment processing optimization for Getnet Global Payments.
+
+Your role: Analyze payment approval rates, identify optimization opportunities, and provide actionable recommendations to increase approval rates.
+
+Knowledge areas:
+- Smart Routing: Optimal payment solution selection (standard, 3DS, network token, passkey) based on merchant segment, geography, and transaction characteristics.
+- Smart Retry: Intelligent retry strategies for declined transactions — timing, decline code analysis, recovery potential.
+- Decline Analysis: Root cause analysis of decline reasons, issuer behavior patterns, and recoverable vs. terminal declines.
+- Risk & Fraud: Fraud score interpretation, AML signals, risk-based authentication recommendations.
+- Performance Optimization: Approval rate benchmarking, merchant segmentation, seasonal patterns, and latency analysis.
+
+Data context: You have access to payment transaction data stored in Databricks Unity Catalog (catalog: ahs_demos_catalog, schema: payment_analysis) including:
+- Gold views: v_executive_kpis, v_approval_trends_hourly, v_top_decline_reasons, v_solution_performance, v_merchant_segment_performance, v_card_network_performance, v_retry_performance, v_daily_trends
+- ML models: approval_propensity, risk_scoring, smart_routing, smart_retry
+- 14 engineered features: fraud_score, device_trust_level, auth_3ds_flag, payment_solution, card_network, merchant_segment, etc.
+
+Response style: Be concise, data-driven, and actionable. Structure recommendations as numbered lists. Include specific metrics when available. Always suggest next steps."""
 
 router = APIRouter(tags=["agents"])
 
@@ -392,6 +417,25 @@ def _extract_genie_reply(message: Any) -> str:
     return ""
 
 
+_GENIE_SYSTEM_PROMPT = """You are the Genie Assistant for Getnet Global Payments — a data analyst specializing in payment transaction analytics.
+
+Your role: Answer natural language questions about payment data using your knowledge of the Databricks lakehouse tables and gold views.
+
+Available data (Unity Catalog: ahs_demos_catalog.payment_analysis):
+- v_executive_kpis: Total transactions, approved/declined counts, approval rate %, avg fraud score, transaction values
+- v_approval_trends_hourly / v_approval_trends_by_second: Time-series approval data
+- v_top_decline_reasons: Decline reason codes with counts and recovery potential
+- v_solution_performance: Performance by payment solution (standard, 3DS, network token, passkey)
+- v_card_network_performance: Performance by card network (Visa, Mastercard, etc.)
+- v_merchant_segment_performance: Performance by merchant segment (retail, travel, gaming, etc.)
+- v_daily_trends: Daily aggregated transaction metrics
+- v_retry_performance: Smart retry success rates by decline reason
+- v_data_quality_summary: Data quality metrics
+- v_streaming_ingestion_by_second: Real-time ingestion volume
+
+Respond with concise, data-oriented answers. When the user asks about specific metrics, reference the relevant views. Suggest follow-up queries the user might find useful."""
+
+
 @router.post("/chat", response_model=ChatOut, operation_id="postChat")
 async def chat(
     request: Request,
@@ -401,15 +445,19 @@ async def chat(
     """
     Genie Assistant endpoint (separate from Orchestrator).
     Used exclusively by the Genie Assistant panel for natural-language SQL analytics.
-    If GENIE_SPACE_ID is set and the app has Databricks auth, uses the
-    Databricks Genie Conversation API to answer over payment/approval data; otherwise
-    returns a static reply and a link to open Genie in the workspace.
+
+    Resolution order:
+      1. Databricks Genie Conversation API (when GENIE_SPACE_ID is set and workspace client available).
+      2. AI Gateway direct call (foundation model with data analyst system prompt) — fast fallback.
+      3. Static reply with link to open Genie in workspace.
+
     NOTE: The AI Chatbot does NOT fall back here — it uses /orchestrator/chat exclusively.
     """
     workspace_url = get_workspace_url()
     genie_url = f"{workspace_url.rstrip('/')}/genie" if workspace_url else None
     space_id = (os.environ.get(GENIE_SPACE_ID_ENV) or "").strip()
 
+    # --- Path 1: Databricks Genie Conversation API ---
     if space_id and ws is not None:
         try:
             import datetime
@@ -421,19 +469,39 @@ async def chat(
             reply = _extract_genie_reply(msg)
             if reply:
                 return ChatOut(reply=reply, genie_url=genie_url)
-            # Genie returned an empty reply (e.g. query succeeded but no text attachment).
-            # Fall through to provide a helpful message with the Genie link.
-            logger.info("Genie returned empty reply for space %s; showing fallback.", space_id)
+            logger.info("Genie returned empty reply for space %s; trying AI Gateway fallback.", space_id)
         except Exception as exc:
             logger.warning(
-                "Genie space query failed (space_id=%s): %s",
+                "Genie space query failed (space_id=%s), trying AI Gateway fallback: %s",
                 space_id,
                 exc,
-                exc_info=True,
             )
 
-    # Provide a helpful static reply. When Genie is configured but failed,
-    # include context so the user knows Genie is available in the workspace.
+    # --- Path 2: AI Gateway direct call (Sonnet tier — balanced speed/quality for data questions) ---
+    if ws is not None:
+        try:
+            from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
+
+            endpoint_name = _genie_ai_gateway_endpoint()
+            response = ws.serving_endpoints.query(
+                name=endpoint_name,
+                messages=[
+                    ChatMessage(role=ChatMessageRole.SYSTEM, content=_GENIE_SYSTEM_PROMPT),
+                    ChatMessage(role=ChatMessageRole.USER, content=body.message.strip()),
+                ],
+                max_tokens=1200,
+                temperature=0.2,
+            )
+            choices = getattr(response, "choices", None) or []
+            if choices:
+                msg_obj = getattr(choices[0], "message", choices[0])
+                content = (getattr(msg_obj, "content", "") or "").strip()
+                if content:
+                    return ChatOut(reply=content, genie_url=genie_url)
+        except Exception as exc:
+            logger.warning("AI Gateway fallback for Genie also failed: %s", exc)
+
+    # --- Path 3: Static reply with link to Genie workspace ---
     if space_id:
         reply = (
             "I can help you explore payment and approval data. "
@@ -472,58 +540,42 @@ def _orchestrator_job_id() -> str:
 
 
 def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_message: str) -> tuple[str, list[str]]:
-    """Call the orchestrator Model Serving endpoint (AgentBricks/Supervisor). Returns (reply, agents_used).
+    """Call the ResponsesAgent on Model Serving using the MLflow ``dataframe_records`` format.
 
-    Tries the standard OpenAI-chat ``inputs`` format first (MLflow ResponsesAgent / LangGraph),
-    then falls back to ``dataframe_records`` (legacy). Parses reply from ``predictions`` or
-    ``choices`` depending on which format was used.
+    The endpoint serves a ``PaymentAnalysisAgent`` (MLflow ResponsesAgent pyfunc)
+    that expects ``dataframe_records=[{"input": [{"role": "user", "content": ...}]}]``.
+    Uses the SDK's ``serving_endpoints.query`` which handles auth automatically.
+    Returns ``(reply, agents_used)``.
     """
-    reply = ""
-    agents_used: list[str] = []
-
-    # --- Attempt 1: ``inputs`` with OpenAI-style messages (MLflow 3.x / ResponsesAgent / LangGraph) ---
-    try:
-        response = ws.serving_endpoints.query(
-            name=endpoint_name,
-            inputs={"messages": [{"role": "user", "content": user_message}]},
-        )
-        reply, agents_used = _parse_orchestrator_response(response)
-        if reply:
-            return reply, agents_used
-    except Exception as e:
-        logger.debug("Orchestrator inputs query attempt failed: %s", e)
-
-    # --- Attempt 2: ``messages`` param (chat-completion style) ---
-    try:
-        from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
-
-        response = ws.serving_endpoints.query(
-            name=endpoint_name,
-            messages=[ChatMessage(role=ChatMessageRole.USER, content=user_message)],
-        )
-        # Chat-completion style: response.choices
-        choices = getattr(response, "choices", None) or []
-        if choices:
-            msg = choices[0]
-            msg_obj = getattr(msg, "message", msg)
-            reply = (getattr(msg_obj, "content", "") or "").strip()
-            if reply:
-                return reply, agents_used
-        # Also check predictions (some endpoints return here)
-        reply, agents_used = _parse_orchestrator_response(response)
-        if reply:
-            return reply, agents_used
-    except Exception as e:
-        logger.debug("Orchestrator messages query attempt failed: %s", e)
-
-    # --- Attempt 3: ``dataframe_records`` legacy (LangChain format) ---
-    payload = {"messages": [{"role": "user", "content": user_message}]}
     response = ws.serving_endpoints.query(
         name=endpoint_name,
-        dataframe_records=[payload],
+        dataframe_records=[{"input": [{"role": "user", "content": user_message}]}],
     )
-    reply, agents_used = _parse_orchestrator_response(response)
-    return reply or "No response from orchestrator endpoint.", agents_used
+
+    reply = ""
+    predictions = getattr(response, "predictions", None)
+    if predictions and isinstance(predictions, (dict, list)):
+        # Single-row prediction → dict with Responses API shape
+        pred = predictions if isinstance(predictions, dict) else (predictions[0] if predictions else {})
+        if isinstance(pred, dict):
+            output = pred.get("output")
+            if isinstance(output, list):
+                for item in reversed(output):
+                    if isinstance(item, dict) and item.get("type") == "message":
+                        for part in item.get("content", []):
+                            if isinstance(part, dict):
+                                text = (part.get("text") or "").strip()
+                                if text:
+                                    reply = text
+                                    break
+                        if reply:
+                            break
+            if not reply and isinstance(output, str):
+                reply = output.strip()
+        elif isinstance(pred, str):
+            reply = pred.strip()
+
+    return reply or "", ["ResponsesAgent"] if reply else []
 
 
 def _parse_orchestrator_response(response: Any) -> tuple[str, list[str]]:
@@ -550,6 +602,49 @@ def _parse_orchestrator_response(response: Any) -> tuple[str, list[str]]:
     return reply, agents_used
 
 
+def _ai_gateway_endpoint() -> str:
+    """Return the foundation model endpoint name for direct AI Gateway chat."""
+    return (os.getenv(AI_GATEWAY_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_ENDPOINT_DEFAULT
+
+
+def _genie_ai_gateway_endpoint() -> str:
+    """Return the foundation model endpoint for Genie/data-analyst fallback (balanced tier)."""
+    return (os.getenv(AI_GATEWAY_GENIE_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_GENIE_ENDPOINT_DEFAULT
+
+
+def _query_ai_gateway_direct(ws: WorkspaceClient, user_message: str) -> tuple[str, list[str]]:
+    """Call Opus 4.6 via AI Gateway with the orchestrator system prompt.
+
+    Primary fast path for orchestrator chat — uses the strongest available foundation model
+    (Claude Opus 4.6) with a payment analysis domain system prompt. Typical response time: 5–20 s.
+    Returns (reply, agents_used).
+    """
+    endpoint_name = _ai_gateway_endpoint()
+    try:
+        from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
+
+        response = ws.serving_endpoints.query(
+            name=endpoint_name,
+            messages=[
+                ChatMessage(role=ChatMessageRole.SYSTEM, content=_ORCHESTRATOR_SYSTEM_PROMPT),
+                ChatMessage(role=ChatMessageRole.USER, content=user_message),
+            ],
+            max_tokens=2000,
+            temperature=0.2,
+        )
+        choices = getattr(response, "choices", None) or []
+        if choices:
+            msg = choices[0]
+            msg_obj = getattr(msg, "message", msg)
+            content = (getattr(msg_obj, "content", "") or "").strip()
+            if content:
+                return content, ["AI Gateway (Opus)"]
+    except Exception as e:
+        logger.warning("AI Gateway direct query failed (%s): %s", endpoint_name, e)
+        raise
+    return "", []
+
+
 @router.post("/orchestrator/chat", response_model=OrchestratorChatOut, operation_id="postOrchestratorChat")
 async def orchestrator_chat(
     request: Request,
@@ -557,33 +652,50 @@ async def orchestrator_chat(
     ws: WorkspaceClient = Depends(get_workspace_client),
 ) -> OrchestratorChatOut:
     """
-    Orchestrator Agent — the **only** backend for the AI Chatbot.
+    Orchestrator Agent — the **only** backend for the AI Chatbot floating dialog.
     Purpose: semantic search, recommendations, and intelligence to accelerate approval rates.
-    When ORCHESTRATOR_SERVING_ENDPOINT is set, calls that Model Serving endpoint (ResponsesAgent / AgentBricks);
-    otherwise runs Job 6 (custom Python framework). Returns synthesized recommendation and payment analysis.
-    Requires Databricks token (open app from Compute → Apps).
-    NOTE: There is no Genie fallback. If the orchestrator is unavailable the chatbot shows an error.
+
+    Resolution order (tiered model strategy):
+      1. ORCHESTRATOR_SERVING_ENDPOINT — **ResponsesAgent** on Model Serving (Opus 4.6-tier, with UC tools).
+      2. AI Gateway direct call — Claude Opus 4.6 foundation model with domain system prompt (fast, always available).
+      3. Job 6 (custom Python framework) — slow but runs the full multi-agent orchestrator.
+
+    Returns synthesized recommendation and payment analysis.
     """
+    user_message = body.message.strip()
+
+    # --- Path 1: Model Serving endpoint (AgentBricks / ResponsesAgent) ---
     endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
     if endpoint_name:
         try:
-            reply, agents_used = _query_orchestrator_endpoint(ws, endpoint_name, body.message.strip())
-            return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+            reply, agents_used = _query_orchestrator_endpoint(ws, endpoint_name, user_message)
+            if reply:
+                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
         except Exception as e:
             logger.warning(
-                "Orchestrator serving endpoint '%s' failed, falling back to Job 6: %s",
+                "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
                 endpoint_name,
                 e,
-                exc_info=True,
             )
 
+    # --- Path 2: AI Gateway direct call (fast foundation model) ---
+    try:
+        reply, agents_used = _query_ai_gateway_direct(ws, user_message)
+        if reply:
+            return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+    except Exception as e:
+        logger.warning("AI Gateway fallback failed, trying Job 6: %s", e)
+
+    # --- Path 3: Job 6 (Deploy Agents — full multi-agent framework) ---
     job_id_str = _orchestrator_job_id().strip()
     if not job_id_str or job_id_str == "0":
         job_id_str = resolve_orchestrator_job_id(ws).strip()
     if not job_id_str or job_id_str == "0":
         raise HTTPException(
             status_code=400,
-            detail="Orchestrator job ID is not set. Deploy the bundle (Job 6 – Deploy Agents exists), open this app from Compute → Apps, then use the assistant. Optionally set DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT.",
+            detail="Orchestrator is unavailable. No serving endpoint, AI Gateway, or job ID configured. "
+                   "Deploy the bundle (Job 6 – Deploy Agents exists), open this app from Compute → Apps, "
+                   "then use the assistant. Optionally set DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT or LLM_ENDPOINT.",
         )
     try:
         job_id = int(job_id_str)
@@ -594,7 +706,7 @@ async def orchestrator_chat(
     notebook_params: dict[str, str] = {
         "catalog": catalog,
         "schema": schema,
-        "query": body.message.strip(),
+        "query": user_message,
         "agent_role": "orchestrator",
     }
 

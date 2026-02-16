@@ -323,7 +323,7 @@ except Exception as e:
 
 mlflow.set_registry_uri("databricks-uc")
 
-UC_MODEL_NAME = f"{CATALOG}.{MODEL_SCHEMA}.response_agent"
+UC_MODEL_NAME = f"{CATALOG}.{MODEL_SCHEMA}.payment_analysis_agent"
 
 uc_registered_model_info = mlflow.register_model(
     model_uri=logged_agent_info.model_uri,

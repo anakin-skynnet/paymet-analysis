@@ -617,59 +617,87 @@ function EmbedWithFallback({
   src: string;
   dashboardId: string;
 }) {
-  const [embedFailed, setEmbedFailed] = React.useState(false);
+  const [embedStatus, setEmbedStatus] = React.useState<"loading" | "loaded" | "failed">("loading");
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const externalUrl = getLakeviewDashboardUrl(dashboardId);
 
   React.useEffect(() => {
+    setEmbedStatus("loading");
     const timer = setTimeout(() => {
-      if (iframeRef.current) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-          iframeRef.current.contentDocument;
-        } catch {
-          setEmbedFailed(true);
+      // Only mark failed if still loading — if onLoad already fired, the embed works.
+      setEmbedStatus((prev) => {
+        if (prev !== "loading") return prev;
+        if (iframeRef.current) {
+          try {
+            // Cross-origin iframe access throws — signals embed is blocked
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            iframeRef.current.contentDocument;
+          } catch {
+            return "failed";
+          }
         }
-      }
-    }, 4000);
+        return prev;
+      });
+    }, 2500);
     return () => clearTimeout(timer);
   }, [src]);
 
-  if (embedFailed) {
-    const externalUrl = getLakeviewDashboardUrl(dashboardId);
+  // Auto-open in new tab when embedding fails
+  React.useEffect(() => {
+    if (embedStatus === "failed" && externalUrl) {
+      window.open(externalUrl, "_blank", "noopener,noreferrer");
+    }
+  }, [embedStatus, externalUrl]);
+
+  if (embedStatus === "failed") {
     return (
-      <div className="flex flex-col items-center justify-center h-[70vh] gap-4 text-center p-6">
-        <AlertCircle className="w-10 h-10 text-amber-500" />
-        <div className="space-y-1.5 max-w-md">
-          <p className="text-sm font-medium">Dashboard embedding is blocked by workspace security settings</p>
+      <div className="flex flex-col items-center justify-center h-[70vh] gap-5 text-center p-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+          <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="space-y-2 max-w-lg">
+          <p className="text-base font-semibold">Dashboard opened in a new tab</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Databricks workspace security blocks embedding dashboards in iframes from external domains
+            (<code className="text-xs bg-muted px-1 py-0.5 rounded">*.databricksapps.com</code>).
+            The dashboard has been opened directly in your workspace.
+          </p>
           <p className="text-xs text-muted-foreground">
-            To enable embedding: <strong>Settings → Security → Embed dashboards</strong> → Allow.
-            In the meantime, the dashboard opens in a new tab.
+            To enable in-app embedding, a workspace admin must set{" "}
+            <strong>Settings → Security → Embed dashboards → Allow</strong> and add{" "}
+            <code className="text-xs bg-muted px-1 py-0.5 rounded">*.databricksapps.com</code>{" "}
+            to the allowed domains.
           </p>
         </div>
-        {externalUrl && (
-          <Button onClick={() => window.open(externalUrl, "_blank", "noopener,noreferrer")} className="gap-2">
-            <ExternalLink className="w-4 h-4" />
-            Open dashboard in new tab
-          </Button>
-        )}
+        <div className="flex gap-3">
+          {externalUrl && (
+            <Button onClick={() => window.open(externalUrl, "_blank", "noopener,noreferrer")} className="gap-2">
+              <ExternalLink className="w-4 h-4" />
+              Open again in new tab
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <>
+      {embedStatus === "loading" && (
+        <div className="flex items-center justify-center h-12 bg-muted/30 text-sm text-muted-foreground gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+          Loading dashboard…
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         title={title}
         src={src}
         className="w-full h-[78vh] border-0"
         allowFullScreen
-        onError={() => setEmbedFailed(true)}
+        onLoad={() => setEmbedStatus("loaded")}
+        onError={() => setEmbedStatus("failed")}
       />
-      <p className="text-xs text-muted-foreground px-2 py-1.5 border-t border-border bg-muted/20">
-        If the dashboard shows &quot;refused to connect&quot;, the workspace must allow embedding:{" "}
-        <span className="font-medium">Settings → Security → Embed dashboards</span> → set to <strong>Allow</strong>.
-      </p>
     </>
   );
 }

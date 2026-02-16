@@ -24,6 +24,11 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
+  Info,
+  Brain,
+  Database,
+  BarChart3,
+  Bot,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_sidebar/profile")({
@@ -258,6 +263,78 @@ function ProfileContent() {
           </Card>
         )}
       </div>
+
+      {/* About Section */}
+      <Card className="glass-card border border-border/80">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            About Payment Analysis
+          </CardTitle>
+          <CardDescription>
+            Databricks-powered payment approval optimization platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Accelerate approval rates and reduce lost revenue from false
+            declines, suboptimal routing, and missed retry opportunities.
+          </p>
+          <Separator />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex items-start gap-3">
+              <Brain className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">AI Chat</p>
+                <p className="text-xs text-muted-foreground">
+                  ResponsesAgent with 10 UC tools + python_exec for data-driven
+                  payment analysis
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Database className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">ML Models</p>
+                <p className="text-xs text-muted-foreground">
+                  4 HistGradientBoosting models (approval, risk, routing, retry)
+                  with 14 engineered features
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <BarChart3 className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Dashboards</p>
+                <p className="text-xs text-muted-foreground">
+                  3 unified AI/BI dashboards, 16+ gold views, closed-loop
+                  decisioning engine
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Bot className="h-5 w-5 mt-0.5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Genie Assistant</p>
+                <p className="text-xs text-muted-foreground">
+                  Natural language data queries powered by Databricks Genie
+                </p>
+              </div>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Databricks</Badge>
+            <Badge variant="outline">Unity Catalog</Badge>
+            <Badge variant="outline">Lakeflow</Badge>
+            <Badge variant="outline">Model Serving</Badge>
+            <Badge variant="outline">Vector Search</Badge>
+            <Badge variant="outline">Lakebase</Badge>
+            <Badge variant="outline">MLflow</Badge>
+            <Badge variant="outline">Genie</Badge>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

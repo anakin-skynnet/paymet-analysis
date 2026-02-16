@@ -62,35 +62,30 @@ You have access to real-time payment data, operational incidents, approval rules
 
 ## Your Capabilities
 
-### Decline Analysis
-- Analyze decline trends and root causes (issuer, network, merchant, fraud)
-- Break down declines by merchant segment
-- Estimate recovery potential and recommend remediation actions
+### Decline Analysis — use analyze_declines(mode, ...)
+- mode='trends': Decline trends and root causes (issuer, network, merchant, fraud)
+- mode='by_segment': Declines broken down by merchant segment with recovery potential
 
-### Smart Routing & Cascading
-- Analyze route performance (approval rates, latency) by payment solution and card network
-- Recommend optimal cascade configurations per merchant segment
-- Detect and respond to processor performance issues
+### Smart Routing & Cascading — use analyze_routing(mode, ...)
+- mode='performance': Route approval rates and latency by payment solution and card network
+- mode='cascade': Optimal cascade configurations per merchant segment
 
-### Smart Retry & Recovery
-- Evaluate retry success rates by decline reason and attempt count
-- Identify high-value recovery opportunities worth retrying
-- Recommend optimal retry timing and strategy
+### Smart Retry & Recovery — use analyze_retry(mode, ...)
+- mode='success_rates': Retry success rates by decline reason and attempt count
+- mode='opportunities': High-value recovery opportunities worth retrying
 
-### Risk & Fraud Assessment
-- Identify high-risk transactions requiring review
-- Analyze risk score distribution across tiers (LOW, MEDIUM, HIGH)
-- Balance fraud prevention with customer experience
+### Risk & Fraud Assessment — use analyze_risk(mode, ...)
+- mode='distribution': Risk score distribution across tiers (LOW, MEDIUM, HIGH)
+- mode='transactions': High-risk transactions requiring review
 
-### Performance Optimization
-- Provide executive KPI summaries (approval rate, volume, fraud score)
-- Identify optimization opportunities by routing and geography
-- Track performance trends over time
+### Performance Optimization — use analyze_performance(mode, ...)
+- mode='kpi': Executive KPI summaries (approval rate, volume, fraud score)
+- mode='opportunities': Optimization opportunities by routing and geography
+- mode='trends': Performance trends over time
 
 ### Lakebase & Operational Context (NEW)
 - **Incidents & Feedback**: Check get_recent_incidents() for active MID failures, BIN anomalies, route issues, and fraud spikes reported by operations teams. Incorporate these into your analysis — e.g., if there's an open incident for a gateway, factor that into routing recommendations.
 - **Approval Rules**: Use get_active_approval_rules() to understand current business policies before recommending changes. Don't suggest rules that already exist.
-- **Online Features**: Use get_online_features() to see real-time ML scores and agent-generated features from the last 24 hours.
 - **Decision Outcomes**: Use get_decision_outcomes() to evaluate whether past decisions (auth, retry, routing) are working. This closes the learning loop.
 
 ### Vector Search (Similar Transactions)
@@ -169,30 +164,19 @@ def create_tool_info(
 TOOL_INFOS: list[ToolInfo] = []
 
 UC_TOOL_NAMES = [
-    # Decline Analyst
-    f"{CATALOG}.{SCHEMA}.get_decline_trends",
-    f"{CATALOG}.{SCHEMA}.get_decline_by_segment",
-    # Smart Routing
-    f"{CATALOG}.{SCHEMA}.get_route_performance",
-    f"{CATALOG}.{SCHEMA}.get_cascade_recommendations",
-    # Smart Retry
-    f"{CATALOG}.{SCHEMA}.get_retry_success_rates",
-    f"{CATALOG}.{SCHEMA}.get_recovery_opportunities",
-    # Risk Assessor
-    f"{CATALOG}.{SCHEMA}.get_high_risk_transactions",
-    f"{CATALOG}.{SCHEMA}.get_risk_distribution",
-    # Performance Recommender
-    f"{CATALOG}.{SCHEMA}.get_kpi_summary",
-    f"{CATALOG}.{SCHEMA}.get_optimization_opportunities",
-    f"{CATALOG}.{SCHEMA}.get_trend_analysis",
-    # Lakebase & Operational Context
+    # 5 consolidated analytics functions (each supports a mode parameter for different analysis types).
+    # Databricks enforces a 10 UC-function limit per agent — consolidation keeps us within budget.
+    f"{CATALOG}.{SCHEMA}.analyze_declines",       # mode: trends | by_segment
+    f"{CATALOG}.{SCHEMA}.analyze_routing",         # mode: performance | cascade
+    f"{CATALOG}.{SCHEMA}.analyze_retry",           # mode: success_rates | opportunities
+    f"{CATALOG}.{SCHEMA}.analyze_risk",            # mode: distribution | transactions
+    f"{CATALOG}.{SCHEMA}.analyze_performance",     # mode: kpi | opportunities | trends
+    # 5 shared operational context functions
     f"{CATALOG}.{SCHEMA}.get_active_approval_rules",
     f"{CATALOG}.{SCHEMA}.get_recent_incidents",
-    f"{CATALOG}.{SCHEMA}.get_online_features",
-    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
-    # Vector Search (Similar Transactions)
     f"{CATALOG}.{SCHEMA}.search_similar_transactions",
     f"{CATALOG}.{SCHEMA}.get_approval_recommendations",
+    f"{CATALOG}.{SCHEMA}.get_decision_outcomes",
     # General-purpose Python exec (for ad-hoc analysis and recommendation write-back)
     "system.ai.python_exec",
 ]
@@ -216,21 +200,27 @@ class PaymentAnalysisAgent(ResponsesAgent):
 
     def __init__(self, llm_endpoint: str, tools: list[ToolInfo]):
         self.llm_endpoint = llm_endpoint
-        self.workspace_client = WorkspaceClient()
         # DatabricksOpenAI auto-configures host/token from the Databricks environment
         self.model_serving_client: OpenAI = DatabricksOpenAI()
         self._tools_dict = {tool.name: tool for tool in tools}
+        # Cache tool specs at init (avoids rebuilding on every LLM call)
+        self._tool_specs_cache: list[dict] = [t.spec for t in self._tools_dict.values()]
 
     def get_tool_specs(self) -> list[dict]:
-        """Return tool specifications in the format OpenAI expects."""
-        return [t.spec for t in self._tools_dict.values()]
+        """Return cached tool specifications in the format OpenAI expects."""
+        return self._tool_specs_cache
 
     @mlflow.trace(span_type=SpanType.TOOL)
     def execute_tool(self, tool_name: str, args: dict) -> Any:
-        """Execute the named UC tool with given arguments."""
-        return self._tools_dict[tool_name].exec_fn(**args)
+        """Execute the named UC tool with given arguments. Returns error string on failure."""
+        try:
+            return self._tools_dict[tool_name].exec_fn(**args)
+        except KeyError:
+            return f"Error: unknown tool '{tool_name}'"
+        except Exception as e:
+            return f"Error executing {tool_name}: {e}"
 
-    @backoff.on_exception(backoff.expo, openai.RateLimitError)
+    @backoff.on_exception(backoff.expo, (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError), max_tries=3)
     @mlflow.trace(span_type=SpanType.LLM)
     def call_llm(
         self, messages: list[dict[str, Any]]
@@ -255,8 +245,13 @@ class PaymentAnalysisAgent(ResponsesAgent):
     ) -> ResponsesAgentStreamEvent:
         """Execute a tool call, append result to message history, and return stream event."""
         raw_args = tool_call.get("arguments") or "{}"
-        args = json.loads(raw_args)
-        result = str(self.execute_tool(tool_name=tool_call["name"], args=args))
+        try:
+            args = json.loads(raw_args)
+        except (json.JSONDecodeError, TypeError) as e:
+            args = {}
+            result = f"Error: invalid tool arguments — {e}"
+        else:
+            result = str(self.execute_tool(tool_name=tool_call["name"], args=args))
 
         tool_call_output = self.create_function_call_output_item(
             tool_call["call_id"], result
@@ -271,40 +266,104 @@ class PaymentAnalysisAgent(ResponsesAgent):
         messages: list[dict[str, Any]],
         max_iter: int = 10,
     ) -> Generator[ResponsesAgentStreamEvent, None, None]:
-        """Iteratively call LLM and execute tools until the agent produces a final response."""
-        for _ in range(max_iter):
+        """Iteratively call LLM and execute tools until the agent produces a final response.
+
+        The ``output_to_responses_items_stream`` helper (MLflow) can raise
+        ``json.JSONDecodeError`` when the LLM streams a tool-call chunk with
+        empty arguments (race between chunk assembly and parsing).  When this
+        happens, we fall back to a non-streaming single-shot LLM call so the
+        agent can still complete tool execution and return a result.
+        """
+        for iteration in range(max_iter):
             last_msg = messages[-1]
             if last_msg.get("role", None) == "assistant":
                 return
             elif last_msg.get("type", None) == "function_call":
                 yield self.handle_tool_call(last_msg, messages)
             else:
-                yield from output_to_responses_items_stream(
-                    chunks=self.call_llm(messages), aggregator=messages
-                )
+                try:
+                    yield from output_to_responses_items_stream(
+                        chunks=self.call_llm(messages), aggregator=messages
+                    )
+                except json.JSONDecodeError:
+                    # Streaming chunk assembly failed — retry with a non-streaming call.
+                    yield from self._fallback_non_streaming(messages, iteration)
 
         yield ResponsesAgentStreamEvent(
             type="response.output_item.done",
             item=self.create_text_output_item(
-                "Max iterations reached. Stopping.", str(uuid4())
+                "I've done extensive analysis but need to wrap up. Here's what I found so far — "
+                "try asking a more focused question for deeper detail on a specific area.",
+                str(uuid4()),
             ),
         )
 
-    def predict(
-        self, request: ResponsesAgentRequest
-    ) -> ResponsesAgentResponse:
-        """Collect all stream events into a single ResponsesAgentResponse."""
-        session_id = None
-        if request.custom_inputs and "session_id" in request.custom_inputs:
-            session_id = request.custom_inputs.get("session_id")
-        elif request.context and request.context.conversation_id:
-            session_id = request.context.conversation_id
+    @mlflow.trace(span_type=SpanType.LLM, name="fallback_non_streaming")
+    def _fallback_non_streaming(
+        self,
+        messages: list[dict[str, Any]],
+        iteration: int,
+    ) -> Generator[ResponsesAgentStreamEvent, None, None]:
+        """Non-streaming LLM call used when the streaming parser crashes.
 
+        Makes a single synchronous ``chat.completions.create`` call (no
+        ``stream=True``) so argument assembly is atomic and not subject to
+        chunked JSON-parse races.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="PydanticSerializationUnexpectedValue")
+            response = self.model_serving_client.chat.completions.create(
+                model=self.llm_endpoint,
+                messages=to_chat_completions_input(messages),
+                tools=self.get_tool_specs(),
+                stream=False,
+            )
+
+        choice = response.choices[0] if response.choices else None
+        if choice is None:
+            return
+
+        msg = choice.message
+        # If the LLM returned tool calls, enqueue them for execution
+        if msg.tool_calls:
+            for tc in msg.tool_calls:
+                fn = tc.function
+                call_item = {
+                    "type": "function_call",
+                    "call_id": tc.id,
+                    "name": fn.name,
+                    "arguments": fn.arguments or "{}",
+                }
+                messages.append(call_item)
+                yield self.handle_tool_call(call_item, messages)
+        elif msg.content:
+            # Final assistant text
+            text_item = self.create_text_output_item(msg.content.strip(), str(uuid4()))
+            messages.append({"role": "assistant", "content": msg.content.strip()})
+            yield ResponsesAgentStreamEvent(type="response.output_item.done", item=text_item)
+
+    @staticmethod
+    def _get_session_id(request: ResponsesAgentRequest) -> Optional[str]:
+        """Extract session ID from request (custom_inputs or conversation context)."""
+        if request.custom_inputs and "session_id" in request.custom_inputs:
+            return request.custom_inputs.get("session_id")
+        if request.context and request.context.conversation_id:
+            return request.context.conversation_id
+        return None
+
+    def _tag_session(self, request: ResponsesAgentRequest) -> None:
+        """Tag the current MLflow trace with the session ID if available."""
+        session_id = self._get_session_id(request)
         if session_id:
             mlflow.update_current_trace(
                 metadata={"mlflow.trace.session": session_id}
             )
 
+    def predict(
+        self, request: ResponsesAgentRequest
+    ) -> ResponsesAgentResponse:
+        """Collect all stream events into a single ResponsesAgentResponse."""
+        self._tag_session(request)
         outputs = [
             event.item
             for event in self.predict_stream(request)
@@ -318,16 +377,7 @@ class PaymentAnalysisAgent(ResponsesAgent):
         self, request: ResponsesAgentRequest
     ) -> Generator[ResponsesAgentStreamEvent, None, None]:
         """Invoke the agent and yield Responses-API stream events."""
-        session_id = None
-        if request.custom_inputs and "session_id" in request.custom_inputs:
-            session_id = request.custom_inputs.get("session_id")
-        elif request.context and request.context.conversation_id:
-            session_id = request.context.conversation_id
-
-        if session_id:
-            mlflow.update_current_trace(
-                metadata={"mlflow.trace.session": session_id}
-            )
+        self._tag_session(request)
 
         messages = [{"role": "system", "content": SYSTEM_PROMPT}] + [
             i.model_dump() for i in request.input

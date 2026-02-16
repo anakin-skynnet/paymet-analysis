@@ -76,14 +76,17 @@ function ModelsGridSkeleton() {
   );
 }
 
-function ModelsErrorFallback({ error }: { error: unknown }) {
+function ModelsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   return (
     <Card className="glass-card border border-destructive/30">
       <CardContent className="py-6 flex items-center gap-2">
         <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-        <p className="text-sm text-destructive">
+        <p className="text-sm text-destructive flex-1">
           Failed to load models: {error instanceof Error ? error.message : "Unknown error"}
         </p>
+        <Button variant="outline" size="sm" onClick={resetErrorBoundary}>
+          Try again
+        </Button>
       </CardContent>
     </Card>
   );

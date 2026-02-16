@@ -45,25 +45,18 @@ resources:
             securable_type: VOLUME
             securable_full_name: "${var.catalog}.${var.schema}.reports"
             permission: READ_VOLUME
-        # Genie space — Payment Analytics (requires pre-existing Genie space).
-        # Uncomment after creating the space in the target workspace and setting:
-        #   --var genie_space_id=<your-genie-space-uuid>
-        # - name: genie-space
-        #   description: Genie space Payment Analytics
-        #   genie_space:
-        #     name: "Payment Analytics"
-        #     space_id: ${var.genie_space_id}
-        #     permission: CAN_EDIT
-        # Model serving — all 7 endpoints (4 ML models + 3 agents: 2 LangGraph + 1 ResponsesAgent).
-        # Agent endpoints use ResponsesAgent (MLflow 3.x); see model_serving.yml.
-        # Orchestrator chat falls back to Job 6 if the serving endpoint is unavailable.
-        # Agent endpoints are created by Job 6. Uncomment after running Job 6:
-        # - name: serving-orchestrator
-        #   serving_endpoint: { name: "payment-analysis-orchestrator", permission: CAN_QUERY }
-        # - name: serving-response-agent
-        #   serving_endpoint: { name: "payment-response-agent", permission: CAN_QUERY }
-        # - name: serving-decline-analyst
-        #   serving_endpoint: { name: "decline-analyst", permission: CAN_QUERY }
+        # Genie space — Payment Analytics (natural-language data queries).
+        # Grants the app SP CAN_EDIT on the Genie space for the Genie Assistant dialog.
+        - name: genie-space
+          description: Genie space Payment Analytics
+          genie_space:
+            name: "Payment Analytics"
+            space_id: ${var.genie_space_id}
+            permission: CAN_EDIT
+        # ResponsesAgent endpoint — the AI Chat's primary backend (Path 1).
+        # PaymentAnalysisAgent (agent.py) with 10 UC tools + python_exec.
+        - name: serving-response-agent
+          serving_endpoint: { name: "payment-response-agent", permission: CAN_QUERY }
         # ML Model Serving endpoints (4 models — used by DecisionEngine and ML predictions UI)
         - name: serving-approval-prop
           serving_endpoint: { name: "approval-propensity", permission: CAN_QUERY }

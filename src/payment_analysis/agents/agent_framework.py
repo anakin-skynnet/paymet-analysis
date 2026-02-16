@@ -12,14 +12,21 @@
 
 # COMMAND ----------
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import logging
 import re
+import threading
 
 logger = logging.getLogger(__name__)
+
+# Thread-safe cache for the running SQL warehouse ID (avoids listing warehouses on every SQL call)
+_warehouse_cache_lock = threading.Lock()
+_warehouse_cache: Dict[str, Tuple[str, float]] = {}  # key -> (warehouse_id, timestamp)
+_WAREHOUSE_CACHE_TTL_S = 300  # 5 minutes
 
 
 class AgentRole(Enum):
@@ -169,8 +176,8 @@ class BaseAgent:
 
         except Exception as e:
             self.status = AgentStatus.ERROR
-            logger.error(f"Agent error: {e}")
-            return f"Error: {str(e)}"
+            logger.exception("Agent %s error during think(): %s", self.role.value, e)
+            return f"Analysis temporarily unavailable ({self.role.value}). Please try again."
 
     def execute_tool(self, tool_name: str, **kwargs) -> Dict:
         """Execute a tool by name."""
@@ -191,27 +198,65 @@ class BaseAgent:
         """Execute SQL query and return results."""
         return self._execute_sql_parameterized(query, {})
 
+    @staticmethod
+    def _get_cached_warehouse_id() -> Optional[str]:
+        """Return a cached RUNNING SQL warehouse ID, refreshing if stale.
+
+        Only caches warehouses whose state is RUNNING. If no warehouse is
+        running, returns ``None`` so the caller can handle gracefully rather
+        than sending queries to a stopped warehouse.  On SQL execution
+        failure the caller should call ``_invalidate_warehouse_cache()`` so
+        the next attempt re-resolves.
+        """
+        import time as _time
+        cache_key = "default"
+        with _warehouse_cache_lock:
+            cached = _warehouse_cache.get(cache_key)
+            if cached and (_time.time() - cached[1]) < _WAREHOUSE_CACHE_TTL_S:
+                return cached[0]
+        try:
+            from databricks.sdk import WorkspaceClient
+            w = WorkspaceClient()
+            warehouses = list(w.warehouses.list())
+            wh_id = next(
+                (wh.id for wh in warehouses if wh.state and str(wh.state) == "RUNNING"),
+                None,
+            )
+            if wh_id is None:
+                logger.warning("No RUNNING SQL warehouse found (%d total).", len(warehouses))
+                return None
+            with _warehouse_cache_lock:
+                _warehouse_cache[cache_key] = (wh_id, _time.time())
+            return wh_id
+        except Exception as e:
+            logger.warning("Could not list warehouses: %s", e)
+            return None
+
+    @staticmethod
+    def _invalidate_warehouse_cache() -> None:
+        """Clear the warehouse cache so the next call re-resolves."""
+        with _warehouse_cache_lock:
+            _warehouse_cache.clear()
+
     def _execute_sql_parameterized(self, query: str, params: Dict[str, str]) -> List[Dict]:
         """Execute SQL query with named parameters and return results.
 
         Parameters use the ``:name`` syntax in the query and are passed to the
         Databricks SQL Statement API as ``StatementParameterListItem`` objects,
         which safely bind values without string interpolation.
+
+        Uses a cached warehouse ID to avoid listing warehouses on every call.
         """
         try:
             from databricks.sdk import WorkspaceClient
             from databricks.sdk.service.sql import StatementParameterListItem, StatementState
 
-            w = WorkspaceClient()
-            warehouses = list(w.warehouses.list())
-            warehouse_id = next(
-                (wh.id for wh in warehouses if wh.state and str(wh.state) == "RUNNING"),
-                warehouses[0].id if warehouses else None
-            )
-
+            warehouse_id = self._get_cached_warehouse_id()
             if not warehouse_id:
+                logger.warning("No SQL warehouse available for query execution.")
                 return []
 
+            w = WorkspaceClient()
             stmt_params = [
                 StatementParameterListItem(name=k, value=str(v), type="STRING")
                 for k, v in params.items()
@@ -232,37 +277,37 @@ class BaseAgent:
                 result = response.result
                 rows = getattr(result, "data_array", None) or [] if result else []
                 return [dict(zip(columns, row)) for row in rows]
+            # Log non-success state for debugging
+            state = getattr(response.status, "state", "unknown") if response.status else "unknown"
+            error_msg = getattr(getattr(response.status, "error", None), "message", "") if response.status else ""
+            logger.warning("SQL statement did not succeed: state=%s error=%s", state, error_msg)
             return []
         except Exception as e:
-            logger.error(f"SQL execution error: {e}")
+            logger.error("SQL execution error: %s", e)
+            self._invalidate_warehouse_cache()
             return []
 
-    def _get_approval_rules_from_lakebase(self, rule_type: Optional[str] = None) -> List[Dict]:
-        """
-        Load active approval rules from the OLTP Lakebase Autoscaling Postgres database.
-        Returns list of dicts with keys: name, rule_type, action_summary, condition_expression, priority.
-        """
+    # -- Lakebase connection helper (shared by rules, write-back, config changes) --
+
+    def _get_lakebase_conn_str(self) -> Optional[str]:
+        """Resolve Lakebase Postgres connection string. Returns None if unavailable."""
         if not (self.lakebase_project_id and self.lakebase_branch_id and self.lakebase_endpoint_id):
-            return []
+            return None
         try:
             from databricks.sdk import WorkspaceClient
-            import psycopg
-            from psycopg.rows import dict_row
+            from databricks.sdk.errors import NotFound as _NotFound
 
             ws = WorkspaceClient()
             postgres_api = getattr(ws, "postgres", None)
             if postgres_api is None:
-                logger.warning("WorkspaceClient has no 'postgres'; cannot read from Lakebase.")
-                return []
-            # Discover actual endpoint name — Lakebase auto-generates names like
-            # ep-xxx when a project is created, so the configured endpoint_id
-            # (e.g. 'primary') may not match. Try configured name first, then list.
+                logger.warning("WorkspaceClient has no 'postgres'; cannot connect to Lakebase.")
+                return None
+
             configured_endpoint_name = (
                 f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
                 f"/endpoints/{self.lakebase_endpoint_id}"
             )
             branch_path = f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
-            from databricks.sdk.errors import NotFound as _NotFound
             try:
                 postgres_api.get_endpoint(name=configured_endpoint_name)
                 endpoint_name = configured_endpoint_name
@@ -272,24 +317,35 @@ class BaseAgent:
 
             endpoint = postgres_api.get_endpoint(name=endpoint_name)
             cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
-            # Resolve host: endpoint.status.hosts.host (hosts is an object, not a list)
-            # Canonical impl: src/payment_analysis/backend/lakebase_helpers.py
             host = getattr(getattr(getattr(endpoint, "status", None), "hosts", None), "host", None)
             if not host:
                 logger.warning("Lakebase endpoint has no host.")
-                return []
-            schema_name = self.lakebase_schema or "payment_analysis"
+                return None
             username = (
                 (ws.current_user.me().user_name if ws.current_user else None)
                 or getattr(ws.config, "client_id", None)
                 or "postgres"
             )
-            conn_str = (
+            return (
                 f"host={host} port=5432 dbname=databricks_postgres user={username} "
                 f"password={cred.token} sslmode=require"
             )
+        except Exception as e:
+            logger.warning("Could not resolve Lakebase connection: %s", e)
+            return None
+
+    def _get_approval_rules_from_lakebase(self, rule_type: Optional[str] = None) -> List[Dict]:
+        """Load active approval rules from the OLTP Lakebase Autoscaling Postgres database."""
+        conn_str = self._get_lakebase_conn_str()
+        if not conn_str:
+            return []
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+
             allowed = ("authentication", "retry", "routing")
             filter_type = rule_type if rule_type and rule_type in allowed else None
+            schema_name = self.lakebase_schema or "payment_analysis"
             with psycopg.connect(conn_str, row_factory=dict_row) as conn:  # type: ignore[arg-type]
                 with conn.cursor() as cur:
                     if filter_type:
@@ -351,50 +407,14 @@ class BaseAgent:
         expected_impact_pct: float,
         confidence: float,
     ) -> bool:
-        """Write an agent recommendation to the Lakebase approval_recommendations table.
-
-        This closes the feedback loop: agents analyze data → propose actions →
-        DecisionEngine consumes those recommendations in real-time decisions.
-        """
-        if not (self.lakebase_project_id and self.lakebase_branch_id and self.lakebase_endpoint_id):
+        """Write an agent recommendation to the Lakebase approval_recommendations table."""
+        conn_str = self._get_lakebase_conn_str()
+        if not conn_str:
             return False
         try:
-            from databricks.sdk import WorkspaceClient
             import psycopg
             import uuid
 
-            ws = WorkspaceClient()
-            postgres_api = getattr(ws, "postgres", None)
-            if postgres_api is None:
-                return False
-
-            configured_endpoint_name = (
-                f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
-                f"/endpoints/{self.lakebase_endpoint_id}"
-            )
-            branch_path = f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
-            from databricks.sdk.errors import NotFound as _NotFound
-            try:
-                postgres_api.get_endpoint(name=configured_endpoint_name)
-                endpoint_name = configured_endpoint_name
-            except _NotFound:
-                eps = list(postgres_api.list_endpoints(parent=branch_path))
-                endpoint_name = getattr(eps[0], "name", configured_endpoint_name) if eps else configured_endpoint_name
-
-            endpoint = postgres_api.get_endpoint(name=endpoint_name)
-            cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
-            host = getattr(getattr(getattr(endpoint, "status", None), "hosts", None), "host", None)
-            if not host:
-                return False
-            username = (
-                (ws.current_user.me().user_name if ws.current_user else None)
-                or getattr(ws.config, "client_id", None)
-                or "postgres"
-            )
-            conn_str = (
-                f"host={host} port=5432 dbname=databricks_postgres user={username} "
-                f"password={cred.token} sslmode=require"
-            )
             schema = self.lakebase_schema or "payment_analysis"
             rec_id = uuid.uuid4().hex[:16]
             with psycopg.connect(conn_str) as conn:
@@ -420,51 +440,14 @@ class BaseAgent:
         proposed_value: str,
         reason: str,
     ) -> bool:
-        """Propose a configuration change to Lakebase DecisionConfig.
-
-        The proposed change is stored with status='proposed' so it can be reviewed
-        before activation. This enables agents to suggest threshold adjustments
-        (e.g. risk_threshold_high, retry_max_attempts) based on data analysis.
-        """
-        if not (self.lakebase_project_id and self.lakebase_branch_id and self.lakebase_endpoint_id):
+        """Propose a configuration change to Lakebase DecisionConfig."""
+        conn_str = self._get_lakebase_conn_str()
+        if not conn_str:
             return False
         try:
-            from databricks.sdk import WorkspaceClient
             import psycopg
             import uuid
 
-            ws = WorkspaceClient()
-            postgres_api = getattr(ws, "postgres", None)
-            if postgres_api is None:
-                return False
-
-            configured_endpoint_name = (
-                f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
-                f"/endpoints/{self.lakebase_endpoint_id}"
-            )
-            branch_path = f"projects/{self.lakebase_project_id}/branches/{self.lakebase_branch_id}"
-            from databricks.sdk.errors import NotFound as _NotFound
-            try:
-                postgres_api.get_endpoint(name=configured_endpoint_name)
-                endpoint_name = configured_endpoint_name
-            except _NotFound:
-                eps = list(postgres_api.list_endpoints(parent=branch_path))
-                endpoint_name = getattr(eps[0], "name", configured_endpoint_name) if eps else configured_endpoint_name
-
-            endpoint = postgres_api.get_endpoint(name=endpoint_name)
-            cred = postgres_api.generate_database_credential(endpoint=endpoint_name)
-            host = getattr(getattr(getattr(endpoint, "status", None), "hosts", None), "host", None)
-            if not host:
-                return False
-            username = (
-                (ws.current_user.me().user_name if ws.current_user else None)
-                or getattr(ws.config, "client_id", None)
-                or "postgres"
-            )
-            conn_str = (
-                f"host={host} port=5432 dbname=databricks_postgres user={username} "
-                f"password={cred.token} sslmode=require"
-            )
             schema = self.lakebase_schema or "payment_analysis"
             change_id = uuid.uuid4().hex[:16]
             with psycopg.connect(conn_str) as conn:
@@ -1260,8 +1243,19 @@ Recommendations should include:
         ))
 
 
+# Tiered LLM strategy — strongest model for orchestrator reasoning, balanced for specialists.
+LLM_TIER_ORCHESTRATOR = "databricks-claude-opus-4-6"
+LLM_TIER_SPECIALIST = "databricks-claude-sonnet-4-5"
+
+
 class OrchestratorAgent(BaseAgent):
-    """Meta-agent that coordinates all specialized agents."""
+    """Meta-agent that coordinates all specialized agents.
+
+    Uses a tiered LLM strategy:
+      - Orchestrator routing: Opus 4.6 (strongest reasoning for query classification)
+      - Synthesis: Sonnet 4.5 (fast, sufficient for summarizing specialist outputs)
+      - Specialists (domain analysis): Sonnet 4.5 (balanced speed / quality)
+    """
 
     def __init__(
         self,
@@ -1272,7 +1266,8 @@ class OrchestratorAgent(BaseAgent):
         lakebase_branch_id: str = "",
         lakebase_endpoint_id: str = "",
         lakebase_schema: str = "payment_analysis",
-        llm_endpoint: str = "databricks-claude-sonnet-4-5",
+        llm_endpoint: str = LLM_TIER_ORCHESTRATOR,
+        specialist_llm_endpoint: str = LLM_TIER_SPECIALIST,
     ):
         super().__init__(
             AgentRole.ORCHESTRATOR,
@@ -1289,9 +1284,9 @@ class OrchestratorAgent(BaseAgent):
             "lakebase_branch_id": lakebase_branch_id,
             "lakebase_endpoint_id": lakebase_endpoint_id,
             "lakebase_schema": lakebase_schema,
-            "llm_endpoint": llm_endpoint,
+            "llm_endpoint": specialist_llm_endpoint,
         }
-        # Initialize all specialist agents (approval rules from Lakebase when IDs set)
+        # Initialize all specialist agents with the balanced-tier model
         self.smart_routing = SmartRoutingAgent(catalog, schema, **lakebase_kw)
         self.smart_retry = SmartRetryAgent(catalog, schema, **lakebase_kw)
         self.decline_analyst = DeclineAnalystAgent(catalog, schema, **lakebase_kw)
@@ -1323,43 +1318,110 @@ Route queries based on keywords:
 
 For complex queries, engage multiple agents and synthesize responses."""
 
-    def handle_query(self, query: str) -> Dict:
-        """Route query to appropriate agents and synthesize response."""
+    def _route_query(self, query: str) -> Dict[str, "BaseAgent"]:
+        """Select specialist agents for the query using keyword matching."""
         query_lower = query.lower()
-        responses = {}
+        selected: Dict[str, BaseAgent] = {}
 
-        if any(word in query_lower for word in ["routing", "cascade", "processor", "route"]):
-            responses["smart_routing"] = self.smart_routing.think(query)
-        if any(word in query_lower for word in ["retry", "recovery", "reprocess", "failed"]):
-            responses["smart_retry"] = self.smart_retry.think(query)
-        if any(word in query_lower for word in ["decline", "reject", "fail", "denied"]):
-            responses["decline_analyst"] = self.decline_analyst.think(query)
-        if any(word in query_lower for word in ["fraud", "risk", "suspicious", "aml"]):
-            responses["risk_assessor"] = self.risk_assessor.think(query)
-        if any(word in query_lower for word in ["performance", "optimize", "improve", "recommend", "kpi"]):
-            responses["performance_recommender"] = self.performance_recommender.think(query)
-        if not responses:
-            responses["performance_recommender"] = self.performance_recommender.think(query)
+        if any(w in query_lower for w in ("routing", "cascade", "processor", "route")):
+            selected["smart_routing"] = self.smart_routing
+        if any(w in query_lower for w in ("retry", "recovery", "reprocess", "failed")):
+            selected["smart_retry"] = self.smart_retry
+        if any(w in query_lower for w in ("decline", "reject", "fail", "denied")):
+            selected["decline_analyst"] = self.decline_analyst
+        if any(w in query_lower for w in ("fraud", "risk", "suspicious", "aml")):
+            selected["risk_assessor"] = self.risk_assessor
+        if any(w in query_lower for w in ("performance", "optimize", "improve", "recommend", "kpi")):
+            selected["performance_recommender"] = self.performance_recommender
 
-        # Synthesize responses
-        synthesis = self._synthesize_responses(responses)
+        # Broad/ambiguous queries: default to performance recommender
+        if not selected:
+            selected["performance_recommender"] = self.performance_recommender
 
+        return selected
+
+    def handle_query(self, query: str) -> Dict:
+        """Route query to specialists, run them in parallel, and synthesize with LLM."""
+        selected = self._route_query(query)
+        responses: Dict[str, str] = {}
+
+        # Run specialists in parallel using ThreadPoolExecutor
+        if len(selected) == 1:
+            name, agent = next(iter(selected.items()))
+            responses[name] = agent.think(query)
+        else:
+            with ThreadPoolExecutor(max_workers=min(len(selected), 5)) as executor:
+                futures = {
+                    executor.submit(agent.think, query): name
+                    for name, agent in selected.items()
+                }
+                for future in as_completed(futures):
+                    name = futures[future]
+                    try:
+                        responses[name] = future.result(timeout=120)
+                    except Exception as e:
+                        logger.warning("Specialist %s failed: %s", name, e)
+                        responses[name] = f"[{name}] analysis unavailable: {e}"
+
+        synthesis = self._synthesize_responses(query, responses)
         return {
             "query": query,
             "agents_used": list(responses.keys()),
             "agent_responses": responses,
-            "synthesis": synthesis
+            "synthesis": synthesis,
         }
 
-    def _synthesize_responses(self, responses: Dict[str, str]) -> str:
-        """Synthesize responses from multiple agents."""
-        synthesis = "=== ORCHESTRATED AGENT RESPONSE ===\n\n"
+    def _synthesize_responses(self, query: str, responses: Dict[str, str]) -> str:
+        """Synthesize specialist responses using the orchestrator LLM for intelligent summary."""
+        if len(responses) <= 1:
+            return next(iter(responses.values()), "")
 
+        # Build a context block from specialist outputs
+        parts = []
         for agent_name, response in responses.items():
-            synthesis += f"[{agent_name.upper().replace('_', ' ')}]\n{response}\n\n"
+            label = agent_name.upper().replace("_", " ")
+            parts.append(f"### {label}\n{response}")
+        combined = "\n\n".join(parts)
 
-        synthesis += "=== END ORCHESTRATED RESPONSE ===\n"
-        return synthesis
+        synthesis_prompt = (
+            f"You received the following analysis from specialist agents in response to the user query:\n"
+            f'"{query}"\n\n'
+            f"{combined}\n\n"
+            f"Provide a concise, unified executive summary that:\n"
+            f"1. Highlights the top 3-5 actionable findings across all agents\n"
+            f"2. Identifies any conflicting signals and how to resolve them\n"
+            f"3. Recommends prioritized next steps\n"
+            f"Keep the response under 500 words. Use numbered lists."
+        )
+
+        try:
+            from databricks.sdk import WorkspaceClient
+            from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
+
+            w = WorkspaceClient()
+            # Use Sonnet (balanced tier) for synthesis — faster than Opus and
+            # sufficient quality for summarizing specialist outputs.
+            response = w.serving_endpoints.query(
+                name=LLM_TIER_SPECIALIST,
+                messages=[
+                    ChatMessage(role=ChatMessageRole.SYSTEM, content=self.get_system_prompt()),
+                    ChatMessage(role=ChatMessageRole.USER, content=synthesis_prompt),
+                ],
+                max_tokens=1500,
+                temperature=0.2,
+            )
+            choice = response.choices[0] if response.choices else None
+            msg = choice.message if choice else None
+            content = (getattr(msg, "content", None) or "").strip()
+            if content:
+                return content
+        except Exception as e:
+            logger.warning("LLM synthesis failed, falling back to concatenation: %s", e)
+
+        # Fallback: plain concatenation
+        return "\n\n".join(
+            f"[{name.upper().replace('_', ' ')}]\n{resp}" for name, resp in responses.items()
+        )
 
 
 def setup_agent_framework(
@@ -1372,9 +1434,16 @@ def setup_agent_framework(
     lakebase_schema: str = "payment_analysis",
     model_registry_catalog: str = "",
     model_registry_schema: str = "agents",
-    llm_endpoint: str = "databricks-claude-sonnet-4-5",
+    llm_endpoint: str = LLM_TIER_ORCHESTRATOR,
+    specialist_llm_endpoint: str = LLM_TIER_SPECIALIST,
 ) -> OrchestratorAgent:
-    """Initialize the multi-agent framework. When Lakebase IDs are set, approval rules are read from OLTP Lakebase Postgres. model_registry_* define the UC registry for AgentBricks (catalog.schema.agent_name)."""
+    """Initialize the multi-agent framework with a tiered LLM strategy.
+
+    Orchestrator uses the strongest model (Opus 4.6) for routing and synthesis.
+    Specialists use a balanced model (Sonnet 4.5) for domain-specific analysis.
+    When Lakebase IDs are set, approval rules are read from OLTP Lakebase Postgres.
+    model_registry_* define the UC registry for AgentBricks (catalog.schema.agent_name).
+    """
     orchestrator = OrchestratorAgent(
         catalog,
         schema,
@@ -1382,10 +1451,14 @@ def setup_agent_framework(
         lakebase_branch_id=lakebase_branch_id,
         lakebase_endpoint_id=lakebase_endpoint_id,
         lakebase_schema=lakebase_schema,
-        llm_endpoint=llm_endpoint or "databricks-claude-sonnet-4-5",
+        llm_endpoint=llm_endpoint or LLM_TIER_ORCHESTRATOR,
+        specialist_llm_endpoint=specialist_llm_endpoint or LLM_TIER_SPECIALIST,
     )
     reg = f"{model_registry_catalog or catalog}.{model_registry_schema or 'agents'}"
-    logger.info("Agent framework initialized (Orchestrator + 5 specialists); model registry: %s", reg)
+    logger.info(
+        "Agent framework initialized (Orchestrator [%s] + 5 specialists [%s]); registry: %s",
+        orchestrator.llm_endpoint, specialist_llm_endpoint, reg,
+    )
     return orchestrator
 
 
@@ -1402,7 +1475,8 @@ def get_notebook_config() -> Dict[str, Any]:
         "lakebase_schema": "payment_analysis",
         "model_registry_catalog": "ahs_demos_catalog",
         "model_registry_schema": "agents",
-        "llm_endpoint": "databricks-claude-sonnet-4-5",
+        "llm_endpoint": LLM_TIER_ORCHESTRATOR,
+        "specialist_llm_endpoint": LLM_TIER_SPECIALIST,
     }
     try:
         from databricks.sdk.runtime import dbutils
@@ -1417,6 +1491,7 @@ def get_notebook_config() -> Dict[str, Any]:
         dbutils.widgets.text("model_registry_catalog", defaults["model_registry_catalog"])
         dbutils.widgets.text("model_registry_schema", defaults["model_registry_schema"])
         dbutils.widgets.text("llm_endpoint", defaults["llm_endpoint"])
+        dbutils.widgets.text("specialist_llm_endpoint", defaults["specialist_llm_endpoint"])
         return {
             "catalog": dbutils.widgets.get("catalog") or defaults["catalog"],
             "schema": dbutils.widgets.get("schema") or defaults["schema"],
@@ -1428,7 +1503,8 @@ def get_notebook_config() -> Dict[str, Any]:
             "lakebase_schema": (dbutils.widgets.get("lakebase_schema") or defaults["lakebase_schema"]).strip() or "payment_analysis",
             "model_registry_catalog": (dbutils.widgets.get("model_registry_catalog") or defaults["model_registry_catalog"]).strip() or defaults["catalog"],
             "model_registry_schema": (dbutils.widgets.get("model_registry_schema") or defaults["model_registry_schema"]).strip() or "agents",
-            "llm_endpoint": (dbutils.widgets.get("llm_endpoint") or defaults["llm_endpoint"]).strip() or "databricks-claude-sonnet-4-5",
+            "llm_endpoint": (dbutils.widgets.get("llm_endpoint") or defaults["llm_endpoint"]).strip() or LLM_TIER_ORCHESTRATOR,
+            "specialist_llm_endpoint": (dbutils.widgets.get("specialist_llm_endpoint") or defaults["specialist_llm_endpoint"]).strip() or LLM_TIER_SPECIALIST,
         }
     except Exception:
         return defaults
@@ -1443,7 +1519,8 @@ def run_framework(config: Dict[str, Any]) -> Dict[str, Any]:
     schema = config["schema"]
     query = config["query"]
     agent_role = (config.get("agent_role") or "orchestrator").strip().lower()
-    llm_endpoint = (config.get("llm_endpoint") or "").strip() or "databricks-claude-sonnet-4-5"
+    llm_endpoint = (config.get("llm_endpoint") or "").strip() or LLM_TIER_ORCHESTRATOR
+    specialist_llm_endpoint = (config.get("specialist_llm_endpoint") or "").strip() or LLM_TIER_SPECIALIST
     lakebase_kw = {
         "lakebase_project_id": config.get("lakebase_project_id") or "",
         "lakebase_branch_id": config.get("lakebase_branch_id") or "",
@@ -1457,7 +1534,8 @@ def run_framework(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if agent_role == "orchestrator":
         orchestrator = setup_agent_framework(
-            catalog, schema, llm_endpoint=llm_endpoint, **lakebase_kw, **registry_kw
+            catalog, schema, llm_endpoint=llm_endpoint, specialist_llm_endpoint=specialist_llm_endpoint,
+            **lakebase_kw, **registry_kw,
         )
         return orchestrator.handle_query(query)
 

@@ -302,8 +302,8 @@
                       "expression": "`merchant_segment`"
                     },
                     {
-                      "name": "sum(potential_recovery_value)",
-                      "expression": "SUM(`potential_recovery_value`)"
+                      "name": "sum(decline_count)",
+                      "expression": "SUM(`decline_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -335,16 +335,16 @@
                   }
                 },
                 "color": {
-                  "fieldName": "sum(potential_recovery_value)",
+                  "fieldName": "sum(decline_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Recovery Value"
+                  "displayName": "Decline Count"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Recovery Opportunities (by Value)",
+                "title": "Decline Recovery Opportunities",
                 "showDescription": false
               }
             }
@@ -606,10 +606,6 @@
                     {
                       "name": "sum(decline_count)",
                       "expression": "SUM(`decline_count`)"
-                    },
-                    {
-                      "name": "sum(avg_fraud_score)",
-                      "expression": "SUM(`avg_fraud_score`)"
                     }
                   ],
                   "disaggregated": false
@@ -636,24 +632,20 @@
                 "y": {
                   "fieldName": "sum(decline_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
                   "displayName": "Decline Count",
                   "axis": {
                     "title": "Decline Count"
                   }
-                },
-                "color": {
-                  "fieldName": "sum(avg_fraud_score)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Avg Fraud Score"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Declines by Reason (colored by Fraud Score)",
+                "title": "Declines by Fraud Score",
                 "showDescription": false
               }
             }
@@ -849,8 +841,8 @@
                       "expression": "`merchant_segment`"
                     },
                     {
-                      "name": "sum(auth_3ds_usage_pct)",
-                      "expression": "SUM(`auth_3ds_usage_pct`)"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -859,35 +851,38 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "bar",
+              "widgetType": "pie",
               "encodings": {
-                "x": {
-                  "fieldName": "merchant_segment",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "y-reversed"
-                    }
-                  },
-                  "displayName": "Merchant Segment",
-                  "axis": {
-                    "title": "Merchant Segment"
-                  }
-                },
-                "y": {
-                  "fieldName": "sum(auth_3ds_usage_pct)",
+                "angle": {
+                  "fieldName": "sum(transaction_count)",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "3DS Usage %",
-                  "axis": {
-                    "title": "3DS Usage %"
+                  "displayName": "Transaction Count"
+                },
+                "color": {
+                  "fieldName": "merchant_segment",
+                  "scale": {
+                    "type": "categorical",
+                    "range": [
+                      "#EC0000",
+                      "#00E5FF",
+                      "#22C55E",
+                      "#6366F1",
+                      "#F59E0B",
+                      "#8B5CF6"
+                    ]
+                  },
+                  "displayName": "Merchant Segment",
+                  "legend": {
+                    "position": "bottom",
+                    "hideTitle": false
                   }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "3DS Authentication by Segment",
+                "title": "Auth by Segment",
                 "showDescription": false
               }
             }

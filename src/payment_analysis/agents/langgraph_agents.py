@@ -255,7 +255,7 @@ DEFAULT_LLM_SPECIALIST = _os.environ.get(
 )
 DEFAULT_LLM_SIMPLE = _os.environ.get(
     "LLM_ENDPOINT_SIMPLE",
-    _os.environ.get("LLM_ENDPOINT", "databricks-meta-llama-3-3-70b-instruct"),
+    _os.environ.get("LLM_ENDPOINT", "databricks-llama-4-maverick"),
 )
 
 

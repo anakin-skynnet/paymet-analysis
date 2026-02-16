@@ -8,7 +8,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 
 **Primary goal:** Accelerate payment approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Approach:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), closed-loop decisioning with parallel enrichment, streaming features, AI agents with write-back tools, and actionable analytics so every decision (auth, retry, routing) is data-driven, continuously improving, and consistent with business policy.
+**Approach:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), closed-loop decisioning with parallel enrichment, streaming features, a ResponsesAgent (MLflow, 10 UC tools + python_exec) with write-back capabilities, and actionable analytics so every decision (auth, retry, routing) is data-driven, continuously improving, and consistent with business policy.
 
 ### Use cases and impact on approval rates
 
@@ -30,7 +30,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 | **ML models** (4 HistGradientBoosting, 14 features) | Real-time scores with training-inference parity | Decisions based on predicted likelihood and risk; `_build_ml_features()` ensures exact match. |
 | **Rules engine** (Lakebase/Lakehouse) | Configurable business rules + config API | Operators tune without code; config exposed via GET /api/decision/config. |
 | **Vector Search** | Similar-transaction lookup + policy integration | VS approval rates adjust borderline risk tiers in policies. |
-| **7 AI agents** (all with write-back) | Analytics, recommendations, config proposals | Agents write recommendations and propose config changes directly to Lakebase. |
+| **ResponsesAgent** (10 UC tools + python_exec) | Data-driven analytics, recommendations, config proposals | Agent queries UC functions, writes recommendations and proposes config changes to Lakebase. Served as `payment-response-agent`. |
 | **3 unified dashboards + 16+ gold views** | KPIs, funnels, reason codes, retry-by-reason | Visibility into approvals/declines; v_retry_success_by_reason for granular retry analysis. |
 | **Streaming features** | Real-time behavioral features | approval_rate_5m, txn_velocity_1m feed into authentication decisions. |
 | **FastAPI + React app** | Closed-loop decision API and actionable control panel | Preset scenarios, inline expert review, recovery gap, top-3 actions, 90% target lines. |
@@ -41,7 +41,7 @@ Single reference for **what** the platform does, **how** it is built, and how it
 
 ### Validation: alignment with accelerating approval rates
 
-The solution is designed and documented around a single business objective: **accelerate payment approval rates** and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. Each major component is wired to that goal. The recent implementation of 20 QA recommendations strengthened this alignment: (1) closed feedback loop with outcome recording, (2) ML feature parity between training and inference, (3) parallel enrichment for production performance, (4) streaming real-time features, (5) policies that use VS data and agent confidence for borderline decisions, (6) agent write-back tools, and (7) actionable UI with top-3 actions, target lines, contextual guidance, preset scenarios, inline expert review, and recovery gap analysis.
+The solution is designed and documented around a single business objective: **accelerate payment approval rates** and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. Each major component is wired to that goal. The recent implementation of 20 QA recommendations strengthened this alignment: (1) closed feedback loop with outcome recording, (2) ML feature parity between training and inference, (3) parallel enrichment for production performance, (4) streaming real-time features, (5) policies that use VS data and agent confidence for borderline decisions, (6) ResponsesAgent with 10 UC tools for data-driven analysis, and (7) actionable UI with top-3 actions, target lines, contextual guidance, preset scenarios, inline expert review, and recovery gap analysis.
 
 ---
 
@@ -56,7 +56,7 @@ The solution is designed and documented around a single business objective: **ac
 | **ML models (4)** | HistGradientBoosting with 14 engineered features (temporal, merchant/solution approval rates, network encoding, risk-amount interaction) — trained on `payments_enriched_silver`, registered in Unity Catalog, served via model serving endpoints. `_build_ml_features()` ensures training-inference feature parity. | **Approval propensity:** predicts likelihood of approval. **Risk:** enables risk-based auth. **Routing:** picks the solution maximizing approval for the segment. **Retry:** predicts retry success and timing. |
 | **Decisioning API** | Closed-loop endpoints (`/api/decision/authentication`, `/retry`, `/routing`, `/outcome`, `/config`) powered by `DecisionEngine`: parallel ML + VS enrichment (`asyncio.gather`), streaming real-time features (approval_rate_5m, txn_velocity_1m), Lakebase config, rule evaluation, thread-safe caching (`threading.Lock`). Policies use VS approval rates and agent confidence to adjust borderline decisions. POST `/outcome` records actual outcomes. GET `/config` exposes current thresholds. | Single decision layer with continuous improvement; parallel enrichment for production performance; outcome feedback loop ensures the system learns from every decision. Falls back to pure-policy heuristics when Lakebase/ML is unavailable. |
 | **Vector Search** | Delta-sync index `similar_transactions_index` on `transaction_summaries_for_search`; similar-case lookup via `VECTOR_SEARCH()` TVF. | Powers “similar cases” recommendations (e.g. “similar transactions approved 65% with retry after 2h”); feeds recommendations into the Decisioning UI and agents to suggest actions that accelerate approvals. |
-| **7 AI agents** (all with write-back) | Orchestrator + Smart Routing, Smart Retry, Decline Analyst (write_decline_recommendation, propose_decline_config), Risk Assessor (write_risk_recommendation, propose_risk_config), Performance Recommender. Write-back tools let agents write recommendations and propose config changes directly to Lakebase. 17 individual UC functions + 5 consolidated for ResponsesAgent. 4 ML + 3 agent endpoints. | Answer questions; suggest and write routing, retry, and rule changes; propose config changes that operators review from the UI. |
+| **ResponsesAgent + Agent Framework** | **ResponsesAgent** (`payment-response-agent`): MLflow ResponsesAgent with 10 UC tools (5 consolidated + 5 operational) + `python_exec`; primary AI Chat backend. **Agent Framework** (Job 6 fallback): custom Python orchestrator + 5 specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) with write-back tools. 17 individual UC functions + 5 consolidated. 4 ML + 1 agent endpoint. | Answer questions with live data; suggest and write routing, retry, and rule changes; propose config changes that operators review from the UI. |
 | **3 unified dashboards** | Data & Quality, ML & Optimization, Executive & Trends in Databricks AI/BI (Lakeview). Embeddable in the app via `/embed/dashboardsv3/` path. | Give visibility into approval rates, decline reasons, solution performance, and recovery; operators see where to act and track impact. |
 | **FastAPI + React app** | 16-page control panel with actionable UI: Command Center (top-3 actions, 90% target lines, last-updated), Smart Checkout (contextual guidance), Decisioning (preset scenarios, actionable recommendations with "Create Rule"/"Apply to Context"), Reason Codes (inline expert review: Valid/Invalid/Non-Actionable), Smart Retry (recovery gap analysis). All routes have `ErrorBoundary` wrappers and `glass-card` styling. | One place to operate the full stack with every data point telling operators what to do next. |
 | **Genie** | Natural-language “Ask Data” in the workspace, synced with sample questions (approval rate, trends, segments). | Extends visibility: ask “What is the approval rate?” or “Which segment has the lowest approval rate?” in the lakehouse context, supporting the same goal of accelerating approval rates. |
@@ -66,17 +66,17 @@ The solution is designed and documented around a single business objective: **ac
 
 Payment transactions can use several services (Antifraud, Vault, 3DS, Data Only, Recurrence, Network Token, IdPay, Passkey, Click to Pay). **Smart Checkout**, **Reason Codes**, and **Smart Retry** rely on a shared data foundation: medallion pipelines, gold views, and a single control panel. **Brazil** accounts for most volume; the platform supports catalog/schema and country filters. **Entry systems:** Checkout, PD, WS, SEP; each returns the final response to the merchant. **Smart Retry** covers recurrence and reattempts (e.g. 1M+ such transactions per month in Brazil). **False Insights** is a quality metric (insights marked invalid by specialists) to balance speed vs accuracy.
 
-**Business requirement → Solution:** Data foundation → Medallion + gold views. Unified decline visibility → Reason Codes, decline dashboards, Decline Analyst. Smart Checkout (Brazil) → Smart Checkout UI, 3DS funnel, Smart Routing agent. Smart Retry → Retry UI, Smart Retry agent, decisioning API. Actionable insights → Decisioning API, orchestrator + 5 agents, rules engine. Feedback loop → Experiments, incidents, rules CRUD, model retraining. Single control panel → FastAPI + React app (Setup & Run, Dashboards, Rules, Decisioning, Agents). AI-driven intelligence → 7 AI agents, Genie.
+**Business requirement → Solution:** Data foundation → Medallion + gold views. Unified decline visibility → Reason Codes, decline dashboards, Decline Analyst. Smart Checkout (Brazil) → Smart Checkout UI, 3DS funnel, Smart Routing. Smart Retry → Retry UI, retry analysis, decisioning API. Actionable insights → Decisioning API, ResponsesAgent + agent framework, rules engine. Feedback loop → Experiments, incidents, rules CRUD, model retraining. Single control panel → FastAPI + React app (Setup & Run, Dashboards, Rules, Decisioning, AI Chat). AI-driven intelligence → ResponsesAgent (10 UC tools), Genie.
 
 ---
 
 ## 2. Architecture
 
-- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie, Vector Search, Lakebase. 3 unified dashboards. 4 ML + 3 agent model serving endpoints. All serverless compute.
+- **Platform:** Databricks — Lakeflow, Unity Catalog, SQL Warehouse, MLflow, Model Serving, Genie, Vector Search, Lakebase. 3 unified dashboards. 4 ML + 1 agent model serving endpoints. All serverless compute.
 - **App:** FastAPI (analytics, decisioning, dashboards, agents, rules, setup) + React (TanStack Router, shadcn/ui). API prefix `/api` for token-based auth.
 - **Stack:** Delta, Unity Catalog, Lakeflow, SQL Warehouse, Lakebase (Postgres for rules/experiments/incidents/online features), Vector Search (similar transactions), MLflow, FastAPI, React, TypeScript, Vite, Bun, Databricks Asset Bundles.
 
-**Data flow:** Ingestion → Processing (Bronze → Silver → Gold, &lt;5s) → Intelligence (ML + 7 AI agents + Vector Search) → Analytics (3 unified dashboards, Genie) → Application (FastAPI + React).
+**Data flow:** Ingestion → Processing (Bronze → Silver → Gold, &lt;5s) → Intelligence (ML + ResponsesAgent + Vector Search) → Analytics (3 unified dashboards, Genie) → Application (FastAPI + React).
 
 Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold 15+ views. Lakehouse bootstrap creates `app_config`, rules, recommendations, and related views (see [Deployment](DEPLOYMENT.md)). Vector Search delta-sync index `similar_transactions_index` on `transaction_summaries_for_search` for similar-transaction lookup (populated from silver via MERGE, synced to embedding model `databricks-bge-large-en`).
 
@@ -91,7 +91,7 @@ Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold
 | Transform | `src/payment_analysis/transform/` | Lakehouse SQL, gold views, lakehouse bootstrap, prepare/publish dashboards |
 | Streaming | `src/payment_analysis/streaming/` | Bronze ingest, real-time pipeline, transaction simulator |
 | ML | `src/payment_analysis/ml/` | Model training (approval, risk, routing, retry) |
-| Agents | `src/payment_analysis/agents/` | Orchestrator + specialist agents |
+| Agents | `src/payment_analysis/agents/` | ResponsesAgent (agent.py), agent framework, registration notebook |
 | Bundle | `resources/` | Unity Catalog, Lakebase, pipelines, sql_warehouse, ml_jobs, agents, dashboards, fastapi_app |
 | Scripts | `scripts/` | bundle.sh (validate/deploy/verify), dashboards.py (prepare/validate-assets), sync_requirements_from_lock.py |
 
@@ -105,7 +105,7 @@ Medallion: Bronze `payments_raw_bronze`, Silver `payments_enriched_silver`, Gold
 | Pipelines | ETL, Real-Time Stream |
 | Jobs | 7 steps (repositories, simulator, ingestion, dashboards, ML, agents, Genie sync) |
 | Dashboards | 3 unified (Data & Quality, ML & Optimization, Executive & Trends) |
-| Model Serving | 4 ML endpoints (always deployed) + 3 agent endpoints (managed by Job 6) |
+| Model Serving | 4 ML endpoints (always deployed) + 1 agent endpoint `payment-response-agent` (managed by Job 6) |
 | App | payment-analysis (FastAPI + React) |
 | Vector Search | Endpoint + delta-sync index for similar transactions |
 
@@ -124,7 +124,7 @@ Execution order in **Setup & Run:** foundation (Lakehouse, Vector Search, gold v
 | Pipelines (ETL, Real-Time) | — | Start pipeline from Setup & Run |
 | Train ML Models | Step 5 | Run ML training |
 | Genie Space Sync | Optional | Run Genie sync |
-| Orchestrator + 5 agents | Step 6 | Run / Open |
+| ResponsesAgent + Agent Framework | Step 6 | Run / Open |
 | Publish Dashboards | Step 4 | Run job (embed credentials) |
 | 3 Dashboards | Dashboards page | Card opens in workspace |
 | Rules, Experiments, Incidents | Rules, Experiments, Incidents | CRUD via API |
@@ -194,10 +194,10 @@ All data is **fetched from the Databricks backend** and is **interactive**.
 
 | Chat | Endpoint | Purpose |
 |------|----------|---------|
-| **AI Chatbot (Orchestrator)** | `POST /api/agents/orchestrator/chat` | Orchestrator agent (Job 6 or Model Serving): recommendations, payment analysis from specialists. |
+| **AI Chatbot** | `POST /api/agents/orchestrator/chat` | ResponsesAgent (`payment-response-agent`) with 10 UC tools + python_exec; falls back to AI Gateway (Opus 4.6) or Job 6 agent framework. |
 | **Genie Assistant** | `POST /api/agents/chat` | Databricks Genie Conversation API when `GENIE_SPACE_ID` is set. |
 
-Header buttons: “AI Chatbot” (Orchestrator) and “Genie Assistant”. Command Center “Chat with Orchestrator” opens the AI Chatbot. If Orchestrator fails, the app can fall back to Genie or a static reply.
+Header buttons: “AI Chatbot” and “Genie Assistant”. Command Center “Chat with AI” opens the AI Chatbot. The AI Chatbot uses a 3-tier fallback: ResponsesAgent (`payment-response-agent`) → AI Gateway (Opus 4.6) → Job 6 agent framework.
 
 ### 6c. Where artifacts are used in the app
 
@@ -205,7 +205,7 @@ Header buttons: “AI Chatbot” (Orchestrator) and “Genie Assistant”. Comma
 |----------|-----------|-------------|
 | Streaming & real-time | Bronze/Silver/Gold, pipelines, Job 2 (simulator) | Data & Quality, Command Center KPIs, Dashboards, Recommendations |
 | ML models & inference | Approval propensity, Risk, Routing, Retry | Decisioning (Live ML predictions), Models page |
-| Agents | Orchestrator, Decline analyst, Routing/Retry/Risk/Performance | AI Agents page, Orchestrator chat |
+| Agents | ResponsesAgent (`payment-response-agent`), Agent Framework (5 specialists) | AI Agents page, AI Chat (floating dialog) |
 | Dashboards | Data & Quality, ML & Optimization, Executive & Trends | Dashboards page (list, embed, open in workspace) |
 | Vector Search | Similar-case index | Decisioning recommendations via v_recommendations_from_lakehouse |
 | Lakebase / Lakehouse | Rules, recommendations, app_config | Rules page, Decisioning, analytics |

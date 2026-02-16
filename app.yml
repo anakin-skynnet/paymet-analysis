@@ -32,10 +32,18 @@ env:
   # Set this after creating the Genie space in the target workspace, or leave empty to disable Genie.
   - name: GENIE_SPACE_ID
     value: "01f10b167280118797c3786716abd9ca"
-  # Use AgentBricks orchestrator for chat (Model Serving). Omit or set empty to use Job 6 (custom Python).
-  # Set to 'payment-analysis-orchestrator' after the serving endpoint is deployed (Job 6 + model_serving.yml).
+  # ResponsesAgent endpoint on Model Serving (with UC tools).
+  # Primary path for AI Chat (Path 1). Falls through to AI Gateway Opus 4.6 (Path 2) if failing.
+  # This is the PaymentAnalysisAgent built in this solution with 10 UC tools + python_exec.
   - name: ORCHESTRATOR_SERVING_ENDPOINT
-    value: ""
+    value: "payment-response-agent"
+  # Foundation model endpoint for AI Gateway orchestrator chat (Path 2 fallback).
+  # Uses Claude Opus 4.6 — the strongest reasoning model for complex payment analysis.
+  - name: LLM_ENDPOINT
+    value: "databricks-claude-opus-4-6"
+  # Balanced-tier model for Genie Assistant data questions (Sonnet — fast, cost-effective).
+  - name: LLM_ENDPOINT_GENIE
+    value: "databricks-claude-sonnet-4-5"
   # Job 6 ID — set explicitly so orchestrator chat doesn't need to list all workspace jobs.
   - name: DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT
     value: "322421284086051"

@@ -12,7 +12,7 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 **Goal:** Accelerate approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Stack:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), 7 AI agents (all with write-back tools), rules engine, Vector Search, streaming features, Lakebase (Postgres). Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6). 17 individual + 5 consolidated UC functions. Dual-write sync for approval rules. Closed-loop DecisionEngine: parallel ML + VS enrichment (`asyncio.gather`), streaming features, thread-safe caching, outcome recording (POST /outcome), policies that use VS approval rates and agent confidence for borderline decisions.
+**Stack:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), ResponsesAgent (MLflow, 10 UC tools + python_exec), rules engine, Vector Search, streaming features, Lakebase (Postgres). Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app. 4 ML model serving endpoints + 1 agent endpoint (`payment-response-agent`, managed by Job 6). 17 individual + 5 consolidated UC functions. Dual-write sync for approval rules. Closed-loop DecisionEngine: parallel ML + VS enrichment (`asyncio.gather`), streaming features, thread-safe caching, outcome recording (POST /outcome), policies that use VS approval rates and agent confidence for borderline decisions.
 
 **Use cases:** Smart Retry (with recovery gap analysis), Smart Checkout (contextual 3DS guidance), Reason codes & declines (inline expert review), Risk & fraud, Routing optimization, Decisioning (closed-loop auth/retry/routing with preset scenarios).
 
@@ -103,20 +103,29 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 ## 9. AI agents in the solution
 
+**Primary: ResponsesAgent** (`payment-response-agent`): MLflow ResponsesAgent (OpenAI Responses API) with 10 UC function tools + `python_exec`. Served on Databricks Model Serving. Uses Claude Sonnet 4.5 for multi-turn tool calling. Registered as `{catalog}.agents.payment_analysis_agent` by Job 6 task `register_responses_agent`.
+
+**Fallback: Agent Framework** (`agent_framework.py`): Custom Python orchestrator + 5 specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Run by Job 6 task `run_agent_framework`. Used as Path 3 fallback when Model Serving and AI Gateway are unavailable.
+
+**AI Chat 3-tier fallback:**
+1. **Path 1** — ResponsesAgent (`payment-response-agent`) with 10 UC tools + python_exec
+2. **Path 2** — AI Gateway (Claude Opus 4.6, `LLM_ENDPOINT`) for direct LLM reasoning
+3. **Path 3** — Job 6 agent framework (custom Python orchestrator)
+
 **In-app (UI):** **AI agents** page lists agents from `GET /api/agents/agents`. Types: Genie, Model Serving, Custom LLM, AI Gateway. Open in Databricks via `GET /api/agents/agents/{id}/url`. Genie chat is in Databricks (one-click from app).
 
-**Agent framework (notebook/jobs):** `src/payment_analysis/agents/agent_framework.py` — Orchestrator + specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). All agents have write-back tools: Decline Analyst has `write_decline_recommendation` and `propose_decline_config`; Risk Assessor has `write_risk_recommendation` and `propose_risk_config`. Jobs: `resources/agents.yml` (step 6). Orchestrator and specialists use Lakehouse Rules (`v_approval_rules_active`), incidents (`incidents_lakehouse`), and Vector Search (`similar_transactions_index`) to accelerate approvals. 17 individual UC functions + 5 consolidated functions for the ResponsesAgent. Run from **Setup & Run** (step 6).
+**UC Tools:** 17 individual UC functions + 5 consolidated functions for the ResponsesAgent (fits Databricks 10-function limit: 5 consolidated + 5 operational = 10 total). Created by Job 3 from `uc_agent_tools.sql`.
 
 **Registry (backend):** `src/payment_analysis/backend/routes/agents.py` — `AGENTS` list (Genie, Model Serving, AI Gateway, Custom) with metadata, example queries, workspace URLs. Catalog/schema from `app_config` when available.
 
-**Orchestrator in the app UI:** The Command Center (and similar dashboards) show two chat panels: **Getnet AI Assistant** (lightweight chat) and **Agent Recommendations** (orchestrator). The orchestrator runs Job 6 (Deploy Agents) via `POST /api/agents/orchestrator/chat`, so it is registered and usable from the Databricks app UI. Requirements:
+**AI Chat in the app UI:** The floating dialog uses `POST /api/agents/orchestrator/chat`. Requirements:
 
-1. **Job 6 deployed** — Bundle deploy creates "[${var.environment}] 6. Deploy Agents (Orchestrator & Specialists)" in the workspace. The backend resolves its job ID automatically when you open the app from **Compute → Apps** (no env var needed).
-2. **Open app from Compute → Apps** — So the platform forwards your token; the backend uses it to list jobs (resolve Job 6 ID) and to run the job.
-3. **Optional:** Set `DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT` in the app environment if you want to pin a specific job ID instead of auto-resolution.
-4. **Catalog/schema** — Orchestrator runs with the effective catalog/schema (from app_config or env). Save them in Setup & Run if needed.
+1. **Job 6 deployed** — Bundle deploy creates "[${var.environment}] 6. Deploy Agents (Orchestrator & Specialists)" in the workspace. Task 2 registers the ResponsesAgent and deploys the `payment-response-agent` endpoint.
+2. **`ORCHESTRATOR_SERVING_ENDPOINT`** — Set to `payment-response-agent` in `app.yml`.
+3. **Open app from Compute → Apps** — So the platform forwards your token; the backend uses it for Model Serving queries.
+4. **Optional:** Set `DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT` in the app environment to pin a specific job ID.
 
-To verify: Open the app from Compute → Apps → payment-analysis, go to Command Center, open the **Agent Recommendations** panel (floating button), send a message (e.g. "How can I improve approval rates?"). The backend starts Job 6, waits for the run, and returns the synthesized reply and agents used.
+To verify: Open the app from Compute → Apps → payment-analysis, open the **AI Chatbot** floating dialog, send a message (e.g. "What are the top decline reasons?"). The ResponsesAgent uses UC tools to query live data and returns a data-driven response.
 
 ---
 

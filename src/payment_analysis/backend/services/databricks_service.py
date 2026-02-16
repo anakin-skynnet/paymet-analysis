@@ -1397,62 +1397,153 @@ class DatabricksService:
             mock_fallback=lambda: MockDataGenerator.retry_prediction(features),
         )
 
+    @staticmethod
+    def _engineer_features(features: dict[str, Any], endpoint_name: str) -> dict[str, Any]:
+        """Transform raw MLPredictionInput features to the schema each model expects.
+
+        The ML models were trained with engineered columns (``log_amount``,
+        ``hour_of_day``, ``is_weekend``, ``network_encoded``,
+        ``risk_amount_interaction``, etc.) that are *not* present in the
+        ``MLPredictionInput`` Pydantic model.  This method derives them from
+        the raw inputs so the Model Serving endpoint receives an exact schema
+        match.
+        """
+        import math
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        amount = float(features.get("amount", 0))
+        fraud_score = float(features.get("fraud_score", 0.1))
+
+        # Common engineered features shared by all four models
+        base: dict[str, Any] = {
+            "amount": amount,
+            "log_amount": math.log1p(amount),
+            "fraud_score": fraud_score,
+            "device_trust_score": float(features.get("device_trust_score", 0.8)),
+            "is_cross_border": int(bool(features.get("is_cross_border", False))),
+            "hour_of_day": now.hour,
+            "day_of_week": now.weekday(),
+            "is_weekend": int(now.weekday() >= 5),
+            "risk_amount_interaction": fraud_score * amount,
+        }
+
+        # Card network → ordinal encoded (matches LabelEncoder order in training)
+        network_map = {"amex": 0, "discover": 1, "mastercard": 2, "visa": 3}
+        network = str(features.get("card_network", "visa")).lower()
+        base["network_encoded"] = network_map.get(network, 3)
+
+        if "approval" in endpoint_name:
+            base["retry_count"] = int(features.get("retry_count", 0))
+            base["uses_3ds"] = int(bool(features.get("uses_3ds", False)))
+            return base
+
+        if "risk" in endpoint_name:
+            base["aml_risk_score"] = float(features.get("aml_risk_score", 0.1))
+            base["processing_time_ms"] = float(features.get("processing_time_ms", 250))
+            return base
+
+        if "routing" in endpoint_name:
+            base["uses_3ds"] = int(bool(features.get("uses_3ds", False)))
+            # One-hot encoded merchant_segment columns (from pd.get_dummies in training)
+            _SEGMENTS = ["Digital", "Entertainment", "Fuel", "Gaming", "Grocery", "Retail", "Subscription", "Travel"]
+            seg = str(features.get("merchant_segment", "Retail")).capitalize()
+            for s in _SEGMENTS:
+                base[f"segment_{s}"] = 1 if s == seg else 0
+            return base
+
+        # smart-retry requires additional retry-specific fields
+        base["retry_count"] = int(features.get("retry_count", 0))
+        base["is_recurring"] = int(bool(features.get("is_recurring", False)))
+        base["attempt_sequence"] = int(features.get("attempt_sequence", 1))
+        base["time_since_last_attempt_seconds"] = float(features.get("time_since_last_attempt_seconds", 60))
+        base["prior_approved_count"] = int(features.get("prior_approved_count", 0))
+        base["merchant_retry_policy_max_attempts"] = int(features.get("merchant_retry_policy_max_attempts", 3))
+        # Decline reason and retry scenario are label-encoded integers in training;
+        # default to 0 (most-common bucket) when not provided.
+        base["decline_encoded"] = int(features.get("decline_encoded", 0))
+        base["retry_scenario_encoded"] = int(features.get("retry_scenario_encoded", 0))
+        return base
+
     async def _call_model_endpoint(
         self,
         endpoint_name: str,
         features: dict[str, Any],
         mock_fallback: Callable[[], dict[str, Any]],
     ) -> dict[str, Any]:
-        """Generic model endpoint caller with fallback."""
+        """Generic model endpoint caller with fallback.
+
+        Applies feature engineering to translate MLPredictionInput fields
+        into the exact column schema each model was trained on.
+        """
         if not self.is_available:
-            logger.warning(f"Databricks unavailable, using mock for {endpoint_name}")
+            logger.warning("Databricks unavailable, using mock for %s", endpoint_name)
             return mock_fallback()
 
         client = self.client
         if client is None:
             return mock_fallback()
 
+        engineered = self._engineer_features(features, endpoint_name)
         try:
             response = client.serving_endpoints.query(
                 name=endpoint_name,
-                dataframe_records=[features],
+                dataframe_records=[engineered],
             )
             return self._parse_model_response(response, endpoint_name)
         except Exception as e:
-            logger.error(f"Model endpoint {endpoint_name} failed: {e}")
+            logger.error("Model endpoint %s failed: %s", endpoint_name, e)
             return mock_fallback()
     
     def _parse_model_response(self, response: Any, endpoint_name: str) -> dict[str, Any]:
-        """Parse model serving response based on endpoint type."""
-        prediction = response.predictions[0]
-        model_version = response.metadata.model_version if response.metadata else "unknown"
-        
+        """Parse model serving response based on endpoint type.
+
+        Models are sklearn ``HistGradientBoostingClassifier`` logged via MLflow.
+        By default they return ``model.predict()`` — a raw class label (int)
+        rather than probability dicts.  We handle both formats.
+        """
+        raw = response.predictions[0]
+        model_version = getattr(getattr(response, "served_model_name", None), "__str__", lambda: "unknown")() or "unknown"
+
+        # If the serving endpoint returns a dict with 'probability' / 'prediction' keys,
+        # use them directly; otherwise treat ``raw`` as the class label.
+        if isinstance(raw, dict):
+            pred_class = raw.get("prediction", 0)
+            proba = raw.get("probability")
+        else:
+            pred_class = int(raw) if not isinstance(raw, int) else raw
+            proba = None
+
         if "approval" in endpoint_name:
+            p = proba[1] if isinstance(proba, (list, tuple)) and len(proba) > 1 else (0.85 if pred_class == 1 else 0.25)
             return {
-                "approval_probability": prediction.get("probability", [0.5, 0.5])[1],
-                "should_approve": prediction.get("prediction", 1) == 1,
+                "approval_probability": p,
+                "should_approve": pred_class == 1,
                 "model_version": model_version,
             }
         elif "risk" in endpoint_name:
-            prob = prediction.get("probability", [0.9, 0.1])[1]
+            p = proba[1] if isinstance(proba, (list, tuple)) and len(proba) > 1 else (0.75 if pred_class == 1 else 0.15)
             return {
-                "risk_score": prob,
-                "is_high_risk": prediction.get("prediction", 0) == 1,
-                "risk_tier": RiskTier.from_score(prob).value,
+                "risk_score": p,
+                "is_high_risk": pred_class == 1,
+                "risk_tier": RiskTier.from_score(p).value,
             }
         elif "retry" in endpoint_name:
-            prob = prediction.get("probability", [0.5, 0.5])
-            retry_prob = prob[1] if isinstance(prob, (list, tuple)) and len(prob) > 1 else (float(prob) if isinstance(prob, (int, float)) else 0.5)
+            p = proba[1] if isinstance(proba, (list, tuple)) and len(proba) > 1 else (0.70 if pred_class == 1 else 0.20)
             return {
-                "should_retry": prediction.get("prediction", 1) == 1,
-                "retry_success_probability": retry_prob,
+                "should_retry": pred_class == 1,
+                "retry_success_probability": p,
                 "model_version": model_version,
             }
         else:  # routing
+            _SOLUTION_LABELS = ["3ds", "apple_pay", "google_pay", "network_token", "passkey", "standard"]
+            solution = _SOLUTION_LABELS[pred_class] if 0 <= pred_class < len(_SOLUTION_LABELS) else f"class_{pred_class}"
+            conf = max(proba) if isinstance(proba, (list, tuple)) and proba else 0.80
+            alternatives = [s for s in _SOLUTION_LABELS if s != solution][:2]
             return {
-                "recommended_solution": prediction.get("prediction", "primary_processor"),
-                "confidence": max(prediction.get("probability", [0.5])),
-                "alternatives": ["backup_processor", "network_tokenization"],
+                "recommended_solution": solution,
+                "confidence": conf,
+                "alternatives": alternatives,
             }
     
     # _get_mock_data_for_query removed: analytics methods now return empty data

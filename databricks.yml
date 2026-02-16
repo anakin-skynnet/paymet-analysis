@@ -101,7 +101,7 @@ variables:
   # Tiered LLM strategy: Orchestrator (strongest reasoning) → Specialist (balanced) → Simple (fast/cheap).
   # See: Foundation Model API endpoints in the workspace (databricks serving-endpoints list).
   llm_endpoint:
-    description: "Default LLM endpoint (backward-compatible, used where no tier is specified)."
+    description: "Default LLM endpoint (reference only — not used by active bundle resources; app.yml sets LLM_ENDPOINT directly)."
     default: "databricks-claude-sonnet-4-5"
   llm_endpoint_orchestrator:
     description: "LLM for the orchestrator / supervisor agent (needs strongest reasoning for multi-step routing and synthesis)."
@@ -110,23 +110,14 @@ variables:
     description: "LLM for specialist agents (decline, routing, retry, risk, perf). Balanced speed/quality."
     default: "databricks-claude-sonnet-4-5"
   llm_endpoint_simple:
-    description: "LLM for simple lookups, basic formatting, and low-latency tasks."
-    default: "databricks-meta-llama-3-3-70b-instruct"
+    description: "LLM for simple lookups (used by agent_framework.py at runtime for quick data retrieval)."
+    default: "databricks-llama-4-maverick"
   pipelines_development:
     description: "If true, pipelines use development mode (stops after processing). Set false for continuous real-time processing."
     default: false
   # Model version variables — only needed if model_serving.yml is included in the bundle.
   # Set these to the latest model versions AFTER running Jobs 5 & 6.
   # On a fresh workspace, Jobs create/update endpoints automatically (no need to set these).
-  orchestrator_model_version:
-    description: "UC model version for orchestrator agent (set after Job 6 runs)"
-    default: "26"
-  response_agent_model_version:
-    description: "UC model version for response_agent (set after Job 6 runs)"
-    default: "1"
-  decline_analyst_model_version:
-    description: "UC model version for decline_analyst agent (set after Job 6 runs)"
-    default: "32"
   ml_model_version:
     description: "UC model version for ML models (approval, risk, routing, retry) (set after Job 5 runs)"
     default: "22"

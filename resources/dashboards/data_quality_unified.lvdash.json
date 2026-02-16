@@ -534,8 +534,8 @@
                       "expression": "`event_second`"
                     },
                     {
-                      "name": "sum(approved_count)",
-                      "expression": "SUM(`approved_count`)"
+                      "name": "sum(transaction_count)",
+                      "expression": "SUM(`transaction_count`)"
                     }
                   ],
                   "disaggregated": false
@@ -557,19 +557,22 @@
                   }
                 },
                 "y": {
-                  "fieldName": "sum(approved_count)",
+                  "fieldName": "sum(transaction_count)",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
                   },
-                  "displayName": "Approved Count",
+                  "displayName": "Transaction Count",
                   "axis": {
-                    "title": "Approved Count"
+                    "title": "Transaction Count"
                   }
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Approval Volume (Real-Time)",
+                "title": "Performance by Second (Real-Time)",
                 "showDescription": false
               }
             }
@@ -597,26 +600,6 @@
                     {
                       "name": "approval_rate_pct",
                       "expression": "`approval_rate_pct`"
-                    },
-                    {
-                      "name": "avg_fraud_score",
-                      "expression": "`avg_fraud_score`"
-                    },
-                    {
-                      "name": "total_value",
-                      "expression": "`total_value`"
-                    },
-                    {
-                      "name": "active_segments",
-                      "expression": "`active_segments`"
-                    },
-                    {
-                      "name": "high_risk_transactions",
-                      "expression": "`high_risk_transactions`"
-                    },
-                    {
-                      "name": "declines_last_hour",
-                      "expression": "`declines_last_hour`"
                     }
                   ],
                   "disaggregated": true
@@ -624,207 +607,29 @@
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "scatter",
               "encodings": {
-                "columns": [
-                  {
-                    "name": "transactions_last_hour",
-                    "fieldName": "transactions_last_hour",
-                    "displayName": "Transactions Last Hour",
-                    "title": "Transactions Last Hour",
-                    "order": 0,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                "x": {
+                  "fieldName": "transactions_last_hour",
+                  "scale": {
+                    "type": "quantitative"
                   },
-                  {
-                    "name": "approval_rate_pct",
-                    "fieldName": "approval_rate_pct",
-                    "displayName": "Approval Rate Pct",
-                    "title": "Approval Rate Pct",
-                    "order": 1,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "avg_fraud_score",
-                    "fieldName": "avg_fraud_score",
-                    "displayName": "Avg Fraud Score",
-                    "title": "Avg Fraud Score",
-                    "order": 2,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "total_value",
-                    "fieldName": "total_value",
-                    "displayName": "Total Value",
-                    "title": "Total Value",
-                    "order": 3,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "active_segments",
-                    "fieldName": "active_segments",
-                    "displayName": "Active Segments",
-                    "title": "Active Segments",
-                    "order": 4,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "high_risk_transactions",
-                    "fieldName": "high_risk_transactions",
-                    "displayName": "High Risk Transactions",
-                    "title": "High Risk Transactions",
-                    "order": 5,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "declines_last_hour",
-                    "fieldName": "declines_last_hour",
-                    "displayName": "Declines Last Hour",
-                    "title": "Declines Last Hour",
-                    "order": 6,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                  "displayName": "Transactions Last Hour",
+                  "axis": {
+                    "title": "Transactions Last Hour"
                   }
-                ]
+                },
+                "y": {
+                  "fieldName": "approval_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Approval Rate Pct",
+                  "axis": {
+                    "title": "Approval Rate Pct"
+                  }
+                }
               },
               "frame": {
                 "showTitle": true,
@@ -850,240 +655,45 @@
                   "datasetName": "m1_ds_alerts",
                   "fields": [
                     {
-                      "name": "alert_type",
-                      "expression": "`alert_type`"
-                    },
-                    {
-                      "name": "severity",
-                      "expression": "`severity`"
-                    },
-                    {
-                      "name": "metric_name",
-                      "expression": "`metric_name`"
-                    },
-                    {
-                      "name": "current_value",
-                      "expression": "`current_value`"
-                    },
-                    {
-                      "name": "threshold_value",
-                      "expression": "`threshold_value`"
-                    },
-                    {
-                      "name": "alert_message",
-                      "expression": "`alert_message`"
-                    },
-                    {
                       "name": "first_detected",
                       "expression": "`first_detected`"
+                    },
+                    {
+                      "name": "sum(current_value)",
+                      "expression": "SUM(`current_value`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "line",
               "encodings": {
-                "columns": [
-                  {
-                    "name": "alert_type",
-                    "fieldName": "alert_type",
-                    "displayName": "Alert Type",
-                    "title": "Alert Type",
-                    "order": 0,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                "x": {
+                  "fieldName": "first_detected",
+                  "scale": {
+                    "type": "temporal"
                   },
-                  {
-                    "name": "severity",
-                    "fieldName": "severity",
-                    "displayName": "Severity",
-                    "title": "Severity",
-                    "order": 1,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "metric_name",
-                    "fieldName": "metric_name",
-                    "displayName": "Metric Name",
-                    "title": "Metric Name",
-                    "order": 2,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "current_value",
-                    "fieldName": "current_value",
-                    "displayName": "Current Value",
-                    "title": "Current Value",
-                    "order": 3,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "threshold_value",
-                    "fieldName": "threshold_value",
-                    "displayName": "Threshold Value",
-                    "title": "Threshold Value",
-                    "order": 4,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "alert_message",
-                    "fieldName": "alert_message",
-                    "displayName": "Alert Message",
-                    "title": "Alert Message",
-                    "order": 5,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
-                  },
-                  {
-                    "name": "first_detected",
-                    "fieldName": "first_detected",
-                    "displayName": "First Detected",
-                    "title": "First Detected",
-                    "order": 6,
-                    "visible": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "allowSearch": true,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true
+                  "displayName": "First Detected",
+                  "axis": {
+                    "title": "First Detected"
                   }
-                ]
+                },
+                "y": {
+                  "fieldName": "sum(current_value)",
+                  "scale": {
+                    "type": "quantitative",
+                    "range": [
+                      "#EC0000"
+                    ]
+                  },
+                  "displayName": "Current Value",
+                  "axis": {
+                    "title": "Current Value"
+                  }
+                }
               },
               "frame": {
                 "showTitle": true,

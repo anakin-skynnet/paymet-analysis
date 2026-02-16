@@ -1,12 +1,14 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { openInDatabricks } from "@/config/workspace";
 import { postOrchestratorChat } from "@/lib/api";
-import { Bot, X } from "lucide-react";
+import { Bot, RotateCcw, X } from "lucide-react";
 
 export interface AIChatbotMessage {
+  id: string;
   role: "user" | "assistant";
   content: string;
   runPageUrl?: string | null;
@@ -15,6 +17,11 @@ export interface AIChatbotMessage {
 
 const TITLE = "Approval Rate Accelerator";
 const PLACEHOLDER = "Ask about recommendations, routing, retries, declines, risk…";
+const STORAGE_KEY = "pa-ai-chatbot-messages";
+
+function msgId() {
+  return `ai-${crypto.randomUUID()}`;
+}
 
 /**
  * AI Chat — always uses the Orchestrator Agent (Model Serving / Job 6).
@@ -36,6 +43,21 @@ async function sendToOrchestrator(message: string): Promise<{
   };
 }
 
+function loadMessages(): AIChatbotMessage[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: AIChatbotMessage[]) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-50)));
+  } catch { /* quota exceeded — ignore */ }
+}
+
 export interface AIChatbotProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -52,44 +74,53 @@ export function AIChatbot({
   const isControlled = controlledOpen !== undefined && onOpenChange !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? onOpenChange! : setInternalOpen;
-  const [messages, setMessages] = useState<AIChatbotMessage[]>([]);
+  const [messages, setMessages] = useState<AIChatbotMessage[]>(loadMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const panelId = useId();
+
+  // Persist messages to sessionStorage
+  useEffect(() => { saveMessages(messages); }, [messages]);
+
+  // Focus input when panel opens
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
   }, []);
 
   const submit = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
-    setError(null);
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    const userMsg: AIChatbotMessage = { id: msgId(), role: "user", content: text };
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
+    scrollToBottom();
     try {
       const out = await sendToOrchestrator(text);
       setMessages((prev) => [
         ...prev,
         {
+          id: msgId(),
           role: "assistant",
           content: out.reply,
           runPageUrl: out.run_page_url ?? undefined,
           agentsUsed: out.agents_used,
         },
       ]);
-      setTimeout(scrollToBottom, 50);
+      scrollToBottom();
     } catch (e) {
-      const err = e instanceof Error ? e.message : "Orchestrator agent unavailable. Ensure Job 6 (Deploy Agents) has been run.";
-      setError(err);
+      const err = e instanceof Error ? e.message : "Orchestrator agent unavailable.";
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: `Sorry, I couldn't reach the orchestrator. ${err}`,
-        },
+        { id: msgId(), role: "assistant", content: `Sorry, I couldn't reach the orchestrator. ${err}` },
       ]);
     } finally {
       setLoading(false);
@@ -102,9 +133,25 @@ export function AIChatbot({
         e.preventDefault();
         submit();
       }
+      if (e.key === "Escape") setOpen(false);
     },
-    [submit]
+    [submit, setOpen]
   );
+
+  // Global Escape to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, setOpen]);
+
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    sessionStorage.removeItem(STORAGE_KEY);
+  }, []);
 
   if (!open) return null;
 
@@ -117,6 +164,8 @@ export function AIChatbot({
       )}
       role="dialog"
       aria-label={TITLE}
+      aria-modal="true"
+      id={panelId}
     >
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Avatar className="h-8 w-8">
@@ -125,6 +174,19 @@ export function AIChatbot({
           </AvatarFallback>
         </Avatar>
         <span className="flex-1 font-semibold text-sm">{TITLE}</span>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+            onClick={clearHistory}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -142,12 +204,12 @@ export function AIChatbot({
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-sm">
-            Powered by the Orchestrator Agent. Ask about decline trends, routing optimizations, retry strategies, risk assessments, and actionable recommendations to accelerate approval rates.
+            Powered by the Orchestrator Agent (Claude Opus). Ask about decline trends, routing optimizations, retry strategies, risk assessments, and actionable recommendations.
           </p>
         )}
-        {messages.map((m, i) => (
+        {messages.map((m) => (
           <div
-            key={i}
+            key={m.id}
             className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}
           >
             {m.role === "assistant" && (
@@ -173,7 +235,7 @@ export function AIChatbot({
                     variant="link"
                     size="sm"
                     className="h-auto p-0 text-primary underline"
-                    onClick={() => window.open(m.runPageUrl!, "_blank", "noopener,noreferrer")}
+                    onClick={() => openInDatabricks(m.runPageUrl!)}
                   >
                     View run in Databricks
                   </Button>
@@ -189,25 +251,26 @@ export function AIChatbot({
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start gap-2">
+          <div className="flex justify-start gap-2" aria-live="polite">
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                 <Bot className="h-3 w-3" />
               </AvatarFallback>
             </Avatar>
-            <div className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-              Thinking…
+            <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <span className="inline-flex gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:300ms]" />
+              </span>
+              Analyzing…
             </div>
           </div>
-        )}
-        {error && (
-          <p className="text-destructive text-sm" role="alert">
-            {error}
-          </p>
         )}
       </div>
       <div className="flex gap-2 border-t border-border p-3">
         <Input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -16,7 +16,7 @@ Deployment is **two-phase**: deploy all resources first (no App), then deploy th
 ./scripts/bundle.sh deploy dev
 ```
 
-This runs **build** (frontend + wheel), **clean** (removes existing BI dashboards to avoid duplicates), **prepare** (writes `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema), **deploy** (jobs, pipelines, dashboards, UC — everything except the App and model serving), and **publish** (embed credentials). Model serving and app serving bindings are temporarily excluded.
+This runs **build** (frontend + wheel), **clean** (removes existing BI dashboards to avoid duplicates), **prepare** (writes `.build/dashboards/` and `.build/transform/*.sql` with catalog/schema), **deploy** (jobs, pipelines, dashboards, UC, model serving — everything except the App), and **publish** (embed credentials).
 
 Output: *"all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt `deploy app`"*.
 
@@ -28,7 +28,7 @@ After phase 1, run **Job 5 (Train Models)** and **Job 6 (Deploy Agents)** from t
 ./scripts/bundle.sh deploy app dev
 ```
 
-This **validates** that all app dependencies exist (runs `toggle_app_resources.py --check-app-deployable`), **uncomments** `model_serving.yml` in `databricks.yml` and serving endpoint bindings in `fastapi_app.yml`, **validates** the bundle, then **deploys** the App with all resources assigned.
+This **validates** that all app dependencies exist, then **deploys** the App with all resources assigned (SQL warehouse, UC volume, Genie space, 5 serving endpoints).
 
 Output: *"App deployed with all dependencies and resources assigned and uncommented."*
 
@@ -46,7 +46,7 @@ Runs phase 1, automatically executes Job 5 and Job 6 and waits for completion, t
 ./scripts/bundle.sh validate dev
 ```
 
-**ORCHESTRATOR_SERVING_ENDPOINT** can be set in **`app.yml`** at project root (e.g. `payment-analysis-orchestrator`); redeploy to apply. You can also override in **Compute → Apps → payment-analysis → Edit → Environment**.
+**ORCHESTRATOR_SERVING_ENDPOINT** is set in **`app.yml`** at project root (`payment-response-agent`); redeploy to apply. You can also override in **Compute → Apps → payment-analysis → Edit → Environment**.
 
 ## Steps at a glance
 
@@ -60,8 +60,8 @@ Jobs are consolidated into **7 numbered steps** (prefix in job name). Run in ord
 | — | **Pipeline (before Step 3)** | Start **Payment Analysis ETL** (Lakeflow) at least once so it creates `payments_enriched_silver` (and `payments_raw_bronze`) in the catalog/schema. Step 3 (Gold Views) depends on this table. |
 | 3 | **3. Initialize Ingestion** | **Setup & Run** → Run job 3 (create gold views → **create UC agent tools** → sync vector search; requires pipeline so `payments_enriched_silver` exists) |
 | 4 | **4. Deploy Dashboards** | **Setup & Run** → Run job 4 (prepare assets → publish dashboards with embed credentials) |
-| 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min); then uncomment `model_serving.yml`, redeploy |
-| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Deploy Agents** (same job: 3 tasks — `run_agent_framework`, `register_responses_agent`, `register_agentbricks`) |
+| 5 | **5. Train Models & Model Serving** | **Setup & Run** → Run **Train Payment Approval ML Models** (~10–15 min) |
+| 6 | **6. Deploy Agents** | **Setup & Run** → Run **Deploy Agents** (2 tasks: `run_agent_framework`, `register_responses_agent` → deploys `payment-response-agent` endpoint) |
 | 7 | **7. Genie Space Sync** | **Setup & Run** → Run **Genie Space Sync** (optional; syncs Genie space config and sample questions for natural language analytics) |
 | — | Pipelines | **Setup & Run** → Start **Payment Analysis ETL** (required before Step 3) and/or **Real-Time Stream** (Lakeflow; when needed) |
 | — | Dashboards & app | 3 unified dashboards + app deployed by bundle |
@@ -82,7 +82,7 @@ The app is configured in the bundle with the following so it can be deployed and
 | **Lakebase** | Job 1 + app env `LAKEBASE_*` | Postgres for app_config, approval_rules, online_features; app connects via env vars. |
 | **Dashboards** | `resources/dashboards.yml` | Three unified dashboards (Data & Quality, ML & Optimization, Executive & Trends). |
 
-**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports). 4 ML model serving endpoint bindings (`approval-propensity`, `risk-scoring`, `smart-routing`, `smart-retry`) are included by default. 3 agent serving endpoint bindings (`payment-analysis-orchestrator`, `payment-response-agent`, `decline-analyst`) are commented out — they are managed programmatically by Job 6. See [REFERENCE.md](REFERENCE.md) for model serving and UC functions. **Genie** is commented out (set `--var genie_space_id=<uuid>` to uncomment). For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all agent tools — 17 individual + 5 consolidated, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
+**App resources in the bundle** (`resources/fastapi_app.yml`): SQL warehouse, UC volume (reports), Genie space, 1 agent endpoint (`payment-response-agent`), and 4 ML model serving endpoints (`approval-propensity`, `risk-scoring`, `smart-routing`, `smart-retry`) — 9 resources total. See [REFERENCE.md](REFERENCE.md) for model serving and UC functions. For **full configuration**, add in **Compute → Apps → payment-analysis → Edit → Configure → App resources**: **UC function** (all agent tools — 17 individual + 5 consolidated, Can execute), **Vector search index** (Can select), **MLflow experiment** (Can read), **Database** (Lakebase), **UC connection** (Use connection).
 
 **App environment:** Defaults and app-specific vars (e.g. **LAKEBASE_***, **ORCHESTRATOR_SERVING_ENDPOINT**) are defined in **`app.yml`** at project root; redeploy the bundle to apply changes. You can **override** in **Compute → Apps → payment-analysis → Edit → Environment** (e.g. DATABRICKS_WAREHOUSE_ID, DATABRICKS_TOKEN). If you use **user authorization (OBO)**, open the app from **Compute → Apps** so the user token is forwarded (see **User token (OBO)** in the table section below); the bundle configures user API scopes in `fastapi_app.yml`.
 
@@ -105,7 +105,7 @@ The app is configured in the bundle with the following so it can be deployed and
 | **DATABRICKS_WAREHOUSE_ID** | Required for SQL/analytics. SQL Warehouse ID (from bundle or sql-warehouse binding). |
 | **DATABRICKS_HOST** | Optional when opened from **Compute → Apps** (workspace URL derived from request). Set when not using OBO. |
 | **DATABRICKS_TOKEN** | Optional when using OBO. Open from **Compute → Apps** so your token is forwarded; do not set in env. Set only for app-only use; then do **not** set DATABRICKS_CLIENT_ID/SECRET. |
-| **ORCHESTRATOR_SERVING_ENDPOINT** | Optional. When set (e.g. `payment-analysis-orchestrator`), the app’s Orchestrator chat calls this Model Serving endpoint (AgentBricks/Supervisor) instead of Job 6. Can be set in `app.yml` or App Environment. See [REFERENCE.md](REFERENCE.md). |
+| **ORCHESTRATOR_SERVING_ENDPOINT** | Set to `payment-response-agent` in `app.yml`. The AI Chat calls this ResponsesAgent endpoint (Path 1); falls back to AI Gateway (Path 2) or Job 6 (Path 3). Can be overridden in App Environment. See [REFERENCE.md](REFERENCE.md). |
 | **LAKEBASE_SCHEMA** | Optional. Postgres schema for app tables (default `payment_analysis`). Use when the app has no CREATE on `public`. |
 
 **User token (OBO):** When the app is opened from **Compute → Apps**, Databricks forwards the user token in the **X-Forwarded-Access-Token** header. The backend reads it in `src/payment_analysis/backend/dependencies.py` via `_get_obo_token(request)` and uses it for warehouse queries and run job. No DATABRICKS_TOKEN is required in the app environment when using OBO.
@@ -120,7 +120,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 
 **Bundle root:** Directory containing `databricks.yml`. **App source:** `source_code_path` in `resources/fastapi_app.yml` is `${workspace.root_path}` (e.g. `.../payment-analysis`). Sync uploads to the same root path; the app runs from there so `src/payment_analysis/__dist__` is found for the web UI.
 
-**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `fastapi_app`. **Model serving:** 4 ML endpoints are always included in `model_serving.yml`. 3 agent endpoints in `model_serving.yml` are commented out (managed by Job 6). App bindings in `fastapi_app.yml`: 4 ML serving endpoints are bound; 3 agent serving endpoints are commented out. **Dashboard overwrite:** `bundle.sh deploy` cleans existing BI dashboards in the workspace (except `dbdemos*`) before deploy to avoid duplicates.
+**Included resources** (order in `databricks.yml`): `unity_catalog`, `lakebase`, `pipelines`, `sql_warehouse`, `ml_jobs`, `agents`, `streaming_simulator`, `genie_spaces`, `dashboards`, `model_serving`, `fastapi_app`. **Model serving:** 4 ML endpoints are managed by DAB in `model_serving.yml`. The agent endpoint (`payment-response-agent`) is created/updated programmatically by Job 6 task `register_responses_agent`. App bindings in `fastapi_app.yml`: 4 ML serving endpoints + 1 agent endpoint (`payment-response-agent`) + Genie space. **Dashboard overwrite:** `bundle.sh deploy` cleans existing BI dashboards in the workspace (except `dbdemos*`) before deploy to avoid duplicates.
 
 **Paths:**  
 - Workspace root: `/Workspace/Users/${user}/${var.workspace_folder}` (default folder: `payment-analysis`).  
@@ -129,7 +129,7 @@ App resource: `resources/fastapi_app.yml`. Runtime spec: `app.yml` at project ro
 - Dashboards: `file_path` in `resources/dashboards.yml` is `../.build/dashboards/*.lvdash.json` (relative to `resources/`).  
 - Sync (uploaded to workspace): `.build`, `src/payment_analysis/ml`, `streaming`, `transform`, `agents`, `genie`.
 
-**App bindings:** sql-warehouse, volume-reports, 4 ML serving endpoints (approval-propensity, risk-scoring, smart-routing, smart-retry), jobs 1–7 in execution order (create repos, simulator, ingestion, deploy dashboards, train ML, agents, Genie sync). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project). Optional: genie-space, model serving endpoints (see comments in `fastapi_app.yml`).
+**App bindings:** sql-warehouse, volume-reports, genie-space, serving-response-agent (`payment-response-agent`), 4 ML serving endpoints (approval-propensity, risk-scoring, smart-routing, smart-retry) — 9 resources total. Jobs are NOT included as app resources (the app discovers them via `ws.jobs.list()`). Lakebase: use Autoscaling only; set LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID in app Environment (Job 1 create_lakebase_autoscaling creates the project).
 
 Validate before deploy: `./scripts/bundle.sh validate dev` (runs dashboard prepare then `databricks bundle validate`).
 
@@ -178,7 +178,7 @@ Databricks Asset Bundles use two workspace path concepts:
 
 **Which files are used at runtime?**
 
-- **Jobs and pipelines** run notebooks from **`${workspace.root_path}/src/payment_analysis/...`** (e.g. `agents/agentbricks_register`, `ml/train_models`).
+- **Jobs and pipelines** run notebooks from **`${workspace.root_path}/src/payment_analysis/...`** (e.g. `agents/register_responses_agent`, `ml/train_models`).
 - The **Databricks App** runs with **`source_code_path: ${workspace.root_path}`**, so it sees `src/payment_analysis/__dist__`, `src/payment_analysis/backend`, etc., at the root.
 - **Sync** (from `databricks bundle deploy`) uploads everything in `sync.include` to **`file_path`**. With `file_path: ${workspace.root_path}`, that content lands in the same folder, so there is a single tree and no duplicate `files/` copy.
 
@@ -286,7 +286,7 @@ All enhancements are verified with `uv run apx dev check` (zero errors) and depl
 
 ## Resources in the workspace
 
-By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Model Serving:** 4 ML endpoints included by default in `resources/model_serving.yml`; 3 agent endpoints are commented out (managed by Job 6). **Vector Search:** endpoint `payment-similar-transactions-dev` and delta-sync index `similar_transactions_index` created by Job 1.
+By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Model Serving:** 4 ML endpoints managed by DAB in `resources/model_serving.yml`; 1 agent endpoint (`payment-response-agent`) created by Job 6. **Vector Search:** endpoint `payment-similar-transactions-dev` and delta-sync index `similar_transactions_index` created by Job 1.
 
 ## Where to find resources
 
@@ -470,9 +470,9 @@ All bundle jobs have been reviewed for duplicates or overlapping functionality. 
 | **genie_spaces.yml** | | |
 | `job_7_genie_sync` | Sync Genie space configuration and sample questions | Single purpose; optional. |
 
-**Agent framework (job 6):** A single task `run_agent_framework` runs the notebook once. The orchestrator coordinates all five specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender) and synthesizes the response. For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`). To use **Databricks AgentBricks** (all five specialists + Multi-Agent Supervisor) with MLflow + LangGraph and Model Serving (UC functions as tools), see [REFERENCE.md](REFERENCE.md).
-
-**Why don't I see agents in AgentBricks?** Job 6 runs a **Python notebook** (`agent_framework.py`) that implements the orchestrator and five specialists in code. It does **not** create or register agents in the workspace **Agents** (AgentBricks) UI. To see agents in **Agents** / AgentBricks you must follow the full conversion: create UC tool functions, build LangGraph agents, log/register with MLflow, deploy to Model Serving, and configure the **Multi-Agent Supervisor** in the workspace. See [REFERENCE.md](REFERENCE.md).
+**Agent framework (Job 6):** Two tasks:
+1. **`run_agent_framework`** — Custom Python orchestrator + 5 specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Runs as a notebook; output used by the app's AI Chat (Path 3 fallback). For ad-hoc runs of a single specialist, use the same notebook with widget `agent_role` set to that specialist (e.g. `smart_routing`).
+2. **`register_responses_agent`** — Registers the ResponsesAgent (`agent.py`) to Unity Catalog as `{catalog}.agents.payment_analysis_agent` and deploys it to the `payment-response-agent` Model Serving endpoint. This is the primary AI Chat backend (Path 1).
 
 **Dashboard jobs:** Job 4 (Deploy Dashboards) has two tasks: prepare (generate assets) and publish (AI/BI Dashboards API with embed credentials). Genie sync is a separate job (job 7 in `genie_spaces.yml`).
 
@@ -492,7 +492,6 @@ All job notebook and SQL paths are relative to the workspace `root_path` (where 
 | job_7 task `sync_genie_config` | `genie_sync` | `src/payment_analysis/genie/sync_genie_space` | `sync_genie_space.py` (genie_spaces.yml) |
 | job_6 task `run_agent_framework` | `run_agent_framework` | `src/payment_analysis/agents/agent_framework` | `agent_framework.py` |
 | job_6 task `register_responses_agent` | `register_responses_agent` | `src/payment_analysis/agents/register_responses_agent` | `register_responses_agent.py` |
-| job_6 task `register_agentbricks` | `register_agentbricks` | `src/payment_analysis/agents/agentbricks_register` | `agentbricks_register.py` |
 | `publish_dashboards_job` | `publish_dashboards` | `src/payment_analysis/transform/publish_dashboards` | `publish_dashboards.py` |
 | `continuous_stream_processor` | `continuous_stream_processor` | `src/payment_analysis/streaming/continuous_processor` | `continuous_processor.py` |
 | `prepare_dashboards_job` | (not in Setup UI) | `src/payment_analysis/transform/prepare_dashboards` | `prepare_dashboards.py` |

@@ -278,9 +278,9 @@ function Decisioning() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <DecisionCard title="Authentication" result={auth.data?.data} notebookId="agent_framework" />
-        <DecisionCard title="Retry" result={retry.data?.data} notebookId="agent_framework" />
-        <DecisionCard title="Routing" result={routing.data?.data} notebookId="agent_framework" />
+        <DecisionCard title="Authentication" result={auth.data?.data} notebookId="agent_framework" error={auth.error as Error | null} onRetry={() => auth.mutate(ctx)} />
+        <DecisionCard title="Retry" result={retry.data?.data} notebookId="agent_framework" error={retry.error as Error | null} onRetry={() => retry.mutate(ctx)} />
+        <DecisionCard title="Routing" result={routing.data?.data} notebookId="agent_framework" error={routing.error as Error | null} onRetry={() => routing.mutate(ctx)} />
       </div>
 
       <Card className="glass-card border border-border/80">
@@ -383,24 +383,32 @@ function Decisioning() {
               icon={<TrendingUp className="w-4 h-4" />}
               result={predictApproval.data?.data}
               render={(d) => d && `${(d.approval_probability * 100).toFixed(1)}% approve · ${d.should_approve ? "Approve" : "Decline"}`}
+              error={predictApproval.error as Error | null}
+              onRetry={() => predictApproval.mutate(mlFeatures)}
             />
             <PredictionCard
               title="Risk score"
               icon={<Shield className="w-4 h-4" />}
               result={predictRisk.data?.data}
               render={(d) => d && `${(d.risk_score * 100).toFixed(1)}% risk · ${d.risk_tier}`}
+              error={predictRisk.error as Error | null}
+              onRetry={() => predictRisk.mutate(mlFeatures)}
             />
             <PredictionCard
               title="Smart routing"
               icon={<Waypoints className="w-4 h-4" />}
               result={predictRouting.data?.data}
               render={(d) => d && `${d.recommended_solution} (${(d.confidence * 100).toFixed(0)}%)`}
+              error={predictRouting.error as Error | null}
+              onRetry={() => predictRouting.mutate(mlFeatures)}
             />
             <PredictionCard
               title="Smart retry"
               icon={<RotateCcw className="w-4 h-4" />}
               result={predictRetry.data?.data}
               render={(d) => d && `${d.should_retry ? "Retry" : "No retry"} · ${(d.retry_success_probability * 100).toFixed(1)}% success`}
+              error={predictRetry.error as Error | null}
+              onRetry={() => predictRetry.mutate(mlFeatures)}
             />
           </div>
         </CardContent>
@@ -416,20 +424,30 @@ function PredictionCard<T>({
   icon,
   result,
   render,
+  error,
+  onRetry,
 }: {
   title: string;
   icon: React.ReactNode;
   result: T | undefined;
   render: (d: T) => string;
+  error?: Error | null;
+  onRetry?: () => void;
 }) {
   const isMock = result && typeof result === "object" && "_source" in result && (result as Record<string, unknown>)._source === "mock";
+  const hasError = !!error && !result;
   return (
-    <Card className={isMock ? "glass-card border border-border/80 border-amber-500/40" : "glass-card border border-border/80"}>
+    <Card className={hasError ? "glass-card border border-border/80 border-destructive/40" : isMock ? "glass-card border border-border/80 border-amber-500/40" : "glass-card border border-border/80"}>
       <CardHeader className="py-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           {icon}
           {title}
-          {isMock && (
+          {hasError && (
+            <Badge variant="outline" className="ml-auto text-[10px] font-normal border-destructive/60 text-destructive">
+              error
+            </Badge>
+          )}
+          {isMock && !hasError && (
             <Badge variant="outline" className="ml-auto text-[10px] font-normal border-amber-500/60 text-amber-600 dark:text-amber-400">
               heuristic
             </Badge>
@@ -437,7 +455,16 @@ function PredictionCard<T>({
         </CardTitle>
       </CardHeader>
       <CardContent className="py-2">
-        {result ? (
+        {hasError ? (
+          <div className="space-y-1">
+            <p className="text-xs text-destructive">{error.message.length > 80 ? `${error.message.slice(0, 80)}…` : error.message}</p>
+            {onRetry && (
+              <button onClick={onRetry} className="text-xs text-primary underline underline-offset-2 hover:text-primary/80">
+                Retry
+              </button>
+            )}
+          </div>
+        ) : result ? (
           <p className="text-sm text-muted-foreground">{render(result)}</p>
         ) : (
           <p className="text-xs text-muted-foreground">Run predictions to see result.</p>
@@ -451,11 +478,16 @@ function DecisionCard({
   title,
   result,
   notebookId,
+  error,
+  onRetry,
 }: {
   title: string;
   result?: unknown;
   notebookId?: string;
+  error?: Error | null;
+  onRetry?: () => void;
 }) {
+  const hasError = !!error && !result;
   const obj = typeof result === "object" && result != null ? (result as Record<string, unknown>) : null;
   const variant = obj?.variant as string | undefined;
   const experimentId = obj?.experiment_id as string | undefined;
@@ -488,7 +520,16 @@ function DecisionCard({
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {result ? (
+        {hasError ? (
+          <div className="space-y-2">
+            <p className="text-xs text-destructive">{error.message.length > 100 ? `${error.message.slice(0, 100)}…` : error.message}</p>
+            {onRetry && (
+              <button onClick={(e) => { e.stopPropagation(); onRetry(); }} className="text-xs text-primary underline underline-offset-2 hover:text-primary/80">
+                Retry
+              </button>
+            )}
+          </div>
+        ) : result ? (
           <>
             {factors.length > 0 && (
               <div className="space-y-1.5">

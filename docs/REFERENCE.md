@@ -19,7 +19,7 @@ The solution is Databricks-native and aligned with current product naming (Lakef
 | **Lakebase** | OK | Autoscaling Postgres; Job 1 creates project/branch/endpoint; app env: LAKEBASE_PROJECT_ID, LAKEBASE_BRANCH_ID, LAKEBASE_ENDPOINT_ID. Used for rules, experiments, incidents, online features, app config. |
 | **Vector Search** | OK | Delta-sync index (`similar_transactions_index`) on `transaction_summaries_for_search`; embedding model `databricks-bge-large-en`. Agents use `VECTOR_SEARCH()` SQL function for similar-transaction lookup. |
 | **Genie** | OK | Job 7 syncs space; optional app binding. |
-| **Model Serving** | OK | 4 ML endpoints always included in `model_serving.yml`; 3 agent endpoints commented out (managed by Job 6). App binds 4 ML endpoints; agent endpoints are created programmatically. Scale-to-zero enabled. |
+| **Model Serving** | OK | 4 ML endpoints managed by DAB in `model_serving.yml`; 1 agent endpoint (`payment-response-agent`) created by Job 6 task `register_responses_agent`. App binds all 5 endpoints. Scale-to-zero enabled. |
 | **Dashboards** | OK | 3 unified Lakeview dashboards; prepare → `.build/dashboards/`; Job 4 or bundle.sh publishes with embed credentials. Embed uses `/embed/dashboardsv3/` path prefix. |
 
 **User token (OBO):** When the app is opened from **Compute → Apps**, Databricks forwards the user token in **X-Forwarded-Access-Token**. The backend reads it in `dependencies.py` via `_get_obo_token(request)` and uses it for `get_workspace_client` / `get_databricks_service`. For other frameworks: FastAPI `request.headers.get("X-Forwarded-Access-Token")`; Flask/Gradio/Streamlit/Shiny use the same header name.
@@ -30,13 +30,14 @@ The solution is Databricks-native and aligned with current product naming (Lakef
 
 ## 2. Agent architecture
 
-The solution uses three agent patterns, each optimized for a different use case:
+The solution uses two agent patterns with a 3-tier fallback for the AI Chat:
 
 | Pattern | Implementation | When used |
 |---------|---------------|-----------|
-| **ResponsesAgent** (MLflow) | `agent.py` — single OpenAI Responses API agent with UC function tools | Registered by Job 6 task 2; lightweight single-agent endpoint. |
-| **LangGraph multi-agent** (AgentBricks) | `langgraph_agents.py` — orchestrator + 5 specialists (LangGraph StateGraph) | Registered by Job 6 task 3; deployed as `payment-analysis-orchestrator` and `decline-analyst` endpoints. |
-| **Custom Python framework** | `agent_framework.py` — orchestrator + specialists with direct SQL tools | Run by Job 6 task 1; fallback when Model Serving unavailable. |
+| **ResponsesAgent** (MLflow) | `agent.py` — MLflow ResponsesAgent (OpenAI Responses API) with 10 UC tools + `python_exec` | **Path 1 (primary):** Registered by Job 6 task 2; deployed as `payment-response-agent` endpoint. Uses Claude Sonnet 4.5 for multi-turn tool calling. |
+| **Custom Python framework** | `agent_framework.py` — orchestrator + 5 specialists with direct SQL tools | **Path 3 (fallback):** Run by Job 6 task 1 when Model Serving and AI Gateway are unavailable. |
+
+**AI Chat 3-tier fallback:** Path 1 → ResponsesAgent (`payment-response-agent`) → Path 2 → AI Gateway (Claude Opus 4.6, `LLM_ENDPOINT`) → Path 3 → Job 6 agent framework.
 
 **Agent tools — Lakebase and Vector Search integration:**
 
@@ -46,27 +47,24 @@ The solution uses three agent patterns, each optimized for a different use case:
 | **Vector Search** | `VECTOR_SEARCH()` TVF in `search_similar_transactions` UC function | `similar_transactions_index` |
 | **Lakebase queries** | `get_active_approval_rules`, `get_recent_incidents`, `get_decision_outcomes` | Lakebase Postgres via UC functions |
 | **Python exec** | `system.ai.python_exec` for write-back (recommendations) | Spark SQL |
-| **Agent write-back tools** | `write_decline_recommendation`, `propose_decline_config` (Decline Analyst); `write_risk_recommendation`, `propose_risk_config` (Risk Assessor) | Lakebase via `write_recommendation_to_lakebase` and `propose_config_change` |
 
-**Orchestrator in the app:** When `ORCHESTRATOR_SERVING_ENDPOINT` is set (e.g. `payment-analysis-orchestrator` in `app.yml`), the app calls that Model Serving endpoint. Otherwise it falls back to Job 6 (custom Python).
+**AI Chat in the app:** `ORCHESTRATOR_SERVING_ENDPOINT` is set to `payment-response-agent` in `app.yml`. The backend calls this endpoint via `ws.serving_endpoints.query()` with `dataframe_records` format. If the agent endpoint fails, the app falls back to a direct AI Gateway call (Opus 4.6), then to Job 6.
 
-**To deploy agents to Model Serving:** (1) Run Job 6 to register models in UC. (2) Include `resources/model_serving.yml` and deploy. (3) Set `ORCHESTRATOR_SERVING_ENDPOINT` in `app.yml`.
+**To deploy agents to Model Serving:** (1) Run Job 6 — task 1 runs the agent framework, task 2 registers the ResponsesAgent and deploys the `payment-response-agent` endpoint. (2) Deploy the bundle so the app binds to the endpoint.
 
 ---
 
-## 3. Model serving endpoints (4 ML + 3 agents)
+## 3. Model serving endpoints (4 ML + 1 agent)
 
 | Endpoint name | Entity (UC) | Purpose | Workload |
 |---------------|-------------|---------|----------|
-| **payment-analysis-orchestrator** | `{catalog}.agents.orchestrator` | Multi-agent orchestrator (LangGraph); routes to specialists | Small, CPU, scale-to-zero |
-| **decline-analyst** | `{catalog}.agents.decline_analyst` | Decline analysis specialist (LangGraph) | Small, CPU, scale-to-zero |
-| **payment-response-agent** | `{catalog}.agents.response_agent` | ResponsesAgent (single-agent, OpenAI Responses API) | Small, CPU, scale-to-zero |
+| **payment-response-agent** | `{catalog}.agents.payment_analysis_agent` | ResponsesAgent (MLflow, OpenAI Responses API) with 10 UC tools + python_exec. Primary AI Chat backend. | Small, CPU, scale-to-zero |
 | **approval-propensity** | `{catalog}.{schema}.approval_propensity_model` | Approval probability prediction | Small, CPU, scale-to-zero |
 | **risk-scoring** | `{catalog}.{schema}.risk_scoring_model` | Fraud risk scoring | Small, CPU, scale-to-zero |
 | **smart-routing** | `{catalog}.{schema}.smart_routing_policy` | Optimal route selection (standard, 3DS, token, passkey) | Small, CPU, scale-to-zero |
 | **smart-retry** | `{catalog}.{schema}.smart_retry_policy` | Retry success prediction and timing | Small, CPU, scale-to-zero |
 
-**AI Gateway rate limits:** ML model endpoints have 100–200 req/min/user. Agent endpoints use environment variables for catalog, schema, and tiered LLM endpoints.
+**AI Gateway rate limits:** ML model endpoints have 100–200 req/min/user. The agent endpoint uses environment variables for catalog, schema, and LLM endpoint (Sonnet 4.5).
 
 **ML model signatures:** All 4 ML models use explicit `ModelSignature` with `ColSpec` for 14 named input features, ensuring correct feature handling during serving. The `_build_ml_features()` function in `DecisionEngine` constructs features matching the exact training schema: temporal (hour_of_day, day_of_week, is_weekend), merchant/solution approval rates, network encoding, log_amount, and risk_amount_interaction.
 
@@ -108,7 +106,7 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`. Spe
 
 ## 4. Approval optimization summary
 
-**Artifacts:** 4 HistGradientBoosting ML models (14 engineered features each) + 3 agent models (orchestrator, decline analyst, response agent); 17 individual + 5 consolidated UC functions; 3 unified dashboards; 16+ gold views (including `v_retry_success_by_reason`). Closed-loop `DecisionEngine` with parallel ML + VS enrichment (`asyncio.gather`), streaming real-time features, thread-safe caching, and outcome recording (POST /api/decision/outcome). Config exposed via GET /api/decision/config.
+**Artifacts:** 4 HistGradientBoosting ML models (14 engineered features each) + 1 ResponsesAgent model (`payment_analysis_agent`); 17 individual + 5 consolidated UC functions; 3 unified dashboards; 16+ gold views (including `v_retry_success_by_reason`). Closed-loop `DecisionEngine` with parallel ML + VS enrichment (`asyncio.gather`), streaming real-time features, thread-safe caching, and outcome recording (POST /api/decision/outcome). Config exposed via GET /api/decision/config.
 
 **How each component accelerates approval rates:**
 
@@ -118,8 +116,7 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`. Spe
 | **Risk scoring model** | Enables risk-based auth (step-up for high risk, frictionless for low risk) |
 | **Smart routing policy** | Routes to solution maximizing approval rate for the segment |
 | **Smart retry policy** | Predicts retry success and optimal timing to recover otherwise-lost approvals |
-| **Orchestrator agent** | Coordinates specialists to provide unified, actionable recommendations |
-| **Decline analyst agent** | Identifies decline patterns and recovery opportunities |
+| **ResponsesAgent** (`payment-response-agent`) | Data-driven analysis using 10 UC tools; identifies patterns, proposes actions |
 | **Vector Search** | "Similar cases" for retry and routing recommendations |
 | **Rules engine** | Configurable business rules; operators tune without code |
 | **DecisionEngine** | Closed-loop: parallel ML + VS enrichment (`asyncio.gather`), streaming features (approval_rate_5m, txn_velocity_1m), thread-safe caching (`threading.Lock`), outcome recording (POST /outcome), config API (GET /config). Policies use VS approval rates and agent confidence for borderline decisions. |

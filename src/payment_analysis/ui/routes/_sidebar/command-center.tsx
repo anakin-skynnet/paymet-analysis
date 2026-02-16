@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ErrorBoundary } from "react-error-boundary";
@@ -378,11 +378,10 @@ function LastUpdated({ query }: { query: { dataUpdatedAt?: number } }) {
   const updatedAt = query.dataUpdatedAt;
 
   // Re-render every 5s to keep "Xs ago" fresh
-  const intervalRef = useCallback(() => {
+  useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 5000);
     return () => clearInterval(id);
   }, []);
-  useState(intervalRef);
 
   if (!updatedAt) return null;
   const ago = Math.max(0, Math.round((Date.now() - updatedAt) / 1000));

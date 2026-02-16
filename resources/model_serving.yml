@@ -1,93 +1,22 @@
 # =============================================================================
-# Model Serving Endpoints — REFERENCE / OPTIONAL
+# Model Serving Endpoints
 # =============================================================================
-# This file is OPTIONAL and included primarily for documentation and for
-# managing AI Gateway configurations via DAB.
-#
-# ** Endpoints are now created/updated PROGRAMMATICALLY by Jobs 5 and 6: **
+# Endpoints created/updated PROGRAMMATICALLY by Jobs 5 and 6:
 #   - Job 5 (train_models.py): creates/updates 4 ML model endpoints
-#   - Job 6 (agentbricks_register.py / register_responses_agent.py):
-#     creates/updates agent endpoints (orchestrator, decline-analyst)
+#   - Job 6 (register_responses_agent.py): creates/updates payment-response-agent
 #
-# This means the solution is portable to ANY workspace: run Jobs 1-7 and
-# all endpoints are created automatically with the correct model versions.
-# No hardcoded entity_version needed.
-#
-# If you ALSO want DAB to manage endpoint config (e.g. AI Gateway, workload size),
-# you can include this file in databricks.yml. Set the entity_version variables
-# AFTER running Jobs 5 & 6 so they match the registered model versions.
+# This file manages AI Gateway configurations (rate limits, usage tracking) via DAB
+# for the 4 ML endpoints. The agent endpoint (payment-response-agent) is managed by
+# Job 6's register_responses_agent task.
 #
 # Tiered LLM strategy:
-#   Orchestrator → llm_endpoint_orchestrator (Claude Opus 4.6, strongest reasoning)
-#   Specialists  → llm_endpoint_specialist   (Claude Sonnet 4.5, balanced speed/quality)
-#   Simple tasks → llm_endpoint_simple        (Llama 3.3 70B, fast/cheap)
-#
-# Agent endpoints use ResponsesAgent (MLflow 3.x) with lazy LangGraph initialization.
-# See: https://mlflow.org/docs/latest/genai/flavors/responses-agent-intro/
+#   ResponsesAgent → Sonnet 4.5 (balanced speed/quality for multi-turn tool calling)
+#   AI Gateway fallback → Opus 4.6 (strongest reasoning, single-turn)
+#   Agent Framework → Opus 4.6 (orchestrator) + Sonnet 4.5 (specialists)
 # =============================================================================
 
 resources:
   model_serving_endpoints:
-    # ResponsesAgent (agent.py — single-agent, OpenAI Responses API).
-    # Separate endpoint from the LangGraph orchestrator.
-    # Uncomment after Job 6 registers the response_agent model in UC:
-    # response_agent_endpoint:
-    #   name: "payment-response-agent"
-    #   config:
-    #     served_entities:
-    #       - entity_name: "${var.catalog}.agents.response_agent"
-    #         entity_version: "${var.response_agent_model_version}"
-    #         workload_size: "Small"
-    #         scale_to_zero_enabled: true
-    #         workload_type: "CPU"
-    #         environment_vars:
-    #           ENABLE_MLFLOW_TRACING: "true"
-    #           CATALOG: "${var.catalog}"
-    #           SCHEMA: "${var.schema}"
-    #           LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
-    #     traffic_config:
-    #       routes: [{ served_model_name: "response_agent-${var.response_agent_model_version}", traffic_percentage: 100 }]
-
-    # LangGraph Orchestrator (multi-agent system wrapping all specialists).
-    # Agent endpoints are managed by Job 6 (agentbricks_register.py) which handles
-    # container dependencies correctly. Uncomment only if Job 6 has run successfully.
-    # payment_analysis_orchestrator_endpoint:
-    #   name: "payment-analysis-orchestrator"
-    #   config:
-    #     served_entities:
-    #       - entity_name: "${var.catalog}.agents.orchestrator"
-    #         entity_version: "${var.orchestrator_model_version}"
-    #         workload_size: "Small"
-    #         scale_to_zero_enabled: true
-    #         workload_type: "CPU"
-    #         environment_vars:
-    #           ENABLE_MLFLOW_TRACING: "true"
-    #           CATALOG: "${var.catalog}"
-    #           SCHEMA: "${var.schema}"
-    #           LLM_ENDPOINT: "${var.llm_endpoint_orchestrator}"
-    #           LLM_ENDPOINT_ORCHESTRATOR: "${var.llm_endpoint_orchestrator}"
-    #           LLM_ENDPOINT_SPECIALIST: "${var.llm_endpoint_specialist}"
-    #     traffic_config:
-    #       routes: [{ served_model_name: "orchestrator-${var.orchestrator_model_version}", traffic_percentage: 100 }]
-
-    # Decline analyst agent (ResponsesAgent wrapping LangGraph ReAct + UC tools)
-    # decline_analyst_endpoint:
-    #   name: "decline-analyst"
-    #   config:
-    #     served_entities:
-    #       - entity_name: "${var.catalog}.agents.decline_analyst"
-    #         entity_version: "${var.decline_analyst_model_version}"
-    #         workload_size: "Small"
-    #         scale_to_zero_enabled: true
-    #         workload_type: "CPU"
-    #         environment_vars:
-    #           ENABLE_MLFLOW_TRACING: "true"
-    #           CATALOG: "${var.catalog}"
-    #           SCHEMA: "${var.schema}"
-    #           LLM_ENDPOINT: "${var.llm_endpoint_specialist}"
-    #     traffic_config:
-    #       routes: [{ served_model_name: "decline_analyst-${var.decline_analyst_model_version}", traffic_percentage: 100 }]
-
     # Predicts transaction approval probability
     approval_propensity_endpoint:
       name: "approval-propensity"
