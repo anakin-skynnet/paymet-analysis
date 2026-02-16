@@ -13,7 +13,7 @@ import { DataSourceBadge } from "@/components/apx/data-source-badge";
 import { PageHeader } from "@/components/layout";
 import { DashboardTable, DashboardRenderer } from "@/components/dashboards";
 import { friendlyReason } from "@/lib/reasoning";
-import { useListDashboards, useRecentDecisions, getNotebookUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
+import { useListDashboards, useRecentDecisions, getNotebookUrl, useGetDashboardUrl, type DashboardCategory, type DashboardInfo } from "@/lib/api";
 
 function DashboardsErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   return (
@@ -76,6 +76,11 @@ export function Component() {
     query: { refetchInterval: 30_000 },
   });
 
+  const { data: embedUrlData } = useGetDashboardUrl({
+    params: { dashboard_id: embedId ?? "", embed: true },
+    query: { enabled: !!embedId },
+  });
+
   const dashboards = dashboardList?.data.dashboards ?? [];
   const categories = dashboardList?.data.categories ?? {};
   const { data: decisionsData } = useRecentDecisions({
@@ -94,6 +99,11 @@ export function Component() {
   };
 
   const embedDashboard = embedId ? dashboards.find((d) => d.id === embedId) : null;
+  const embedSrc =
+    embedUrlData?.data?.full_embed_url ||
+    (embedUrlData?.data?.embed_url && getWorkspaceUrl()
+      ? `${getWorkspaceUrl()}${embedUrlData.data.embed_url as string}`
+      : null);
   const showEmbedView = !!embedId;
   const goBack = () => navigate({ to: "/dashboards", search: {} });
   const openEmbed = (id: string) => navigate({ to: "/dashboards", search: { embed: id } });
@@ -129,7 +139,7 @@ export function Component() {
 
   return (
     <div className="space-y-8">
-      {/* Native dashboard view (when ?embed=id) — renders charts from SQL data */}
+      {/* Dashboard view (when ?embed=id) — iframe embed with native-chart fallback */}
       {showEmbedView && (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
@@ -154,10 +164,19 @@ export function Component() {
               </>
             )}
           </div>
-          <DashboardRenderer
-            dashboardId={embedId!}
-            dashboardName={embedDashboard?.name}
-          />
+          {embedSrc ? (
+            <EmbeddedDashboard
+              title={embedDashboard?.name || "Dashboard"}
+              src={String(embedSrc)}
+              dashboardId={embedId!}
+              onOpenExternal={() => embedDashboard && handleDashboardClick(embedDashboard)}
+            />
+          ) : (
+            <DashboardRenderer
+              dashboardId={embedId!}
+              dashboardName={embedDashboard?.name}
+            />
+          )}
         </div>
       )}
 
@@ -580,3 +599,114 @@ export function Component() {
   );
 }
 
+
+/**
+ * EmbeddedDashboard — iframe-first embedding of Databricks AI/BI dashboards.
+ *
+ * Uses the /embed/dashboardsv3/<id>/published URL format per Databricks docs:
+ * https://learn.microsoft.com/en-us/azure/databricks/dashboards/embedding/
+ *
+ * If the iframe is blocked by CSP (workspace admin hasn't added the app domain
+ * to Settings → Security → Embed dashboards → Approved domains), automatically
+ * falls back to native SQL-powered charts via DashboardRenderer.
+ *
+ * Setup for workspace admins:
+ *   1. Go to Workspace Settings → Security → Embed dashboards → Allow
+ *   2. Add your app domain (e.g. *.databricksapps.com) to Approved Domains
+ *   3. Publish dashboards with embed_credentials: true
+ */
+function EmbeddedDashboard({
+  title,
+  src,
+  dashboardId,
+}: {
+  title: string;
+  src: string;
+  dashboardId: string;
+  onOpenExternal?: () => void;
+}) {
+  const [status, setStatus] = React.useState<"loading" | "embedded" | "fallback">("loading");
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  React.useEffect(() => {
+    setStatus("loading");
+
+    // After a short delay, check if the iframe loaded content or was blocked
+    const timer = setTimeout(() => {
+      setStatus((prev) => {
+        if (prev === "embedded") return prev;
+        // If still loading after 5s, assume CSP blocked the iframe content
+        return "fallback";
+      });
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  // Listen for the iframe load event — only fires when content actually renders
+  const handleLoad = React.useCallback(() => {
+    // Check if the iframe really loaded Databricks content vs. an error/blank page
+    try {
+      const doc = iframeRef.current?.contentDocument;
+      // If we can access contentDocument, the iframe is same-origin (shouldn't happen for cross-origin).
+      // For cross-origin iframes the access throws, so just mark embedded.
+      if (doc && doc.title === "") {
+        // Blank page = blocked
+        setStatus("fallback");
+        return;
+      }
+    } catch {
+      // Cross-origin — iframe loaded successfully (Databricks served content)
+    }
+    setStatus("embedded");
+  }, []);
+
+  if (status === "fallback") {
+    return (
+      <div className="space-y-4">
+        <Alert className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-sm">Iframe embedding not available — showing live SQL-powered charts</AlertTitle>
+          <AlertDescription className="text-xs text-muted-foreground">
+            To enable native Databricks dashboard embedding, a workspace admin must go to{" "}
+            <strong>Settings → Security → Embed dashboards → Allow</strong> and add your
+            app domain (e.g.{" "}
+            <code className="bg-muted px-1 rounded">*.databricksapps.com</code>) to the
+            Approved Domains list.{" "}
+            <a
+              href="https://learn.microsoft.com/en-us/azure/databricks/dashboards/embedding/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              Learn more
+            </a>
+          </AlertDescription>
+        </Alert>
+        <DashboardRenderer dashboardId={dashboardId} dashboardName={title} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-background overflow-hidden">
+      {status === "loading" && (
+        <div className="flex items-center justify-center h-12 bg-muted/30 text-sm text-muted-foreground gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+          Loading Databricks dashboard…
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        title={title}
+        src={src}
+        className="w-full border-0"
+        style={{ height: "80vh", minHeight: 500 }}
+        allow="fullscreen"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        onLoad={handleLoad}
+        onError={() => setStatus("fallback")}
+      />
+    </div>
+  );
+}
