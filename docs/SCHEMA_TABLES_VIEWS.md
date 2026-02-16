@@ -11,7 +11,7 @@ This document lists tables and views, whether they are **required** by the app (
 | Type | Required | Optional / Not read by app |
 |------|----------|----------------------------|
 | **Silver/Bronze (Lakeflow)** | payments_enriched_silver, merchants_dim_bronze, merchant_visible_attempts_silver, reason_code_taxonomy_silver, insight_feedback_silver, smart_checkout_decisions_silver | decision_log_silver, payments_stream_alerts |
-| **Gold views (Job 3 SQL)** | All `v_*` and metric views listed below | — |
+| **Gold views (Job 3 SQL)** | All `v_*` and metric views listed below (including `v_retry_success_by_reason`) | — |
 | **Gold tables (Lakeflow)** | v_retry_performance, v_3ds_funnel_br, v_reason_codes_br, v_reason_code_insights_br, v_entry_system_distribution_br, v_dedup_collision_stats, v_false_insights_metric, v_smart_checkout_*, v_false_insights_metric | — |
 | **Bootstrap (Job 1)** | v_recommendations_from_lakehouse, v_approval_rules_active, v_online_features_latest (and base tables) | — |
 
@@ -63,6 +63,7 @@ Created by **Job 3 (Initialize Ingestion)** from `gold_views.sql`. All depend on
 | **payment_metrics** | Yes (semantic layer) | gold_views.sql WITH METRICS; dashboards.py asset validation | UC metrics view; empty when silver empty. |
 | **decline_metrics** | Yes (semantic layer) | gold_views.sql WITH METRICS; dashboards.py asset validation | Same. |
 | **merchant_metrics** | Yes (semantic layer) | gold_views.sql WITH METRICS; dashboards.py asset validation | Same. |
+| **v_retry_success_by_reason** | Yes | Smart Retry analytics, retry analysis by decline reason and scenario | payments_enriched_silver empty, no retries, or Job 3 not run. Requires retry_count > 0 and decline_reason_standard IS NOT NULL. Shows success_rate_pct, recovered_value, avg_retry_delay per decline reason and retry scenario. |
 
 ---
 

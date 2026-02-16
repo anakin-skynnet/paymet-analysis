@@ -6,7 +6,15 @@ Databricks-powered payment approval optimization: **accelerate approval rates** 
 
 **Goal:** Reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**How:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents, Genie, rules engine, Vector Search, and Lakebase — unified in a single decision layer and control panel. All compute is serverless. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6), 3 unified AI/BI dashboards, 7 orchestrated jobs, 13 resources bound to the app. Decision routes use `DecisionEngine` for ML enrichment, Lakebase-driven thresholds, and rule evaluation with graceful fallback.
+**How:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), 7 AI agents (all with write-back tools), Genie, rules engine, Vector Search, streaming features, and Lakebase — unified in a closed-loop decision engine and control panel. All compute is serverless. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6), 3 unified AI/BI dashboards, 16+ gold views (including `v_retry_success_by_reason`), 7 orchestrated jobs, 13 resources bound to the app. Decision routes use `DecisionEngine` with parallel ML + Vector Search enrichment (asyncio.gather), streaming real-time features, thread-safe caching, and outcome recording for continuous improvement.
+
+**Recent enhancements (20 QA recommendations implemented):**
+- **Closed feedback loop:** POST /api/decision/outcome records actual outcomes; policies use VS approval rates and agent confidence to adjust borderline decisions
+- **Feature parity:** ML features built with `_build_ml_features()` matching exact training schema (14 features including temporal, merchant/solution rates, network encoding, risk interactions)
+- **Parallel enrichment:** ML model calls and Vector Search run concurrently; thread-safe config caching with `threading.Lock`
+- **Streaming features:** Real-time behavioral features (approval_rate_5m, txn_velocity_1m) feed into authentication decisions
+- **Agent write-back:** Decline Analyst and Risk Assessor agents can write recommendations and propose config changes directly to Lakebase
+- **Actionable UI:** Top-3 actions on Command Center, 90% target reference lines, contextual guidance on Smart Checkout, preset scenarios and actionable recommendations on Decisioning, inline expert review on Reason Codes, recovery gap analysis on Smart Retry
 
 For use cases, technology map, and **impact on accelerating approval rates**, see **[docs/GUIDE.md](docs/GUIDE.md)**.
 
@@ -20,9 +28,9 @@ For use cases, technology map, and **impact on accelerating approval rates**, se
 | **See why payments fail and where to act** | Reason Codes, decline dashboards, top-decline and recovery views, Decline Analyst agent | Declines from all channels in one place, with clear reasons and where recovery or routing changes will help most. |
 | **Optimize payment-link performance (e.g. Brazil)** | Smart Checkout UI, 3DS funnel, solution performance and routing dashboards, Smart Routing agent | You see how each path (Antifraud, 3DS, Network Token, etc.) performs and how to balance security, friction, and approvals. |
 | **Recover more from retries and recurring payments** | Smart Retry UI, retry performance views, Smart Retry agent, decisioning API | You see which failed payments are worth retrying, when and how to retry, and the impact on approval rates (e.g. 1M+ such transactions per month in Brazil). |
-| **Get clear next steps, not just reports** | Decisioning API, Recommendations UI, orchestrator + 5 AI agents, rules engine | You get recommended actions and expected impact; rules, models, and AI work together in one place so decisions stay consistent. |
-| **Learn from what we do and improve over time** | Experiments, incidents, rules management, model retraining jobs | You track which actions were taken and what happened, run A/B tests, and keep improving how we approve and route payments. |
-| **Keep insights reliable** | Experiments, validation workflow, False Insights metric | You balance speed and accuracy; experts can flag bad or non-actionable insights so the system gets better. |
+| **Get clear next steps, not just reports** | Top-3 actions, contextual guidance, preset scenarios, inline expert review, recovery gap, agent write-back | You get recommended actions with expected impact at every level; agents write recommendations directly to Lakebase. |
+| **Learn from what we do and improve over time** | Outcome feedback loop (POST /outcome), experiments, incidents, agent write-back, streaming features | Decision outcomes are recorded; agents propose config changes; the system continuously improves with every decision. |
+| **Keep insights reliable** | Inline expert review (Valid/Invalid/Non-Actionable), experiments, False Insights metric | Experts flag bad insights directly from Reason Codes; the system learns from every review. |
 | **Focus on the regions that matter (e.g. Brazil)** | Catalog/schema and country filters, geography dashboards | You filter by country or region; Brazil’s share of volume is visible by default so local teams see what’s relevant. |
 | **See performance across all entry channels** | Entry-system distribution analytics, gold views and dashboards | You see how each channel (Checkout, PD, WS, SEP) performs without double-counting or mixing definitions. |
 | **Monitor performance in real time and over time** | 3 unified dashboards (Data & Quality, ML & Optimization, Executive & Trends), real-time views | You have KPIs, trends, and reason codes for both live monitoring and historical analysis. |
@@ -52,11 +60,14 @@ Deployment is **two-phase**: first deploy all resources except the App, then dep
 **Automated two-phase:** `./scripts/deploy_with_dependencies.sh dev` runs phase 1, executes jobs 5 and 6 automatically, then runs phase 2.
 
 **Key data integration notes:**
-- **Dual-write sync:** Approval rules are synced between Lakebase (used by UI) and Lakehouse (used by agents) via FastAPI BackgroundTasks. Changes in either direction propagate automatically.
-- **Vector Search:** The `similar_transactions_index` is populated from `payments_enriched_silver` via MERGE into `transaction_summaries_for_search`, then synced to the embedding model `databricks-bge-large-en`.
-- **17 individual + 5 consolidated UC functions** serve as agent tools for analytics, rules, incidents, recommendations, and similar-transaction lookup. Specialist agents use individual functions (6–8 each); the ResponsesAgent uses 10 consolidated + shared functions to fit within the Databricks 10-function limit.
-- **DecisionEngine:** Decision routes (`/authentication`, `/retry`, `/routing`) use `DecisionEngine` with ML enrichment, Lakebase config (tunable thresholds, decline codes, route performance), and rule evaluation. Online features are auto-populated during decisions. Falls back to pure-policy heuristics when Lakebase/ML is unavailable.
-- **Error resilience:** All UI routes have `ErrorBoundary` wrappers and consistent `glass-card` styling for a unified visual language.
+- **Closed-loop DecisionEngine:** Decision routes (`/authentication`, `/retry`, `/routing`) use `DecisionEngine` with parallel ML + Vector Search enrichment (`asyncio.gather`), streaming real-time features (approval_rate_5m, txn_velocity_1m), Lakebase config, and rule evaluation. Policies use VS approval rates and agent confidence to adjust borderline decisions. Outcomes are recorded via POST `/api/decision/outcome` closing the feedback loop. Thread-safe config caching with `threading.Lock`. Falls back to pure-policy heuristics when Lakebase/ML is unavailable.
+- **ML feature parity:** `_build_ml_features()` constructs exactly the 14 features used during training (temporal, merchant/solution approval rates, network encoding, risk-amount interaction), ensuring inference matches training schema.
+- **Agent write-back:** Decline Analyst and Risk Assessor agents have write tools (`write_decline_recommendation`, `propose_decline_config`, `write_risk_recommendation`, `propose_risk_config`) to write recommendations and propose config changes to Lakebase.
+- **Dual-write sync:** Approval rules synced between Lakebase (UI) and Lakehouse (agents) via BackgroundTasks.
+- **Vector Search:** `similar_transactions_index` populated from `payments_enriched_silver` via MERGE, synced to `databricks-bge-large-en`.
+- **17 individual + 5 consolidated UC functions** serve as agent tools. `v_retry_success_by_reason` gold view added for granular retry analysis by decline reason.
+- **Actionable UI:** Top-3 actions on Command Center, 90% target reference lines, last-updated indicators, contextual Smart Checkout guidance, preset decisioning scenarios, actionable recommendation buttons, inline expert review, recovery gap analysis.
+- **Error resilience:** All UI routes have `ErrorBoundary` wrappers and consistent `glass-card` styling.
 
 The project is deployed as a [Databricks Asset Bundle (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). See [Deployment](docs/DEPLOYMENT.md) for full steps and troubleshooting.
 

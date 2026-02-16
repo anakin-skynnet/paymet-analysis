@@ -46,6 +46,7 @@ The solution uses three agent patterns, each optimized for a different use case:
 | **Vector Search** | `VECTOR_SEARCH()` TVF in `search_similar_transactions` UC function | `similar_transactions_index` |
 | **Lakebase queries** | `get_active_approval_rules`, `get_recent_incidents`, `get_decision_outcomes` | Lakebase Postgres via UC functions |
 | **Python exec** | `system.ai.python_exec` for write-back (recommendations) | Spark SQL |
+| **Agent write-back tools** | `write_decline_recommendation`, `propose_decline_config` (Decline Analyst); `write_risk_recommendation`, `propose_risk_config` (Risk Assessor) | Lakebase via `write_recommendation_to_lakebase` and `propose_config_change` |
 
 **Orchestrator in the app:** When `ORCHESTRATOR_SERVING_ENDPOINT` is set (e.g. `payment-analysis-orchestrator` in `app.yml`), the app calls that Model Serving endpoint. Otherwise it falls back to Job 6 (custom Python).
 
@@ -67,7 +68,7 @@ The solution uses three agent patterns, each optimized for a different use case:
 
 **AI Gateway rate limits:** ML model endpoints have 100–200 req/min/user. Agent endpoints use environment variables for catalog, schema, and tiered LLM endpoints.
 
-**ML model signatures:** All 4 ML models use explicit `ModelSignature` with `ColSpec` for named input features, ensuring correct feature handling during serving.
+**ML model signatures:** All 4 ML models use explicit `ModelSignature` with `ColSpec` for 14 named input features, ensuring correct feature handling during serving. The `_build_ml_features()` function in `DecisionEngine` constructs features matching the exact training schema: temporal (hour_of_day, day_of_week, is_weekend), merchant/solution approval rates, network encoding, log_amount, and risk_amount_interaction.
 
 ### UC functions (17 individual + 5 consolidated agent tools)
 
@@ -107,7 +108,7 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`. Spe
 
 ## 4. Approval optimization summary
 
-**Artifacts:** 4 ML models (approval propensity, risk, routing, retry) + 3 agent models (orchestrator, decline analyst, response agent); 17 individual + 5 consolidated UC functions; 3 unified dashboards. Decision routes use `DecisionEngine` for ML enrichment, Lakebase config, and rule evaluation (online features auto-populated).
+**Artifacts:** 4 HistGradientBoosting ML models (14 engineered features each) + 3 agent models (orchestrator, decline analyst, response agent); 17 individual + 5 consolidated UC functions; 3 unified dashboards; 16+ gold views (including `v_retry_success_by_reason`). Closed-loop `DecisionEngine` with parallel ML + VS enrichment (`asyncio.gather`), streaming real-time features, thread-safe caching, and outcome recording (POST /api/decision/outcome). Config exposed via GET /api/decision/config.
 
 **How each component accelerates approval rates:**
 
@@ -121,8 +122,10 @@ Created by **Job 3** task `create_uc_agent_tools` from `uc_agent_tools.sql`. Spe
 | **Decline analyst agent** | Identifies decline patterns and recovery opportunities |
 | **Vector Search** | "Similar cases" for retry and routing recommendations |
 | **Rules engine** | Configurable business rules; operators tune without code |
-| **DecisionEngine** | Wires ML enrichment + Lakebase config (tunable thresholds, decline codes, route scores) + rule evaluation into decision routes; auto-populates online features; graceful fallback to pure-policy |
-| **Dual-write sync** | Approval rules synced between Lakebase (UI) and Lakehouse (agents) via BackgroundTasks, ensuring consistency |
+| **DecisionEngine** | Closed-loop: parallel ML + VS enrichment (`asyncio.gather`), streaming features (approval_rate_5m, txn_velocity_1m), thread-safe caching (`threading.Lock`), outcome recording (POST /outcome), config API (GET /config). Policies use VS approval rates and agent confidence for borderline decisions. |
+| **Streaming features** | Real-time behavioral features (from `online_features` table) feed directly into authentication decisions |
+| **Outcome feedback loop** | POST /api/decision/outcome records actual outcomes; system continuously learns from every decision |
+| **Dual-write sync** | Approval rules synced between Lakebase (UI) and Lakehouse (agents) via BackgroundTasks |
 
 ---
 

@@ -12,9 +12,9 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 **Goal:** Accelerate approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Stack:** Real-time ML (approval propensity, risk, routing, retry), 7 AI agents (Genie, Model Serving, Mosaic AI Gateway, Custom), rules engine, Vector Search, Lakebase (Postgres). Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app. 4 ML model serving endpoints (always deployed) + 3 agent endpoints (managed by Job 6). 17 individual + 5 consolidated UC functions as agent tools (ResponsesAgent uses 10). Dual-write sync for approval rules between Lakebase and Lakehouse via BackgroundTasks. DecisionEngine wires ML enrichment + Lakebase config + rule evaluation into all decision routes.
+**Stack:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), 7 AI agents (all with write-back tools), rules engine, Vector Search, streaming features, Lakebase (Postgres). Data flow: simulator → Lakeflow (Bronze → Silver → Gold) → Unity Catalog → FastAPI + React app. 4 ML model serving endpoints + 3 agent endpoints (managed by Job 6). 17 individual + 5 consolidated UC functions. Dual-write sync for approval rules. Closed-loop DecisionEngine: parallel ML + VS enrichment (`asyncio.gather`), streaming features, thread-safe caching, outcome recording (POST /outcome), policies that use VS approval rates and agent confidence for borderline decisions.
 
-**Use cases:** Smart Retry, Smart Checkout (3DS, Brazil), Reason codes & declines, Risk & fraud, Routing optimization, Decisioning (real-time auth/retry/routing).
+**Use cases:** Smart Retry (with recovery gap analysis), Smart Checkout (contextual 3DS guidance), Reason codes & declines (inline expert review), Risk & fraud, Routing optimization, Decisioning (closed-loop auth/retry/routing with preset scenarios).
 
 **When the user says "APP":** Confirm if they mean the **Databricks App** (payment-analysis) or something else.
 
@@ -105,7 +105,7 @@ This file is the **single source of truth** for the AI agent working on this rep
 
 **In-app (UI):** **AI agents** page lists agents from `GET /api/agents/agents`. Types: Genie, Model Serving, Custom LLM, AI Gateway. Open in Databricks via `GET /api/agents/agents/{id}/url`. Genie chat is in Databricks (one-click from app).
 
-**Agent framework (notebook/jobs):** `src/payment_analysis/agents/agent_framework.py` — Orchestrator + specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). Jobs: `resources/agents.yml` (step 6). Orchestrator and specialists use Lakehouse Rules (`v_approval_rules_active`), incidents (`incidents_lakehouse`), and Vector Search (`similar_transactions_index`) to accelerate approvals. 17 individual UC functions in `uc_agent_tools.sql` (specialist agents use 6–8 each); 5 consolidated functions (`analyze_declines`, `analyze_routing`, `analyze_retry`, `analyze_risk`, `analyze_performance`) for the ResponsesAgent (10 total tools including shared operational functions). Run from **Setup & Run** (step 6).
+**Agent framework (notebook/jobs):** `src/payment_analysis/agents/agent_framework.py` — Orchestrator + specialists (Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender). All agents have write-back tools: Decline Analyst has `write_decline_recommendation` and `propose_decline_config`; Risk Assessor has `write_risk_recommendation` and `propose_risk_config`. Jobs: `resources/agents.yml` (step 6). Orchestrator and specialists use Lakehouse Rules (`v_approval_rules_active`), incidents (`incidents_lakehouse`), and Vector Search (`similar_transactions_index`) to accelerate approvals. 17 individual UC functions + 5 consolidated functions for the ResponsesAgent. Run from **Setup & Run** (step 6).
 
 **Registry (backend):** `src/payment_analysis/backend/routes/agents.py` — `AGENTS` list (Genie, Model Serving, AI Gateway, Custom) with metadata, example queries, workspace URLs. Catalog/schema from `app_config` when available.
 

@@ -250,6 +250,40 @@ Schema name is always **`payment_analysis`** — the same in dev and prod. DAB s
 
 Effective catalog/schema for the app come from Lakehouse `app_config`; set via **Setup & Run** → **Save catalog & schema**. Save with schema = **`payment_analysis`** so dashboards and jobs align.
 
+## Recent enhancements (QA recommendations)
+
+20 QA recommendations were implemented across the backend and frontend:
+
+### Backend (DecisionEngine, policies, agents, ML, gold views)
+
+| # | Enhancement | Impact |
+|---|-------------|--------|
+| P0-1 | **ML feature parity** — `_build_ml_features()` constructs exactly 14 features matching training schema | Eliminates training vs. inference drift |
+| P0-2 | **Outcome recording** — POST `/api/decision/outcome` closes feedback loop | System learns from every decision |
+| P0-3 | **Policies use VS + agent data** — `_risk_tier` adjusts with VS approval rates and agent confidence | Borderline decisions improved |
+| P1-4 | **Streaming features** — `_read_streaming_features()` reads real-time approval_rate_5m, txn_velocity_1m | Authentication decisions use live data |
+| P2-12 | **Agent write-back tools** — Decline Analyst and Risk Assessor have write_recommendation and propose_config tools | Agents act, not just advise |
+| P2-13 | **Parallel ML + VS** — `asyncio.gather()` for concurrent enrichment | Production-grade latency |
+| P3-15 | **Merchant/solution approval rates** — new ML training features | Models capture segment-level patterns |
+| P3-17 | **Decision config API** — GET `/api/decision/config` | Operators see current thresholds |
+| P3-18 | **v_retry_success_by_reason** — new gold view | Granular retry analysis by decline reason |
+| P3-20 | **Thread-safe caching** — `threading.Lock` for config caches | Safe under concurrent load |
+
+### Frontend (UI enhancements)
+
+| # | Enhancement | Page |
+|---|-------------|------|
+| P1-5 | **Top-3 actionable recommendations** | Command Center |
+| P1-6 | **Contextual 'So What' guidance** on metrics | Smart Checkout |
+| P1-7 | **Actionable recommendations** — "Create Rule" / "Apply to Context" buttons | Decisioning |
+| P2-8 | **90% target reference line** on approval trend charts | Command Center |
+| P2-9 | **Inline expert review** — Valid / Invalid / Non-Actionable buttons | Reason Codes |
+| P2-10 | **Recovery gap analysis** per retry cohort | Smart Retry |
+| P2-11 | **Preset scenario buttons** for quick context population | Decisioning |
+| P2-14 | **Last-updated indicators** on data cards | Command Center |
+
+All enhancements are verified with `uv run apx dev check` (zero errors) and deployed.
+
 ## Resources in the workspace
 
 By default: Workspace folder, Lakebase, Jobs (7 steps: create repositories, simulate events, initialize ingestion, deploy dashboards, train models, deploy agents, Genie sync), 2 pipelines, SQL warehouse, Unity Catalog, 3 unified dashboards, Databricks App. **Model Serving:** 4 ML endpoints included by default in `resources/model_serving.yml`; 3 agent endpoints are commented out (managed by Job 6). **Vector Search:** endpoint `payment-similar-transactions-dev` and delta-sync index `similar_transactions_index` created by Job 1.

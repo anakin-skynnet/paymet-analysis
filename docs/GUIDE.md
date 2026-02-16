@@ -8,18 +8,18 @@ Single reference for **what** the platform does, **how** it is built, and how it
 
 **Primary goal:** Accelerate payment approval rates and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities.
 
-**Approach:** Real-time ML, rules, AI agents, and unified analytics so every decision (auth, retry, routing) is data-driven and consistent with business policy.
+**Approach:** Real-time ML (4 HistGradientBoosting models with 14 engineered features), closed-loop decisioning with parallel enrichment, streaming features, AI agents with write-back tools, and actionable analytics so every decision (auth, retry, routing) is data-driven, continuously improving, and consistent with business policy.
 
 ### Use cases and impact on approval rates
 
 | Use case | What it does | Impact on accelerating approval rates |
 |----------|----------------|---------------------------------------|
-| **Smart Retry** | Retry logic, timing, cohorts; ML retry model; similar-case recommendations | Surfaces recoverable declines and recommends when/how to retry. |
-| **Smart Checkout** | 3DS funnel, service-path performance, Brazil payment links, antifraud attribution | Balances friction vs risk; optimizes auth and routing. |
-| **Reason codes & declines** | Unified decline taxonomy, recovery opportunities | Identifies top decline reasons and recoverable share. |
-| **Risk & fraud** | Risk tier, fraud score, Risk Assessor agent | Enables risk-based auth and routing. |
-| **Routing optimization** | Routing performance, Smart Routing agent, model serving | Routes transactions to the best-performing solution/network. |
-| **Decisioning** | Real-time auth, retry, routing via API; rules + ML + Vector Search | Unifies all signals into one decision layer. |
+| **Smart Retry** | Retry logic, timing, cohorts; ML retry model; recovery gap analysis; `v_retry_success_by_reason` gold view | Surfaces recoverable declines with recovery gap per cohort; granular retry success by decline reason and scenario. |
+| **Smart Checkout** | 3DS funnel with contextual guidance, service-path performance, Brazil payment links | Balances friction vs risk with threshold-based recommendations on each metric. |
+| **Reason codes & declines** | Unified decline taxonomy, inline expert review (Valid/Invalid/Non-Actionable), recovery opportunities | Identifies top decline reasons with direct feedback; Decline Analyst writes recommendations to Lakebase. |
+| **Risk & fraud** | Risk tier, fraud score, Risk Assessor agent with write-back tools | Enables risk-based auth; agent proposes config changes to Lakebase. |
+| **Routing optimization** | Routing performance, VS top-route boosting, Smart Routing agent, model serving | Routes to best solution using VS approval rates and agent confidence. |
+| **Decisioning** | Closed-loop auth/retry/routing; parallel ML + VS + streaming features; outcome recording | Unifies all signals; policies adjust borderline decisions; feedback loop via POST /outcome. |
 
 ### Technology map
 
@@ -27,19 +27,21 @@ Single reference for **what** the platform does, **how** it is built, and how it
 |------------|------|-----------------------------------|
 | **Lakeflow (Bronze → Silver → Gold)** | Ingestion and transforms | Clean, timely data for ML and analytics. |
 | **Unity Catalog** | Tables, governance, gold views | Single source of truth for KPIs and model inputs. |
-| **ML models** (approval, risk, routing, retry) | Real-time scores per transaction | Decisions based on predicted likelihood and risk. |
-| **Rules engine** (Lakebase/Lakehouse) | Configurable business rules | Operators tune approve/decline/retry without code. |
-| **Vector Search** | Similar-transaction lookup | “Similar cases” for retry and routing. |
-| **7 AI agents** | Natural-language analytics and recommendations | Explains patterns and suggests actions. |
-| **3 unified dashboards** | KPIs, funnels, reason codes, ML optimization | Visibility into what drives approvals/declines. |
-| **FastAPI + React app** | Decision API and control panel | Single place to run jobs, view dashboards, manage rules. |
+| **ML models** (4 HistGradientBoosting, 14 features) | Real-time scores with training-inference parity | Decisions based on predicted likelihood and risk; `_build_ml_features()` ensures exact match. |
+| **Rules engine** (Lakebase/Lakehouse) | Configurable business rules + config API | Operators tune without code; config exposed via GET /api/decision/config. |
+| **Vector Search** | Similar-transaction lookup + policy integration | VS approval rates adjust borderline risk tiers in policies. |
+| **7 AI agents** (all with write-back) | Analytics, recommendations, config proposals | Agents write recommendations and propose config changes directly to Lakebase. |
+| **3 unified dashboards + 16+ gold views** | KPIs, funnels, reason codes, retry-by-reason | Visibility into approvals/declines; v_retry_success_by_reason for granular retry analysis. |
+| **Streaming features** | Real-time behavioral features | approval_rate_5m, txn_velocity_1m feed into authentication decisions. |
+| **FastAPI + React app** | Closed-loop decision API and actionable control panel | Preset scenarios, inline expert review, recovery gap, top-3 actions, 90% target lines. |
+| **Outcome feedback loop** | POST /api/decision/outcome | Records actual outcomes; system continuously improves. |
 | **Dual-write sync** | Approval rules synced between Lakebase and Lakehouse | Rules changes in the UI propagate to agents (and vice versa) via BackgroundTasks. |
 
 **High-level flow:** Simulator or real pipelines → Lakeflow → Unity Catalog. Intelligence: ML + rules + Vector Search + AI agents. Application: FastAPI backend + React UI (Setup & Run, dashboards, rules, decisioning).
 
 ### Validation: alignment with accelerating approval rates
 
-The solution is designed and documented around a single business objective: **accelerate payment approval rates** and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. Each major component (data, ML, rules, decisioning, agents, dashboards, app) is wired to that goal: README, GUIDE, AGENTS.md, UI copy, backend route descriptions, and agent/system prompts all reference approval rates, recovery, routing, and risk. No component exists purely for generic analytics; each supports either **decisions** (auth/retry/routing), **visibility** (what drives or delays approvals), or **configuration** (rules and experiments that affect those decisions).
+The solution is designed and documented around a single business objective: **accelerate payment approval rates** and reduce lost revenue from false declines, suboptimal routing, and missed retry opportunities. Each major component is wired to that goal. The recent implementation of 20 QA recommendations strengthened this alignment: (1) closed feedback loop with outcome recording, (2) ML feature parity between training and inference, (3) parallel enrichment for production performance, (4) streaming real-time features, (5) policies that use VS data and agent confidence for borderline decisions, (6) agent write-back tools, and (7) actionable UI with top-3 actions, target lines, contextual guidance, preset scenarios, inline expert review, and recovery gap analysis.
 
 ---
 
@@ -47,16 +49,16 @@ The solution is designed and documented around a single business objective: **ac
 
 | Component | What it is | How it accelerates approval rates |
 |-----------|------------|-----------------------------------|
-| **Medallion (Bronze → Silver → Gold)** | Lakeflow pipelines and gold views: `payments_raw_bronze`, `payments_enriched_silver`, 12+ gold views (KPIs, trends, reason codes, retry performance). | Provides clean, timely data so ML models, rules, and dashboards see accurate approval/decline/retry patterns; without it, decisions and insights would be wrong or stale. |
+| **Medallion (Bronze → Silver → Gold)** | Lakeflow pipelines and 16+ gold views: `payments_raw_bronze`, `payments_enriched_silver`, gold views (KPIs, trends, reason codes, retry performance, `v_retry_success_by_reason`). | Provides clean, timely data so ML models, rules, and dashboards see accurate patterns; `v_retry_success_by_reason` enables granular retry analysis by decline reason and scenario. |
 | **Unity Catalog & Lakehouse** | Catalog/schema, volumes, `app_config`, gold views, and (optionally) rules/recommendations in Delta tables. | Single source of truth for catalog/schema and config; gold views feed dashboards and agents; rules and recommendations drive approve/decline/retry behavior. |
 | **Lakebase (Postgres)** | Managed Postgres for `app_config`, `approval_rules`, `app_settings`, `online_features`, experiments, incidents. | Stores business rules and config that ML and agents read; experiments support A/B tests (e.g. 3DS strategy); operators tune rules without code to approve more good transactions and block more fraud. |
 | **Rules engine (approval rules)** | Configurable rules (conditions + actions) from Lakebase or Lakehouse; exposed via `/api/rules`. **Dual-write:** changes sync between Lakebase and Lakehouse via BackgroundTasks so both the UI and agents see the same rules. | Lets operators define when to approve, decline, or retry; ML and agents use these rules so every decision is consistent with policy and optimized for approval rate vs risk. |
-| **ML models (4)** | Approval propensity, risk scoring, smart routing, smart retry — trained on `payments_enriched_silver`, registered in Unity Catalog, served via model serving endpoints. | **Approval propensity:** predicts likelihood of approval to avoid declining likely-good transactions. **Risk:** enables risk-based auth (e.g. step-up for high risk) so low-risk flows stay frictionless. **Routing:** picks the solution (standard, 3DS, token, passkey) that maximizes approval rate for the segment. **Retry:** predicts retry success and timing to recover otherwise-lost approvals. |
-| **Decisioning API** | Real-time endpoints (`/api/decision/authentication`, `/retry`, `/routing`) powered by `DecisionEngine`: ML enrichment + Lakebase config (tunable thresholds, decline codes, route scores) + rule evaluation. Online features auto-populated. ML prediction endpoints for approval, risk, routing; A/B experiment assignment. | Single decision layer for auth, retry, and routing; combines rules + configurable risk thresholds + ML model scores + rule evaluation so each transaction gets the right path to maximize approval while controlling risk. Falls back to pure-policy heuristics when Lakebase/ML is unavailable. |
+| **ML models (4)** | HistGradientBoosting with 14 engineered features (temporal, merchant/solution approval rates, network encoding, risk-amount interaction) — trained on `payments_enriched_silver`, registered in Unity Catalog, served via model serving endpoints. `_build_ml_features()` ensures training-inference feature parity. | **Approval propensity:** predicts likelihood of approval. **Risk:** enables risk-based auth. **Routing:** picks the solution maximizing approval for the segment. **Retry:** predicts retry success and timing. |
+| **Decisioning API** | Closed-loop endpoints (`/api/decision/authentication`, `/retry`, `/routing`, `/outcome`, `/config`) powered by `DecisionEngine`: parallel ML + VS enrichment (`asyncio.gather`), streaming real-time features (approval_rate_5m, txn_velocity_1m), Lakebase config, rule evaluation, thread-safe caching (`threading.Lock`). Policies use VS approval rates and agent confidence to adjust borderline decisions. POST `/outcome` records actual outcomes. GET `/config` exposes current thresholds. | Single decision layer with continuous improvement; parallel enrichment for production performance; outcome feedback loop ensures the system learns from every decision. Falls back to pure-policy heuristics when Lakebase/ML is unavailable. |
 | **Vector Search** | Delta-sync index `similar_transactions_index` on `transaction_summaries_for_search`; similar-case lookup via `VECTOR_SEARCH()` TVF. | Powers “similar cases” recommendations (e.g. “similar transactions approved 65% with retry after 2h”); feeds recommendations into the Decisioning UI and agents to suggest actions that accelerate approvals. |
-| **7 AI agents** | Orchestrator + Smart Routing, Smart Retry, Decline Analyst, Risk Assessor, Performance Recommender; use Lakehouse rules, Lakebase data, and Vector Search. 17 individual UC functions (specialists use 6–8 each) + 5 consolidated functions for the ResponsesAgent (10 total). 4 ML endpoints always deployed; 3 agent endpoints managed by Job 6 (serverless, scale-to-zero). | Answer natural-language questions about approval rates and declines; suggest routing, retry, and rule changes; use similar-transaction lookup and incident history to improve recommendations. |
+| **7 AI agents** (all with write-back) | Orchestrator + Smart Routing, Smart Retry, Decline Analyst (write_decline_recommendation, propose_decline_config), Risk Assessor (write_risk_recommendation, propose_risk_config), Performance Recommender. Write-back tools let agents write recommendations and propose config changes directly to Lakebase. 17 individual UC functions + 5 consolidated for ResponsesAgent. 4 ML + 3 agent endpoints. | Answer questions; suggest and write routing, retry, and rule changes; propose config changes that operators review from the UI. |
 | **3 unified dashboards** | Data & Quality, ML & Optimization, Executive & Trends in Databricks AI/BI (Lakeview). Embeddable in the app via `/embed/dashboardsv3/` path. | Give visibility into approval rates, decline reasons, solution performance, and recovery; operators see where to act and track impact. |
-| **FastAPI + React app** | Control panel: Setup & Run (jobs, pipelines), Dashboards, Rules, Decisioning, Reason Codes, Smart Checkout, Smart Retry, Agents, Experiments, Incidents. All routes have `ErrorBoundary` wrappers and consistent `glass-card` styling. Shared utility `is_mock_request` for mock-data toggle. | One place to run pipelines/jobs, manage rules, view recommendations and KPIs, and open agents/dashboards; ensures teams can operate the whole stack that drives approval rate without leaving the app. |
+| **FastAPI + React app** | 16-page control panel with actionable UI: Command Center (top-3 actions, 90% target lines, last-updated), Smart Checkout (contextual guidance), Decisioning (preset scenarios, actionable recommendations with "Create Rule"/"Apply to Context"), Reason Codes (inline expert review: Valid/Invalid/Non-Actionable), Smart Retry (recovery gap analysis). All routes have `ErrorBoundary` wrappers and `glass-card` styling. | One place to operate the full stack with every data point telling operators what to do next. |
 | **Genie** | Natural-language “Ask Data” in the workspace, synced with sample questions (approval rate, trends, segments). | Extends visibility: ask “What is the approval rate?” or “Which segment has the lowest approval rate?” in the lakehouse context, supporting the same goal of accelerating approval rates. |
 | **Experiments & incidents** | A/B experiments (e.g. 3DS treatment vs control) and incident/remediation tracking in Lakebase. | Experiments measure impact of policy changes on approval rate; incidents track production issues that might hurt approvals so they can be fixed. |
 
@@ -143,6 +145,8 @@ All UI data goes through the FastAPI backend. No direct Lakebase or Databricks c
 | Dashboards list & embed URL | `GET /api/dashboards/*` | Static registry + workspace URL for embed |
 | Agents list & URLs | `GET /api/agents/*` | Backend → WorkspaceClient |
 | Experiments, incidents, decision logs | `GET/POST /api/experiments`, `/api/incidents` | Lakebase (Postgres) |
+| Decision outcomes | `POST /api/decision/outcome` | Lakebase (feedback loop) |
+| Decision config | `GET /api/decision/config` | DecisionEngine (Lakebase config) |
 
 **Credentials:** When the app is opened from **Compute → Apps**, the platform forwards the user token. The backend uses it for Databricks; otherwise `DATABRICKS_TOKEN` from the app environment. Catalog/schema come from `app_config` (Lakebase or Lakehouse), loaded at startup or on first request.
 
@@ -274,7 +278,7 @@ Aligns the app with Databricks Apps best practices and confirms **all data and A
 | **Dashboards** | DBSQL dashboards in workspace (embed URLs) | N/A |
 | **Jobs / Pipelines** | Databricks Jobs & Pipelines APIs | N/A |
 
-**Unity Catalog views used by analytics** (via `DatabricksService.execute_query()`): `v_executive_kpis`, `v_approval_trends_hourly` (per-second granularity), `v_approval_trends_by_second`, `v_solution_performance`, `v_top_decline_reasons`, `v_smart_checkout_*`, `v_3ds_funnel_br`, `v_reason_codes_br`, `v_reason_code_insights_br`, `v_entry_system_distribution_br`, `v_dedup_collision_stats`, `v_false_insights_metric`, `v_retry_performance`, `v_recommendations_from_lakehouse`, plus country tables. Full list in `databricks_service.py`.
+**Unity Catalog views used by analytics** (via `DatabricksService.execute_query()`): `v_executive_kpis`, `v_approval_trends_hourly` (per-second granularity), `v_approval_trends_by_second`, `v_solution_performance`, `v_top_decline_reasons`, `v_smart_checkout_*`, `v_3ds_funnel_br`, `v_reason_codes_br`, `v_reason_code_insights_br`, `v_entry_system_distribution_br`, `v_dedup_collision_stats`, `v_false_insights_metric`, `v_retry_performance`, `v_retry_success_by_reason`, `v_recommendations_from_lakehouse`, plus country tables. Full list in `databricks_service.py`.
 
 **AI/ML sources:** Model Serving (approval, risk, routing); Genie / Mosaic AI Gateway (linked from UI); agents listed from workspace config.
 
