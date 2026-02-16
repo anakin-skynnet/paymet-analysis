@@ -22,7 +22,7 @@ from databricks.sdk import WorkspaceClient
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from ..config import AppConfig, get_default_schema
+from ..config import AppConfig, ensure_absolute_workspace_url, get_default_schema
 from ..dependencies import get_workspace_client, get_workspace_client_optional
 from ..logger import logger
 from .setup import resolve_orchestrator_job_id
@@ -74,8 +74,11 @@ def _default_uc_prefix() -> str:
 # =============================================================================
 
 def get_workspace_url() -> str:
-    """Get Databricks workspace URL from centralized config."""
-    return _databricks_config.workspace_url
+    """Get Databricks workspace URL from centralized config (always https://)."""
+    url = (_databricks_config.workspace_url or "").strip().rstrip("/")
+    if url and not url.startswith("https://"):
+        url = f"https://{url}"
+    return url
 
 
 def get_notebook_workspace_url(relative_path: str) -> str:
@@ -444,7 +447,7 @@ async def chat(
 
     NOTE: The AI Chatbot does NOT fall back here — it uses /orchestrator/chat exclusively.
     """
-    workspace_url = get_workspace_url()
+    workspace_url = ensure_absolute_workspace_url(get_workspace_url())
     genie_url = f"{workspace_url.rstrip('/')}/genie" if workspace_url else None
     space_id = (os.environ.get(GENIE_SPACE_ID_ENV) or "").strip()
 
@@ -535,6 +538,8 @@ def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_m
 
     The endpoint serves a ``PaymentAnalysisAgent`` (MLflow ResponsesAgent pyfunc)
     that expects ``dataframe_records=[{"input": [{"role": "user", "content": ...}]}]``.
+    The reply is post-processed by ``_compact_reply`` in the caller to keep it suitable
+    for the floating chat panel.
     Uses the SDK's ``serving_endpoints.query`` which handles auth automatically.
     Returns ``(reply, agents_used)``.
     """
@@ -591,6 +596,37 @@ def _parse_orchestrator_response(response: Any) -> tuple[str, list[str]]:
     elif isinstance(pred, str):
         reply = pred.strip()
     return reply, agents_used
+
+
+def _compact_reply(text: str, max_chars: int = 1200) -> str:
+    """Post-process an LLM reply for the floating chat dialog.
+
+    Strips heavy markdown (headers, horizontal rules) and truncates overly
+    long answers so they fit comfortably in the small UI panel.
+    """
+    import re
+
+    text = text.strip()
+    # Convert markdown headers to plain bold-ish text
+    text = re.sub(r"^#{1,4}\s+", "", text, flags=re.MULTILINE)
+    # Remove horizontal rules
+    text = re.sub(r"^-{3,}$", "", text, flags=re.MULTILINE)
+    # Collapse 3+ consecutive blank lines into 2
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    if len(text) <= max_chars:
+        return text.strip()
+
+    # Truncate at the last paragraph/sentence boundary before max_chars
+    truncated = text[:max_chars]
+    last_para = truncated.rfind("\n\n")
+    if last_para > max_chars // 3:
+        truncated = truncated[:last_para]
+    else:
+        last_dot = truncated.rfind(". ")
+        if last_dot > max_chars // 3:
+            truncated = truncated[: last_dot + 1]
+    return truncated.strip()
 
 
 def _ai_gateway_endpoint() -> str:
@@ -661,7 +697,7 @@ async def orchestrator_chat(
         try:
             reply, agents_used = _query_orchestrator_endpoint(ws, endpoint_name, user_message)
             if reply:
-                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+                return OrchestratorChatOut(reply=_compact_reply(reply), run_page_url=None, agents_used=agents_used)
         except Exception as e:
             logger.warning(
                 "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
@@ -673,7 +709,7 @@ async def orchestrator_chat(
     try:
         reply, agents_used = _query_ai_gateway_direct(ws, user_message)
         if reply:
-            return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+            return OrchestratorChatOut(reply=_compact_reply(reply), run_page_url=None, agents_used=agents_used)
     except Exception as e:
         logger.warning("AI Gateway fallback failed, trying Job 6: %s", e)
 
