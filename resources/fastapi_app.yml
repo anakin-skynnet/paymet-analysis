@@ -77,12 +77,14 @@ resources:
 
         # Genie Space — Payment Analytics
         # Used by: POST /api/agents/chat → ws.genie.start_conversation_and_wait()
-        - name: genie-space
-          description: Genie space for natural-language data queries (Genie Assistant floating dialog)
-          genie_space:
-            name: "Payment Analytics"
-            space_id: ${var.genie_space_id}
-            permission: CAN_EDIT
+        # NOTE: Temporarily commented out — Genie space gets auto-trashed when created
+        # programmatically with minimal config. Create manually in Genie UI, then uncomment.
+        # - name: genie-space
+        #   description: Genie space for natural-language data queries (Genie Assistant floating dialog)
+        #   genie_space:
+        #     name: "Payment Analytics"
+        #     space_id: ${var.genie_space_id}
+        #     permission: CAN_EDIT
 
         # ResponsesAgent — AI Chat primary backend (Path 1)
         # PaymentAnalysisAgent with 10 UC tools + python_exec

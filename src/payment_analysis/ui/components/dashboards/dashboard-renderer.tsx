@@ -162,8 +162,35 @@ function WidgetBarChart({ ds, enc }: { ds: DatasetResult; enc: Record<string, un
   const xField = getFieldName(enc, "x") || ds.columns[0] || "";
   const yField = getFieldName(enc, "y") || ds.columns[1] || "";
   if (!xField || !yField) return <NoFieldsMessage />;
-  const data = numericRows(ds.rows, [yField]).slice(0, 30);
+
+  // Detect horizontal bars: x is quantitative (the value), y is categorical (the label)
+  const xScale = (enc.x && typeof enc.x === "object" ? (enc.x as Record<string, unknown>).scale : null) as Record<string, unknown> | null;
+  const yScale = (enc.y && typeof enc.y === "object" ? (enc.y as Record<string, unknown>).scale : null) as Record<string, unknown> | null;
+  const isHorizontal = xScale?.type === "quantitative" && yScale?.type === "categorical";
+
+  const numField = isHorizontal ? xField : yField;
+  const catField = isHorizontal ? yField : xField;
+  const data = numericRows(ds.rows, [numField]).slice(0, 30);
   if (!data.length) return <NoDataMessage />;
+
+  if (isHorizontal) {
+    return (
+      <ResponsiveContainer width="100%" height={Math.max(240, data.length * 32)}>
+        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 10 }} />
+          <YAxis dataKey={catField} type="category" tick={{ fontSize: 10 }} width={120} tickFormatter={shortLabel} />
+          <Tooltip />
+          <Bar dataKey={numField} radius={[0, 4, 4, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
@@ -297,6 +324,40 @@ function WidgetTable({ ds, enc }: { ds: DatasetResult; enc: Record<string, unkno
   );
 }
 
+function WidgetCounter({ ds, enc }: { ds: DatasetResult; enc: Record<string, unknown> }) {
+  const valueField = getFieldName(enc, "value") || ds.columns[0] || "";
+  if (!valueField || !ds.rows.length) return <NoDataMessage />;
+  const raw = ds.rows[0][valueField];
+  const displayName =
+    (enc.value && typeof enc.value === "object"
+      ? (enc.value as Record<string, unknown>).displayName
+      : null) as string | null;
+  const num = Number(raw);
+  let formatted: string;
+  if (raw === null || raw === undefined) {
+    formatted = "—";
+  } else if (!isNaN(num)) {
+    if (Number.isInteger(num) && num > 1000) {
+      formatted = num.toLocaleString();
+    } else if (!Number.isInteger(num)) {
+      formatted = num.toLocaleString(undefined, { maximumFractionDigits: 3 });
+    } else {
+      formatted = String(num);
+    }
+  } else {
+    formatted = String(raw);
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center py-4 gap-1">
+      <span className="text-3xl font-bold tracking-tight">{formatted}</span>
+      {displayName && (
+        <span className="text-xs text-muted-foreground">{displayName}</span>
+      )}
+    </div>
+  );
+}
+
 function NoFieldsMessage() {
   return <p className="text-xs text-muted-foreground italic py-4 text-center">No fields configured</p>;
 }
@@ -318,6 +379,8 @@ function WidgetChart({ widget, dataset }: { widget: WidgetSpec; dataset: Dataset
 
   const enc = widget.encodings;
   switch (widget.widget_type) {
+    case "counter":
+      return <WidgetCounter ds={dataset} enc={enc} />;
     case "area":
       return <WidgetAreaChart ds={dataset} enc={enc} />;
     case "bar":
@@ -332,7 +395,6 @@ function WidgetChart({ widget, dataset }: { widget: WidgetSpec; dataset: Dataset
       return <WidgetTable ds={dataset} enc={enc} />;
     case "choropleth":
     case "heatmap":
-      // Render as table for unsupported map/heatmap types
       return <WidgetTable ds={dataset} enc={enc} />;
     default:
       return <WidgetTable ds={dataset} enc={enc} />;
@@ -342,6 +404,7 @@ function WidgetChart({ widget, dataset }: { widget: WidgetSpec; dataset: Dataset
 // --- Widget type badge ---
 
 const WIDGET_TYPE_LABELS: Record<string, string> = {
+  counter: "KPI",
   area: "Area",
   bar: "Bar",
   pie: "Pie",
@@ -444,6 +507,10 @@ export function DashboardRenderer({ dashboardId, dashboardName }: DashboardRende
     return true;
   });
 
+  // Separate counters from charts for different grid layouts
+  const counters = uniqueWidgets.filter((w) => w.widget_type === "counter");
+  const charts = uniqueWidgets.filter((w) => w.widget_type !== "counter");
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -452,27 +519,48 @@ export function DashboardRenderer({ dashboardId, dashboardName }: DashboardRende
           <RefreshCw className="w-3 h-3" /> Refresh
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {uniqueWidgets.map((widget, i) => {
-          const dataset = datasetMap.get(widget.dataset_name);
-          if (!dataset) return null;
-          return (
-            <Card key={`${widget.dataset_name}-${i}`} className="glass-card border border-border/80 overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">{dataset.display_name}</CardTitle>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {WIDGET_TYPE_LABELS[widget.widget_type] || widget.widget_type}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <WidgetChart widget={widget} dataset={dataset} />
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+
+      {/* KPI counters in a 4-column grid */}
+      {counters.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {counters.map((widget, i) => {
+            const dataset = datasetMap.get(widget.dataset_name);
+            if (!dataset) return null;
+            return (
+              <Card key={`ctr-${widget.dataset_name}-${i}`} className="glass-card border border-border/80">
+                <CardContent className="pt-4 pb-3 px-4">
+                  <WidgetChart widget={widget} dataset={dataset} />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Charts in a 2-column grid */}
+      {charts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {charts.map((widget, i) => {
+            const dataset = datasetMap.get(widget.dataset_name);
+            if (!dataset) return null;
+            return (
+              <Card key={`${widget.dataset_name}-${i}`} className="glass-card border border-border/80 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">{dataset.display_name}</CardTitle>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {WIDGET_TYPE_LABELS[widget.widget_type] || widget.widget_type}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <WidgetChart widget={widget} dataset={dataset} />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

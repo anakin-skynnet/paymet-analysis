@@ -100,11 +100,18 @@ export function Component() {
   };
 
   const embedDashboard = embedId ? dashboards.find((d) => d.id === embedId) : null;
-  const embedSrc =
-    embedUrlData?.data?.full_embed_url ||
-    (embedUrlData?.data?.embed_url && getWorkspaceUrl()
-      ? `${getWorkspaceUrl()}${embedUrlData.data.embed_url as string}`
-      : null);
+  // Iframe embedding requires workspace admin to enable "Embed dashboards" in
+  // Settings → Security and add the app domain to Approved Domains.
+  // Default to native SQL-powered charts (DashboardRenderer) which always work.
+  // Set ?embed=<id>&iframe=1 to force iframe mode when workspace embedding is enabled.
+  const iframeSearch = useSearch({ from: "/_sidebar/dashboards" }) as Record<string, unknown>;
+  const forceIframe = iframeSearch.iframe === "1" || iframeSearch.iframe === 1;
+  const embedSrc = forceIframe
+    ? (embedUrlData?.data?.full_embed_url ||
+       (embedUrlData?.data?.embed_url && getWorkspaceUrl()
+         ? `${getWorkspaceUrl()}${embedUrlData.data.embed_url as string}`
+         : null))
+    : null;
   const showEmbedView = !!embedId;
   const goBack = () => navigate({ to: "/dashboards", search: {} });
   const openEmbed = (id: string) => navigate({ to: "/dashboards", search: { embed: id } });
@@ -165,17 +172,23 @@ export function Component() {
               </>
             )}
           </div>
-          {embedSrc ? (
-            <EmbeddedDashboard
-              title={embedDashboard?.name || "Dashboard"}
-              src={String(embedSrc)}
-              dashboardId={embedId ?? ""}
-            />
-          ) : (
-            <DashboardRenderer
-              dashboardId={embedId ?? ""}
-              dashboardName={embedDashboard?.name}
-            />
+          <DashboardRenderer
+            dashboardId={embedId ?? ""}
+            dashboardName={embedDashboard?.name}
+          />
+          {embedSrc && (
+            <details className="mt-4">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                Try native Databricks embed (requires workspace admin to enable embedding)
+              </summary>
+              <div className="mt-2">
+                <EmbeddedDashboard
+                  title={embedDashboard?.name || "Dashboard"}
+                  src={String(embedSrc)}
+                  dashboardId={embedId ?? ""}
+                />
+              </div>
+            </details>
           )}
         </div>
       )}
