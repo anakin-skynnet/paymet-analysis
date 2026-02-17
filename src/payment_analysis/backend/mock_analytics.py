@@ -60,7 +60,7 @@ def mock_approval_trends(seconds: int = 3600) -> list[dict[str, Any]]:
             "event_second": _ts_str(ts),
             "transaction_count": txn,
             "approved_count": approved,
-            "approval_rate_pct": round(rate, 4),
+            "approval_rate_pct": round(rate * 100, 2),
             "avg_fraud_score": round(rng.uniform(0.05, 0.35), 3),
             "total_value": round(txn * rng.uniform(80, 250), 2),
         })
@@ -158,10 +158,10 @@ def mock_merchant_segment_performance() -> list[dict[str, Any]]:
 
 def mock_solution_performance() -> list[dict[str, Any]]:
     return [
-        {"payment_solution": "Standard", "transaction_count": 68_200, "approved_count": 58_892, "approval_rate_pct": 0.8636, "avg_amount": 145.20, "total_value": 9_898_640.0},
-        {"payment_solution": "3DS", "transaction_count": 42_100, "approved_count": 38_731, "approval_rate_pct": 0.9200, "avg_amount": 210.50, "total_value": 8_862_050.0},
-        {"payment_solution": "Network Token", "transaction_count": 22_800, "approved_count": 21_432, "approval_rate_pct": 0.9400, "avg_amount": 175.00, "total_value": 3_990_000.0},
-        {"payment_solution": "Passkey", "transaction_count": 15_420, "approved_count": 14_649, "approval_rate_pct": 0.9500, "avg_amount": 198.00, "total_value": 3_053_160.0},
+        {"payment_solution": "Standard", "transaction_count": 68_200, "approved_count": 58_892, "approval_rate_pct": 86.36, "avg_amount": 145.20, "total_value": 9_898_640.0},
+        {"payment_solution": "3DS", "transaction_count": 42_100, "approved_count": 38_731, "approval_rate_pct": 92.00, "avg_amount": 210.50, "total_value": 8_862_050.0},
+        {"payment_solution": "Network Token", "transaction_count": 22_800, "approved_count": 21_432, "approval_rate_pct": 94.00, "avg_amount": 175.00, "total_value": 3_990_000.0},
+        {"payment_solution": "Passkey", "transaction_count": 15_420, "approved_count": 14_649, "approval_rate_pct": 95.00, "avg_amount": 198.00, "total_value": 3_053_160.0},
     ]
 
 
@@ -200,10 +200,10 @@ def mock_reason_code_insights() -> list[dict[str, Any]]:
 
 def mock_entry_system_distribution() -> list[dict[str, Any]]:
     return [
-        {"entry_system": "PD", "transaction_count": 92_040, "approved_count": 81_795, "approval_rate_pct": 0.8887, "total_value": 14_500_000.0},
-        {"entry_system": "WS", "transaction_count": 50_510, "approved_count": 44_449, "approval_rate_pct": 0.8800, "total_value": 7_200_000.0},
-        {"entry_system": "SEP", "transaction_count": 4_450, "approved_count": 3_916, "approval_rate_pct": 0.8800, "total_value": 980_000.0},
-        {"entry_system": "Checkout", "transaction_count": 1_520, "approved_count": 1_230, "approval_rate_pct": 0.8092, "total_value": 420_000.0},
+        {"entry_system": "PD", "transaction_count": 92_040, "approved_count": 81_795, "approval_rate_pct": 88.87, "total_value": 14_500_000.0},
+        {"entry_system": "WS", "transaction_count": 50_510, "approved_count": 44_449, "approval_rate_pct": 88.00, "total_value": 7_200_000.0},
+        {"entry_system": "SEP", "transaction_count": 4_450, "approved_count": 3_916, "approval_rate_pct": 88.00, "total_value": 980_000.0},
+        {"entry_system": "Checkout", "transaction_count": 1_520, "approved_count": 1_230, "approval_rate_pct": 80.92, "total_value": 420_000.0},
     ]
 
 
@@ -311,13 +311,13 @@ def mock_3ds_funnel() -> list[dict[str, Any]]:
 def mock_smart_checkout_service_paths() -> list[dict[str, Any]]:
     return [
         {"service_path": "Standard → Visa Direct", "transaction_count": 28_400, "approved_count": 25_560,
-         "approval_rate_pct": 0.90, "avg_fraud_score": 0.12, "total_value": 4_260_000.0,
+         "approval_rate_pct": 90.0, "avg_fraud_score": 0.12, "total_value": 4_260_000.0,
          "antifraud_declines": 850, "antifraud_pct_of_declines": 29.9},
         {"service_path": "3DS → Mastercard", "transaction_count": 18_200, "approved_count": 16_744,
-         "approval_rate_pct": 0.92, "avg_fraud_score": 0.09, "total_value": 3_822_000.0,
+         "approval_rate_pct": 92.0, "avg_fraud_score": 0.09, "total_value": 3_822_000.0,
          "antifraud_declines": 290, "antifraud_pct_of_declines": 19.9},
         {"service_path": "Token → Elo", "transaction_count": 8_300, "approved_count": 7_802,
-         "approval_rate_pct": 0.94, "avg_fraud_score": 0.07, "total_value": 1_245_000.0,
+         "approval_rate_pct": 94.0, "avg_fraud_score": 0.07, "total_value": 1_245_000.0,
          "antifraud_declines": 100, "antifraud_pct_of_declines": 20.1},
     ]
 
@@ -329,11 +329,11 @@ def mock_smart_checkout_service_paths() -> list[dict[str, Any]]:
 def mock_smart_checkout_path_performance() -> list[dict[str, Any]]:
     return [
         {"recommended_path": "3DS + Network Token", "transaction_count": 22_800, "approved_count": 21_432,
-         "approval_rate_pct": 0.94, "total_value": 3_990_000.0},
+         "approval_rate_pct": 94.0, "total_value": 3_990_000.0},
         {"recommended_path": "Standard + Smart Retry", "transaction_count": 38_500, "approved_count": 33_880,
-         "approval_rate_pct": 0.88, "total_value": 5_582_500.0},
+         "approval_rate_pct": 88.0, "total_value": 5_582_500.0},
         {"recommended_path": "Passkey + Direct Auth", "transaction_count": 15_420, "approved_count": 14_649,
-         "approval_rate_pct": 0.95, "total_value": 3_053_160.0},
+         "approval_rate_pct": 95.0, "total_value": 3_053_160.0},
     ]
 
 

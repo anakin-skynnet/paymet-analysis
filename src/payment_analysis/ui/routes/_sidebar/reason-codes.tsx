@@ -118,7 +118,7 @@ function ReasonCodes() {
                 <div key={r.entry_system} className="flex flex-wrap items-center gap-2 py-2 border-b border-border/50 last:border-0">
                   <Badge variant="secondary" className="shrink-0">{r.entry_system}</Badge>
                   <span className="ml-auto text-sm text-muted-foreground whitespace-nowrap tabular-nums">
-                    {r.approval_rate_pct}% approval
+                    {typeof r.approval_rate_pct === "number" ? r.approval_rate_pct.toFixed(1) : r.approval_rate_pct}% approval
                   </span>
                   <Badge variant="outline" className="whitespace-nowrap shrink-0">{r.transaction_count.toLocaleString()} tx</Badge>
                 </div>
