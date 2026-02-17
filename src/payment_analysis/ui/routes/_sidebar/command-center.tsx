@@ -477,7 +477,7 @@ function CommandCenter() {
       .filter((_: ApprovalTrendOut, i: number) => i % step === 0)
       .map((pt: ApprovalTrendOut) => ({
         time: new Date(pt.event_second).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        approval_rate: Number((pt.approval_rate_pct * 100).toFixed(1)),
+        approval_rate: Number(pt.approval_rate_pct.toFixed(1)),
         approved_count: pt.approved_count,
         total_value: pt.total_value,
       }));

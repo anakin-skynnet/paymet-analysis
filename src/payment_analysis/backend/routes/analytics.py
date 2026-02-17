@@ -358,6 +358,7 @@ async def get_online_features(
     if runtime and runtime._db_configured():
         rows = get_online_features_from_lakebase(runtime, source=source, limit=limit)
         if rows is not None:
+            _set_data_source_header(response, service)
             return [
                 OnlineFeatureOut(
                     id=r["id"],
@@ -372,6 +373,7 @@ async def get_online_features(
                 for r in rows
             ]
     rows = await service.get_online_features(source=source, limit=limit)
+    _set_data_source_header(response, service)
     return [
         OnlineFeatureOut(
             id=r["id"],
@@ -431,8 +433,10 @@ async def list_countries(
     if runtime and runtime._db_configured():
         rows = get_countries_from_lakebase(runtime, limit=limit)
         if rows is not None:
+            _set_data_source_header(response, service)
             return [CountryOut(code=r["code"], name=r["name"]) for r in rows]
     data = await service.get_countries(limit=limit)
+    _set_data_source_header(response, service)
     return [CountryOut(code=r["code"], name=r["name"]) for r in data]
 
 

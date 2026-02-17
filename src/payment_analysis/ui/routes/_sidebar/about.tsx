@@ -14,7 +14,19 @@ import {
 
 export const Route = createFileRoute("/_sidebar/about")({
   component: () => (
-    <ErrorBoundary fallback={<div className="p-8 text-center text-muted-foreground">Something went wrong. Please refresh.</div>}>
+    <ErrorBoundary
+      FallbackComponent={({ resetErrorBoundary }) => (
+        <div className="flex flex-col items-center gap-4 p-8 text-center text-muted-foreground">
+          <p>Something went wrong loading the About page.</p>
+          <button
+            onClick={resetErrorBoundary}
+            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+    >
       <About />
     </ErrorBoundary>
   ),

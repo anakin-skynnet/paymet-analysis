@@ -243,7 +243,7 @@ function AIAgents() {
                       Mosaic AI Gateway
                     </a>
                   </strong>
-                  : LLM-powered insights and recommendations (Llama 3.1 70B)
+                  : LLM-powered insights and recommendations (Claude Opus 4.6 + Sonnet 4.5)
                 </li>
                 <li>
                   <strong>Custom Agents:</strong> Domain-specific payment
