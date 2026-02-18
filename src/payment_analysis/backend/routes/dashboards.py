@@ -513,6 +513,7 @@ async def get_dashboard_url(
 # Fallback: local .lvdash.json files (for local dev without dashboard IDs)
 
 import json as _json
+import os as _os
 import time as _time
 from pathlib import Path as _Path
 
@@ -530,11 +531,43 @@ _DASHBOARD_DEF_CACHE: dict[str, tuple[dict[str, Any], float]] = {}
 _DASHBOARD_DEF_TTL = 300  # seconds
 
 # Local-file fallback directories (only used when Lakeview API is unavailable)
+# In deployed app, check workspace path first, then project root
 _PROJECT_ROOT = _Path(__file__).resolve().parent.parent.parent.parent.parent
+
+# Try to detect workspace root from common paths
+# The app's source_code_path is ${workspace.root_path} which resolves to the workspace location
+def _get_workspace_dashboards_dir() -> _Path | None:
+    """Try to find workspace dashboards directory.
+    
+    In deployed app, dashboards are at: /Workspace/Users/<user>/payment-analysis/dashboards/
+    The app runs from source_code_path which is the workspace root.
+    """
+    # Check if we're in a workspace environment
+    # Try common workspace paths
+    possible_paths = [
+        _PROJECT_ROOT / "dashboards",  # Workspace root/dashboards (most likely in deployed app)
+        _Path("/Workspace/Users") / _os.getenv("USER", "") / "payment-analysis" / "dashboards",
+        _Path("/Workspace/Repos") / _os.getenv("USER", "") / "payment-analysis" / "dashboards",
+    ]
+    for path in possible_paths:
+        if path.exists():
+            _log.debug("Found workspace dashboards directory: %s", path)
+            return path
+    return None
+
+_WORKSPACE_DASHBOARDS_DIR = _get_workspace_dashboards_dir()
 _DASHBOARDS_DIRS = [
+    # Workspace path (deployed app) - checked first
+    *([_WORKSPACE_DASHBOARDS_DIR] if _WORKSPACE_DASHBOARDS_DIR else []),
+    # Project root paths (local dev)
     _PROJECT_ROOT / ".build" / "dashboards",
     _PROJECT_ROOT / "resources" / "dashboards",
 ]
+
+if _WORKSPACE_DASHBOARDS_DIR:
+    _log.info("Dashboard fallback: Using workspace directory %s", _WORKSPACE_DASHBOARDS_DIR)
+else:
+    _log.debug("Dashboard fallback: No workspace directory found, will use project root paths")
 
 
 class DatasetResult(BaseModel):
@@ -569,22 +602,41 @@ def _get_sp_workspace_client() -> Any | None:
     scope, which is NOT available as a ``user_api_scope`` for Databricks Apps.
     The app's SP has full workspace permissions, so we always use it for
     Lakeview API calls.
+    
+    In Databricks Apps, DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET are
+    automatically injected. DATABRICKS_HOST may need to be derived from the request
+    or app config. Falls back to default WorkspaceClient() which uses profile/OAuth.
     """
     import os as _os
     try:
         from databricks.sdk import WorkspaceClient
+        from ..config import get_default_config
+        
+        # Try explicit env vars first
         host = _os.environ.get("DATABRICKS_HOST", "").strip()
         client_id = _os.environ.get("DATABRICKS_CLIENT_ID", "").strip()
         client_secret = _os.environ.get("DATABRICKS_CLIENT_SECRET", "").strip()
+        
+        # If host is missing but we have SP credentials, try to get host from config
+        if not host and (client_id and client_secret):
+            try:
+                config = get_default_config()
+                host = (config.databricks.workspace_url or "").strip().rstrip("/")
+            except Exception:
+                pass
+        
         if host and client_id and client_secret:
             return WorkspaceClient(
                 host=host,
                 client_id=client_id,
                 client_secret=client_secret,
             )
+        
+        # Fallback: try default WorkspaceClient (uses profile/OAuth/config)
+        # This works in deployed apps where credentials are injected
         return WorkspaceClient()
     except Exception as exc:
-        _log.warning("Could not create SP workspace client for Lakeview API: %s", exc)
+        _log.warning("Could not create SP workspace client for Lakeview API: %s", exc, exc_info=True)
         return None
 
 
@@ -610,61 +662,94 @@ def _fetch_dashboard_from_api(lakeview_id: str, ws: Any | None) -> dict[str, Any
             return data
 
     # Use the app SP — user OBO tokens lack the 'dashboards' scope
-    sp_ws = _get_sp_workspace_client()
-    if sp_ws is None:
-        _log.warning("No SP workspace client available for Lakeview API fetch of %s", lakeview_id)
+    # Try provided ws first (from request context), then fall back to SP client
+    workspace_client = ws
+    if workspace_client is None:
+        workspace_client = _get_sp_workspace_client()
+    
+    if workspace_client is None:
+        _log.warning("No workspace client available for Lakeview API fetch of %s (will try local files)", lakeview_id)
         return None
 
     # Fetch from API
     try:
-        dashboard = sp_ws.lakeview.get(lakeview_id)
+        dashboard = workspace_client.lakeview.get(lakeview_id)
         raw = dashboard.serialized_dashboard
         if not raw:
             _log.warning("Lakeview API returned empty serialized_dashboard for %s", lakeview_id)
             return None
-        data = _json.loads(raw)
+        data = _json.loads(raw) if isinstance(raw, str) else raw
         _DASHBOARD_DEF_CACHE[lakeview_id] = (data, _time.monotonic())
         _log.info("Fetched dashboard definition from Lakeview API: %s", lakeview_id)
         return data
     except Exception as exc:
-        _log.warning("Lakeview API fetch failed for %s: %s — falling back to local files", lakeview_id, exc)
+        _log.warning("Lakeview API fetch failed for %s: %s — falling back to local files", lakeview_id, exc, exc_info=True)
         return None
 
 
 def _load_dashboard_json_local(dashboard_id: str) -> dict[str, Any] | None:
     """Fallback: load dashboard JSON from local files (.build/ or resources/).
 
-    Used only for local development when the Lakeview API is unavailable.
+    Used when the Lakeview API is unavailable or fails. Checks multiple directories
+    and tries various filename patterns to find the dashboard definition.
     """
-    # Map dashboard_id to possible file names
+    # Map dashboard_id to possible file names (try exact match first, then variations)
     file_name_map = {
-        "data_quality_unified": ["data_quality_unified", "[dev] Data & Quality", "Data & Quality"],
-        "ml_optimization_unified": ["ml_optimization_unified", "[dev] ML & Optimization", "ML & Optimization"],
-        "executive_trends_unified": ["executive_trends_unified", "[dev] Executive & Trends", "Executive & Trends"],
+        "data_quality_unified": ["data_quality_unified", "[dev] Data & Quality", "Data & Quality", "data-quality-unified"],
+        "ml_optimization_unified": ["ml_optimization_unified", "[dev] ML & Optimization", "ML & Optimization", "ml-optimization-unified"],
+        "executive_trends_unified": ["executive_trends_unified", "[dev] Executive & Trends", "Executive & Trends", "executive-trends-unified"],
     }
     
     possible_names = file_name_map.get(dashboard_id, [dashboard_id])
     
-    for d in _DASHBOARDS_DIRS:
+    # Log which directories we're checking
+    valid_dirs = [d for d in _DASHBOARDS_DIRS if d and d.exists()]
+    _log.debug("Checking dashboard '%s' in %d directory(ies): %s", dashboard_id, len(valid_dirs), [str(d) for d in valid_dirs])
+    
+    for d in valid_dirs:
+        _log.debug("Checking dashboard directory: %s", d)
         for name in possible_names:
             # Try exact match first
             path = d / f"{name}.lvdash.json"
             if path.exists():
                 try:
+                    _log.info("Found dashboard file: %s", path)
                     return _json.loads(path.read_text(encoding="utf-8"))
-                except Exception:
+                except Exception as e:
+                    _log.warning("Failed to parse dashboard file %s: %s", path, e)
                     continue
-            
-            # Try case-insensitive match
-            if d.exists():
-                for file_path in d.iterdir():
-                    if file_path.suffix == ".lvdash.json":
-                        file_stem = file_path.stem.lower()
-                        if name.lower() in file_stem or file_stem in name.lower():
-                            try:
-                                return _json.loads(file_path.read_text(encoding="utf-8"))
-                            except Exception:
-                                continue
+        
+        # Try case-insensitive and partial match
+        try:
+            dashboard_id_lower = dashboard_id.lower()
+            for file_path in d.iterdir():
+                if file_path.suffix != ".lvdash.json":
+                    continue
+                file_stem = file_path.stem.lower()
+                # Match if dashboard_id is contained in file_stem or vice versa
+                if dashboard_id_lower in file_stem or file_stem in dashboard_id_lower:
+                    try:
+                        _log.info("Found dashboard file (fuzzy match): %s (matched '%s')", file_path, dashboard_id)
+                        return _json.loads(file_path.read_text(encoding="utf-8"))
+                    except Exception as e:
+                        _log.warning("Failed to parse dashboard file %s: %s", file_path, e)
+                        continue
+                
+                # Also try matching against possible names
+                for name in possible_names:
+                    name_lower = name.lower()
+                    if name_lower in file_stem or file_stem in name_lower:
+                        try:
+                            _log.info("Found dashboard file (name match): %s (matched '%s')", file_path, name)
+                            return _json.loads(file_path.read_text(encoding="utf-8"))
+                        except Exception as e:
+                            _log.warning("Failed to parse dashboard file %s: %s", file_path, e)
+                            continue
+        except Exception as e:
+            _log.debug("Could not iterate directory %s: %s", d, e)
+            continue
+    
+    _log.warning("Dashboard '%s' not found in any directory. Checked: %s", dashboard_id, [str(d) for d in valid_dirs])
     return None
 
 
