@@ -598,6 +598,7 @@ def _fetch_dashboard_from_api(lakeview_id: str, ws: Any | None) -> dict[str, Any
     call fails or no dashboard ID is available.
     """
     if not lakeview_id:
+        _log.debug("No lakeview_id provided for API fetch")
         return None
 
     # Check cache
@@ -605,6 +606,7 @@ def _fetch_dashboard_from_api(lakeview_id: str, ws: Any | None) -> dict[str, Any
     if cached:
         data, ts = cached
         if _time.monotonic() - ts < _DASHBOARD_DEF_TTL:
+            _log.debug("Using cached dashboard definition for %s", lakeview_id)
             return data
 
     # Use the app SP — user OBO tokens lack the 'dashboards' scope
@@ -634,13 +636,35 @@ def _load_dashboard_json_local(dashboard_id: str) -> dict[str, Any] | None:
 
     Used only for local development when the Lakeview API is unavailable.
     """
+    # Map dashboard_id to possible file names
+    file_name_map = {
+        "data_quality_unified": ["data_quality_unified", "[dev] Data & Quality", "Data & Quality"],
+        "ml_optimization_unified": ["ml_optimization_unified", "[dev] ML & Optimization", "ML & Optimization"],
+        "executive_trends_unified": ["executive_trends_unified", "[dev] Executive & Trends", "Executive & Trends"],
+    }
+    
+    possible_names = file_name_map.get(dashboard_id, [dashboard_id])
+    
     for d in _DASHBOARDS_DIRS:
-        path = d / f"{dashboard_id}.lvdash.json"
-        if path.exists():
-            try:
-                return _json.loads(path.read_text(encoding="utf-8"))
-            except Exception:
-                continue
+        for name in possible_names:
+            # Try exact match first
+            path = d / f"{name}.lvdash.json"
+            if path.exists():
+                try:
+                    return _json.loads(path.read_text(encoding="utf-8"))
+                except Exception:
+                    continue
+            
+            # Try case-insensitive match
+            if d.exists():
+                for file_path in d.iterdir():
+                    if file_path.suffix == ".lvdash.json":
+                        file_stem = file_path.stem.lower()
+                        if name.lower() in file_stem or file_stem in name.lower():
+                            try:
+                                return _json.loads(file_path.read_text(encoding="utf-8"))
+                            except Exception:
+                                continue
     return None
 
 
@@ -655,10 +679,23 @@ def _get_dashboard_definition(
       2. Local .lvdash.json files (fallback for local dev)
     """
     lakeview_id = _current_lakeview_id(dashboard_id)
+    _log.debug("Resolving dashboard '%s' with lakeview_id='%s'", dashboard_id, lakeview_id or "(empty)")
+    
+    # Try API first
     data = _fetch_dashboard_from_api(lakeview_id, ws)
     if data is not None:
         return data
-    return _load_dashboard_json_local(dashboard_id)
+    
+    # Fallback to local files
+    _log.debug("Falling back to local files for dashboard '%s'", dashboard_id)
+    local_data = _load_dashboard_json_local(dashboard_id)
+    if local_data is not None:
+        _log.info("Loaded dashboard '%s' from local files", dashboard_id)
+        return local_data
+    
+    _log.warning("Dashboard '%s' definition not found (lakeview_id=%s, checked API and local files)", 
+                 dashboard_id, lakeview_id or "(empty)")
+    return None
 
 
 def _extract_widgets(data: dict[str, Any]) -> list[WidgetSpec]:

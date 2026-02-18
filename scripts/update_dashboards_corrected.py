@@ -9,11 +9,11 @@ import os
 
 w = WorkspaceClient()
 
-# Dashboard IDs from app.yml
+# Dashboard IDs from app.yml (updated 2026-02-05)
 dashboards = {
-    "data_quality_unified": "01f10b98de631adab9aea06254d635fa",
-    "ml_optimization_unified": "01f10b98de581eefaf4d42b307bab973",
-    "executive_trends_unified": "01f10b98de6d1c03a3d9f24c39ad511a",
+    "data_quality_unified": "01f10c630ab414f18fc5a9d5f5db58a7",
+    "ml_optimization_unified": "01f10c630ac01742adbe0ecab4d3dde7",
+    "executive_trends_unified": "01f10c630abf198a95ac2df801f29ac5",
 }
 
 os.makedirs(".build/dashboards", exist_ok=True)

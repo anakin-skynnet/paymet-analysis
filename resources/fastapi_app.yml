@@ -102,14 +102,32 @@ resources:
           serving_endpoint: { name: "smart-retry", permission: CAN_QUERY }
 
         # ------------------------------------------------------------------------------------------
-        # Resources added via Apps API (not supported in DAB uc_securable — only VOLUME is):
+        # UC Functions (5 consolidated functions for ResponsesAgent)
+        # NOTE: UC functions cannot be added via DAB uc_securable (only VOLUME is supported).
+        # They must be added manually via Apps UI or Apps API after deployment.
+        # These 5 functions are used by the ResponsesAgent (payment-response-agent).
         #
-        # UC Functions (11): ResponsesAgent tools registered by Job 3.
-        #   Added by scripts/grant_sp_permissions.py or post-deploy step.
-        #   Functions: get_cascade_recommendations, get_decline_by_segment, get_decline_trends,
+        # To add via UI: Compute → Apps → payment-analysis → Configure → App resources
+        #   → Add resource → Unity Catalog function
+        #   For each function:
+        #     - Securable type: FUNCTION
+        #     - Securable full name: ahs_demos_catalog.payment_analysis.<function_name>
+        #     - Permission: EXECUTE
+        #
+        # Functions to add:
+        #   1. analyze_declines
+        #   2. analyze_performance
+        #   3. analyze_retry
+        #   4. analyze_risk
+        #   5. analyze_routing
+        #
+        # Additional UC Functions (individual, not consolidated):
+        #   get_cascade_recommendations, get_decline_by_segment, get_decline_trends,
         #   get_high_risk_transactions, get_kpi_summary, get_optimization_opportunities,
         #   get_recovery_opportunities, get_retry_success_rates, get_risk_distribution,
-        #   get_route_performance, get_trend_analysis
+        #   get_route_performance, get_trend_analysis, get_active_approval_rules,
+        #   get_recent_incidents, search_similar_transactions, get_approval_recommendations,
+        #   get_decision_outcomes
         #
         # Vector Search Index: similar_transactions_index — added manually or via script.
         #
