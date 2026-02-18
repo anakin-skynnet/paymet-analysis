@@ -170,6 +170,11 @@ def _do_lakeview_discovery(ws: Any | None) -> None:
         w = ws
 
     for dash in w.lakeview.list():
+        # Skip non-ACTIVE dashboards (TRASHED, deleted, etc.)
+        state = str(getattr(dash, "lifecycle_state", "") or "")
+        if "ACTIVE" not in state.upper():
+            continue
+
         display_name = dash.display_name or ""
         for key, patterns in _DASHBOARD_NAME_PATTERNS.items():
             if key in _dashboard_id_cache:
@@ -177,8 +182,8 @@ def _do_lakeview_discovery(ws: Any | None) -> None:
             for pattern in patterns:
                 if pattern.lower() in display_name.lower():
                     _dashboard_id_cache[key] = dash.dashboard_id or ""
-                    _log.info("Discovered dashboard '%s' (id=%s) for key '%s'",
-                              display_name, dash.dashboard_id, key)
+                    _log.info("Discovered dashboard '%s' (id=%s, state=%s) for key '%s'",
+                              display_name, dash.dashboard_id, state, key)
                     break
 
         if len(_dashboard_id_cache) >= len(_DASHBOARD_NAME_PATTERNS):
