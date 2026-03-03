@@ -97,6 +97,7 @@ case "$CMD" in
     comment_out_app_and_serving
     echo "Building web UI..."
     uv run apx build
+    prepare_dashboards
     echo "Cleaning workspace dashboards (except dbdemos*)..."
     WORKSPACE_PATH=$(databricks bundle validate -t "$TARGET" 2>/dev/null | sed -n 's/.*Path:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)
     if [[ -n "$WORKSPACE_PATH" ]]; then
@@ -104,7 +105,6 @@ case "$CMD" in
     else
       uv run python scripts/dashboards.py clean-workspace-except-dbdemos 2>/dev/null || true
     fi
-    prepare_dashboards
     echo "Deploying bundle (-t $TARGET) without app..."
     EXTRA_VARS=()
     [[ -n "${LAKEBASE_INSTANCE_NAME:-}" ]] && EXTRA_VARS+=(--var "lakebase_instance_name=${LAKEBASE_INSTANCE_NAME}")

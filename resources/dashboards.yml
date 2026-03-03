@@ -6,7 +6,7 @@
 #   ml_optimization_unified — Routing, decline/recovery, fraud/risk, 3DS, financial impact
 #   executive_trends_unified — KPIs, approval rates, trends, merchant, performance
 # Run: uv run python scripts/dashboards.py merge && uv run python scripts/dashboards.py prepare [--catalog X] [--schema Y]
-# Then deploy. file_path points to .build/dashboards/ (prepare output).
+# Then deploy. file_path: prepare writes to both dashboards/ and .build/dashboards/; bundle reads from dashboards/ (repo root) so validate/deploy work after prepare. If you run validate/deploy without prepare, run: uv run python scripts/dashboards.py prepare
 # =============================================================================
 
 resources:
@@ -16,18 +16,18 @@ resources:
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/data_quality_unified.lvdash.json
+      file_path: ../dashboards/data_quality_unified.lvdash.json
 
     ml_optimization_unified:
       display_name: "[${var.environment}] ML & Optimization"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/ml_optimization_unified.lvdash.json
+      file_path: ../dashboards/ml_optimization_unified.lvdash.json
 
     executive_trends_unified:
       display_name: "[${var.environment}] Executive & Trends"
       warehouse_id: ${var.warehouse_id}
       parent_path: ${workspace.root_path}/dashboards
       embed_credentials: true
-      file_path: ../.build/dashboards/executive_trends_unified.lvdash.json
+      file_path: ../dashboards/executive_trends_unified.lvdash.json

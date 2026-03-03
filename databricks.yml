@@ -34,7 +34,7 @@ workspace:
 # Execution order for jobs (Setup & Run): see docs/REFERENCE_GUIDE.md and Setup & Run in the app.
 #
 # Dashboards: resources/dashboards.yml is included so deploy updates existing dashboards in place
-# (same display_name + parent_path). Run prepare before deploy so .build/dashboards/*.lvdash.json exist.
+# (same display_name + parent_path). Run before validate/deploy: uv run python scripts/dashboards.py prepare
 #
 # Model Serving: Endpoints are created/updated PROGRAMMATICALLY by Jobs 5 & 6 (idempotent).
 # model_serving.yml is INCLUDED below so DAB can manage AI Gateway config and workload sizing.
@@ -50,7 +50,7 @@ include:
   - resources/streaming_simulator.yml
   - resources/genie_spaces.yml
   - resources/dashboards.yml
-  - resources/model_serving.yml
+  # - resources/model_serving.yml
   - resources/fastapi_app.yml
 
 # -----------------------------------------------------------------------------
