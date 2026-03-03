@@ -9,7 +9,7 @@ export interface KPICardProps {
   value: string | number;
   /** Optional icon shown next to label */
   icon?: ReactNode;
-  /** Accent: "primary" (Getnet red), "success", "warning", "muted" */
+  /** Accent: "primary" (accent red), "success", "warning", "muted" */
   accent?: "primary" | "success" | "warning" | "muted";
   /** Optional subtitle or trend below value */
   subtitle?: string;
@@ -19,7 +19,7 @@ export interface KPICardProps {
 
 const accentStyles = {
   primary:
-    "border-[var(--getnet-red)]/40 bg-[var(--getnet-red)]/10 dark:bg-[var(--getnet-red)]/15 [--kpi-accent:var(--getnet-red)]",
+    "border-[var(--accent-red)]/40 bg-[var(--accent-red)]/10 dark:bg-[var(--accent-red)]/15 [--kpi-accent:var(--accent-red)]",
   success:
     "border-[var(--vibrant-green)]/40 bg-[var(--vibrant-green)]/10 dark:bg-[var(--vibrant-green)]/15 [--kpi-accent:var(--vibrant-green)]",
   warning:

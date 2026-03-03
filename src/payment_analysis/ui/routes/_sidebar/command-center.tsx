@@ -87,7 +87,7 @@ import { ReferenceLine } from "recharts";
 const REFRESH_MS = 30_000;
 /** Real-time chart widgets: 10s for streaming throughput + alerts. */
 const REFRESH_CHART_MS = 10_000;
-const SANTANDER_RED = "var(--getnet-red)";
+const ACCENT_RED = "var(--accent-red)";
 const NEON_CYAN = "var(--neon-cyan)";
 const VIBRANT_GREEN = "var(--vibrant-green)";
 
@@ -170,7 +170,7 @@ function EntrySystemsChart({ points }: { points: EntrySystemPoint[] }) {
   const series = useMemo(() => {
     if (!points.length) return null;
     const keys = ["PD", "WS", "SEP", "Checkout"] as const;
-    const colors = [SANTANDER_RED, NEON_CYAN, VIBRANT_GREEN, "oklch(0.7 0.15 280)"];
+    const colors = [ACCENT_RED, NEON_CYAN, VIBRANT_GREEN, "oklch(0.7 0.15 280)"];
     return keys.map((key, i) => ({
       key,
       color: colors[i],
@@ -718,7 +718,7 @@ function CommandCenter() {
                 <EntrySystemsChart points={entryPoints} />
                 {entryPoints.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-4 text-[10px]">
-                    <span className="text-getnet-red">● PD</span>
+                    <span className="text-accent-red">● PD</span>
                     <span className="text-neon-cyan">● WS</span>
                     <span className="text-vibrant-green">● SEP</span>
                     <span className="text-muted-foreground">● Checkout</span>

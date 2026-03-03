@@ -60,7 +60,7 @@ _BREVITY_INSTRUCTION = (
 )
 
 # System prompt for the AI Gateway orchestrator (payment analysis domain expert)
-_ORCHESTRATOR_SYSTEM_PROMPT = """You are the Payment Approval Rate Accelerator — an AI assistant for Getnet Global Payments.
+_ORCHESTRATOR_SYSTEM_PROMPT = """You are the Payment Approval Rate Accelerator — an AI assistant for the payment platform.
 
 Your role: Help users understand payment approval rates and suggest ways to improve them.
 
@@ -362,7 +362,7 @@ def _effective_uc(request: Request) -> tuple[str, str]:
 async def list_agents(
     request: Request,
     agent_type: AgentType | None = None,
-    entity: str | None = Query(None, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str | None = Query(None, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
 ) -> AgentList:
     """
     List all Databricks AI agents for payment approval optimization.
@@ -413,12 +413,12 @@ class AgentUrlOut(BaseModel):
 
 
 class ChatIn(BaseModel):
-    """Inbound message for Getnet AI Assistant."""
+    """Inbound message for payment platform AI Assistant."""
     message: str = Field(..., min_length=1, max_length=4000)
 
 
 class ChatOut(BaseModel):
-    """Response from Getnet AI Assistant."""
+    """Response from payment platform AI Assistant."""
     reply: str
     genie_url: str | None = Field(None, description="Open in Genie for full natural-language analytics")
 
@@ -435,7 +435,7 @@ def _extract_genie_reply(message: Any) -> str:
     return ""
 
 
-_GENIE_SYSTEM_PROMPT = """You are the Genie Assistant for Getnet Global Payments — a data analyst for payment analytics.
+_GENIE_SYSTEM_PROMPT = """You are the Genie Assistant for the payment platform — a data analyst for payment analytics.
 
 Answer questions about payment data using Unity Catalog gold views (KPIs, trends, decline reasons, performance by solution/merchant/network, retry rates, data quality, streaming volume).
 

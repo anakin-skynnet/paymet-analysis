@@ -1,4 +1,4 @@
-/** Sidebar layout and breadcrumb — Getnet Global Payments Command Center (Pro-Dark, glassmorphism). */
+/** Sidebar layout and breadcrumb — Payment Platform Command Center (Pro-Dark, glassmorphism). */
 import { useState } from "react";
 import { Outlet, useLocation, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";

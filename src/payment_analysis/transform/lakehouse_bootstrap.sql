@@ -130,7 +130,7 @@ TBLPROPERTIES (
 )
 COMMENT 'Countries/entities for the report filter dropdown. Add or remove rows to change options in the UI.';
 
--- Seed default Getnet entities (insert only when table is empty)
+-- Seed default payment platform entities (insert only when table is empty)
 INSERT INTO countries (code, name, display_order)
 SELECT code, name, display_order FROM (
     SELECT 'BR' AS code, 'Brazil' AS name, 1 AS display_order

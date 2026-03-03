@@ -445,7 +445,7 @@ async def list_models(
     request: Request,
     response: Response,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
 ) -> list[ModelOut]:
     """List ML models with catalog path and optional metrics. Mock when toggle is on."""
     if _is_mock_request(request):
@@ -647,7 +647,7 @@ async def solution_performance(request: Request, service: DatabricksServiceDep, 
 async def smart_checkout_service_paths(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     limit: int = 25,
 ) -> list[SmartCheckoutServicePathOut]:
     """Payment-link performance by Smart Checkout service path for the given entity."""
@@ -668,7 +668,7 @@ async def smart_checkout_service_paths(
 async def smart_checkout_path_performance(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     limit: int = 20,
 ) -> list[SmartCheckoutPathPerformanceOut]:
     """Payment-link performance by recommended Smart Checkout path for the given entity."""
@@ -689,7 +689,7 @@ async def smart_checkout_path_performance(
 async def three_ds_funnel(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     days: int = 30,
 ) -> list[ThreeDSFunnelOut]:
     """Payment-link 3DS funnel metrics by day for the given entity."""
@@ -710,7 +710,7 @@ async def three_ds_funnel(
 async def reason_codes(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     limit: int = 50,
 ) -> list[ReasonCodeOut]:
     """Declines consolidated into unified reason-code taxonomy for the given entity."""
@@ -749,7 +749,7 @@ async def reason_codes(
 async def reason_code_insights(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     limit: int = 50,
 ) -> list[ReasonCodeInsightOut]:
     """Reason-code insights with estimated recoverability for the given entity (demo heuristic)."""
@@ -770,7 +770,7 @@ async def reason_code_insights(
 async def factors_delaying_approval(
     request: Request,
     service: DatabricksServiceDep,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
     limit: int = Query(10, ge=1, le=50, description="Max number of factors to return"),
 ) -> list[ReasonCodeInsightOut]:
     """
@@ -794,7 +794,7 @@ async def entry_system_distribution(
     request: Request,
     service: DatabricksServiceDep,
     response: Response,
-    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by Getnet entity."),
+    entity: str = Query(DEFAULT_ENTITY, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
 ) -> list[EntrySystemDistributionOut]:
     """Transaction distribution by entry system for the given entity (coverage check)."""
     if _is_mock_request(request):

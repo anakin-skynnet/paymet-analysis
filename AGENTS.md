@@ -150,7 +150,7 @@ When the user asks to:
 |-----|---------|
 | `databricks.yml` | [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/) root config; workspace, resources, sync, targets |
 | `docs/OVERVIEW.md` | Executive summary, key metrics, quick reference |
-| `docs/BUSINESS_REQUIREMENTS.md` | Business context, use cases, Getnet context, impact on approval rates |
+| `docs/BUSINESS_REQUIREMENTS.md` | Business context, use cases, payment platform context, impact on approval rates |
 | `docs/TECHNICAL_SOLUTION.md` | Architecture, data flow, ML models, AI agents, control panel, project structure, compliance |
 | `docs/REFERENCE_GUIDE.md` | Deployment, configuration, schema, version alignment, troubleshooting |
 | `.cursor/rules/project.mdc` | Cursor rule set (aligns with this file) |

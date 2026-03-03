@@ -46,7 +46,7 @@ Executive summary and quick reference for the Databricks-powered payment approva
 |----------|---------|-------------|
 | [README.md](../README.md) | Project intro, business map, quick start | First open; share with others |
 | **[OVERVIEW.md](OVERVIEW.md)** | Executive summary, key metrics, testing status, quick reference | Quick orientation |
-| [BUSINESS_REQUIREMENTS.md](BUSINESS_REQUIREMENTS.md) | Business context, use cases, Getnet context, impact on approval rates | Understand scope and business value |
+| [BUSINESS_REQUIREMENTS.md](BUSINESS_REQUIREMENTS.md) | Business context, use cases, payment platform context, impact on approval rates | Understand scope and business value |
 | [TECHNICAL_SOLUTION.md](TECHNICAL_SOLUTION.md) | Architecture, data flow, ML, agents, UI, testing & validation, SDK usage, troubleshooting | Understand how it's built, review testing results |
 | [REFERENCE_GUIDE.md](REFERENCE_GUIDE.md) | Deployment, configuration, schema, version alignment, troubleshooting | Deploy, configure, fix errors, audit schema |
 | [AGENTS.md](../AGENTS.md) | AI agent (Cursor) rules, project conventions, dev commands | When editing code; align with project rules |

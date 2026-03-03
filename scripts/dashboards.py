@@ -45,7 +45,7 @@ REFERENCE_DASHBOARD_URL = os.getenv(
 )
 # Default visualization palette (align with reference dashboard when customizing).
 REFERENCE_PALETTE = [
-    "#EC0000",  # Santander/Getnet red (primary)
+    "#EC0000",  # Primary accent red
     "#00E5FF",  # Neon cyan
     "#22C55E",  # Green
     "#6366F1",  # Indigo
@@ -765,7 +765,7 @@ def cmd_fix_widget_settings() -> int:
                     if color_enc and not color_enc.get("legend"):
                         color_enc["legend"] = {"position": "bottom", "hideTitle": False}
                         changed = True
-                # Reference dashboard colors: always use Getnet palette for categorical (beautiful, consistent).
+                # Reference dashboard colors: always use payment platform palette for categorical (beautiful, consistent).
                 if wt in ("pie", "bar", "line", "area") and enc.get("color"):
                     color_enc = enc["color"]
                     scale = color_enc.get("scale") or {}
@@ -774,7 +774,7 @@ def cmd_fix_widget_settings() -> int:
                             scale["range"] = REFERENCE_PALETTE
                             color_enc["scale"] = scale
                             changed = True
-                # Single-series line/bar/area: primary color (Getnet red) for attractive charts.
+                # Single-series line/bar/area: primary color (accent red) for attractive charts.
                 if wt in ("line", "bar", "area") and not enc.get("color") and enc.get("y"):
                     y_enc = enc["y"]
                     scale = y_enc.get("scale") or {}

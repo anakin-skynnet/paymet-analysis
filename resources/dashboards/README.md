@@ -88,7 +88,7 @@ Chart widgets use **single objects** for `encodings.x` and `encodings.y` (not ar
 
 **This must be configured in ALL dashboards:** datasets and columns must be assigned to each visual so results are painted. Use the [reference dashboard](https://adb-984752964297111.11.azuredatabricks.net/dashboardsv3/01efef6277e1146bb92982fc1364845d/published?o=984752964297111) for colors and chart widget settings.
 
-1. Run **`ensure-paint`** (or **`best-widgets`** then **`fix-widget-settings`**) so every widget has `query.fields` and `spec.encodings` set from the dataset. **Design and colors:** `fix-widget-settings` applies the reference palette (Getnet red, neon cyan, green, indigo, amber, violet) to categorical color encodings (pie, bar/line/area with group-by); single-series line/bar/area charts use the primary color (Getnet red) so all visuals are attractive and consistent.
+1. Run **`ensure-paint`** (or **`best-widgets`** then **`fix-widget-settings`**) so every widget has `query.fields` and `spec.encodings` set from the dataset. **Design and colors:** `fix-widget-settings` applies the reference palette (accent red, neon cyan, green, indigo, amber, violet) to categorical color encodings (pie, bar/line/area with group-by); single-series line/bar/area charts use the primary color (accent red) so all visuals are attractive and consistent.
 2. Run **`check-widgets`** to verify: every chart widget has the encodings required to paint (line/bar: x,y; pie: angle,color; counter: value; table: columns; etc.).
 3. **Deploy** the bundle so dashboards exist in the workspace.
 4. **Publish** for sharing/embed: `uv run python scripts/dashboards.py publish` after deploy, or use the dashboard **Publish** action with **Share with data permissions** (embed credentials).

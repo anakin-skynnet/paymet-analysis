@@ -32,7 +32,7 @@ resources:
       description: >-
         Payment Approval Rate Optimization Platform — 8 AI agents, 4 ML models,
         3 AI/BI dashboards, 26 gold views, closed-loop decisioning engine,
-        and full-stack React + FastAPI control center for Getnet.
+        and full-stack React + FastAPI control center for the payment platform.
 
       # -----------------------------------------------------------------------
       # User authorization scopes (OAuth consent)

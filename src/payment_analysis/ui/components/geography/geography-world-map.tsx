@@ -232,7 +232,7 @@ export function GeographyWorldMap() {
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-4 rounded-sm bg-getnet-red" aria-hidden />
+            <span className="h-2.5 w-4 rounded-sm bg-accent-red" aria-hidden />
             Low (&lt;55%)
           </span>
           <span className="flex items-center gap-1.5">

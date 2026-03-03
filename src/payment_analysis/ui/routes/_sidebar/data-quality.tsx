@@ -317,7 +317,7 @@ function DataQualityPage() {
         <Card className="glass-card border border-border/80">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-[var(--getnet-red)]" />
+              <AlertTriangle className="h-4 w-4 text-[var(--accent-red)]" />
               Active Alerts
               {activeAlerts.length > 0 && (
                 <Badge variant="destructive" className="ml-auto text-xs">{activeAlerts.length}</Badge>

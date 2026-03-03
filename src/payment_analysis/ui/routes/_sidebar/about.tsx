@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_sidebar/about")({
 const HERO = {
   headline: "Payment Approval Rate Optimization",
   subline:
-    "A unified, AI-powered platform built entirely on Databricks that accelerates payment approval rates, recovers lost revenue from false declines, and optimizes routing and retry strategies across all channels for Getnet. Features 7 orchestration jobs, 2 Lakeflow pipelines, 5 serving endpoints, a closed-loop DecisionEngine with parallel ML + Vector Search enrichment, streaming features, agent write-back, and real-time executive dashboards.",
+    "A unified, AI-powered platform built entirely on Databricks that accelerates payment approval rates, recovers lost revenue from false declines, and optimizes routing and retry strategies across all channels for the payment platform. Features 7 orchestration jobs, 2 Lakeflow pipelines, 5 serving endpoints, a closed-loop DecisionEngine with parallel ML + Vector Search enrichment, streaming features, agent write-back, and real-time executive dashboards.",
   kpis: [
     { label: "AI Agents", value: "8", detail: "1 ResponsesAgent, 2 Genie, 3 Serving, 2 Gateway" },
     { label: "ML Models", value: "4", detail: "Approval, Risk, Routing, Retry" },
@@ -53,7 +53,7 @@ const HERO = {
 const SOLUTION_OVERVIEW = {
   title: "What We Built",
   intro:
-    "An end-to-end platform on Databricks that unifies data, intelligence, and decision-making into a single control center. Every component is purpose-built around one goal: accelerate payment approval rates for Getnet.",
+    "An end-to-end platform on Databricks that unifies data, intelligence, and decision-making into a single control center. Every component is purpose-built around one goal: accelerate payment approval rates for the payment platform.",
   layers: [
     {
       icon: Database,
@@ -91,7 +91,7 @@ const SOLUTION_OVERVIEW = {
 };
 
 const BUSINESS_IMPACT = {
-  title: "Business Impact for Getnet",
+  title: "Business Impact for the Payment Platform",
   items: [
     { metric: "Approval Rate Uplift", description: "ML-powered smart routing and retry strategies optimize every transaction path, directly increasing approval rates across all channels and payment solutions." },
     { metric: "False Decline Recovery", description: "Reason code analysis, recoverable decline detection (74%+ recoverable rate), and automated retry reduce revenue lost to unnecessary declines." },
@@ -190,7 +190,7 @@ function About() {
       {/* Hero */}
       <section className="rounded-xl bg-gradient-to-br from-primary/90 to-primary px-6 py-8 text-primary-foreground">
         <Badge variant="secondary" className="mb-3 bg-white/20 text-white border-white/30 hover:bg-white/30">
-          Getnet Payment Analytics
+          Payment Platform Analytics
         </Badge>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           {HERO.headline}

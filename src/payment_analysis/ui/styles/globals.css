@@ -10,7 +10,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Getnet primary red — key actions and highlights */
+  /* Primary accent red — key actions and highlights */
   --primary: oklch(0.52 0.22 27);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.96 0.01 27);
@@ -57,7 +57,7 @@
   --sidebar-accent-foreground: oklch(0.28 0.05 27);
   --sidebar-border: oklch(0.92 0.01 0);
   --sidebar-ring: oklch(0.52 0.22 27);
-  --getnet-red: #EC0000;
+  --accent-red: #EC0000;
   --neon-cyan: #00B8D4;
   --glass-card: oklch(1 0 0 / 0.7);
   --vibrant-green: #16a34a;
@@ -71,12 +71,11 @@
   --card-foreground: oklch(0.97 0.005 260);
   --pro-dark-bg: #121212;
   --glass-card: oklch(0.18 0.012 260 / 0.75);
-  --santander-red: #EC0000;
   --neon-cyan: #00E5FF;
   --vibrant-green: #22C55E;
   --popover: oklch(0.19 0.012 260);
   --popover-foreground: oklch(0.97 0.005 260);
-  /* Getnet red — primary accent for key actions and data highlights (Santander/Getnet #EC0000) */
+  /* Primary accent red — key actions and data highlights (#EC0000) */
   --primary: oklch(0.62 0.22 27);
   --primary-foreground: oklch(0.14 0.02 27);
   --secondary: oklch(0.26 0.02 260);
@@ -90,13 +89,13 @@
   --border: oklch(0.28 0.02 260);
   --input: oklch(0.28 0.02 260);
   --ring: oklch(0.62 0.22 27);
-  /* Command Center charts: Getnet red + neon cyan for graph lines */
+  /* Command Center charts: accent red + neon cyan for graph lines */
   --chart-1: oklch(0.62 0.22 27);
   --chart-2: oklch(0.6 0.12 200);
   --chart-3: oklch(0.7 0.1 160);
   --chart-4: oklch(0.6 0.14 190);
   --chart-5: oklch(0.65 0.08 140);
-  --getnet-red: #EC0000;
+  --accent-red: #EC0000;
   --neon-cyan: #00E5FF;
   --glass-card: oklch(0.18 0.012 260 / 0.75);
   --vibrant-green: #22C55E;
@@ -242,7 +241,7 @@
   .content-section {
     margin-top: var(--content-section-gap);
   }
-  /* Nav group label — sidebar section headings (reference: getnet Command Center) */
+  /* Nav group label — sidebar section headings (reference: payment platform Command Center) */
   .nav-group-label {
     font-size: 0.6875rem;
     font-weight: 600;
@@ -314,8 +313,8 @@
     width: var(--progress-pct, 0);
   }
   /* Chart/legend and status colors (avoid inline color styles) */
-  .text-getnet-red {
-    color: var(--getnet-red);
+  .text-accent-red {
+    color: var(--accent-red);
   }
   .text-neon-cyan {
     color: var(--neon-cyan);
@@ -323,8 +322,8 @@
   .text-vibrant-green {
     color: var(--vibrant-green);
   }
-  .bg-getnet-red {
-    background-color: var(--getnet-red);
+  .bg-accent-red {
+    background-color: var(--accent-red);
   }
   .bg-vibrant-green {
     background-color: var(--vibrant-green);

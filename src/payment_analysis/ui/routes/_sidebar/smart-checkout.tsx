@@ -26,8 +26,8 @@ const PAYMENT_SERVICES = [
   { id: "antifraud", name: "Antifraud", note: "~40–50% of declined transactions (Payment Link BR)", icon: Shield },
   { id: "3ds", name: "3DS", note: "Mandatory for debit (BR). ~80% friction; 60% authenticated; 80% approved post-auth", icon: CreditCard },
   { id: "idpay", name: "IdPay (Único)", note: "Biometric; provider reports 60–80% recognition success. Not yet live", icon: Fingerprint },
-  { id: "network_token", name: "Network Token", note: "Mandatory for VISA. Available for VISA & Mastercard at Getnet", icon: Database },
-  { id: "passkey", name: "Passkey", note: "Under development at Getnet. No production data yet", icon: Key },
+  { id: "network_token", name: "Network Token", note: "Mandatory for VISA. Available for VISA & Mastercard on the payment platform", icon: Database },
+  { id: "passkey", name: "Passkey", note: "Under development on the payment platform. No production data yet", icon: Key },
   { id: "vault", name: "Vault", note: "Tokenization and secure storage", icon: Database },
   { id: "data_only", name: "Data Only", note: "Approval uplift data not yet available", icon: Database },
 ] as const;
@@ -121,7 +121,7 @@ function SmartCheckout() {
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-3">Payment services at a glance</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Complementary services that impact security, experience, and approval rates. Getnet and third-party.
+          Complementary services that impact security, experience, and approval rates. Payment platform and third-party.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PAYMENT_SERVICES.map((s) => {

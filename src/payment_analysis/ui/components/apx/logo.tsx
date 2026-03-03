@@ -13,7 +13,7 @@ export function Logo({ to = "/", className = "", showText = false }: LogoProps) 
     >
       <span className="media-container h-9 max-h-9 w-full shrink-0">
         <img
-          src="/getnet_logo.png"
+          src="/logo.png"
           alt="Payment Analysis"
           className="max-h-9 h-auto w-auto max-w-full object-contain object-center"
         />

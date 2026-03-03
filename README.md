@@ -50,7 +50,7 @@ For use cases and impact on approval rates, see **[Business Requirements](docs/B
 | Purpose | Document |
 |--------|----------|
 | **Overview** | [docs/OVERVIEW.md](docs/OVERVIEW.md) — Executive summary, key metrics, testing status, quick reference |
-| **Business Requirements** | [docs/BUSINESS_REQUIREMENTS.md](docs/BUSINESS_REQUIREMENTS.md) — Business context, use cases, Getnet context, impact on approval rates |
+| **Business Requirements** | [docs/BUSINESS_REQUIREMENTS.md](docs/BUSINESS_REQUIREMENTS.md) — Business context, use cases, payment platform context, impact on approval rates |
 | **Technical Solution** | [docs/TECHNICAL_SOLUTION.md](docs/TECHNICAL_SOLUTION.md) — Architecture, data flow, ML models, AI agents, testing & validation, SDK usage, troubleshooting |
 | **Reference Guide** | [docs/REFERENCE_GUIDE.md](docs/REFERENCE_GUIDE.md) — Deployment, configuration, schema, version alignment, troubleshooting |
 | **Agent rules** | [AGENTS.md](AGENTS.md) — AI agent (Cursor) rules, project conventions, dev commands |

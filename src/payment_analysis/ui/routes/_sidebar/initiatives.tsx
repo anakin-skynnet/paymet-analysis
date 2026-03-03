@@ -116,7 +116,7 @@ function Initiatives() {
     <div className="space-y-6 p-4">
       <header className="flex items-center justify-between rounded-lg bg-primary px-4 py-3 text-primary-foreground">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold">Getnet Payment Services &amp; Data Initiatives</h1>
+          <h1 className="text-lg font-semibold">Payment Platform Services &amp; Data Initiatives</h1>
           <DataSourceBadge label={fromDatabricks ? "From Databricks" : "Backend"} className="text-primary-foreground/90" />
         </div>
         <button type="button" className="rounded p-1 hover:bg-primary-foreground/10" aria-label="Open menu">

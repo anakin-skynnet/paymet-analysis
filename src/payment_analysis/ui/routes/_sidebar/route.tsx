@@ -1,5 +1,5 @@
 /**
- * Sidebar navigation — Getnet Global Payments Command Center.
+ * Sidebar navigation — Payment Platform Command Center.
  *
  * Groups are organised by user intent:
  *   1. Overview        – single hub
