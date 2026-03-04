@@ -9,9 +9,10 @@
 #   target: dev (default) or prod
 #
 # Performance (faster deploys):
-#   - Phase 1: apx build and dashboards prepare run in parallel (~20–50s saved).
-#   - Phase 1: workspace path for clean step uses current-user (avoids full bundle validate when possible).
-#   - Phase 2: set SKIP_DASHBOARD_PREPARE=1 when running "deploy app" right after phase 1 to skip redundant prepare (~20–50s saved).
+#   - Phase 1: apx build and dashboards prepare run in parallel; workspace path resolved in parallel (~20–60s saved).
+#   - Phase 1: after deploy, dashboard publish and check-app-deployable run in parallel.
+#   - Phase 2: dashboard prepare runs in parallel with YAML toggles; set SKIP_DASHBOARD_PREPARE=1 when right after phase 1 (~20–50s saved).
+#   - Phase 2: set SKIP_BUNDLE_VALIDATE=1 to skip "bundle validate" before deploy (~5–15s saved).
 set -e
 cd "$(dirname "$0")/.."
 if [[ -z "${1:-}" ]]; then
