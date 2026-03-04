@@ -9,8 +9,9 @@
 #   target: dev (default) or prod
 #
 # Performance (faster deploys):
-#   - Phase 1 runs "apx build" and "dashboards prepare" in parallel to save ~20–50s.
-#   - Phase 2: set SKIP_DASHBOARD_PREPARE=1 when running "deploy app" right after phase 1 (dashboards already prepared).
+#   - Phase 1: apx build and dashboards prepare run in parallel (~20–50s saved).
+#   - Phase 1: workspace path for clean step uses current-user (avoids full bundle validate when possible).
+#   - Phase 2: set SKIP_DASHBOARD_PREPARE=1 when running "deploy app" right after phase 1 to skip redundant prepare (~20–50s saved).
 set -e
 cd "$(dirname "$0")/.."
 if [[ -z "${1:-}" ]]; then
@@ -107,7 +108,11 @@ case "$CMD" in
     wait "$BUILD_PID" || exit $?
     wait "$PREPARE_PID" || exit $?
     echo "Cleaning workspace dashboards (except dbdemos*)..."
-    WORKSPACE_PATH=$(databricks bundle validate -t "$TARGET" 2>/dev/null | sed -n 's/.*Path:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)
+    WORKSPACE_FOLDER="${BUNDLE_VAR_workspace_folder:-payment-analysis}"
+    WORKSPACE_PATH=$(databricks current-user me -o json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); u=d.get('userName',''); print(f'/Workspace/Users/{u}/${WORKSPACE_FOLDER}' if u else '')" 2>/dev/null || true)
+    if [[ -z "$WORKSPACE_PATH" ]]; then
+      WORKSPACE_PATH=$(databricks bundle validate -t "$TARGET" 2>/dev/null | sed -n 's/.*Path:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)
+    fi
     if [[ -n "$WORKSPACE_PATH" ]]; then
       uv run python scripts/dashboards.py clean-workspace-except-dbdemos --path "$WORKSPACE_PATH" 2>/dev/null || true
     else
@@ -143,7 +148,11 @@ case "$CMD" in
       --skip-endpoint approval-propensity --skip-endpoint risk-scoring \
       --skip-endpoint smart-routing --skip-endpoint smart-retry
     echo "Validating bundle (-t $TARGET)..."
-    prepare_dashboards
+    if [[ -z "${SKIP_DASHBOARD_PREPARE:-}" ]]; then
+      prepare_dashboards
+    else
+      echo "Skipping dashboard prepare (SKIP_DASHBOARD_PREPARE=1)."
+    fi
     databricks bundle validate -t "$TARGET"
     echo "Deploying bundle (-t $TARGET) with App and model serving..."
     EXTRA_VARS=()
