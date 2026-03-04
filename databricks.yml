@@ -161,7 +161,7 @@ sync:
 # Build artifact for app deployment (served at /)
 artifacts:
   default:
-    build: uv run apx bun run vite build
+    build: uv run apx build
 
 # -----------------------------------------------------------------------------
 # Targets: dev (development) and prod (production)
