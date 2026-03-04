@@ -388,6 +388,11 @@ class PaymentAnalysisAgent(ResponsesAgent):
 # ---------------------------------------------------------------------------
 # MLflow model registration
 # ---------------------------------------------------------------------------
-mlflow.openai.autolog()
+try:
+    mlflow.openai.autolog()
+except (AttributeError, Exception) as e:  # noqa: BLE001
+    # In some contexts (e.g. Databricks Job 6 notebook) GLOBAL_TRACE_PROVIDER._multi_processor
+    # is None; autolog is optional for agent operation.
+    warnings.warn(f"mlflow.openai.autolog() skipped: {e}", UserWarning, stacklevel=0)
 AGENT = PaymentAnalysisAgent(llm_endpoint=LLM_ENDPOINT_NAME, tools=TOOL_INFOS)
 mlflow.models.set_model(AGENT)
