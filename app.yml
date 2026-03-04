@@ -56,8 +56,8 @@ env:
   # If auto-discovery is too slow or unreliable, set explicitly after Job 4 deploys dashboards.
   # Updated: latest IDs from bundle deploy + publish (phase 1)
   - name: DASHBOARD_ID_DATA_QUALITY
-    value: "01f117f174d81d3a8742e4fe0da809aa"
+    value: "01f1181f764b1586bef706c40eb5d57f"
   - name: DASHBOARD_ID_ML_OPTIMIZATION
-    value: "01f117f174d6122c8a34893ba35c4466"
+    value: "01f1181f76451d1caf5a693dd38b07cc"
   - name: DASHBOARD_ID_EXECUTIVE_TRENDS
-    value: "01f117f174e712bcbc7ef3bc51feec8e"
+    value: "01f1181f76561a12a7310cea172ad88b"

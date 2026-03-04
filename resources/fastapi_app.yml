@@ -92,14 +92,14 @@ resources:
 
         # ML Model Serving endpoints (4 models)
         # Used by: DecisionEngine parallel enrichment, ML predictions UI, /api/decision/ml/*
-        # - name: serving-approval-prop
-        #   serving_endpoint: { name: "approval-propensity", permission: CAN_QUERY }
-        # - name: serving-risk-scoring
-        #   serving_endpoint: { name: "risk-scoring", permission: CAN_QUERY }
-        # - name: serving-smart-routing
-        #   serving_endpoint: { name: "smart-routing", permission: CAN_QUERY }
-        # - name: serving-smart-retry
-        #   serving_endpoint: { name: "smart-retry", permission: CAN_QUERY }
+        - name: serving-approval-prop
+          serving_endpoint: { name: "approval-propensity", permission: CAN_QUERY }
+        - name: serving-risk-scoring
+          serving_endpoint: { name: "risk-scoring", permission: CAN_QUERY }
+        - name: serving-smart-routing
+          serving_endpoint: { name: "smart-routing", permission: CAN_QUERY }
+        - name: serving-smart-retry
+          serving_endpoint: { name: "smart-retry", permission: CAN_QUERY }
 
         # ------------------------------------------------------------------------------------------
         # UC Functions (5 consolidated functions for ResponsesAgent)
