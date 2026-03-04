@@ -9,6 +9,9 @@ on direct load or refresh).
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 # ---------------------------------------------------------------------------
@@ -18,9 +21,6 @@ from fastapi import FastAPI, Request
 def is_mock_request(request: Request) -> bool:
     """True when the frontend toggle is on; backend returns mock data for all components."""
     return request.headers.get("x-mock-data", "").lower() == "true"
-from fastapi.responses import FileResponse, JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.middleware.base import BaseHTTPMiddleware
 
 try:
     from .._metadata import api_prefix as _api_prefix, dist_dir as _default_dist_dir

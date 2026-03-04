@@ -90,7 +90,7 @@ class Runtime:
     def engine_url(self) -> str:
         # Check if we're in local dev mode with APX_DEV_DB_PORT
         if self._dev_db_port:
-            logger.info(f"Using local dev database at localhost:{self._dev_db_port}")
+            logger.info("Using local dev database at localhost:%s", self._dev_db_port)
             username = "postgres"
             password = os.environ.get("APX_DEV_DB_PWD")
             if password is None:
@@ -193,9 +193,7 @@ class Runtime:
             return
         # In dev mode, skip Databricks-specific validation
         if self._dev_db_port:
-            logger.info(
-                f"Validating local dev database connection at localhost:{self._dev_db_port}"
-            )
+            logger.info("Validating local dev database at localhost:%s", self._dev_db_port)
         elif self._use_lakebase_direct_connection():
             logger.info("Validating Lakebase direct connection (LAKEBASE_CONNECTION_STRING).")
         else:

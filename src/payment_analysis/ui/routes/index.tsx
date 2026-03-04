@@ -202,7 +202,8 @@ function Index() {
                   <span>Powered by Databricks Lakehouse</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Data foundation for all initiatives · Brazil
+                  Data foundation for all initiatives
+                  {import.meta.env.VITE_APP_REGION ? ` · ${import.meta.env.VITE_APP_REGION}` : ""}
                 </p>
               </footer>
             </div>

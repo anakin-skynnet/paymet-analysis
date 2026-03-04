@@ -214,7 +214,7 @@ function Models() {
               <DataSourceBadge label="From UC & MLflow" />
             </div>
             <p className="page-section-description">
-              Four models (approval propensity, risk, routing, retry) from Setup & Run step 7. All are <strong>HistGradientBoostingClassifier</strong> (scikit-learn), trained in one MLflow experiment on Unity Catalog data; use in Decisioning and with Rules.
+              Four models (approval propensity, risk, routing, retry) from Setup & Run step 7. All are <strong>HistGradientBoostingClassifier</strong> (scikit-learn), trained in one MLflow experiment on Unity Catalog data; use in Decisioning and with Rules. These models power approval, risk, routing, and retry decisions in Decisioning.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

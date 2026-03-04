@@ -167,6 +167,7 @@ class DatabricksService:
     
     config: DatabricksConfig = field(default_factory=DatabricksConfig.from_environment)
     _client: "WorkspaceClient | None" = field(default=None, repr=False)
+    _cached_warehouse_id: str | None = field(default=None, repr=False)
     
     @classmethod
     def create(cls, config: DatabricksConfig | None = None) -> "DatabricksService":
@@ -214,7 +215,7 @@ class DatabricksService:
         except ImportError:
             logger.warning("Databricks SDK not installed")
         except Exception as e:
-            logger.warning(f"Failed to initialize Databricks client: {e}")
+            logger.warning("Failed to initialize Databricks client: %s", e)
         return None
     
     @property
@@ -421,16 +422,22 @@ class DatabricksService:
         return True
     
     def _get_warehouse_id(self) -> str | None:
-        """Get warehouse ID from config or discover first available."""
+        """Get warehouse ID from config or discover first available (cached after first discovery)."""
         if self.config.warehouse_id:
             return self.config.warehouse_id
+
+        if self._cached_warehouse_id is not None:
+            return self._cached_warehouse_id
 
         client = self.client
         if client is None:
             return None
 
         warehouses = list(client.warehouses.list())
-        return warehouses[0].id if warehouses else None
+        wid = warehouses[0].id if warehouses else None
+        if wid:
+            self._cached_warehouse_id = wid
+        return wid
     
     # =========================================================================
     # Analytics Methods

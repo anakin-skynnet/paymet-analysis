@@ -10,7 +10,16 @@ import { EntityProvider } from "@/contexts/entity-context";
 import { MockDataProvider } from "@/contexts/mock-data-context";
 
 // Create a new query client instance
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 10_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const router = createRouter({
   routeTree,

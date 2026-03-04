@@ -9,6 +9,7 @@ When real data is available from Databricks, this module is never called.
 
 from __future__ import annotations
 
+import random
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -49,7 +50,6 @@ def mock_approval_trends(seconds: int = 3600) -> list[dict[str, Any]]:
     now = _now()
     step = max(1, seconds // 60)
     points: list[dict[str, Any]] = []
-    import random
     rng = random.Random(42)
     for i in range(0, seconds, step):
         ts = now - timedelta(seconds=seconds - i)
@@ -72,7 +72,6 @@ def mock_approval_trends(seconds: int = 3600) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 def mock_daily_trends(days: int = 14) -> list[dict[str, Any]]:
-    import random
     rng = random.Random(77)
     now = _now()
     rows: list[dict[str, Any]] = []
@@ -343,7 +342,6 @@ def mock_smart_checkout_path_performance() -> list[dict[str, Any]]:
 
 def mock_streaming_tps() -> list[dict[str, Any]]:
     now = _now()
-    import random
     rng = random.Random(99)
     return [
         {"event_second": _ts_str(now - timedelta(seconds=60 - i)), "records_per_second": rng.randint(15, 45)}
@@ -357,7 +355,6 @@ def mock_streaming_tps() -> list[dict[str, Any]]:
 
 def mock_entry_throughput() -> list[dict[str, Any]]:
     now = _now()
-    import random
     rng = random.Random(55)
     return [
         {

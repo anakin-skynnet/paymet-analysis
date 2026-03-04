@@ -667,6 +667,11 @@ function CommandCenter() {
           <CardContent>
             {approvalTrendsQ.isLoading ? (
               <Skeleton className="h-[200px] w-full rounded-lg" />
+            ) : approvalTrendsQ.isError ? (
+              <div className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-muted-foreground">
+                <span className="font-medium text-destructive">Couldn&apos;t load trend data.</span>
+                <span>Check connection or try again. If the problem persists, open the app from Compute → Apps.</span>
+              </div>
             ) : approvalTrendData.length === 0 ? (
               <div className="flex h-[200px] items-center justify-center rounded-lg bg-muted/20 text-sm text-muted-foreground">
                 No trend data yet. Run the simulator and ETL to see approval rate over time.

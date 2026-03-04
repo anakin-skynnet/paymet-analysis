@@ -93,7 +93,7 @@ export function Component() {
       <div>
         <h1 className="text-3xl font-bold">Databricks Notebooks</h1>
         <p className="text-muted-foreground mt-2">
-          Browse and access all notebooks powering the payment analysis platform
+          Browse and access all notebooks powering the payment analysis platform. Notebooks run ETL, ML training, and agents that feed approval-rate insights and Decisioning.
         </p>
       </div>
 

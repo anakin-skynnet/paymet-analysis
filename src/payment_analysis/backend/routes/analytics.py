@@ -26,8 +26,9 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import desc, func
 
-logger = logging.getLogger(__name__)
 from sqlmodel import select
+
+logger = logging.getLogger(__name__)
 
 from ..config import DEFAULT_ENTITY
 from ..db_models import AuthorizationEvent, DecisionLog
@@ -532,12 +533,13 @@ async def metrics(
     safe_country = country_filter.strip().upper() if country_filter else ""
     if safe_country and safe_country != DEFAULT_ENTITY and safe_country.isalpha() and len(safe_country) <= 3 and service.is_available:
         try:
-            data = await service.execute_query(
+            data = await service._execute_query_parameterized(
                 f"SELECT COUNT(*) AS total_transactions, "
                 f"SUM(CASE WHEN is_approved THEN 1 ELSE 0 END) AS approved_count, "
                 f"AVG(CASE WHEN is_approved THEN 1.0 ELSE 0.0 END) AS approval_rate "
                 f"FROM {service.config.full_schema_name}.silver_transactions "
-                f"WHERE issuer_country = '{safe_country}'"
+                f"WHERE issuer_country = :country",
+                {"country": safe_country},
             )
             if data and data[0].get("total_transactions", 0):
                 row = data[0]

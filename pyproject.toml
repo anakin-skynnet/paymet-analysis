@@ -47,7 +47,11 @@ deprecated = "ignore"
 
 [tool.ty.src]
 # Exclude Databricks runtime-only code (spark, dbutils, dlt injected at runtime)
+# Exclude external skills/examples so dev check passes
 exclude = [
+    ".agents/**",
+    ".claude/**",
+    ".github/**",
     "src/payment_analysis/agents/**",
     "src/payment_analysis/transform/**",
     "src/payment_analysis/streaming/**",

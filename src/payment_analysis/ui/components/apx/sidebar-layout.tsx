@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, Sparkles } from "lucide-react";
 import { NotificationBell } from "@/components/apx/notification-bell";
+import { HealthBanner } from "@/components/apx/health-banner";
 
 const PATH_LABELS: Record<string, string> = {
   /* Overview */
@@ -236,6 +237,7 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
         >
           Skip to main content
         </a>
+        <HealthBanner />
         <main
           id="main-content"
           role="main"
