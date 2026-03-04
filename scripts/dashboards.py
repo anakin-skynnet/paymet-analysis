@@ -12,6 +12,7 @@ Usage:
   uv run python scripts/dashboards.py prepare [--catalog X] [--schema Y]
   uv run python scripts/dashboards.py validate-assets [--catalog X] [--schema Y]
   uv run python scripts/dashboards.py publish [--path /Workspace/Users/.../payment-analysis] [--dry-run]
+  uv run python scripts/dashboards.py dedupe-keep-latest [--path ...] [--dry-run]
   uv run python scripts/dashboards.py check-widgets
   uv run python scripts/dashboards.py best-widgets
   uv run python scripts/dashboards.py fix-widget-settings
@@ -1414,6 +1415,94 @@ def cmd_update_app_yml(path: str | None) -> int:
     return 0
 
 
+# Logical dashboard keys for deduplication: keep latest per key, delete older duplicates.
+_DEDUPE_LOGICAL_KEYS = {
+    "data_quality_unified": "data_quality",
+    "[dev] Data & Quality": "data_quality",
+    "ml_optimization_unified": "ml_optimization",
+    "[dev] ML & Optimization": "ml_optimization",
+    "executive_trends_unified": "executive_trends",
+    "[dev] Executive & Trends": "executive_trends",
+}
+
+
+def _logical_key_from_path(path: str) -> str | None:
+    """Return logical key (data_quality, ml_optimization, executive_trends) or None."""
+    name = (path or "").split("/")[-1].replace(".lvdash.json", "").strip()
+    return _DEDUPE_LOGICAL_KEYS.get(name)
+
+
+def cmd_dedupe_keep_latest(path: str | None, dry_run: bool) -> int:
+    """Under .../dashboards, keep only the latest dashboard per logical name (by modified_at), delete older duplicates."""
+    root = path or get_workspace_root()
+    if not root:
+        print(
+            "Error: could not get workspace path. Pass --path /Workspace/Users/.../payment-analysis",
+            file=sys.stderr,
+        )
+        return 1
+    dashboards_path = f"{root.rstrip('/')}/dashboards"
+    try:
+        result = subprocess.run(
+            ["databricks", "workspace", "list", dashboards_path, "-o", "json"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        result.check_returncode()
+        objects = json.loads(result.stdout)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError) as e:
+        print(f"Error: failed to list workspace dashboards: {e}", file=sys.stderr)
+        return 1
+    all_objs = objects if isinstance(objects, list) else []
+    dashboards = [o for o in all_objs if o.get("object_type") == "DASHBOARD"]
+    # Group by logical key; keep latest (max modified_at) per key.
+    by_key: dict[str, list[dict]] = {}
+    for o in dashboards:
+        p = (o.get("path") or "").strip()
+        key = _logical_key_from_path(p)
+        if key is None:
+            continue
+        by_key.setdefault(key, []).append({"path": p, "modified_at": o.get("modified_at") or 0, "resource_id": o.get("resource_id")})
+    to_delete: list[str] = []
+    for key, group in by_key.items():
+        group.sort(key=lambda x: x["modified_at"], reverse=True)
+        for old in group[1:]:
+            to_delete.append(old["path"])
+    if not to_delete:
+        print("No duplicate dashboards to delete (at most one per logical name under path).")
+        return 0
+    print(f"Deleting {len(to_delete)} older duplicate dashboard(s), keeping latest per name:")
+    for p in to_delete:
+        print(f"  - {p.split('/')[-1]}")
+    if dry_run:
+        print("Dry run: no changes made.")
+        return 0
+    failed = []
+    for p in to_delete:
+        try:
+            subprocess.run(
+                ["databricks", "workspace", "delete", p],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            print(f"Deleted: {p.split('/')[-1]}")
+        except subprocess.CalledProcessError as e:
+            err = (e.stderr or e.stdout or str(e)).strip()
+            if "RESOURCE_DOES_NOT_EXIST" in err or "does not exist" in err.lower():
+                pass
+            else:
+                print(f"Failed: {p} — {err}", file=sys.stderr)
+                failed.append(p)
+    if failed:
+        print(f"Failed to delete {len(failed)} dashboard(s).", file=sys.stderr)
+        return 1
+    print(f"Successfully deleted {len(to_delete)} older duplicate(s).")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dashboard operations: prepare, validate-assets, publish, link-widgets")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -1460,6 +1549,10 @@ def main() -> int:
     )
     p_clean_all.add_argument("--path", default=None, help="Workspace path to scan (e.g. /Workspace/Users/<you>/). Default: parent of bundle root = your user folder.")
     p_clean_all.add_argument("--dry-run", action="store_true", help="Only list dashboards that would be deleted")
+    # dedupe-keep-latest
+    p_dedupe = sub.add_parser("dedupe-keep-latest", help="Under .../dashboards keep only latest per logical name (by modified_at), delete older duplicates.")
+    p_dedupe.add_argument("--path", default=None, help="Workspace root path (e.g. /Workspace/Users/<you>/payment-analysis)")
+    p_dedupe.add_argument("--dry-run", action="store_true", help="Only list dashboards that would be deleted")
     args = parser.parse_args()
 
     if args.cmd == "merge":
@@ -1494,6 +1587,8 @@ def main() -> int:
         return cmd_clean_non_dbdemos_dashboards(args.path, dry_run=getattr(args, "dry_run", False))
     if args.cmd == "clean-all-my-dashboards-except-dbdemos":
         return cmd_clean_all_my_dashboards_except_dbdemos(args.path, dry_run=getattr(args, "dry_run", False))
+    if args.cmd == "dedupe-keep-latest":
+        return cmd_dedupe_keep_latest(getattr(args, "path", None), dry_run=getattr(args, "dry_run", False))
     return 1
 
 
