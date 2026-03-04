@@ -38,8 +38,8 @@ env:
   - name: GENIE_SPACE_ID
     value: "01f10700a35c1756a892406b5bab0b67"
   # ResponsesAgent endpoint on Model Serving (with UC tools).
-  # Primary path for AI Chat (Path 1). Falls through to AI Gateway Opus 4.6 (Path 2) if failing.
-  # This is the PaymentAnalysisAgent built in this solution with 10 UC tools + python_exec.
+  # Primary path for Approval Rate Accelerator chat (Path 1). Falls through to AI Gateway (Path 2) if endpoint fails/timeout.
+  # Grant the app's service principal CAN_QUERY on this endpoint: Serving → payment-response-agent → Permissions.
   - name: ORCHESTRATOR_SERVING_ENDPOINT
     value: "payment-response-agent"
   # Foundation model endpoint for AI Gateway orchestrator chat (Path 2 fallback).

@@ -574,41 +574,51 @@ def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_m
     """Call the ResponsesAgent on Model Serving using the MLflow ``dataframe_records`` format.
 
     The endpoint serves a ``PaymentAnalysisAgent`` (MLflow ResponsesAgent pyfunc)
-    that expects ``dataframe_records=[{"input": [{"role": "user", "content": ...}]}]``.
-    ``_BREVITY_INSTRUCTION`` is appended to the user message so the agent's own
-    LLM produces concise, floating-dialog-friendly output natively.
-    Uses the SDK's ``serving_endpoints.query`` which handles auth automatically.
+    that expects records with ``input`` (list of messages) and optional ``custom_inputs``.
+    ``_BREVITY_INSTRUCTION`` is appended so the agent produces concise, dialog-friendly output.
+    Requires: the app's service principal must have CAN_QUERY on this endpoint (Serving → endpoint → Permissions).
     Returns ``(reply, agents_used)``.
     """
+    payload = [
+        {
+            "input": [{"role": "user", "content": user_message + _BREVITY_INSTRUCTION}],
+            "custom_inputs": {"session_id": "orchestrator-chat"},
+        }
+    ]
     response = ws.serving_endpoints.query(
         name=endpoint_name,
-        dataframe_records=[{"input": [{"role": "user", "content": user_message + _BREVITY_INSTRUCTION}]}],
+        dataframe_records=payload,
     )
 
     reply = ""
     predictions = getattr(response, "predictions", None)
     if predictions and isinstance(predictions, (dict, list)):
-        # Single-row prediction → dict with Responses API shape
         pred = predictions if isinstance(predictions, dict) else (predictions[0] if predictions else {})
         if isinstance(pred, dict):
             output = pred.get("output")
             if isinstance(output, list):
                 for item in reversed(output):
-                    if isinstance(item, dict) and item.get("type") == "message":
-                        for part in item.get("content", []):
-                            if isinstance(part, dict):
-                                text = (part.get("text") or "").strip()
-                                if text:
-                                    reply = text
-                                    break
-                        if reply:
+                    if isinstance(item, dict):
+                        if item.get("type") == "message":
+                            for part in item.get("content", []):
+                                if isinstance(part, dict):
+                                    text = (part.get("text") or "").strip()
+                                    if text:
+                                        reply = text
+                                        break
+                            if reply:
+                                break
+                        elif item.get("type") == "text" and item.get("text"):
+                            reply = (item.get("text") or "").strip()
                             break
             if not reply and isinstance(output, str):
                 reply = output.strip()
+            if not reply:
+                reply = (pred.get("content") or pred.get("text") or "").strip()
         elif isinstance(pred, str):
             reply = pred.strip()
 
-    return reply or "", ["ResponsesAgent"] if reply else []
+    return reply or "", ["ResponsesAgent (orchestrator)"] if reply else []
 
 
 def _parse_orchestrator_response(response: Any) -> tuple[str, list[str]]:
@@ -697,16 +707,19 @@ async def orchestrator_chat(
     """
     user_message = body.message.strip()
 
-    # --- Path 1: Model Serving endpoint (AgentBricks / ResponsesAgent) ---
+    # --- Path 1: Model Serving endpoint (ResponsesAgent = orchestrator with UC tools) ---
     endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
     if endpoint_name:
+        logger.info("Orchestrator chat: trying Path 1 (ResponsesAgent endpoint '%s')", endpoint_name)
         try:
             reply, agents_used = await asyncio.wait_for(
                 asyncio.to_thread(_query_orchestrator_endpoint, ws, endpoint_name, user_message),
                 timeout=_SERVING_CALL_TIMEOUT_S,
             )
             if reply:
+                logger.info("Orchestrator chat: Path 1 succeeded (ResponsesAgent)")
                 return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+            logger.warning("Orchestrator chat: Path 1 returned empty reply, trying AI Gateway")
         except asyncio.TimeoutError:
             logger.warning(
                 "Orchestrator serving endpoint '%s' timed out after %ds, trying AI Gateway",
@@ -714,11 +727,19 @@ async def orchestrator_chat(
                 _SERVING_CALL_TIMEOUT_S,
             )
         except Exception as e:
-            logger.warning(
-                "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
-                endpoint_name,
-                e,
-            )
+            err_msg = str(e).lower()
+            if "403" in err_msg or "forbidden" in err_msg or "permission" in err_msg:
+                logger.warning(
+                    "Orchestrator endpoint '%s' permission denied (app SP may need CAN_QUERY): %s",
+                    endpoint_name,
+                    e,
+                )
+            else:
+                logger.warning(
+                    "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
+                    endpoint_name,
+                    e,
+                )
 
     # --- Path 2: AI Gateway direct call (fast foundation model) ---
     try:
