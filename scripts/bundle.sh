@@ -108,7 +108,7 @@ case "$CMD" in
     echo "Deploying bundle (-t $TARGET) without app..."
     EXTRA_VARS=()
     [[ -n "${LAKEBASE_INSTANCE_NAME:-}" ]] && EXTRA_VARS+=(--var "lakebase_instance_name=${LAKEBASE_INSTANCE_NAME}")
-    databricks bundle deploy -t "$TARGET" --force --auto-approve "${EXTRA_VARS[@]}"
+    databricks bundle deploy -t "$TARGET" --force --auto-approve --force-lock "${EXTRA_VARS[@]}"
     restore_fastapi_app_only
     rm -f "$BACKUP"
     echo ""
