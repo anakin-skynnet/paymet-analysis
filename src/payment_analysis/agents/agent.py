@@ -439,9 +439,12 @@ class PaymentAnalysisAgent(ResponsesAgent):
 # Disable noisy tracing warnings that fire when the trace provider isn't fully
 # initialized (e.g. serverless notebook, Job 6).  These are cosmetic —
 # tracing still works once Model Serving sets up the provider at request time.
+import logging
+logging.getLogger("mlflow.tracing.fluent").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", message=".*NonRecordingSpan.*")
 warnings.filterwarnings("ignore", message=".*No active trace found.*")
 warnings.filterwarnings("ignore", message=".*_multi_processor.*")
+warnings.filterwarnings("ignore", message=".*parameters do not have descriptions.*")
 
 try:
     mlflow.openai.autolog()

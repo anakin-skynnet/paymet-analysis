@@ -251,6 +251,9 @@ print(f"Logged model: {logged_agent_info.model_uri}")
 
 # COMMAND ----------
 
+# Suppress trace-validation log and eval-time tracing warnings in Job 6 (serverless).
+os.environ["MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION"] = "true"
+
 try:
     from mlflow.genai.scorers import RelevanceToQuery, Safety
 

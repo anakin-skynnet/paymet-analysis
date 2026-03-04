@@ -338,7 +338,7 @@ RETURN
 -- Incidents & User Feedback (from Lakehouse mirror of Lakebase incidents)
 -- -----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_recent_incidents(status_filter STRING DEFAULT '')
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.get_recent_incidents(status_filter STRING DEFAULT '' COMMENT 'Filter by status: "open", "mitigating", "resolved", or "" for all.')
 RETURNS TABLE(
   id STRING,
   created_at TIMESTAMP,
@@ -517,7 +517,7 @@ RETURN
 -- =============================================================================
 
 -- 1. Decline Analysis (consolidates get_decline_trends + get_decline_by_segment)
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_declines(mode STRING DEFAULT 'trends', segment STRING DEFAULT '')
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_declines(mode STRING DEFAULT 'trends' COMMENT 'Analysis mode: "trends" for top decline reasons, "by_segment" for breakdown by merchant segment.', segment STRING DEFAULT '' COMMENT 'Optional merchant segment filter for by_segment mode (e.g. e-commerce, retail). Empty string for all.')
 RETURNS TABLE(
   category STRING,
   detail STRING,
@@ -562,7 +562,7 @@ RETURN
   );
 
 -- 2. Routing Analysis (consolidates get_route_performance + get_cascade_recommendations)
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_routing(mode STRING DEFAULT 'performance', merchant_segment STRING DEFAULT '')
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_routing(mode STRING DEFAULT 'performance' COMMENT 'Analysis mode: "performance" for approval rates by route, "cascade" for cascade recommendations.', merchant_segment STRING DEFAULT '' COMMENT 'Optional merchant segment filter for cascade mode. Empty string for all.')
 RETURNS TABLE(
   payment_solution STRING,
   card_network STRING,
@@ -601,7 +601,7 @@ RETURN
   );
 
 -- 3. Retry Analysis (consolidates get_retry_success_rates + get_recovery_opportunities)
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_retry(mode STRING DEFAULT 'success_rates', min_amount DOUBLE DEFAULT 100)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_retry(mode STRING DEFAULT 'success_rates' COMMENT 'Analysis mode: "success_rates" for retry success by reason/attempt, "opportunities" for high-value recovery opportunities.', min_amount DOUBLE DEFAULT 100 COMMENT 'Minimum transaction amount for opportunities mode (default 100).')
 RETURNS TABLE(
   decline_reason STRING,
   metric_int INT,
@@ -645,7 +645,7 @@ RETURN
   );
 
 -- 4. Risk Analysis (consolidates get_high_risk_transactions + get_risk_distribution)
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_risk(mode STRING DEFAULT 'distribution', threshold DOUBLE DEFAULT 0.7)
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_risk(mode STRING DEFAULT 'distribution' COMMENT 'Analysis mode: "distribution" for risk score distribution, "transactions" for high-risk transaction list.', threshold DOUBLE DEFAULT 0.7 COMMENT 'Minimum risk score (0.0-1.0) for transactions mode. Default 0.7.')
 RETURNS TABLE(
   identifier STRING,
   segment STRING,
@@ -687,7 +687,7 @@ RETURN
   );
 
 -- 5. Performance Summary (consolidates get_kpi_summary + get_optimization_opportunities + get_trend_analysis)
-CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_performance(mode STRING DEFAULT 'kpi')
+CREATE OR REPLACE FUNCTION __CATALOG__.__SCHEMA__.analyze_performance(mode STRING DEFAULT 'kpi' COMMENT 'Analysis mode: "kpi" for executive KPI summary, "opportunities" for optimization opportunities, "trends" for performance trends.')
 RETURNS TABLE(
   label STRING,
   metric_1 DOUBLE,
