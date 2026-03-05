@@ -4,21 +4,23 @@ Databricks AI Agents Registry - Payment Approval Optimization.
 This module provides AI agents powered by Databricks features:
 - Genie: Natural language SQL analytics
 - Model Serving: ML-powered recommendations
-- Mosaic AI Gateway: LLM routing and prompt engineering (https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/)
+- Mosaic AI Gateway: LLM routing and prompt engineering
 - Custom Agents: Domain-specific payment intelligence
-
-NOTE: Workspace URLs are constructed dynamically based on environment variables.
 """
 
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import os
+import time
 from enum import Enum
+from functools import lru_cache
 from typing import Any
 
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
@@ -31,38 +33,33 @@ try:
     import mlflow as _mlflow
     _trace = _mlflow.trace
 except ImportError:
-    def _trace(*args, **kwargs):  # type: ignore[misc]
+    def _trace(*args: Any, **kwargs: Any) -> Any:
         """No-op decorator when mlflow-tracing is not installed."""
         if args and callable(args[0]):
             return args[0]
-        def _identity(fn):  # type: ignore[no-untyped-def]
-            return fn
-        return _identity
+        return lambda fn: fn
 
-# Optional Genie space: when set, POST /chat (Genie Assistant panel) uses the Databricks Genie Conversation API.
+# ---------------------------------------------------------------------------
+# Environment config constants
+# ---------------------------------------------------------------------------
+
 GENIE_SPACE_ID_ENV = "GENIE_SPACE_ID"
-# When set, POST /api/agents/orchestrator/chat (AI Chatbot) calls this Model Serving endpoint instead of Job 6.
 ORCHESTRATOR_SERVING_ENDPOINT_ENV = "ORCHESTRATOR_SERVING_ENDPOINT"
-# Foundation model endpoint for direct AI Gateway chat (fast fallback when serving endpoint is slow/missing).
 AI_GATEWAY_ENDPOINT_ENV = "LLM_ENDPOINT"
 AI_GATEWAY_ENDPOINT_DEFAULT = "databricks-claude-opus-4-6"
-# Genie / data analyst fallback uses a fast, balanced model (not the heavy orchestrator tier).
 AI_GATEWAY_GENIE_ENDPOINT_ENV = "LLM_ENDPOINT_GENIE"
 AI_GATEWAY_GENIE_ENDPOINT_DEFAULT = "databricks-claude-sonnet-4-5"
 
-# Job 6 poll settings (orchestrator chat fallback).
-# Must stay well under the Databricks Apps proxy timeout (~60 s).
 ORCHESTRATOR_JOB_POLL_TIMEOUT_S = 50
 ORCHESTRATOR_JOB_POLL_INTERVAL_S = 4
 
-# Timeout (seconds) for individual serving endpoint / Genie calls.
-# Databricks Apps proxy returns HTTP 504 after ~60 s, so each tier must finish
-# well within that window to leave room for fallback paths.
+# Databricks Apps proxy returns HTTP 504 after ~60 s.
+# Leave headroom for deserialization + network latency.
+_PROXY_DEADLINE_S = 55
 _SERVING_CALL_TIMEOUT_S = 45
 _GENIE_CALL_TIMEOUT_S = 45
 
-# Shared brevity instruction appended to every user message so ALL agent paths
-# (ResponsesAgent, AI Gateway, Job 6) produce concise, dialog-friendly answers.
+# Shared brevity instruction so all agent paths produce concise answers.
 _BREVITY_INSTRUCTION = (
     "\n\n[IMPORTANT: You are replying inside a small floating chat dialog. "
     "Keep your answer SHORT — 2-4 sentences or 3-5 bullet points max. "
@@ -71,60 +68,136 @@ _BREVITY_INSTRUCTION = (
     "End with one brief next-step suggestion when relevant.]"
 )
 
-# System prompt for the AI Gateway orchestrator (payment analysis domain expert)
-_ORCHESTRATOR_SYSTEM_PROMPT = """You are the Payment Approval Rate Accelerator — an AI assistant for the payment platform.
+_ORCHESTRATOR_SYSTEM_PROMPT = (
+    "You are the Payment Approval Rate Accelerator — an AI assistant for the payment platform.\n\n"
+    "Your role: Help users understand payment approval rates and suggest ways to improve them.\n\n"
+    "Knowledge: Smart Routing, Smart Retry, Decline Analysis, Risk & Fraud, Performance Optimization.\n"
+    "Data: Unity Catalog gold views (KPIs, trends, decline reasons, solution performance, merchant "
+    "segments, retry rates) and 4 ML models (approval propensity, risk scoring, smart routing, smart retry).\n\n"
+    "RESPONSE RULES — you are displayed in a small floating chat dialog:\n"
+    "- Keep answers SHORT: 2-4 sentences max, or 3-5 bullet points max.\n"
+    "- Use plain, simple language. No jargon unless the user asks for technical detail.\n"
+    "- NEVER output tables, markdown tables, or tabular data. Use bullet points instead.\n"
+    "- NEVER use code blocks or SQL queries in responses.\n"
+    "- When citing numbers, use inline text (e.g. \"approval rate is 87.3%\"), not tables.\n"
+    "- End with one brief next-step suggestion when relevant.\n"
+    "- If the user asks for detailed data, suggest they check the Dashboards or Decisioning pages in the app."
+)
 
-Your role: Help users understand payment approval rates and suggest ways to improve them.
-
-Knowledge: Smart Routing, Smart Retry, Decline Analysis, Risk & Fraud, Performance Optimization.
-Data: Unity Catalog gold views (KPIs, trends, decline reasons, solution performance, merchant segments, retry rates) and 4 ML models (approval propensity, risk scoring, smart routing, smart retry).
-
-RESPONSE RULES — you are displayed in a small floating chat dialog:
-- Keep answers SHORT: 2-4 sentences max, or 3-5 bullet points max.
-- Use plain, simple language. No jargon unless the user asks for technical detail.
-- NEVER output tables, markdown tables, or tabular data. Use bullet points instead.
-- NEVER use code blocks or SQL queries in responses.
-- When citing numbers, use inline text (e.g. "approval rate is 87.3%"), not tables.
-- End with one brief next-step suggestion when relevant.
-- If the user asks for detailed data, suggest they check the Dashboards or Decisioning pages in the app."""
+_GENIE_SYSTEM_PROMPT = (
+    "You are the Genie Assistant for the payment platform — a data analyst for payment analytics.\n\n"
+    "Answer questions about payment data using Unity Catalog gold views "
+    "(KPIs, trends, decline reasons, performance by solution/merchant/network, retry rates, "
+    "data quality, streaming volume).\n\n"
+    "RESPONSE RULES — you are displayed in a small floating chat dialog:\n"
+    "- Keep answers SHORT: 2-4 sentences or 3-5 bullet points max.\n"
+    "- Use plain language. No jargon.\n"
+    "- NEVER output tables, markdown tables, or tabular data. Use bullet points instead.\n"
+    "- NEVER use code blocks or SQL.\n"
+    "- Suggest one follow-up question when relevant."
+)
 
 router = APIRouter(tags=["agents"])
 
-_databricks_config = AppConfig().databricks
+# ---------------------------------------------------------------------------
+# Lazy helpers (avoid module-level side effects)
+# ---------------------------------------------------------------------------
 
-# Default catalog.schema used in AGENTS; replaced with effective config when returning.
-def _default_uc_prefix() -> str:
-    catalog = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog")
-    return f"{catalog}.{get_default_schema()}"
-
-
-# =============================================================================
-# Helper Functions
-# =============================================================================
-
-def get_workspace_url() -> str:
-    """Get Databricks workspace URL from centralized config (always https://)."""
-    url = (_databricks_config.workspace_url or "").strip().rstrip("/")
+@lru_cache(maxsize=1)
+def _workspace_url() -> str:
+    """Workspace URL, resolved once on first call."""
+    cfg = AppConfig().databricks
+    url = (cfg.workspace_url or "").strip().rstrip("/")
     if url and not url.startswith("https://"):
         url = f"https://{url}"
     return url
 
 
-def get_notebook_workspace_url(relative_path: str) -> str:
-    """Construct full workspace URL for a notebook (path must match bundle sync: workspace.root_path)."""
-    workspace_url = get_workspace_url()
+def _default_uc_prefix() -> str:
+    catalog = os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog")
+    return f"{catalog}.{get_default_schema()}"
+
+
+def _notebook_workspace_url(relative_path: str) -> str:
+    ws = _workspace_url()
     user_email = os.getenv("DATABRICKS_USER", "user@company.com")
     folder_name = os.getenv("BUNDLE_FOLDER", "payment-analysis")
-    full_path = f"/Workspace/Users/{user_email}/{folder_name}/{relative_path}"
-    return f"{workspace_url}/workspace{full_path}"
+    return f"{ws}/workspace/Workspace/Users/{user_email}/{folder_name}/{relative_path}"
 
 
-# =============================================================================
+def _effective_uc(request: Request) -> tuple[str, str]:
+    uc = getattr(request.app.state, "uc_config", None)
+    if uc and len(uc) == 2 and uc[0] and uc[1]:
+        return (uc[0], uc[1])
+    return (os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"), get_default_schema())
+
+
+# ---------------------------------------------------------------------------
+# Shared extraction helpers
+# ---------------------------------------------------------------------------
+
+def _extract_chat_completion(response: Any) -> str:
+    """Extract text from a chat-completion-style response (AI Gateway / foundation model)."""
+    choices = getattr(response, "choices", None) or []
+    if not choices:
+        return ""
+    msg = getattr(choices[0], "message", choices[0])
+    return (getattr(msg, "content", "") or "").strip()
+
+
+def _extract_genie_reply(message: Any) -> str:
+    """Extract assistant text from GenieMessage.attachments."""
+    for att in getattr(message, "attachments", None) or []:
+        text_att = getattr(att, "text", None)
+        if text_att is not None:
+            content = getattr(text_att, "content", None)
+            if content and isinstance(content, str):
+                return content.strip()
+    return ""
+
+
+def _extract_responses_agent_reply(predictions: Any) -> str:
+    """Extract the last assistant message from a ResponsesAgent prediction.
+
+    Handles both string and list content formats:
+    - String content: ``{"type": "message", "role": "assistant", "content": "..."}``
+    - List content: ``{"type": "message", "content": [{"text": "..."}]}``
+    """
+    if not predictions:
+        return ""
+    pred = predictions if isinstance(predictions, dict) else (predictions[0] if isinstance(predictions, list) and predictions else {})
+    if isinstance(pred, str):
+        return pred.strip()
+    if not isinstance(pred, dict):
+        return ""
+
+    output = pred.get("output")
+    if isinstance(output, list):
+        for item in reversed(output):
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") == "message" and item.get("role") == "assistant":
+                content = item.get("content")
+                if isinstance(content, str) and content.strip():
+                    return content.strip()
+                if isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict):
+                            text = (part.get("text") or "").strip()
+                            if text:
+                                return text
+            elif item.get("type") == "text" and item.get("text"):
+                return (item["text"]).strip()
+    if isinstance(output, str):
+        return output.strip()
+    return (pred.get("content") or pred.get("text") or "").strip()
+
+
+# ---------------------------------------------------------------------------
 # Models
-# =============================================================================
+# ---------------------------------------------------------------------------
 
 class AgentType(str, Enum):
-    """AI Agent types available in Databricks."""
     GENIE = "genie"
     MODEL_SERVING = "model_serving"
     CUSTOM_LLM = "custom_llm"
@@ -132,7 +205,6 @@ class AgentType(str, Enum):
 
 
 class AgentCapability(str, Enum):
-    """Agent capabilities."""
     NATURAL_LANGUAGE_ANALYTICS = "natural_language_analytics"
     PREDICTIVE_SCORING = "predictive_scoring"
     CONVERSATIONAL_INSIGHTS = "conversational_insights"
@@ -141,7 +213,6 @@ class AgentCapability(str, Enum):
 
 
 class AgentInfo(BaseModel):
-    """AI Agent metadata model."""
     id: str = Field(..., description="Unique agent identifier")
     name: str = Field(..., description="Agent display name")
     description: str = Field(..., description="Agent purpose and capabilities")
@@ -155,265 +226,9 @@ class AgentInfo(BaseModel):
 
 
 class AgentList(BaseModel):
-    """List of AI agents."""
     agents: list[AgentInfo]
     total: int
     by_type: dict[str, int]
-
-
-# =============================================================================
-# AI Agents Registry
-# =============================================================================
-
-AGENTS = [
-    # Genie - Natural Language Analytics
-    AgentInfo(
-        id="approval_optimizer_genie",
-        name="Approval Optimizer (Genie)",
-        description="Natural language analytics for approval rate optimization. Ask questions about approval patterns, merchant performance, and identify opportunities to increase approval rates.",
-        agent_type=AgentType.GENIE,
-        capabilities=[
-            AgentCapability.NATURAL_LANGUAGE_ANALYTICS,
-            AgentCapability.CONVERSATIONAL_INSIGHTS,
-        ],
-        use_case="Query payment data using natural language to discover approval optimization opportunities. Example: 'Which merchants have declining approval rates?' or 'Show me high-value transactions that are getting declined'",
-        databricks_resource="Genie Space: Payment Approval Analytics",
-        workspace_url=f"{get_workspace_url()}/genie",
-        tags=["genie", "analytics", "approval-optimization", "natural-language"],
-        example_queries=[
-            "Which payment solutions have the highest approval rates?",
-            "Show me decline trends by card network over the last 30 days",
-            "What's the average approval rate for cross-border transactions?",
-            "Which merchants should we prioritize for 3DS adoption?",
-            "What's the revenue impact of improving approval rates by 1%?",
-        ],
-    ),
-    
-    AgentInfo(
-        id="decline_insights_genie",
-        name="Decline Insights (Genie)",
-        description="Conversational analytics focused on understanding and reducing payment declines. Explore decline reasons, recovery opportunities, and retry strategies through natural language.",
-        agent_type=AgentType.GENIE,
-        capabilities=[
-            AgentCapability.NATURAL_LANGUAGE_ANALYTICS,
-            AgentCapability.CONVERSATIONAL_INSIGHTS,
-        ],
-        use_case="Deep-dive into decline patterns to identify recoverable transactions and optimal retry strategies. Ask about specific decline codes, merchant segments, or geographic patterns.",
-        databricks_resource="Genie Space: Decline Analysis",
-        workspace_url=f"{get_workspace_url()}/genie",
-        tags=["genie", "declines", "recovery", "analytics"],
-        example_queries=[
-            "What are the top 5 decline reasons this month?",
-            "How many declined transactions could be recovered with smart retry?",
-            "Show me decline rates by issuer country",
-            "Which decline codes have the highest retry success rates?",
-            "What's the average time to successful retry for insufficient funds declines?",
-        ],
-    ),
-    
-    # Model Serving - Predictive Intelligence
-    AgentInfo(
-        id="approval_propensity_predictor",
-        name="Approval Propensity Predictor",
-        description="ML model serving endpoint that predicts transaction approval likelihood in real-time. Uses Random Forest trained on 30+ features including fraud scores, device trust, and payment history.",
-        agent_type=AgentType.MODEL_SERVING,
-        capabilities=[
-            AgentCapability.PREDICTIVE_SCORING,
-            AgentCapability.REAL_TIME_DECISIONING,
-        ],
-        use_case="Real-time approval probability scoring for intelligent routing decisions. Route high-propensity transactions to optimal payment solutions and flag low-propensity transactions for review.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.approval_propensity_model",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.approval_propensity_model",
-        tags=["model-serving", "ml", "propensity", "real-time"],
-        example_queries=[
-            "What's the approval probability for this transaction?",
-            "Should we route this payment to 3DS or standard?",
-            "Predict approval rates for upcoming batch",
-        ],
-    ),
-    
-    AgentInfo(
-        id="smart_routing_advisor",
-        name="Smart Routing Advisor",
-        description="ML-powered agent that recommends optimal payment routing strategies based on merchant segment, transaction characteristics, and historical performance data.",
-        agent_type=AgentType.MODEL_SERVING,
-        capabilities=[
-            AgentCapability.PREDICTIVE_SCORING,
-            AgentCapability.AUTOMATED_RECOMMENDATIONS,
-            AgentCapability.REAL_TIME_DECISIONING,
-        ],
-        use_case="Automatically select the best payment solution (standard, 3DS, network token, passkey) to maximize approval rates while balancing fraud risk and processing costs.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.smart_routing_policy",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.smart_routing_policy",
-        tags=["model-serving", "routing", "optimization", "decisioning"],
-        example_queries=[
-            "What's the best payment solution for this merchant?",
-            "Should we enable network tokenization for travel merchants?",
-            "Recommend routing strategy for high-value transactions",
-        ],
-    ),
-    
-    AgentInfo(
-        id="smart_retry_optimizer",
-        name="Smart Retry Optimizer",
-        description="ML agent that identifies declined transactions with high recovery potential and recommends optimal retry timing and strategy based on decline reason and transaction context.",
-        agent_type=AgentType.MODEL_SERVING,
-        capabilities=[
-            AgentCapability.PREDICTIVE_SCORING,
-            AgentCapability.AUTOMATED_RECOMMENDATIONS,
-        ],
-        use_case="Increase revenue recovery by 15-25% through intelligent retry strategies. Predicts retry success probability and suggests optimal retry timing for different decline types.",
-        databricks_resource=f"Model: {_default_uc_prefix()}.smart_retry_policy",
-        workspace_url=f"{get_workspace_url()}/ml/models/{_default_uc_prefix()}.smart_retry_policy",
-        tags=["model-serving", "retry", "recovery", "revenue"],
-        example_queries=[
-            "Should we retry this declined transaction?",
-            "What's the best time to retry an insufficient funds decline?",
-            "Estimate recovery rate for this batch of declines",
-        ],
-    ),
-    
-    # Mosaic AI Gateway - Custom LLM Agents (https://learn.microsoft.com/en-us/azure/databricks/ai-gateway/)
-    AgentInfo(
-        id="payment_intelligence_assistant",
-        name="Payment Intelligence Assistant",
-        description="LLM-powered conversational agent via Mosaic AI Gateway (Claude Opus 4.6 & Sonnet 4.5) that provides natural language explanations of payment data, identifies anomalies, and suggests optimization strategies.",
-        agent_type=AgentType.AI_GATEWAY,
-        capabilities=[
-            AgentCapability.CONVERSATIONAL_INSIGHTS,
-            AgentCapability.AUTOMATED_RECOMMENDATIONS,
-            AgentCapability.NATURAL_LANGUAGE_ANALYTICS,
-        ],
-        use_case="Ask complex questions about payment performance, get AI-generated insights, and receive personalized recommendations for improving approval rates based on your specific merchant portfolio.",
-        databricks_resource="Mosaic AI Gateway: databricks-claude-sonnet-4-5",
-        workspace_url=f"{get_workspace_url()}/serving-endpoints/databricks-claude-sonnet-4-5",
-        tags=["ai-gateway", "llm", "conversational", "insights"],
-        example_queries=[
-            "Explain why our approval rate dropped last week",
-            "What's causing the spike in fraud scores for gaming merchants?",
-            "Generate a report on 3DS adoption impact on approval rates",
-            "Suggest 3 strategies to improve approval rates for cross-border payments",
-            "Analyze the trade-off between fraud prevention and approval rates",
-        ],
-    ),
-    
-    AgentInfo(
-        id="risk_assessment_advisor",
-        name="Risk Assessment Advisor",
-        description="LLM agent specialized in risk analysis that combines fraud scores, AML signals, and behavioral patterns to provide intelligent risk assessments and mitigation recommendations.",
-        agent_type=AgentType.AI_GATEWAY,
-        capabilities=[
-            AgentCapability.CONVERSATIONAL_INSIGHTS,
-            AgentCapability.AUTOMATED_RECOMMENDATIONS,
-            AgentCapability.REAL_TIME_DECISIONING,
-        ],
-        use_case="Real-time risk consultation for high-value or suspicious transactions. Get natural language explanations of risk factors and specific recommendations for fraud prevention.",
-        databricks_resource="Mosaic AI Gateway: databricks-claude-sonnet-4-5",
-        workspace_url=f"{get_workspace_url()}/serving-endpoints/databricks-claude-sonnet-4-5",
-        tags=["ai-gateway", "risk", "fraud", "aml"],
-        example_queries=[
-            "Is this transaction risky? Explain the risk factors.",
-            "Should we approve this high-value cross-border payment?",
-            "What additional verification should we require for this transaction?",
-            "Explain the fraud score for this merchant",
-        ],
-    ),
-    
-    AgentInfo(
-        id="performance_recommender",
-        name="Performance Recommender",
-        description="AI-powered performance advisor that analyzes your payment metrics, compares against benchmarks, and generates actionable recommendations to accelerate approval rates.",
-        agent_type=AgentType.CUSTOM_LLM,
-        capabilities=[
-            AgentCapability.AUTOMATED_RECOMMENDATIONS,
-            AgentCapability.CONVERSATIONAL_INSIGHTS,
-            AgentCapability.NATURAL_LANGUAGE_ANALYTICS,
-        ],
-        use_case="Weekly/monthly performance reviews with AI-generated insights. Automatically identifies underperforming segments and generates prioritized action plans for approval rate improvement.",
-        databricks_resource="Custom Agent: Performance Analysis & Recommendations",
-        workspace_url=get_notebook_workspace_url("src/payment_analysis/agents/agent_framework.py"),
-        tags=["custom", "recommendations", "performance", "optimization"],
-        example_queries=[
-            "Generate my weekly performance report",
-            "What are my top 3 opportunities to improve approval rates?",
-            "Compare my performance to industry benchmarks",
-            "Create an action plan to reach 90% approval rate",
-        ],
-    ),
-]
-
-
-def _apply_uc_config(agent: AgentInfo, catalog: str, schema: str) -> AgentInfo:
-    """Replace default catalog.schema with effective config in resource and URL."""
-    full = f"{catalog}.{schema}"
-    resource = (agent.databricks_resource or "").replace(_default_uc_prefix(), full)
-    url = (agent.workspace_url or "").replace(_default_uc_prefix(), full)
-    if resource == (agent.databricks_resource or "") and url == (agent.workspace_url or ""):
-        return agent
-    return agent.model_copy(
-        update={
-            "databricks_resource": resource or agent.databricks_resource,
-            "workspace_url": url or agent.workspace_url,
-        }
-    )
-
-
-def _effective_uc(request: Request) -> tuple[str, str]:
-    """Return (catalog, schema) from app state or default."""
-    uc = getattr(request.app.state, "uc_config", None)
-    if uc and len(uc) == 2 and uc[0] and uc[1]:
-        return (uc[0], uc[1])
-    return (os.getenv("DATABRICKS_CATALOG", "ahs_demos_catalog"), get_default_schema())
-
-
-# =============================================================================
-# Endpoints
-# =============================================================================
-
-@router.get("/agents", response_model=AgentList, operation_id="listAgents")
-async def list_agents(
-    request: Request,
-    agent_type: AgentType | None = None,
-    entity: str | None = Query(None, description="Entity or country code (e.g. BR). Filter by payment platform entity."),
-) -> AgentList:
-    """
-    List all Databricks AI agents for payment approval optimization.
-
-    Args:
-        agent_type: Optional filter by agent type
-        entity: Optional entity/country code for filtering (future use)
-
-    Returns:
-        List of agents with metadata
-    """
-    catalog, schema = _effective_uc(request)
-    filtered = [_apply_uc_config(a, catalog, schema) for a in AGENTS]
-    
-    if agent_type:
-        filtered = [a for a in filtered if a.agent_type == agent_type]
-    
-    # Count by type
-    by_type = {}
-    for agent in AGENTS:
-        agent_type_val = agent.agent_type.value
-        by_type[agent_type_val] = by_type.get(agent_type_val, 0) + 1
-    
-    return AgentList(
-        agents=filtered,
-        total=len(filtered),
-        by_type=by_type,
-    )
-
-
-@router.get("/agents/{agent_id}", response_model=AgentInfo, operation_id="getAgent")
-async def get_agent(request: Request, agent_id: str) -> AgentInfo:
-    """Get details for a specific AI agent."""
-    catalog, schema = _effective_uc(request)
-    for agent in AGENTS:
-        if agent.id == agent_id:
-            return _apply_uc_config(agent, catalog, schema)
-    
-    raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
 
 
 class AgentUrlOut(BaseModel):
@@ -422,437 +237,6 @@ class AgentUrlOut(BaseModel):
     url: str
     agent_type: str
     databricks_resource: str | None = None
-
-
-class ChatIn(BaseModel):
-    """Inbound message for payment platform AI Assistant."""
-    message: str = Field(..., min_length=1, max_length=4000)
-
-
-class ChatOut(BaseModel):
-    """Response from payment platform AI Assistant."""
-    reply: str
-    genie_url: str | None = Field(None, description="Open in Genie for full natural-language analytics")
-
-
-def _extract_genie_reply(message: Any) -> str:
-    """Extract assistant text from GenieMessage.attachments (Databricks SDK GenieMessage)."""
-    attachments = getattr(message, "attachments", None) or []
-    for att in attachments:
-        text_att = getattr(att, "text", None)
-        if text_att is not None:
-            content = getattr(text_att, "content", None)
-            if content and isinstance(content, str):
-                return content.strip()
-    return ""
-
-
-_GENIE_SYSTEM_PROMPT = """You are the Genie Assistant for the payment platform — a data analyst for payment analytics.
-
-Answer questions about payment data using Unity Catalog gold views (KPIs, trends, decline reasons, performance by solution/merchant/network, retry rates, data quality, streaming volume).
-
-RESPONSE RULES — you are displayed in a small floating chat dialog:
-- Keep answers SHORT: 2-4 sentences or 3-5 bullet points max.
-- Use plain language. No jargon.
-- NEVER output tables, markdown tables, or tabular data. Use bullet points instead.
-- NEVER use code blocks or SQL.
-- Suggest one follow-up question when relevant."""
-
-
-@router.post("/chat", response_model=ChatOut, operation_id="postChat")
-async def chat(
-    request: Request,
-    body: ChatIn,
-    ws: WorkspaceClient | None = Depends(get_workspace_client_optional),
-) -> ChatOut:
-    """
-    Genie Assistant endpoint (separate from Orchestrator).
-    Used exclusively by the Genie Assistant panel for natural-language SQL analytics.
-
-    Resolution order:
-      1. Databricks Genie Conversation API (when GENIE_SPACE_ID is set and workspace client available).
-      2. AI Gateway direct call (foundation model with data analyst system prompt) — fast fallback.
-      3. Static reply with link to open Genie in workspace.
-
-    NOTE: The AI Chatbot does NOT fall back here — it uses /orchestrator/chat exclusively.
-    """
-    workspace_url = ensure_absolute_workspace_url(get_workspace_url())
-    genie_url = f"{workspace_url.rstrip('/')}/genie" if workspace_url else None
-    space_id = (os.environ.get(GENIE_SPACE_ID_ENV) or "").strip()
-
-    # --- Path 1: Databricks Genie Conversation API ---
-    if space_id and ws is not None:
-        try:
-            import datetime
-
-            msg = await asyncio.wait_for(
-                asyncio.to_thread(
-                    ws.genie.start_conversation_and_wait,
-                    space_id=space_id,
-                    content=body.message.strip(),
-                    timeout=datetime.timedelta(seconds=_GENIE_CALL_TIMEOUT_S),
-                ),
-                timeout=_GENIE_CALL_TIMEOUT_S,
-            )
-            reply = _extract_genie_reply(msg)
-            if reply:
-                return ChatOut(reply=reply, genie_url=genie_url)
-            logger.info("Genie returned empty reply for space %s; trying AI Gateway fallback.", space_id)
-        except asyncio.TimeoutError:
-            logger.warning(
-                "Genie space query timed out after %ds (space_id=%s), trying AI Gateway fallback",
-                _GENIE_CALL_TIMEOUT_S,
-                space_id,
-            )
-        except Exception as exc:
-            logger.warning(
-                "Genie space query failed (space_id=%s), trying AI Gateway fallback: %s",
-                space_id,
-                exc,
-            )
-
-    # --- Path 2: AI Gateway direct call (Sonnet tier — balanced speed/quality for data questions) ---
-    if ws is not None:
-        try:
-            from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
-
-            endpoint_name = _genie_ai_gateway_endpoint()
-
-            def _genie_gateway_call() -> Any:
-                return ws.serving_endpoints.query(
-                    name=endpoint_name,
-                    messages=[
-                        ChatMessage(role=ChatMessageRole.SYSTEM, content=_GENIE_SYSTEM_PROMPT),
-                        ChatMessage(role=ChatMessageRole.USER, content=body.message.strip()),
-                    ],
-                    max_tokens=500,
-                    temperature=0.2,
-                )
-
-            response = await asyncio.wait_for(
-                asyncio.to_thread(_genie_gateway_call),
-                timeout=_SERVING_CALL_TIMEOUT_S,
-            )
-            choices = getattr(response, "choices", None) or []
-            if choices:
-                msg_obj = getattr(choices[0], "message", choices[0])
-                content = (getattr(msg_obj, "content", "") or "").strip()
-                if content:
-                    return ChatOut(reply=content, genie_url=genie_url)
-        except asyncio.TimeoutError:
-            logger.warning("AI Gateway Genie fallback timed out after %ds", _SERVING_CALL_TIMEOUT_S)
-        except Exception as exc:
-            logger.warning("AI Gateway fallback for Genie also failed: %s", exc)
-
-    # --- Path 3: Static reply with link to Genie workspace ---
-    if space_id:
-        reply = (
-            "I can help you explore payment and approval data. "
-            "The Genie space is configured but the live query could not complete right now. "
-            "You can open Genie directly in your Databricks workspace for natural language "
-            "questions (e.g. top merchants by approval rate, decline reasons, trends)."
-        )
-    else:
-        reply = (
-            "I can help you explore payment and approval data. For natural language questions "
-            "(e.g. top merchants by approval rate, decline reasons, trends), open Genie in your "
-            "workspace to run queries against your Databricks tables and dashboards."
-        )
-    return ChatOut(reply=reply, genie_url=genie_url)
-
-
-# =============================================================================
-# Agent Framework Orchestrator Chat (Job 6 – Deploy Agents)
-# =============================================================================
-
-class OrchestratorChatIn(BaseModel):
-    """Message for the Agent Framework orchestrator (recommendations & payment analysis)."""
-    message: str = Field(..., min_length=1, max_length=4000)
-
-
-class OrchestratorChatOut(BaseModel):
-    """Response from the orchestrator (synthesis from specialists)."""
-    reply: str
-    run_page_url: str | None = Field(None, description="URL to view the job run in Databricks")
-    agents_used: list[str] = Field(default_factory=list)
-
-
-def _orchestrator_job_id() -> str:
-    """Return orchestrator job ID from env. No hardcoded fallback; resolve_orchestrator_job_id() is used as fallback."""
-    return (os.getenv("DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT") or "").strip()
-
-
-@_trace(name="query_responses_agent", span_type="AGENT")
-def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_message: str) -> tuple[str, list[str]]:
-    """Call the ResponsesAgent on Model Serving using the MLflow ``dataframe_records`` format.
-
-    The endpoint serves a ``PaymentAnalysisAgent`` (MLflow ResponsesAgent pyfunc)
-    that expects records with ``input`` (list of messages) and optional ``custom_inputs``.
-    ``_BREVITY_INSTRUCTION`` is appended so the agent produces concise, dialog-friendly output.
-    Requires: the app's service principal must have CAN_QUERY on this endpoint (Serving → endpoint → Permissions).
-    Returns ``(reply, agents_used)``.
-    """
-    payload = [
-        {
-            "input": [{"role": "user", "content": user_message + _BREVITY_INSTRUCTION}],
-            "custom_inputs": {"session_id": "orchestrator-chat"},
-        }
-    ]
-    response = ws.serving_endpoints.query(
-        name=endpoint_name,
-        dataframe_records=payload,
-    )
-
-    reply = ""
-    predictions = getattr(response, "predictions", None)
-    if predictions and isinstance(predictions, (dict, list)):
-        pred = predictions if isinstance(predictions, dict) else (predictions[0] if predictions else {})
-        if isinstance(pred, dict):
-            output = pred.get("output")
-            if isinstance(output, list):
-                for item in reversed(output):
-                    if isinstance(item, dict):
-                        if item.get("type") == "message":
-                            for part in item.get("content", []):
-                                if isinstance(part, dict):
-                                    text = (part.get("text") or "").strip()
-                                    if text:
-                                        reply = text
-                                        break
-                            if reply:
-                                break
-                        elif item.get("type") == "text" and item.get("text"):
-                            reply = (item.get("text") or "").strip()
-                            break
-            if not reply and isinstance(output, str):
-                reply = output.strip()
-            if not reply:
-                reply = (pred.get("content") or pred.get("text") or "").strip()
-        elif isinstance(pred, str):
-            reply = pred.strip()
-
-    return reply or "", ["ResponsesAgent (orchestrator)"] if reply else []
-
-
-def _ai_gateway_endpoint() -> str:
-    """Return the foundation model endpoint name for direct AI Gateway chat."""
-    return (os.getenv(AI_GATEWAY_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_ENDPOINT_DEFAULT
-
-
-def _genie_ai_gateway_endpoint() -> str:
-    """Return the foundation model endpoint for Genie/data-analyst fallback (balanced tier)."""
-    return (os.getenv(AI_GATEWAY_GENIE_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_GENIE_ENDPOINT_DEFAULT
-
-
-@_trace(name="query_ai_gateway", span_type="LLM")
-def _query_ai_gateway_direct(ws: WorkspaceClient, user_message: str) -> tuple[str, list[str]]:
-    """Call Opus 4.6 via AI Gateway with the orchestrator system prompt.
-
-    Primary fast path for orchestrator chat — uses the strongest available foundation model
-    (Claude Opus 4.6) with a payment analysis domain system prompt. Typical response time: 5–20 s.
-    Returns (reply, agents_used).
-    """
-    endpoint_name = _ai_gateway_endpoint()
-    try:
-        from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
-
-        response = ws.serving_endpoints.query(
-            name=endpoint_name,
-            messages=[
-                ChatMessage(role=ChatMessageRole.SYSTEM, content=_ORCHESTRATOR_SYSTEM_PROMPT),
-                ChatMessage(role=ChatMessageRole.USER, content=user_message),
-            ],
-            max_tokens=600,
-            temperature=0.2,
-        )
-        choices = getattr(response, "choices", None) or []
-        if choices:
-            msg = choices[0]
-            msg_obj = getattr(msg, "message", msg)
-            content = (getattr(msg_obj, "content", "") or "").strip()
-            if content:
-                return content, ["AI Gateway (Opus)"]
-    except Exception as e:
-        logger.warning("AI Gateway direct query failed (%s): %s", endpoint_name, e)
-        raise
-    return "", []
-
-
-@router.post("/orchestrator/chat", response_model=OrchestratorChatOut, operation_id="postOrchestratorChat")
-async def orchestrator_chat(
-    request: Request,
-    body: OrchestratorChatIn,
-    ws: WorkspaceClient = Depends(get_workspace_client),
-) -> OrchestratorChatOut:
-    """
-    Orchestrator Agent — the **only** backend for the AI Chatbot floating dialog.
-    Purpose: semantic search, recommendations, and intelligence to accelerate approval rates.
-
-    Resolution order (tiered model strategy):
-      1. ORCHESTRATOR_SERVING_ENDPOINT — **ResponsesAgent** on Model Serving (Opus 4.6-tier, with UC tools).
-      2. AI Gateway direct call — Claude Opus 4.6 foundation model with domain system prompt (fast, always available).
-      3. Job 6 (custom Python framework) — slow but runs the full multi-agent orchestrator.
-
-    Returns synthesized recommendation and payment analysis.
-    """
-    user_message = body.message.strip()
-
-    # --- Path 1: Model Serving endpoint (ResponsesAgent = orchestrator with UC tools) ---
-    endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
-    if endpoint_name:
-        logger.info("Orchestrator chat: trying Path 1 (ResponsesAgent endpoint '%s')", endpoint_name)
-        try:
-            reply, agents_used = await asyncio.wait_for(
-                asyncio.to_thread(_query_orchestrator_endpoint, ws, endpoint_name, user_message),
-                timeout=_SERVING_CALL_TIMEOUT_S,
-            )
-            if reply:
-                logger.info("Orchestrator chat: Path 1 succeeded (ResponsesAgent)")
-                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
-            logger.warning("Orchestrator chat: Path 1 returned empty reply, trying AI Gateway")
-        except asyncio.TimeoutError:
-            logger.warning(
-                "Orchestrator serving endpoint '%s' timed out after %ds, trying AI Gateway",
-                endpoint_name,
-                _SERVING_CALL_TIMEOUT_S,
-            )
-        except Exception as e:
-            err_msg = str(e).lower()
-            if "403" in err_msg or "forbidden" in err_msg or "permission" in err_msg:
-                logger.warning(
-                    "Orchestrator endpoint '%s' permission denied (app SP may need CAN_QUERY): %s",
-                    endpoint_name,
-                    e,
-                )
-            else:
-                logger.warning(
-                    "Orchestrator serving endpoint '%s' failed, trying AI Gateway: %s",
-                    endpoint_name,
-                    e,
-                )
-
-    # --- Path 2: AI Gateway direct call (fast foundation model) ---
-    try:
-        reply, agents_used = await asyncio.wait_for(
-            asyncio.to_thread(_query_ai_gateway_direct, ws, user_message),
-            timeout=_SERVING_CALL_TIMEOUT_S,
-        )
-        if reply:
-            return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
-    except asyncio.TimeoutError:
-        logger.warning("AI Gateway direct call timed out after %ds, trying Job 6", _SERVING_CALL_TIMEOUT_S)
-    except Exception as e:
-        logger.warning("AI Gateway fallback failed, trying Job 6: %s", e)
-
-    # --- Path 3: Job 6 (Deploy Agents — full multi-agent framework) ---
-    job_id_str = _orchestrator_job_id().strip()
-    if not job_id_str or job_id_str == "0":
-        job_id_str = resolve_orchestrator_job_id(ws).strip()
-    if not job_id_str or job_id_str == "0":
-        raise HTTPException(
-            status_code=400,
-            detail="Orchestrator is unavailable. No serving endpoint, AI Gateway, or job ID configured. "
-                   "Deploy the bundle (Job 6 – Deploy Agents exists), open this app from Compute → Apps, "
-                   "then use the assistant. Optionally set DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT or LLM_ENDPOINT.",
-        )
-    try:
-        job_id = int(job_id_str)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid orchestrator job ID.") from None
-
-    catalog, schema = _effective_uc(request)
-    notebook_params: dict[str, str] = {
-        "catalog": catalog,
-        "schema": schema,
-        "query": user_message,
-        "agent_role": "orchestrator",
-    }
-
-    try:
-        run = ws.jobs.run_now(
-            job_id=job_id,
-            notebook_params=notebook_params,
-            python_params=None,
-            jar_params=None,
-            spark_submit_params=None,
-        )
-        run_id = run.run_id
-    except Exception as e:
-        msg = str(e).lower()
-        if "not found" in msg or "404" in msg:
-            raise HTTPException(status_code=404, detail=f"Job not found: {e}") from e
-        if "forbidden" in msg or "403" in msg:
-            raise HTTPException(status_code=403, detail=str(e)) from e
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-    host = get_workspace_url().rstrip("/")
-    run_page_url = f"{host}/#job/{job_id}/run/{run_id}" if host else None
-
-    # Poll until run completes; use asyncio.sleep to avoid blocking the event loop
-    elapsed = 0
-    while elapsed < ORCHESTRATOR_JOB_POLL_TIMEOUT_S:
-        await asyncio.sleep(
-            min(ORCHESTRATOR_JOB_POLL_INTERVAL_S, ORCHESTRATOR_JOB_POLL_TIMEOUT_S - elapsed)
-        )
-        elapsed += ORCHESTRATOR_JOB_POLL_INTERVAL_S
-        run_info = ws.jobs.get_run(run_id)
-        state_obj = getattr(run_info, "state", None)
-        state = getattr(state_obj, "life_cycle_state", None) or ""
-        if state == "TERMINATED":
-            result_state = getattr(state_obj, "result_state", None) or "UNKNOWN"
-            if result_state != "SUCCESS":
-                return OrchestratorChatOut(
-                    reply=f"The agent run finished with state: {result_state}. Check the run in Databricks for details.",
-                    run_page_url=run_page_url,
-                    agents_used=[],
-                )
-            try:
-                out = ws.jobs.get_run_output(run_id)
-                nb_out = getattr(out, "notebook_output", None)
-                notebook_result = getattr(nb_out, "result", None) if nb_out else None
-                if notebook_result:
-                    data = json.loads(notebook_result)
-                    synthesis = (data.get("synthesis") or "").strip()
-                    agents_used = data.get("agents_used") or []
-                    return OrchestratorChatOut(
-                        reply=synthesis or "No synthesis returned.",
-                        run_page_url=run_page_url,
-                        agents_used=agents_used,
-                    )
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.warning("Could not parse orchestrator job output: %s", e)
-            return OrchestratorChatOut(
-                reply="The run completed successfully. View the full output in the run page.",
-                run_page_url=run_page_url,
-                agents_used=[],
-            )
-        if state in ("FAILED", "INTERNAL_ERROR", "SKIPPED"):
-            msg = getattr(state_obj, "state_message", None) or state
-            return OrchestratorChatOut(
-                reply=f"The agent run did not complete: {msg}. Open the run page for details.",
-                run_page_url=run_page_url,
-                agents_used=[],
-            )
-
-    return OrchestratorChatOut(
-        reply="The run is still in progress. Open the run page to view the result when it completes.",
-        run_page_url=run_page_url,
-        agents_used=[],
-    )
-
-
-@router.get("/agents/{agent_id}/url", response_model=AgentUrlOut, operation_id="getAgentUrl")
-async def get_agent_url(request: Request, agent_id: str) -> AgentUrlOut:
-    """Get the Databricks workspace URL for an agent."""
-    agent = await get_agent(request, agent_id)
-    
-    return AgentUrlOut(
-        agent_id=agent_id,
-        name=agent.name,
-        url=agent.workspace_url or get_workspace_url(),
-        agent_type=agent.agent_type.value,
-        databricks_resource=agent.databricks_resource,
-    )
 
 
 class AgentTypeAgentSummary(BaseModel):
@@ -872,15 +256,518 @@ class AgentTypeSummaryOut(BaseModel):
     total_agents: int
 
 
+class ChatIn(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+class ChatOut(BaseModel):
+    reply: str
+    genie_url: str | None = Field(None, description="Open in Genie for full analytics")
+
+
+class OrchestratorChatIn(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+class OrchestratorChatOut(BaseModel):
+    reply: str
+    run_page_url: str | None = Field(None, description="URL to view the job run")
+    agents_used: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Agent registry (lazy: workspace_url resolved on first call, not at import)
+# ---------------------------------------------------------------------------
+
+def _build_agents() -> list[AgentInfo]:
+    ws = _workspace_url()
+    prefix = _default_uc_prefix()
+    return [
+        AgentInfo(
+            id="approval_optimizer_genie",
+            name="Approval Optimizer (Genie)",
+            description="Natural language analytics for approval rate optimization. Ask questions about approval patterns, merchant performance, and identify opportunities to increase approval rates.",
+            agent_type=AgentType.GENIE,
+            capabilities=[AgentCapability.NATURAL_LANGUAGE_ANALYTICS, AgentCapability.CONVERSATIONAL_INSIGHTS],
+            use_case="Query payment data using natural language to discover approval optimization opportunities.",
+            databricks_resource="Genie Space: Payment Approval Analytics",
+            workspace_url=f"{ws}/genie",
+            tags=["genie", "analytics", "approval-optimization", "natural-language"],
+            example_queries=[
+                "Which payment solutions have the highest approval rates?",
+                "Show me decline trends by card network over the last 30 days",
+                "What's the average approval rate for cross-border transactions?",
+                "Which merchants should we prioritize for 3DS adoption?",
+                "What's the revenue impact of improving approval rates by 1%?",
+            ],
+        ),
+        AgentInfo(
+            id="decline_insights_genie",
+            name="Decline Insights (Genie)",
+            description="Conversational analytics focused on understanding and reducing payment declines. Explore decline reasons, recovery opportunities, and retry strategies through natural language.",
+            agent_type=AgentType.GENIE,
+            capabilities=[AgentCapability.NATURAL_LANGUAGE_ANALYTICS, AgentCapability.CONVERSATIONAL_INSIGHTS],
+            use_case="Deep-dive into decline patterns to identify recoverable transactions and optimal retry strategies.",
+            databricks_resource="Genie Space: Decline Analysis",
+            workspace_url=f"{ws}/genie",
+            tags=["genie", "declines", "recovery", "analytics"],
+            example_queries=[
+                "What are the top 5 decline reasons this month?",
+                "How many declined transactions could be recovered with smart retry?",
+                "Show me decline rates by issuer country",
+                "Which decline codes have the highest retry success rates?",
+                "What's the average time to successful retry for insufficient funds declines?",
+            ],
+        ),
+        AgentInfo(
+            id="approval_propensity_predictor",
+            name="Approval Propensity Predictor",
+            description="ML model serving endpoint that predicts transaction approval likelihood in real-time. Uses HistGradientBoosting trained on 14 engineered features.",
+            agent_type=AgentType.MODEL_SERVING,
+            capabilities=[AgentCapability.PREDICTIVE_SCORING, AgentCapability.REAL_TIME_DECISIONING],
+            use_case="Real-time approval probability scoring for intelligent routing decisions.",
+            databricks_resource=f"Model: {prefix}.approval_propensity_model",
+            workspace_url=f"{ws}/ml/models/{prefix}.approval_propensity_model",
+            tags=["model-serving", "ml", "propensity", "real-time"],
+            example_queries=[
+                "What's the approval probability for this transaction?",
+                "Should we route this payment to 3DS or standard?",
+                "Predict approval rates for upcoming batch",
+            ],
+        ),
+        AgentInfo(
+            id="smart_routing_advisor",
+            name="Smart Routing Advisor",
+            description="ML-powered agent that recommends optimal payment routing strategies based on merchant segment, transaction characteristics, and historical performance data.",
+            agent_type=AgentType.MODEL_SERVING,
+            capabilities=[AgentCapability.PREDICTIVE_SCORING, AgentCapability.AUTOMATED_RECOMMENDATIONS, AgentCapability.REAL_TIME_DECISIONING],
+            use_case="Automatically select the best payment solution to maximize approval rates while balancing fraud risk and costs.",
+            databricks_resource=f"Model: {prefix}.smart_routing_policy",
+            workspace_url=f"{ws}/ml/models/{prefix}.smart_routing_policy",
+            tags=["model-serving", "routing", "optimization", "decisioning"],
+            example_queries=[
+                "What's the best payment solution for this merchant?",
+                "Should we enable network tokenization for travel merchants?",
+                "Recommend routing strategy for high-value transactions",
+            ],
+        ),
+        AgentInfo(
+            id="smart_retry_optimizer",
+            name="Smart Retry Optimizer",
+            description="ML agent that identifies declined transactions with high recovery potential and recommends optimal retry timing and strategy.",
+            agent_type=AgentType.MODEL_SERVING,
+            capabilities=[AgentCapability.PREDICTIVE_SCORING, AgentCapability.AUTOMATED_RECOMMENDATIONS],
+            use_case="Increase revenue recovery by 15-25% through intelligent retry strategies.",
+            databricks_resource=f"Model: {prefix}.smart_retry_policy",
+            workspace_url=f"{ws}/ml/models/{prefix}.smart_retry_policy",
+            tags=["model-serving", "retry", "recovery", "revenue"],
+            example_queries=[
+                "Should we retry this declined transaction?",
+                "What's the best time to retry an insufficient funds decline?",
+                "Estimate recovery rate for this batch of declines",
+            ],
+        ),
+        AgentInfo(
+            id="payment_intelligence_assistant",
+            name="Payment Intelligence Assistant",
+            description="LLM-powered conversational agent via AI Gateway (Claude Opus 4.6 & Sonnet 4.5) that provides natural language explanations, identifies anomalies, and suggests optimization strategies.",
+            agent_type=AgentType.AI_GATEWAY,
+            capabilities=[AgentCapability.CONVERSATIONAL_INSIGHTS, AgentCapability.AUTOMATED_RECOMMENDATIONS, AgentCapability.NATURAL_LANGUAGE_ANALYTICS],
+            use_case="Ask complex questions about payment performance, get AI-generated insights, and receive personalized recommendations.",
+            databricks_resource="AI Gateway: databricks-claude-sonnet-4-5",
+            workspace_url=f"{ws}/serving-endpoints/databricks-claude-sonnet-4-5",
+            tags=["ai-gateway", "llm", "conversational", "insights"],
+            example_queries=[
+                "Explain why our approval rate dropped last week",
+                "What's causing the spike in fraud scores for gaming merchants?",
+                "Generate a report on 3DS adoption impact on approval rates",
+                "Suggest 3 strategies to improve approval rates for cross-border payments",
+                "Analyze the trade-off between fraud prevention and approval rates",
+            ],
+        ),
+        AgentInfo(
+            id="risk_assessment_advisor",
+            name="Risk Assessment Advisor",
+            description="LLM agent specialized in risk analysis that combines fraud scores, AML signals, and behavioral patterns for intelligent risk assessments.",
+            agent_type=AgentType.AI_GATEWAY,
+            capabilities=[AgentCapability.CONVERSATIONAL_INSIGHTS, AgentCapability.AUTOMATED_RECOMMENDATIONS, AgentCapability.REAL_TIME_DECISIONING],
+            use_case="Real-time risk consultation for high-value or suspicious transactions.",
+            databricks_resource="AI Gateway: databricks-claude-sonnet-4-5",
+            workspace_url=f"{ws}/serving-endpoints/databricks-claude-sonnet-4-5",
+            tags=["ai-gateway", "risk", "fraud", "aml"],
+            example_queries=[
+                "Is this transaction risky? Explain the risk factors.",
+                "Should we approve this high-value cross-border payment?",
+                "What additional verification should we require for this transaction?",
+                "Explain the fraud score for this merchant",
+            ],
+        ),
+        AgentInfo(
+            id="performance_recommender",
+            name="Performance Recommender",
+            description="AI-powered performance advisor that analyzes payment metrics, compares against benchmarks, and generates actionable recommendations.",
+            agent_type=AgentType.CUSTOM_LLM,
+            capabilities=[AgentCapability.AUTOMATED_RECOMMENDATIONS, AgentCapability.CONVERSATIONAL_INSIGHTS, AgentCapability.NATURAL_LANGUAGE_ANALYTICS],
+            use_case="Weekly/monthly performance reviews with AI-generated insights and prioritized action plans.",
+            databricks_resource="Custom Agent: Performance Analysis & Recommendations",
+            workspace_url=_notebook_workspace_url("src/payment_analysis/agents/agent_framework.py"),
+            tags=["custom", "recommendations", "performance", "optimization"],
+            example_queries=[
+                "Generate my weekly performance report",
+                "What are my top 3 opportunities to improve approval rates?",
+                "Compare my performance to industry benchmarks",
+                "Create an action plan to reach 90% approval rate",
+            ],
+        ),
+    ]
+
+
+@lru_cache(maxsize=1)
+def _agents_registry() -> list[AgentInfo]:
+    return _build_agents()
+
+
+def _apply_uc_config(agent: AgentInfo, catalog: str, schema: str) -> AgentInfo:
+    """Replace default catalog.schema in resource/URL with effective config."""
+    full = f"{catalog}.{schema}"
+    default = _default_uc_prefix()
+    if default == full:
+        return agent
+    resource = (agent.databricks_resource or "").replace(default, full)
+    url = (agent.workspace_url or "").replace(default, full)
+    if resource == (agent.databricks_resource or "") and url == (agent.workspace_url or ""):
+        return agent
+    return agent.model_copy(update={"databricks_resource": resource, "workspace_url": url})
+
+
+# Re-export for backward compatibility
+def get_workspace_url() -> str:
+    return _workspace_url()
+
+
+def get_notebook_workspace_url(relative_path: str) -> str:
+    return _notebook_workspace_url(relative_path)
+
+
+# ---------------------------------------------------------------------------
+# Endpoints — IMPORTANT: specific paths BEFORE parameterized paths
+# ---------------------------------------------------------------------------
+
 @router.get("/agents/types/summary", response_model=AgentTypeSummaryOut, operation_id="getAgentTypeSummary")
 async def get_type_summary() -> AgentTypeSummaryOut:
-    """Get summary of agents by type with descriptions."""
+    """Get summary of agents by type."""
+    agents = _agents_registry()
     types: dict[str, AgentTypeDetail] = {}
     for agent_type in AgentType:
-        agents_in_type = [a for a in AGENTS if a.agent_type == agent_type]
+        agents_in_type = [a for a in agents if a.agent_type == agent_type]
         types[agent_type.value] = AgentTypeDetail(
             name=agent_type.value.replace("_", " ").title(),
             count=len(agents_in_type),
             agents=[AgentTypeAgentSummary(id=a.id, name=a.name, use_case=a.use_case) for a in agents_in_type],
         )
-    return AgentTypeSummaryOut(types=types, total_agents=len(AGENTS))
+    return AgentTypeSummaryOut(types=types, total_agents=len(agents))
+
+
+@router.get("/agents", response_model=AgentList, operation_id="listAgents")
+async def list_agents(
+    request: Request,
+    agent_type: AgentType | None = None,
+    entity: str | None = Query(None, description="Entity or country code (reserved for future filtering)"),
+) -> AgentList:
+    """List all Databricks AI agents for payment approval optimization."""
+    catalog, schema = _effective_uc(request)
+    agents = _agents_registry()
+    filtered = [_apply_uc_config(a, catalog, schema) for a in agents]
+    if agent_type:
+        filtered = [a for a in filtered if a.agent_type == agent_type]
+
+    by_type: dict[str, int] = {}
+    for a in agents:
+        by_type[a.agent_type.value] = by_type.get(a.agent_type.value, 0) + 1
+
+    return AgentList(agents=filtered, total=len(filtered), by_type=by_type)
+
+
+@router.get("/agents/{agent_id}", response_model=AgentInfo, operation_id="getAgent")
+async def get_agent(request: Request, agent_id: str) -> AgentInfo:
+    """Get details for a specific AI agent."""
+    catalog, schema = _effective_uc(request)
+    for agent in _agents_registry():
+        if agent.id == agent_id:
+            return _apply_uc_config(agent, catalog, schema)
+    raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
+
+
+@router.get("/agents/{agent_id}/url", response_model=AgentUrlOut, operation_id="getAgentUrl")
+async def get_agent_url(request: Request, agent_id: str) -> AgentUrlOut:
+    """Get the Databricks workspace URL for an agent."""
+    agent = await get_agent(request, agent_id)
+    return AgentUrlOut(
+        agent_id=agent_id,
+        name=agent.name,
+        url=agent.workspace_url or _workspace_url(),
+        agent_type=agent.agent_type.value,
+        databricks_resource=agent.databricks_resource,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Genie Assistant chat
+# ---------------------------------------------------------------------------
+
+@router.post("/chat", response_model=ChatOut, operation_id="postChat")
+async def chat(
+    request: Request,
+    body: ChatIn,
+    ws: WorkspaceClient | None = Depends(get_workspace_client_optional),
+) -> ChatOut:
+    """
+    Genie Assistant endpoint for natural-language SQL analytics.
+
+    Resolution order:
+      1. Databricks Genie Conversation API (when GENIE_SPACE_ID set).
+      2. AI Gateway direct call (Sonnet — balanced data-analyst fallback).
+      3. Static reply with link to Genie workspace.
+    """
+    workspace_url = ensure_absolute_workspace_url(_workspace_url())
+    genie_url = f"{workspace_url.rstrip('/')}/genie" if workspace_url else None
+    space_id = (os.environ.get(GENIE_SPACE_ID_ENV) or "").strip()
+
+    # Path 1: Genie Conversation API
+    if space_id and ws is not None:
+        try:
+            msg = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ws.genie.start_conversation_and_wait,
+                    space_id=space_id,
+                    content=body.message.strip(),
+                    timeout=datetime.timedelta(seconds=_GENIE_CALL_TIMEOUT_S),
+                ),
+                timeout=_GENIE_CALL_TIMEOUT_S,
+            )
+            reply = _extract_genie_reply(msg)
+            if reply:
+                return ChatOut(reply=reply, genie_url=genie_url)
+            logger.info("Genie returned empty reply for space %s; trying AI Gateway.", space_id)
+        except asyncio.TimeoutError:
+            logger.warning("Genie timed out after %ds (space=%s), trying AI Gateway", _GENIE_CALL_TIMEOUT_S, space_id)
+        except Exception as exc:
+            logger.warning("Genie query failed (space=%s): %s", space_id, exc)
+
+    # Path 2: AI Gateway direct (Sonnet tier)
+    if ws is not None:
+        try:
+            endpoint_name = (os.getenv(AI_GATEWAY_GENIE_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_GENIE_ENDPOINT_DEFAULT
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ws.serving_endpoints.query,
+                    name=endpoint_name,
+                    messages=[
+                        ChatMessage(role=ChatMessageRole.SYSTEM, content=_GENIE_SYSTEM_PROMPT),
+                        ChatMessage(role=ChatMessageRole.USER, content=body.message.strip()),
+                    ],
+                    max_tokens=500,
+                    temperature=0.2,
+                ),
+                timeout=_SERVING_CALL_TIMEOUT_S,
+            )
+            content = _extract_chat_completion(response)
+            if content:
+                return ChatOut(reply=content, genie_url=genie_url)
+        except asyncio.TimeoutError:
+            logger.warning("AI Gateway Genie fallback timed out after %ds", _SERVING_CALL_TIMEOUT_S)
+        except Exception as exc:
+            logger.warning("AI Gateway Genie fallback failed: %s", exc)
+
+    # Path 3: Static reply
+    if space_id:
+        reply = (
+            "I can help you explore payment and approval data. "
+            "The Genie space is configured but the live query could not complete right now. "
+            "You can open Genie directly in your Databricks workspace for natural language "
+            "questions (e.g. top merchants by approval rate, decline reasons, trends)."
+        )
+    else:
+        reply = (
+            "I can help you explore payment and approval data. For natural language questions "
+            "(e.g. top merchants by approval rate, decline reasons, trends), open Genie in your "
+            "workspace to run queries against your Databricks tables and dashboards."
+        )
+    return ChatOut(reply=reply, genie_url=genie_url)
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator chat (AI Chatbot floating dialog)
+# ---------------------------------------------------------------------------
+
+@_trace(name="query_responses_agent", span_type="AGENT")
+def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_message: str) -> tuple[str, list[str]]:
+    """Call the ResponsesAgent on Model Serving (dataframe_records format)."""
+    response = ws.serving_endpoints.query(
+        name=endpoint_name,
+        dataframe_records=[{
+            "input": [{"role": "user", "content": user_message + _BREVITY_INSTRUCTION}],
+            "custom_inputs": {"session_id": "orchestrator-chat"},
+        }],
+    )
+    reply = _extract_responses_agent_reply(getattr(response, "predictions", None))
+    return reply, ["ResponsesAgent (orchestrator)"] if reply else []
+
+
+@_trace(name="query_ai_gateway", span_type="LLM")
+def _query_ai_gateway_direct(ws: WorkspaceClient, user_message: str) -> tuple[str, list[str]]:
+    """Call Opus 4.6 via AI Gateway with the orchestrator system prompt."""
+    endpoint_name = (os.getenv(AI_GATEWAY_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_ENDPOINT_DEFAULT
+    response = ws.serving_endpoints.query(
+        name=endpoint_name,
+        messages=[
+            ChatMessage(role=ChatMessageRole.SYSTEM, content=_ORCHESTRATOR_SYSTEM_PROMPT + _BREVITY_INSTRUCTION),
+            ChatMessage(role=ChatMessageRole.USER, content=user_message),
+        ],
+        max_tokens=600,
+        temperature=0.2,
+    )
+    content = _extract_chat_completion(response)
+    return (content, ["AI Gateway (Opus)"]) if content else ("", [])
+
+
+def _remaining(t0: float) -> float:
+    """Seconds remaining before the proxy deadline."""
+    return max(_PROXY_DEADLINE_S - (time.monotonic() - t0), 1.0)
+
+
+@router.post("/orchestrator/chat", response_model=OrchestratorChatOut, operation_id="postOrchestratorChat")
+async def orchestrator_chat(
+    request: Request,
+    body: OrchestratorChatIn,
+    ws: WorkspaceClient = Depends(get_workspace_client),
+) -> OrchestratorChatOut:
+    """
+    Orchestrator Agent — backend for the AI Chatbot floating dialog.
+
+    Resolution order (with shared timeout budget):
+      1. ResponsesAgent on Model Serving (with UC tools).
+      2. AI Gateway direct call (Opus 4.6 foundation model).
+      3. Job 6 (custom Python multi-agent framework).
+    """
+    t0 = time.monotonic()
+    user_message = body.message.strip()
+
+    # --- Path 1: ResponsesAgent ---
+    endpoint_name = (os.getenv(ORCHESTRATOR_SERVING_ENDPOINT_ENV) or "").strip()
+    if endpoint_name:
+        logger.info("Orchestrator chat: trying Path 1 (ResponsesAgent '%s')", endpoint_name)
+        try:
+            reply, agents_used = await asyncio.wait_for(
+                asyncio.to_thread(_query_orchestrator_endpoint, ws, endpoint_name, user_message),
+                timeout=min(_SERVING_CALL_TIMEOUT_S, _remaining(t0)),
+            )
+            if reply:
+                logger.info("Orchestrator chat: Path 1 succeeded")
+                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+            logger.warning("Orchestrator chat: Path 1 empty reply, trying Path 2")
+        except asyncio.TimeoutError:
+            logger.warning("Path 1 timed out (%.1fs elapsed), trying Path 2", time.monotonic() - t0)
+        except Exception as e:
+            logger.warning("Path 1 failed (%s), trying Path 2: %s", endpoint_name, e)
+
+    # --- Path 2: AI Gateway direct ---
+    if _remaining(t0) > 3:
+        try:
+            reply, agents_used = await asyncio.wait_for(
+                asyncio.to_thread(_query_ai_gateway_direct, ws, user_message),
+                timeout=min(_SERVING_CALL_TIMEOUT_S, _remaining(t0)),
+            )
+            if reply:
+                return OrchestratorChatOut(reply=reply, run_page_url=None, agents_used=agents_used)
+        except asyncio.TimeoutError:
+            logger.warning("Path 2 timed out (%.1fs elapsed), trying Path 3", time.monotonic() - t0)
+        except Exception as e:
+            logger.warning("Path 2 failed, trying Path 3: %s", e)
+
+    # --- Path 3: Job 6 (multi-agent framework) ---
+    if _remaining(t0) < 10:
+        raise HTTPException(
+            status_code=504,
+            detail="Request timed out. Both the ResponsesAgent and AI Gateway were unavailable. "
+                   "Try again or check that the serving endpoints are running.",
+        )
+
+    job_id_str = (os.getenv("DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT") or "").strip()
+    if not job_id_str or job_id_str == "0":
+        job_id_str = resolve_orchestrator_job_id(ws).strip()
+    if not job_id_str or job_id_str == "0":
+        raise HTTPException(
+            status_code=400,
+            detail="Orchestrator unavailable. No serving endpoint, AI Gateway, or job ID configured. "
+                   "Deploy the bundle (Job 6), open the app from Compute → Apps, then use the assistant.",
+        )
+    try:
+        job_id = int(job_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid orchestrator job ID.") from None
+
+    catalog, schema = _effective_uc(request)
+    try:
+        run = ws.jobs.run_now(job_id=job_id, notebook_params={
+            "catalog": catalog,
+            "schema": schema,
+            "query": user_message,
+            "agent_role": "orchestrator",
+        })
+        run_id = run.run_id
+    except Exception as e:
+        msg = str(e).lower()
+        if "not found" in msg or "404" in msg:
+            raise HTTPException(status_code=404, detail=f"Job not found: {e}") from e
+        if "forbidden" in msg or "403" in msg:
+            raise HTTPException(status_code=403, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    host = _workspace_url().rstrip("/")
+    run_page_url = f"{host}/#job/{job_id}/run/{run_id}" if host else None
+
+    elapsed = 0
+    poll_budget = min(ORCHESTRATOR_JOB_POLL_TIMEOUT_S, _remaining(t0) - 2)
+    while elapsed < poll_budget:
+        await asyncio.sleep(min(ORCHESTRATOR_JOB_POLL_INTERVAL_S, poll_budget - elapsed))
+        elapsed += ORCHESTRATOR_JOB_POLL_INTERVAL_S
+        run_info = ws.jobs.get_run(run_id)
+        state_obj = getattr(run_info, "state", None)
+        state = getattr(state_obj, "life_cycle_state", None) or ""
+        if state == "TERMINATED":
+            result_state = getattr(state_obj, "result_state", None) or "UNKNOWN"
+            if result_state != "SUCCESS":
+                return OrchestratorChatOut(
+                    reply=f"The agent run finished with state: {result_state}. Check the run in Databricks for details.",
+                    run_page_url=run_page_url, agents_used=[],
+                )
+            try:
+                out = ws.jobs.get_run_output(run_id)
+                nb_out = getattr(out, "notebook_output", None)
+                notebook_result = getattr(nb_out, "result", None) if nb_out else None
+                if notebook_result:
+                    data = json.loads(notebook_result)
+                    synthesis = (data.get("synthesis") or "").strip()
+                    return OrchestratorChatOut(
+                        reply=synthesis or "No synthesis returned.",
+                        run_page_url=run_page_url,
+                        agents_used=data.get("agents_used") or [],
+                    )
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning("Could not parse orchestrator job output: %s", e)
+            return OrchestratorChatOut(
+                reply="The run completed. View the full output in the run page.",
+                run_page_url=run_page_url, agents_used=[],
+            )
+        if state in ("FAILED", "INTERNAL_ERROR", "SKIPPED"):
+            msg_text = getattr(state_obj, "state_message", None) or state
+            return OrchestratorChatOut(
+                reply=f"The agent run did not complete: {msg_text}. Open the run page for details.",
+                run_page_url=run_page_url, agents_used=[],
+            )
+
+    return OrchestratorChatOut(
+        reply="The run is still in progress. Open the run page to view the result when it completes.",
+        run_page_url=run_page_url, agents_used=[],
+    )

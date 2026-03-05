@@ -53,6 +53,7 @@ src/payment_analysis/__dist__/
 *.log
 *.bak
 *.png
+!src/payment_analysis/ui/public/*.png
 mlflow.db
 scripts/qa_*.py
 
