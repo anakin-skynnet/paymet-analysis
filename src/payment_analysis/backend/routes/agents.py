@@ -27,6 +27,18 @@ from ..dependencies import get_workspace_client, get_workspace_client_optional
 from ..logger import logger
 from .setup import resolve_orchestrator_job_id
 
+try:
+    import mlflow as _mlflow
+    _trace = _mlflow.trace
+except ImportError:
+    def _trace(*args, **kwargs):  # type: ignore[misc]
+        """No-op decorator when mlflow-tracing is not installed."""
+        if args and callable(args[0]):
+            return args[0]
+        def _identity(fn):  # type: ignore[no-untyped-def]
+            return fn
+        return _identity
+
 # Optional Genie space: when set, POST /chat (Genie Assistant panel) uses the Databricks Genie Conversation API.
 GENIE_SPACE_ID_ENV = "GENIE_SPACE_ID"
 # When set, POST /api/agents/orchestrator/chat (AI Chatbot) calls this Model Serving endpoint instead of Job 6.
@@ -570,6 +582,7 @@ def _orchestrator_job_id() -> str:
     return (os.getenv("DATABRICKS_JOB_ID_ORCHESTRATOR_AGENT") or "").strip()
 
 
+@_trace(name="query_responses_agent", span_type="AGENT")
 def _query_orchestrator_endpoint(ws: WorkspaceClient, endpoint_name: str, user_message: str) -> tuple[str, list[str]]:
     """Call the ResponsesAgent on Model Serving using the MLflow ``dataframe_records`` format.
 
@@ -631,6 +644,7 @@ def _genie_ai_gateway_endpoint() -> str:
     return (os.getenv(AI_GATEWAY_GENIE_ENDPOINT_ENV) or "").strip() or AI_GATEWAY_GENIE_ENDPOINT_DEFAULT
 
 
+@_trace(name="query_ai_gateway", span_type="LLM")
 def _query_ai_gateway_direct(ws: WorkspaceClient, user_message: str) -> tuple[str, list[str]]:
     """Call Opus 4.6 via AI Gateway with the orchestrator system prompt.
 

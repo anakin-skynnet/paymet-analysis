@@ -25,6 +25,28 @@ from .runtime import Runtime
 from .services.databricks_service import DatabricksConfig, DatabricksService
 from .utils import add_not_found_handler
 
+def _init_mlflow_tracing() -> None:
+    """Initialize MLflow tracing if mlflow-tracing is installed and destination is configured."""
+    dest = os.environ.get("MLFLOW_TRACING_DESTINATION", "").strip()
+    if not dest:
+        logger.info("MLFLOW_TRACING_DESTINATION not set; MLflow tracing disabled.")
+        return
+    try:
+        import mlflow  # noqa: F811
+        parts = dest.split(".", 1)
+        if len(parts) == 2:
+            from mlflow.entities import UCSchemaLocation
+            mlflow.tracing.set_destination(
+                destination=UCSchemaLocation(catalog_name=parts[0], schema_name=parts[1])
+            )
+            logger.info("MLflow tracing → UC destination %s", dest)
+        else:
+            logger.warning("MLFLOW_TRACING_DESTINATION=%r invalid (expected catalog.schema)", dest)
+    except ImportError:
+        logger.info("mlflow-tracing not installed; tracing disabled.")
+    except Exception as e:
+        logger.warning("MLflow tracing init failed (non-fatal): %s", e)
+
 try:
     from .._metadata import app_name as _app_name, dist_dir as _dist_dir_meta
 except (ImportError, ModuleNotFoundError):
@@ -92,6 +114,9 @@ def _resolve_ui_dist() -> Path | None:
 async def lifespan(app: FastAPI):
     # Install notification log handler so WARNING+ messages are captured for the bell
     install_log_handler()
+
+    # Initialize MLflow tracing to UC (real-time observability for all API endpoints)
+    _init_mlflow_tracing()
 
     # Initialize config and runtime, store in app.state for dependency injection
     config = AppConfig()

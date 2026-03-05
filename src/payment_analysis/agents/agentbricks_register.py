@@ -532,6 +532,7 @@ def deploy_agent_endpoints(registered: list[str]):
             "payment-analysis-orchestrator",
             {
                 "ENABLE_MLFLOW_TRACING": "true",
+                "MLFLOW_TRACING_DESTINATION": f"{catalog}.{schema}",
                 "CATALOG": catalog,
                 "SCHEMA": schema,
                 "LLM_ENDPOINT": llm_orchestrator,
@@ -543,6 +544,7 @@ def deploy_agent_endpoints(registered: list[str]):
             "decline-analyst",
             {
                 "ENABLE_MLFLOW_TRACING": "true",
+                "MLFLOW_TRACING_DESTINATION": f"{catalog}.{schema}",
                 "CATALOG": catalog,
                 "SCHEMA": schema,
                 "LLM_ENDPOINT": llm_specialist,

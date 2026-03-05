@@ -840,7 +840,7 @@ for ep_name, (model_name, rate_limit) in ML_ENDPOINTS.items():
             endpoint_name=ep_name,
             entity_name=model_name,
             entity_version=latest_version,
-            environment_vars={"ENABLE_MLFLOW_TRACING": "true"},
+            environment_vars={"ENABLE_MLFLOW_TRACING": "true", "MLFLOW_TRACING_DESTINATION": f"{CATALOG}.{SCHEMA}"},
             ai_gateway_rate_limit=rate_limit,
         )
     except Exception as e:

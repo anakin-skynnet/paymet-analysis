@@ -16,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 REQUIREMENTS_ORDER = [
     "databricks-sdk",
     "fastapi",
+    "mlflow-tracing",
     "uvicorn",
     "pydantic-settings",
     "sqlmodel",
@@ -29,6 +30,14 @@ REQUIREMENTS_ORDER = [
     "annotated-types",
     "typing-extensions",
     "typing-inspection",
+    "opentelemetry-api",
+    "opentelemetry-proto",
+    "opentelemetry-sdk",
+    "opentelemetry-semantic-conventions",
+    "cachetools",
+    "importlib-metadata",
+    "packaging",
+    "zipp",
 ]
 
 

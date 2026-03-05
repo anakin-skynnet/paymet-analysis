@@ -412,6 +412,7 @@ try:
         entity_version=uc_registered_model_info.version,
         environment_vars={
             "ENABLE_MLFLOW_TRACING": "true",
+            "MLFLOW_TRACING_DESTINATION": f"{CATALOG}.{SCHEMA}",
             "CATALOG": CATALOG,
             "SCHEMA": SCHEMA,
             "LLM_ENDPOINT": LLM_ENDPOINT,

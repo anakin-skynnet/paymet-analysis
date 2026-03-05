@@ -446,6 +446,19 @@ warnings.filterwarnings("ignore", message=".*No active trace found.*")
 warnings.filterwarnings("ignore", message=".*_multi_processor.*")
 warnings.filterwarnings("ignore", message=".*parameters do not have descriptions.*")
 
+# Set UC trace destination when MLFLOW_TRACING_DESTINATION is configured
+# (Model Serving sets this env var; traces go to UC tables for Lakehouse Monitoring)
+_trace_dest = os.environ.get("MLFLOW_TRACING_DESTINATION", "").strip()
+if _trace_dest and "." in _trace_dest:
+    try:
+        from mlflow.entities import UCSchemaLocation
+        _cat, _sch = _trace_dest.split(".", 1)
+        mlflow.tracing.set_destination(
+            destination=UCSchemaLocation(catalog_name=_cat, schema_name=_sch)
+        )
+    except Exception:
+        pass
+
 try:
     mlflow.openai.autolog()
 except Exception:  # noqa: BLE001

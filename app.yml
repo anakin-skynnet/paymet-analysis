@@ -25,6 +25,8 @@ command:
 env:
   - name: PYTHONPATH
     value: src
+  - name: MLFLOW_TRACING_DESTINATION
+    value: "ahs_demos_catalog.payment_analysis"
   # Lakebase Autoscaling (example defaults; override via bundle vars or workspace)
   - name: LAKEBASE_PROJECT_ID
     value: payment-analysis-db
