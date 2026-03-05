@@ -1,8 +1,7 @@
 /** Sidebar layout and breadcrumb — Payment Platform Command Center (Pro-Dark, glassmorphism). */
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Outlet, useLocation, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { motion } from "motion/react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +25,8 @@ import { DateRangePresetSelect, type DateRangePreset } from "@/components/apx/da
 import Logo from "@/components/apx/logo";
 import { cn } from "@/lib/utils";
 import { AssistantProvider, useAssistant } from "@/contexts/assistant-context";
-import { AIChatbot, GenieAssistant } from "@/components/chat";
+const AIChatbot = lazy(() => import("@/components/chat").then(m => ({ default: m.AIChatbot })));
+const GenieAssistant = lazy(() => import("@/components/chat").then(m => ({ default: m.GenieAssistant })));
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, Sparkles } from "lucide-react";
@@ -114,18 +114,22 @@ function GlobalChatPanels() {
     setOpenGenieAssistant,
   } = useAssistant();
   return (
-    <>
-      <AIChatbot
-        open={openAIChatbot}
-        onOpenChange={setOpenAIChatbot}
-        position="left"
-      />
-      <GenieAssistant
-        open={openGenieAssistant}
-        onOpenChange={setOpenGenieAssistant}
-        position="right"
-      />
-    </>
+    <Suspense fallback={null}>
+      {openAIChatbot && (
+        <AIChatbot
+          open={openAIChatbot}
+          onOpenChange={setOpenAIChatbot}
+          position="left"
+        />
+      )}
+      {openGenieAssistant && (
+        <GenieAssistant
+          open={openGenieAssistant}
+          onOpenChange={setOpenGenieAssistant}
+          position="right"
+        />
+      )}
+    </Suspense>
   );
 }
 
@@ -244,14 +248,9 @@ function SidebarLayout({ children }: SidebarLayoutProps) {
           className="flex flex-1 justify-center overflow-auto min-h-0 main-content-area scrollbar-thin"
           tabIndex={-1}
         >
-          <motion.div
-            className="page-container flex flex-1 flex-col gap-6 py-6 md:py-8 w-full"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-          >
+          <div className="page-container flex flex-1 flex-col gap-6 py-6 md:py-8 w-full animate-[fadeSlideIn_0.25s_ease-out]">
             <Outlet />
-          </motion.div>
+          </div>
         </main>
         <GlobalChatPanels />
       </SidebarInset>

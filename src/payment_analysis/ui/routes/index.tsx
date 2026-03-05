@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ErrorBoundary } from "react-error-boundary";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
   Layers,
   LogIn,
 } from "lucide-react";
-import { BubbleBackground } from "@/components/backgrounds/bubble";
+const BubbleBackground = lazy(() => import("@/components/backgrounds/bubble").then(m => ({ default: m.BubbleBackground })));
 import { getWorkspaceUrl } from "@/config/workspace";
 import { useGetAuthStatus } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -68,7 +69,9 @@ function Index() {
         id="landing-main"
         aria-label="Landing page content"
       >
-        <BubbleBackground interactive />
+        <Suspense fallback={<div className="size-full bg-gradient-to-br from-[#0f1729] via-[#1a1f35] to-[#151922]" />}>
+          <BubbleBackground interactive />
+        </Suspense>
 
         <div className="relative flex min-h-0 flex-1 flex-col border-l border-border/40 bg-gradient-to-b from-background/98 via-background/95 to-background/98 backdrop-blur-sm">
           <ScrollArea className="flex-1 min-h-0">

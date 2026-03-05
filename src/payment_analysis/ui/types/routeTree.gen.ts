@@ -45,7 +45,9 @@ const SidebarSmartRetryRoute = SidebarSmartRetryRouteImport.update({
   id: '/smart-retry',
   path: '/smart-retry',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/smart-retry.lazy').then((d) => d.Route),
+)
 const SidebarSmartCheckoutRoute = SidebarSmartCheckoutRouteImport.update({
   id: '/smart-checkout',
   path: '/smart-checkout',
@@ -55,7 +57,9 @@ const SidebarSetupRoute = SidebarSetupRouteImport.update({
   id: '/setup',
   path: '/setup',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/setup.lazy').then((d) => d.Route),
+)
 const SidebarRulesRoute = SidebarRulesRouteImport.update({
   id: '/rules',
   path: '/rules',
@@ -100,12 +104,16 @@ const SidebarDeclinesRoute = SidebarDeclinesRouteImport.update({
   id: '/declines',
   path: '/declines',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/declines.lazy').then((d) => d.Route),
+)
 const SidebarDecisioningRoute = SidebarDecisioningRouteImport.update({
   id: '/decisioning',
   path: '/decisioning',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/decisioning.lazy').then((d) => d.Route),
+)
 const SidebarDataQualityRoute = SidebarDataQualityRouteImport.update({
   id: '/data-quality',
   path: '/data-quality',
@@ -115,7 +123,9 @@ const SidebarDashboardsRoute = SidebarDashboardsRouteImport.update({
   id: '/dashboards',
   path: '/dashboards',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/dashboards.lazy').then((d) => d.Route),
+)
 const SidebarDashboardRoute = SidebarDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -125,7 +135,9 @@ const SidebarCommandCenterRoute = SidebarCommandCenterRouteImport.update({
   id: '/command-center',
   path: '/command-center',
   getParentRoute: () => SidebarRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./../routes/_sidebar/command-center.lazy').then((d) => d.Route),
+)
 const SidebarAlertsDataQualityRoute =
   SidebarAlertsDataQualityRouteImport.update({
     id: '/alerts-data-quality',
