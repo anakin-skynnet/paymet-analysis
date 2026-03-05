@@ -133,6 +133,7 @@ sync:
     # DAB reads file_path locally during deploy; the app fetches definitions at
     # runtime from the Lakeview API. Only .build/transform/ is needed (SQL scripts).
     - src/payment_analysis/__dist__   # UI build output (created by artifacts.default build); required for app web UI
+    - src/payment_analysis/__dist__/**  # Ensure all files (including *.png) are synced despite .gitignore *.png
     - src/payment_analysis/ml
     - src/payment_analysis/streaming
     - src/payment_analysis/transform

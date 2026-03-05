@@ -52,8 +52,9 @@ src/payment_analysis/__dist__/
 .ruff_cache/
 *.log
 *.bak
-*.png
-!src/payment_analysis/ui/public/*.png
+# Screenshots and test artifacts (keep repo clean); allow logo assets
+.screenshots/*.png
+qa-*.png
 mlflow.db
 scripts/qa_*.py
 
