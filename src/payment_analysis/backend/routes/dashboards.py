@@ -672,12 +672,10 @@ def _fetch_dashboard_from_api(lakeview_id: str, ws: Any | None) -> dict[str, Any
             _log.debug("Using cached dashboard definition for %s", lakeview_id)
             return data
 
-    # Use the app SP — user OBO tokens lack the 'dashboards' scope
-    # Try provided ws first (from request context), then fall back to SP client
-    workspace_client = ws
-    if workspace_client is None:
-        workspace_client = _get_sp_workspace_client()
-    
+    # Prefer the app SP for Lakeview API — user OBO tokens lack the
+    # 'dashboards' scope (not a valid user_api_scope for Apps).
+    # Fall back to the request-context client only if SP is unavailable.
+    workspace_client = _get_sp_workspace_client() or ws
     if workspace_client is None:
         _log.warning("No workspace client available for Lakeview API fetch of %s (will try local files)", lakeview_id)
         return None
