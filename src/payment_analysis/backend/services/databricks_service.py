@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -929,13 +930,13 @@ class DatabricksService:
         num_results = max(1, min(num_results, 20))
 
         # ── Primary: Databricks Vector Search TVF ──────────────────────
+        # The source table has: transaction_id, summary_text, outcome,
+        # amount, network, merchant_segment, created_at.  Enriched fields
+        # (issuer_country, payment_solution, fraud_score) are embedded in
+        # summary_text and extracted during post-processing.
         vs_query = f"""
             SELECT
-                merchant_segment, issuer_country, payment_solution,
-                ROUND(approval_rate_pct, 2) AS approval_rate_pct,
-                ROUND(avg_fraud_score, 4) AS avg_fraud_score,
-                ROUND(avg_amount, 2) AS avg_amount,
-                transaction_count
+                merchant_segment, outcome, amount, network, summary_text
             FROM VECTOR_SEARCH(
                 index => '{self.config.full_schema_name}.similar_transactions_index',
                 query_text => :description,
@@ -965,21 +966,29 @@ class DatabricksService:
                     rows = []
                     for chunk in result.result.data_array or []:
                         row = dict(zip(columns, chunk))
+                        summary = str(row.get("summary_text", ""))
+                        is_approved = str(row.get("outcome", "")).lower() == "approved"
+                        fraud_m = re.search(r"fraud_score=([0-9.]+)", summary)
+                        country_m = re.search(r"country=(\w+)", summary)
+                        solution_m = re.search(r"payment_solution=([^,]+)", summary)
                         rows.append({
                             "merchant_segment": str(row.get("merchant_segment", "")),
-                            "issuer_country": str(row.get("issuer_country", "")),
-                            "payment_solution": str(row.get("payment_solution", "")),
-                            "approval_rate_pct": float(row.get("approval_rate_pct", 0) or 0),
-                            "avg_fraud_score": float(row.get("avg_fraud_score", 0) or 0),
-                            "avg_amount": float(row.get("avg_amount", 0) or 0),
-                            "transaction_count": int(row.get("transaction_count", 0) or 0),
+                            "issuer_country": country_m.group(1) if country_m else "",
+                            "payment_solution": (solution_m.group(1).strip() if solution_m else ""),
+                            "approval_rate_pct": 100.0 if is_approved else 0.0,
+                            "avg_fraud_score": float(fraud_m.group(1)) if fraud_m else 0.0,
+                            "avg_amount": float(row.get("amount", 0) or 0),
+                            "transaction_count": 1,
                         })
                     if rows:
                         return rows
         except Exception as e:
             logger.debug("Vector Search TVF failed (index may not exist yet), falling back to SQL: %s", e)
 
-        # ── Fallback: plain SQL when Vector Search index is not available ──
+        # ── Fallback: gold VIEW when Vector Search index is not available ──
+        # v_transaction_summaries_for_search aggregates silver data by
+        # (merchant_segment, issuer_country, payment_solution) and already
+        # has the expected analytical columns.
         fallback_query = f"""
             SELECT
                 merchant_segment, issuer_country, payment_solution,
@@ -987,7 +996,7 @@ class DatabricksService:
                 ROUND(avg_fraud_score, 4) AS avg_fraud_score,
                 ROUND(avg_amount, 2) AS avg_amount,
                 transaction_count
-            FROM {self.config.full_schema_name}.transaction_summaries_for_search
+            FROM {self.config.full_schema_name}.v_transaction_summaries_for_search
             ORDER BY transaction_count DESC
             LIMIT {num_results}
         """

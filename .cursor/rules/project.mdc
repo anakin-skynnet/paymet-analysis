@@ -7,7 +7,7 @@ alwaysApply: true
 **Unified agent context:** For solution scope, MCP reference, agent framework, and common requests, see [AGENTS.md](../../AGENTS.md). For technical details, see [docs/TECHNICAL_SOLUTION.md](../../docs/TECHNICAL_SOLUTION.md). The rules below align with AGENTS.md.
 
 # Do's and Don'ts
-- **Deploy prompt:** When the user sends a "deploy" or "redeploy" prompt, **always ask** before running: "Are you deploying the app or the rest of the resources?" Then run the matching command: **rest of resources** → `./scripts/bundle.sh deploy [target]` (phase 1: all except the App; then user runs jobs 5 and 6 and later "deploy app"); **app** → `./scripts/bundle.sh deploy app [target]` (phase 2: validate and deploy the App with model serving and all resources uncommented).
+- **Deploy prompt:** When the user sends a "deploy" or "redeploy" prompt, **always ask** before running: "Are you deploying the app or the rest of the resources?" Then run the matching command: **rest of resources** → `./scripts/bundle.sh deploy [target]` (phase 1: all resources updated in place, app serving bindings disabled; then user runs jobs 5 and 6 and later "deploy app"); **app** → `./scripts/bundle.sh deploy app [target]` (phase 2: enable serving bindings and model_serving, update the App).
 - OpenAPI client is generated at build time; don't manually regenerate.
 - Prefer running apx related commands via MCP server if it's available.
 - Use the apx MCP `search_registry_components` and `add_component` tools to find and add shadcn/ui components.
@@ -63,10 +63,10 @@ uv run apx dev check
 uv run apx build
 ```
 
-**Two-phase deploy** (run from repo root):
+**Two-phase deploy** (run from repo root — all resources are UPDATED in place, never destroyed/recreated):
 
-- **Phase 1 — rest of resources (no app):** `./scripts/bundle.sh deploy [dev|prod]` or `./scripts/bundle.sh redeploy [dev|prod]`. Deploys jobs, pipelines, dashboards, etc.; outputs: "all resources deployed except the App. Run jobs 5 and 6. After completion, write the prompt \"deploy app\"". Always validates that the app can be deployed with all dependencies and resources when you run phase 2.
-- **Phase 2 — app (after jobs 5 and 6):** `./scripts/bundle.sh deploy app [dev|prod]`. Validates app dependencies, uncomments model_serving and serving bindings, deploys the App with all resources assigned and uncommented.
+- **Phase 1 — all resources (app without serving bindings):** `./scripts/bundle.sh deploy [dev|prod]` or `./scripts/bundle.sh redeploy [dev|prod]`. Updates all resources in place (jobs, pipelines, dashboards, app). App stays in the bundle with serving bindings disabled. Model serving endpoints are kept when they exist (auto-excluded only on first deploy). Outputs: "Run jobs 5 and 6. After completion, write the prompt \"deploy app\"".
+- **Phase 2 — app with serving (after jobs 5 and 6):** `./scripts/bundle.sh deploy app [dev|prod]`. Enables model_serving and serving bindings, updates the existing App with all resources.
 
 When the user says "deploy" or "redeploy", always ask: "Are you deploying the app or the rest of the resources?" then run the matching phase.
 

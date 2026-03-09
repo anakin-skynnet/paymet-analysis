@@ -137,7 +137,7 @@ When the user asks to:
 - **Add a UI component** — Use MCP `search_registry_components` / `add_component` or `uv run apx components add <name> --yes`; place in `src/payment_analysis/ui/components/`.
 - **Add or change an API route** — Use `response_model` and `operation_id`; run check after. Use `get_route_info` for examples.
 - **Fix build or deploy** — Run `uv run apx dev check` and `./scripts/bundle.sh verify dev`; check dashboard prepare if bundle fails on dashboards.
-- **Work with agents** — Backend: `backend/routes/agents.py` and `AGENTS`; framework: `agents/agent_framework.py` and `resources/agents.yml`.
+- **Work with agents** — Backend: `src/payment_analysis/backend/routes/agents.py` and `AGENTS`; framework: `src/payment_analysis/agents/agent_framework.py` and `resources/agents.yml`.
 - **Change catalog/schema** — Bundle uses `var.catalog` / `var.schema`; app uses Lakebase `app_config`; set via Setup & Run → Save catalog & schema.
 - **Run jobs or pipelines** — From app Setup & Run; jobs 1–6 in order; pipelines (ETL, Real-Time) when needed.
 - **Verify / version alignment / deploy** — Run `uv run apx dev check` and `./scripts/bundle.sh verify dev`; ensure exact dependency versions (see docs/REFERENCE_GUIDE.md#4-version-alignment); commit and push to main; deploy with `./scripts/bundle.sh deploy dev` to overwrite existing resources.

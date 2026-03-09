@@ -120,7 +120,7 @@ def _default_uc_prefix() -> str:
 
 def _notebook_workspace_url(relative_path: str) -> str:
     ws = _workspace_url()
-    user_email = os.getenv("DATABRICKS_USER", "user@company.com")
+    user_email = os.getenv("DATABRICKS_USER", "ariel.hdez@databricks.com")
     folder_name = os.getenv("BUNDLE_FOLDER", "payment-analysis")
     return f"{ws}/workspace/Workspace/Users/{user_email}/{folder_name}/{relative_path}"
 

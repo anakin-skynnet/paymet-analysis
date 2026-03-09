@@ -20,12 +20,9 @@ MODEL_SERVING_YML = REPO_ROOT / "resources" / "model_serving.yml"
 
 
 def _serving_block_lines() -> list[tuple[str, str]]:
-    """Pairs of (commented, uncommented) line patterns for the 7 serving endpoint blocks."""
-    # (resource name, endpoint name in YAML)
+    """Pairs of (commented, uncommented) line patterns for the 5 serving endpoint blocks in fastapi_app.yml."""
     names = [
-        ("serving-orchestrator", "payment-analysis-orchestrator"),
         ("serving-response-agent", "payment-response-agent"),
-        ("serving-decline-analyst", "decline-analyst"),
         ("serving-approval-prop", "approval-propensity"),
         ("serving-risk-scoring", "risk-scoring"),
         ("serving-smart-routing", "smart-routing"),
@@ -41,9 +38,7 @@ def _serving_block_lines() -> list[tuple[str, str]]:
 def enable_serving_endpoints(skip_endpoints: set[str] | None = None) -> bool:
     """Uncomment serving endpoint blocks in resources/fastapi_app.yml. skip_endpoints: endpoint names to leave commented (e.g. when endpoint does not exist yet)."""
     names = [
-        ("serving-orchestrator", "payment-analysis-orchestrator"),
         ("serving-response-agent", "payment-response-agent"),
-        ("serving-decline-analyst", "decline-analyst"),
         ("serving-approval-prop", "approval-propensity"),
         ("serving-risk-scoring", "risk-scoring"),
         ("serving-smart-routing", "smart-routing"),
@@ -71,7 +66,7 @@ def enable_serving_endpoints(skip_endpoints: set[str] | None = None) -> bool:
 
 
 def disable_serving_endpoints() -> bool:
-    """Comment the 7 model serving endpoint blocks in resources/fastapi_app.yml."""
+    """Comment the 5 serving endpoint blocks in resources/fastapi_app.yml."""
     text = FASTAPI_APP_YML.read_text()
     for commented, uncommented in _serving_block_lines():
         if uncommented in text:
@@ -113,7 +108,7 @@ def check_app_deployable() -> tuple[bool, list[str]]:
         if "resources/fastapi_app.yml" in content and not re.search(r"^\s*#\s*-\s*resources/fastapi_app\.yml", content, re.M):
             messages.append("fastapi_app.yml is included in databricks.yml (uncommented)")
         else:
-            messages.append("fastapi_app.yml is commented in databricks.yml (excluded in phase 1)")
+            messages.append("fastapi_app.yml is commented in databricks.yml — should always be included")
 
     app_content = FASTAPI_APP_YML.read_text() if FASTAPI_APP_YML.exists() else ""
     if "serving-endpoint" in app_content or "serving_endpoint" in app_content:

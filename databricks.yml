@@ -38,8 +38,8 @@ workspace:
 #
 # Model Serving: Endpoints are created/updated PROGRAMMATICALLY by Jobs 5 & 6 (idempotent).
 # model_serving.yml is INCLUDED below so DAB can manage AI Gateway config and workload sizing.
-# If endpoints don't exist yet, run Jobs 5 & 6 first (or comment out model_serving.yml for initial deploy).
-# scripts/bundle.sh handles this automatically (excludes on phase 1, includes on phase 2).
+# On subsequent deploys, endpoints are UPDATED in place (never destroyed/recreated).
+# On first deploy (endpoints don't exist yet), scripts/bundle.sh auto-excludes model_serving.yml.
 include:
   - resources/unity_catalog.yml
   - resources/lakebase.yml

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Two-phase deploy: deploy all resources except the app, run Job 5 & 6, then deploy the app.
-# This ensures model serving endpoints exist before the app is bound to them.
+# Two-phase deploy: all resources are always UPDATED in place, never destroyed/recreated.
+# Phase 1 keeps the app in the bundle (only disables serving bindings).
+# model_serving.yml is kept when endpoints exist; excluded only on first deploy.
 #
 # Usage: ./scripts/deploy_with_dependencies.sh [target]
 #   target: dev (default) or prod
 #
-# Phase 1: Deploy all resources EXCEPT the App (jobs, pipelines, dashboards, etc.).
+# Phase 1: Deploy all resources (app updated without serving bindings).
 #          Run Job 5 (Train Models) and Job 6 (Deploy Agents); wait for completion.
-# Phase 2: Validate app dependencies, uncomment model_serving and app serving bindings, deploy App.
-#          Notify that the app is deployed with all dependencies and resources assigned and uncommented.
+# Phase 2: Enable serving bindings + model_serving, update the App.
 set -e
 cd "$(dirname "$0")/.."
 TARGET="${1:-dev}"
@@ -22,6 +22,7 @@ cleanup_on_exit() {
     echo "⚠️  Restoring databricks.yml from backup after error (exit code $exit_code)..."
     cp "$BACKUP" "$DATABRICKS_YML"
     rm -f "$BACKUP"
+    uv run python scripts/toggle_app_resources.py --enable-serving-endpoints 2>/dev/null || true
   fi
 }
 trap cleanup_on_exit EXIT
@@ -35,43 +36,75 @@ prepare_dashboards() {
   fi
 }
 
-comment_out_app_and_serving() {
+# Pre-deploy: verify all resources, reconcile state, capture serving endpoint status.
+SERVING_ENDPOINTS_EXIST=""
+run_pre_deploy_check() {
+  echo "Running pre-deploy resource check (target=$TARGET)..."
+  local output
+  output=$(uv run python scripts/pre_deploy_check.py --target "$TARGET" --fix)
+  echo "$output"
+  if echo "$output" | grep -q "SERVING_ENDPOINTS_EXIST=true"; then
+    SERVING_ENDPOINTS_EXIST=true
+  else
+    SERVING_ENDPOINTS_EXIST=false
+  fi
+}
+
+# Phase 1 config: disable serving bindings in the app; keep all resources in bundle.
+# model_serving.yml is only excluded when endpoints don't exist yet (first deploy).
+prepare_phase1_config() {
   if [[ -f "$BACKUP" ]]; then
     echo "Restoring $DATABRICKS_YML from previous run..."
     cp "$BACKUP" "$DATABRICKS_YML"
   fi
   cp "$DATABRICKS_YML" "$BACKUP"
-  # Comment out so phase 1 deploy skips model serving and app (portable sed)
-  if sed --version 2>/dev/null | grep -q GNU; then
-    sed -i 's|^  - resources/model_serving.yml|  # - resources/model_serving.yml|' "$DATABRICKS_YML"
-    sed -i 's|^  - resources/fastapi_app.yml|  # - resources/fastapi_app.yml|' "$DATABRICKS_YML"
+  uv run python scripts/toggle_app_resources.py --disable-serving-endpoints
+  if [[ "$SERVING_ENDPOINTS_EXIST" == "true" ]]; then
+    echo "Model serving endpoints exist — keeping model_serving.yml (update in place)."
   else
-    sed -i '' 's|^  - resources/model_serving.yml|  # - resources/model_serving.yml|' "$DATABRICKS_YML"
-    sed -i '' 's|^  - resources/fastapi_app.yml|  # - resources/fastapi_app.yml|' "$DATABRICKS_YML"
+    echo "Model serving endpoints not found (first deploy) — excluding model_serving.yml."
+    if sed --version 2>/dev/null | grep -q GNU; then
+      sed -i 's|^  - resources/model_serving.yml|  # - resources/model_serving.yml|' "$DATABRICKS_YML"
+    else
+      sed -i '' 's|^  - resources/model_serving.yml|  # - resources/model_serving.yml|' "$DATABRICKS_YML"
+    fi
   fi
-  echo "Commented out model_serving and fastapi_app in $DATABRICKS_YML for phase 1."
+  echo "Phase 1 config ready: serving bindings disabled, app stays in bundle."
 }
 
-restore_app_and_serving() {
-  # Uncomment so phase 2 deploy includes model serving and app (portable sed)
-  if sed --version 2>/dev/null | grep -q GNU; then
-    sed -i 's|^  # - resources/model_serving.yml|  - resources/model_serving.yml|' "$DATABRICKS_YML"
-    sed -i 's|^  # - resources/fastapi_app.yml|  - resources/fastapi_app.yml|' "$DATABRICKS_YML"
-  else
-    sed -i '' 's|^  # - resources/model_serving.yml|  - resources/model_serving.yml|' "$DATABRICKS_YML"
-    sed -i '' 's|^  # - resources/fastapi_app.yml|  - resources/fastapi_app.yml|' "$DATABRICKS_YML"
+# Restore everything after Phase 1: undo databricks.yml backup and re-enable serving bindings.
+restore_after_phase1() {
+  if [[ -f "$BACKUP" ]]; then
+    cp "$BACKUP" "$DATABRICKS_YML"
   fi
-  echo "Restored model_serving and fastapi_app in $DATABRICKS_YML for phase 2."
+  uv run python scripts/toggle_app_resources.py --enable-serving-endpoints 2>/dev/null || true
+  echo "Restored databricks.yml and serving endpoint bindings."
 }
+
+# Ensure model_serving.yml is included in databricks.yml (for Phase 2).
+ensure_serving_included() {
+  if grep -q '^  # - resources/model_serving.yml' "$DATABRICKS_YML" 2>/dev/null; then
+    if sed --version 2>/dev/null | grep -q GNU; then
+      sed -i 's|^  # - resources/model_serving.yml|  - resources/model_serving.yml|' "$DATABRICKS_YML"
+    else
+      sed -i '' 's|^  # - resources/model_serving.yml|  - resources/model_serving.yml|' "$DATABRICKS_YML"
+    fi
+    echo "Uncommented model_serving.yml in databricks.yml."
+  fi
+}
+
+EXTRA_VARS=()
+[[ -n "${LAKEBASE_INSTANCE_NAME:-}" ]] && EXTRA_VARS+=(--var "lakebase_instance_name=${LAKEBASE_INSTANCE_NAME}")
 
 echo "=== Two-phase deploy (target=$TARGET) ==="
 echo ""
 
 # ---------------------------------------------------------------------------
-# Phase 1: Deploy all resources EXCEPT the App
+# Phase 1: Deploy all resources (app updated without serving bindings)
 # ---------------------------------------------------------------------------
-echo "--- Phase 1: Deploy all resources except the App ---"
-comment_out_app_and_serving
+echo "--- Phase 1: Deploy all resources (app updated, serving bindings disabled) ---"
+run_pre_deploy_check
+prepare_phase1_config
 
 # Resolve workspace path in background
 WORKSPACE_PATH_FILE=$(mktemp)
@@ -100,10 +133,9 @@ if [[ -n "$WORKSPACE_PATH" ]]; then
 else
   uv run python scripts/dashboards.py clean-workspace-except-dbdemos 2>/dev/null || true
 fi
-echo "Deploying bundle (phase 1)..."
-EXTRA_VARS=()
-[[ -n "${LAKEBASE_INSTANCE_NAME:-}" ]] && EXTRA_VARS+=(--var "lakebase_instance_name=${LAKEBASE_INSTANCE_NAME}")
+echo "Deploying bundle (phase 1) — updating all resources in place..."
 databricks bundle deploy -t "$TARGET" --force --auto-approve --force-lock "${EXTRA_VARS[@]}"
+restore_after_phase1
 echo "Phase 1 deploy complete."
 echo ""
 
@@ -114,35 +146,34 @@ echo "--- Running Job 5 (Train Models) and Job 6 (Deploy Agents) ---"
 echo "Job 5: Training models and registering to UC (this may take several minutes)..."
 if ! uv run python scripts/run_and_validate_jobs.py --job job_5_train_models_and_serving; then
   echo "ERROR: Job 5 failed. Fix the job run in Databricks, then re-run this script or run phase 2 manually."
-  restore_app_and_serving
   exit 1
 fi
 echo "Job 5 completed."
 echo "Job 6: Deploying agents (register AgentBricks, etc.)..."
 if ! uv run python scripts/run_and_validate_jobs.py --job job_6_deploy_agents; then
   echo "ERROR: Job 6 failed. Fix the job run in Databricks, then re-run this script or run phase 2 manually."
-  restore_app_and_serving
   exit 1
 fi
 echo "Job 6 completed."
 echo ""
 
 # ---------------------------------------------------------------------------
-# Phase 2: Validate and deploy the App with all dependencies and resources
+# Phase 2: Update the App with serving bindings and model_serving
 # ---------------------------------------------------------------------------
-echo "--- Phase 2: Deploy the App with all dependencies and resources ---"
+echo "--- Phase 2: Update the App with serving bindings and model_serving ---"
+run_pre_deploy_check
 echo "Validating that the App can be deployed with all dependencies and resources assigned and uncommented..."
 uv run python scripts/toggle_app_resources.py --check-app-deployable
 echo ""
-restore_app_and_serving
-echo "Uncommenting serving endpoint bindings in fastapi_app.yml..."
+ensure_serving_included
+echo "Enabling serving endpoint bindings in fastapi_app.yml..."
 uv run python scripts/toggle_app_resources.py --enable-serving-endpoints
-echo "Deploying bundle (phase 2: model serving + app with bindings)..."
+echo "Deploying bundle (phase 2) — updating existing app with serving bindings..."
 echo "(Skipping dashboard prepare — already done in phase 1.)"
 databricks bundle deploy -t "$TARGET" --force --auto-approve --force-lock "${EXTRA_VARS[@]}"
 echo ""
 echo "================================================================================"
-echo "App deployed with all dependencies and resources assigned and uncommented."
+echo "App updated with all dependencies and resources assigned and uncommented."
 echo "================================================================================"
 echo ""
 
