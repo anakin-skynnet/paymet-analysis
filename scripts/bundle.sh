@@ -186,12 +186,20 @@ case "$CMD" in
     echo "Ensuring model_serving.yml is included and enabling serving endpoint bindings..."
     ensure_serving_included
     SKIP_ARGS=()
+    # Auto-detect non-existent serving endpoints to skip their app bindings
+    for ep in payment-response-agent approval-propensity risk-scoring smart-routing smart-retry; do
+      if ! databricks serving-endpoints get "$ep" >/dev/null 2>&1; then
+        SKIP_ARGS+=(--skip-endpoint "$ep")
+        echo "  Auto-skipping binding for '$ep' (endpoint not found)"
+      fi
+    done
+    # Also honour explicit SKIP_SERVING_ENDPOINTS env var
     if [[ -n "${SKIP_SERVING_ENDPOINTS:-}" ]]; then
       IFS=',' read -ra SKIP_LIST <<< "$SKIP_SERVING_ENDPOINTS"
       for ep in "${SKIP_LIST[@]}"; do
         SKIP_ARGS+=(--skip-endpoint "$ep")
       done
-      echo "Skipping endpoints: ${SKIP_SERVING_ENDPOINTS}"
+      echo "  Explicit skip: ${SKIP_SERVING_ENDPOINTS}"
     fi
     uv run python scripts/toggle_app_resources.py --enable-serving-endpoints "${SKIP_ARGS[@]}"
     if [[ -z "${SKIP_DASHBOARD_PREPARE:-}" ]]; then

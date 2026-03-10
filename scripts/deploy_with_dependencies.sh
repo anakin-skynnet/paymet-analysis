@@ -167,7 +167,14 @@ uv run python scripts/toggle_app_resources.py --check-app-deployable
 echo ""
 ensure_serving_included
 echo "Enabling serving endpoint bindings in fastapi_app.yml..."
-uv run python scripts/toggle_app_resources.py --enable-serving-endpoints
+SKIP_ARGS=()
+for ep in payment-response-agent approval-propensity risk-scoring smart-routing smart-retry; do
+  if ! databricks serving-endpoints get "$ep" >/dev/null 2>&1; then
+    SKIP_ARGS+=(--skip-endpoint "$ep")
+    echo "  Auto-skipping binding for '$ep' (endpoint not found)"
+  fi
+done
+uv run python scripts/toggle_app_resources.py --enable-serving-endpoints "${SKIP_ARGS[@]}"
 echo "Deploying bundle (phase 2) — updating existing app with serving bindings..."
 echo "(Skipping dashboard prepare — already done in phase 1.)"
 databricks bundle deploy -t "$TARGET" --force --auto-approve --force-lock "${EXTRA_VARS[@]}"
